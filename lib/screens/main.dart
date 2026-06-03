@@ -72,11 +72,13 @@ class _MainState extends State<Main> {
         slug: "",
         is_base_category: true,
       ),
-      Cart(
-        has_bottomnav: true,
-        from_navigation: true,
-        counter: counter,
-      ),
+      PointsPage()
+      ActivityPage()
+      // Cart(
+      //   has_bottomnav: true,
+      //   from_navigation: true,
+      //   counter: counter,
+      // ),
       Profile()
     ];
     fetchAll();
@@ -145,7 +147,7 @@ class _MainState extends State<Main> {
               onTap: onTapped,
               currentIndex: _currentIndex,
               backgroundColor: Colors.white.withOpacity(0.95),
-              unselectedItemColor: Color.fromRGBO(168, 175, 179, 1),
+              unselectedItemColor: const Color.fromRGBO(168, 175, 179, 1),
               selectedItemColor: MyTheme.accent_color,
               selectedLabelStyle: TextStyle(
                   fontWeight: FontWeight.w700,
@@ -153,73 +155,78 @@ class _MainState extends State<Main> {
                   fontSize: 12),
               unselectedLabelStyle: TextStyle(
                   fontWeight: FontWeight.w400,
-                  color: Color.fromRGBO(168, 175, 179, 1),
+                  color: const Color.fromRGBO(168, 175, 179, 1),
                   fontSize: 12),
               items: [
+                // 1. Home
                 BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Image.asset(
-                        "assets/home.png",
-                        color: _currentIndex == 0
-                            ? MyTheme.accent_color
-                            : Color.fromRGBO(153, 153, 153, 1),
-                        height: 16,
-                      ),
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Image.asset(
+                      "assets/home.png",
+                      color: _currentIndex == 0
+                          ? MyTheme.accent_color
+                          : const Color.fromRGBO(153, 153, 153, 1),
+                      height: 16,
                     ),
-                    label: AppLocalizations.of(context)!.home_ucf),
+                  ),
+                  label: AppLocalizations.of(context)!.home_ucf,
+                ),
+                
+                // 2. Categories
                 BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Image.asset(
-                        "assets/categories.png",
-                        color: _currentIndex == 1
-                            ? MyTheme.accent_color
-                            : Color.fromRGBO(153, 153, 153, 1),
-                        height: 16,
-                      ),
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Image.asset(
+                      "assets/categories.png",
+                      color: _currentIndex == 1
+                          ? MyTheme.accent_color
+                          : const Color.fromRGBO(153, 153, 153, 1),
+                      height: 16,
                     ),
-                    label: AppLocalizations.of(context)!.categories_ucf),
+                  ),
+                  label: AppLocalizations.of(context)!.categories_ucf,
+                ),
+                
+                // 3. Points (NEW)
                 BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: badges.Badge(
-                        badgeStyle: badges.BadgeStyle(
-                          shape: badges.BadgeShape.circle,
-                          badgeColor: MyTheme.accent_color,
-                          borderRadius: BorderRadius.circular(10),
-                          padding: EdgeInsets.all(5),
-                        ),
-                        badgeAnimation: badges.BadgeAnimation.slide(
-                          toAnimate: false,
-                        ),
-                        child: Image.asset(
-                          "assets/cart.png",
-                          color: _currentIndex == 2
-                              ? MyTheme.accent_color
-                              : Color.fromRGBO(153, 153, 153, 1),
-                          height: 16,
-                        ),
-                        badgeContent: Consumer<CartCounter>(
-                          builder: (context, cart, child) {
-                            return Text(
-                              "${cart.cartCounter}",
-                              style:
-                                  TextStyle(fontSize: 10, color: Colors.white),
-                            );
-                          },
-                        ),
-                      ),
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Image.asset(
+                      "assets/points.png",  // Make sure this image exists in assets folder
+                      color: _currentIndex == 2
+                          ? MyTheme.accent_color
+                          : const Color.fromRGBO(153, 153, 153, 1),
+                      height: 16,
                     ),
-                    label: AppLocalizations.of(context)!.cart_ucf),
+                  ),
+                  label: AppLocalizations.of(context)!.points_ucf,
+                ),
+                
+                // 4. Activity (NEW)
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Image.asset(
+                      "assets/activity.png",  // Make sure this image exists in assets folder
+                      color: _currentIndex == 3
+                          ? MyTheme.accent_color
+                          : const Color.fromRGBO(153, 153, 153, 1),
+                      height: 16,
+                    ),
+                  ),
+                  label: AppLocalizations.of(context)!.activity_ucf,
+                ),
+                
+                // 5. Profile
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Image.asset(
                       "assets/profile.png",
-                      color: _currentIndex == 3
+                      color: _currentIndex == 4
                           ? MyTheme.accent_color
-                          : Color.fromRGBO(153, 153, 153, 1),
+                          : const Color.fromRGBO(153, 153, 153, 1),
                       height: 16,
                     ),
                   ),
