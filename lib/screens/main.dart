@@ -43,17 +43,30 @@ class _MainState extends State<Main> {
   void onTapped(int i) {
     fetchAll();
     
-    // Check login for protected routes (Profile is index 4 now)
+    // Check login for protected routes (points is index 2 now)
+    if (!is_logged_in.$ && (i == 2)) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
+      return;
+    }
+
+    // Check login for protected routes (activity is index 3 now)
+    if (!is_logged_in.$ && (i == 3)) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
+      return;
+    }
+
+
+    // Check login for protected routes (activity is index 3 now)
     if (!is_logged_in.$ && (i == 4)) {
       Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
       return;
     }
 
     // Handle dashboard navigation (if needed)
-    if (i == 3) {
-      routes.push("/dashboard");
-      return;
-    }
+    // if (i == 4) {
+    //   routes.push("/dashboard");
+    //   return;
+    // }
 
     setState(() {
       _currentIndex = i;
@@ -72,8 +85,10 @@ class _MainState extends State<Main> {
         slug: "",
         is_base_category: true,
       ),
-      const PointsPage(),                               // Index 2: Points (NEW)
-      const ActivityPage(),                            // Index 3: Activity (NEW)
+      // const PointsPage(),                               // Index 2: Points (NEW)
+      // const ActivityPage(),   
+      PointsPage(),                               // Index 2: Points (NEW)
+      ActivityPage(),                         // Index 3: Activity (NEW)
       Profile(),                                        // Index 4: Profile
     ];
     

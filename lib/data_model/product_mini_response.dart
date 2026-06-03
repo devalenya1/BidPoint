@@ -80,14 +80,14 @@ class Product {
   Links? links;
   bool? isWholesale;
   
-  String? auction_end_date;
+  var auction_end_date;
   String? starting_bid;
   String? min_bid_price;
   String? highest_bid;
   String? swipe_right;
   String? swipe_left;
   String? point_per_bid;
-  String? auction_start_date;
+  var auction_start_date;
   String? point_per_bid_custom;
   String? point_multiplier_system;
   int? auction_product;
@@ -130,7 +130,8 @@ class Product {
         "rating": rating,
         "sales": sales,
         "links": links!.toJson(),
-        "is_wholesale": isWholesale,        "auction_end_date": auction_end_date,
+        "is_wholesale": isWholesale,        
+        "auction_end_date": auction_end_date,
         "auction_start_date": auction_start_date,
         "starting_bid": starting_bid,
         "min_bid_price": min_bid_price,
