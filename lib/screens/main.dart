@@ -208,7 +208,7 @@ class _MainState extends State<Main> {
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Image.asset(
-                      "assets/activity.png",  // Make sure this image exists in assets folder
+                      "assets/plus.png",  // Make sure this image exists in assets folder
                       color: _currentIndex == 3
                           ? MyTheme.accent_color
                           : const Color.fromRGBO(153, 153, 153, 1),
