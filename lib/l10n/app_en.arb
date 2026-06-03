@@ -173,8 +173,18 @@
   "featured_categories_ucf": "Popular Categories",
   "featured_products_ucf": "Featured Products",
   "all_products_ucf": "Hot Auctions",
+
+
   "upcoming_ucf": "Upcoming Auctions",
   "ending_soon_ucf": "Ending Soon",
+  "hot_auctions_ucf": "Hot Auctions",
+  "view_all_ucf": "View All",
+  "current_bid_ucf": "current Bid",
+  "swipe_to_bid_ucf": "Swipe to Bid",
+  "quick_bid_ucf": "Quick Bid",
+  "bid_unit_ucf": "Bid =",
+
+
   "search_anything": "Search anything ...",
   "no_carousel_image_found": "No carousel image found",
   "no_category_found": "No category found",

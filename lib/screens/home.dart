@@ -213,13 +213,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       ],
                                     ),
                                   ),
-                                  SingleChildScrollView(
-                                    child: Column(
-                                      children: [
-                                        buildHomeAllProducts2(
-                                            context, homeData),
-                                      ],
-                                    ),
+                                  // SingleChildScrollView(
+                                  //   child: Column(
+                                  //     children: [
+                                  //       buildHomeAllProducts2(
+                                  //           context, homeData),
+                                  //     ],
+                                  //   ),
+                                  // ),
+                                  // Add this after your existing slivers
+                                  SliverToBoxAdapter(
+                                    child: buildHotAuctionsCarousel(context, homeData),
                                   ),
                                   Container(
                                     height: 80,
@@ -448,101 +452,152 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
+  // Widget buildHomeAllProducts2(context, HomePresenter homeData) {
+  //   // if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
+  //   if (homeData.isAllProductInitial) {
+  //     return SingleChildScrollView(
+  //         child: ShimmerHelper().buildProductGridShimmer(
+  //             scontroller: homeData.allProductScrollController));
+  //   } else if (homeData.allProductList.length > 0) {
+  //     return MasonryGridView.count(
+  //         crossAxisCount: 2,
+  //         mainAxisSpacing: 14,
+  //         crossAxisSpacing: 14,
+  //         itemCount: homeData.allProductList.length,
+  //         shrinkWrap: true,
+  //         padding: EdgeInsets.only(top: 20.0, bottom: 10, left: 18, right: 18),
+  //         physics: NeverScrollableScrollPhysics(),
+  //         itemBuilder: (context, index) {
+  //           return ProductCard(
+  //             id: homeData.allProductList[index].id,
+  //             slug: homeData.allProductList[index].slug,
+  //             image: homeData.allProductList[index].thumbnail_image,
+  //             name: homeData.allProductList[index].name,
+  //             main_price: homeData.allProductList[index].main_price,
+  //             stroked_price: homeData.allProductList[index].stroked_price,
+  //             has_discount: homeData.allProductList[index].has_discount,
+  //             discount: homeData.allProductList[index].discount,
+  //             is_wholesale: homeData.allProductList[index].isWholesale,
+  //           );
+  //         });
+  //   } else if (homeData.totalAllProductData == 0) {
+  //     return Center(
+  //         child: Text(AppLocalizations.of(context)!.no_product_is_available));
+  //   } else {
+  //     return Container(); // should never be happening
+  //   }
+  // }
 
-  Widget buildHomeAllProducts2(context, HomePresenter homeData) {
-    // if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
-    if (homeData.isAllProductInitial) {
-      return SingleChildScrollView(
-          child: ShimmerHelper().buildProductGridShimmer(
-              scontroller: homeData.allProductScrollController));
-    } else if (homeData.allProductList.length > 0) {
-      return MasonryGridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 14,
-          crossAxisSpacing: 14,
-          itemCount: homeData.allProductList.length,
-          shrinkWrap: true,
-          padding: EdgeInsets.only(top: 20.0, bottom: 10, left: 18, right: 18),
-          physics: NeverScrollableScrollPhysics(),
-          itemBuilder: (context, index) {
-            return ProductCard(
-              id: homeData.allProductList[index].id,
-              slug: homeData.allProductList[index].slug,
-              image: homeData.allProductList[index].thumbnail_image,
-              name: homeData.allProductList[index].name,
-              main_price: homeData.allProductList[index].main_price,
-              stroked_price: homeData.allProductList[index].stroked_price,
-              has_discount: homeData.allProductList[index].has_discount,
-              discount: homeData.allProductList[index].discount,
-              is_wholesale: homeData.allProductList[index].isWholesale,
-            );
-          });
-    } else if (homeData.totalAllProductData == 0) {
-      return Center(
-          child: Text(AppLocalizations.of(context)!.no_product_is_available));
-    } else {
-      return Container(); // should never be happening
+  Widget buildHotAuctionsCarousel(BuildContext context, HomePresenter homeData) {
+    // Check if auction products exist
+    if (homeData.auctionProductList == null || homeData.auctionProductList!.isEmpty) {
+      return const SizedBox.shrink();
     }
+
+    return AuctionProductsCarousel(
+      products: homeData.auctionProductList!,
+      title: AppLocalizations.of(context)!.hot_auctions_ucf,
+      onViewAll: () {
+        // Navigate to all auctions page
+        // Navigator.push(context, MaterialPageRoute(builder: (context) => AllAuctionsPage()));
+      },
+    );
   }
 
   Widget buildHomeFeaturedCategories(context, HomePresenter homeData) {
-    if (homeData.isCategoryInitial &&
-        homeData.featuredCategoryList.length == 0) {
+    if (homeData.isCategoryInitial && homeData.featuredCategoryList.length == 0) {
       return ShimmerHelper().buildHorizontalGridShimmerWithAxisCount(
-          crossAxisSpacing: 14.0,
-          mainAxisSpacing: 14.0,
-          item_count: 10,
-          mainAxisExtent: 170.0,
-          controller: homeData.featuredCategoryScrollController);
+        crossAxisSpacing: 12.0,
+        mainAxisSpacing: 0,
+        item_count: 6,
+        mainAxisExtent: 200.0, // Width of each shimmer card
+        controller: homeData.featuredCategoryScrollController,
+      );
     } else if (homeData.featuredCategoryList.length > 0) {
-      //snapshot.hasData
-      return GridView.builder(
-          padding:
-              const EdgeInsets.only(left: 18, right: 18, top: 13, bottom: 20),
+      return SizedBox(
+        height: 60, // Fixed height for the horizontal row (44px card + padding)
+        child: ListView.builder(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
           scrollDirection: Axis.horizontal,
           controller: homeData.featuredCategoryScrollController,
+          physics: const BouncingScrollPhysics(),
           itemCount: homeData.featuredCategoryList.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 3 / 2,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              mainAxisExtent: 170.0),
           itemBuilder: (context, index) {
+            final category = homeData.featuredCategoryList[index];
+            
             return GestureDetector(
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return CategoryProducts(
-                    slug: homeData.featuredCategoryList[index].slug,
-                    // category_name: homeData.featuredCategoryList[index].name,
+                    slug: category.slug,
                   );
                 }));
               },
               child: Container(
-                decoration: BoxDecorations.buildBoxDecoration_1(),
+                width: 200, // Fixed width matching HTML's 200px (12.5rem)
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10), // 0.625rem = 10px
+                  border: Border.all(
+                    color: const Color.fromRGBO(237, 242, 247, 1), // #edf2f7
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
                 child: Row(
-                  children: <Widget>[
+                  children: [
+                    // Square Image Section (Left) - 44px x 44px
                     Container(
-                        child: ClipRRect(
-                            borderRadius: BorderRadius.horizontal(
-                                left: Radius.circular(6), right: Radius.zero),
-                            child: FadeInImage.assetNetwork(
-                              placeholder: 'assets/placeholder.png',
-                              image:
-                                  homeData.featuredCategoryList[index].banner,
-                              fit: BoxFit.cover,
-                            ))),
-                    Flexible(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(10),
+                        ),
+                        color: const Color.fromRGBO(245, 247, 250, 1), // #f5f7fa
+                      ),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(10),
+                        ),
+                        child: FadeInImage.assetNetwork(
+                          placeholder: 'assets/placeholder.png',
+                          image: category.banner,
+                          fit: BoxFit.cover,
+                          imageErrorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: const Color.fromRGBO(245, 247, 250, 1),
+                              child: const Icon(
+                                Icons.category,
+                                size: 24,
+                                color: Color.fromRGBO(107, 115, 119, 1),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    // Text Section (Right)
+                    Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          homeData.featuredCategoryList[index].name,
-                          textAlign: TextAlign.left,
+                          category.name,
+                          style: const TextStyle(
+                            fontSize: 13, // 0.8125rem
+                            fontWeight: FontWeight.w600,
+                            color: Color.fromRGBO(0, 0, 0, 1),
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          maxLines: 3,
-                          softWrap: true,
-                          style:
-                              TextStyle(fontSize: 12, color: MyTheme.font_grey),
                         ),
                       ),
                     ),
@@ -550,115 +605,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
               ),
             );
-          });
-    } else if (!homeData.isCategoryInitial &&
-        homeData.featuredCategoryList.length == 0) {
-      return Container(
-          height: 100,
-          child: Center(
-              child: Text(
-            AppLocalizations.of(context)!.no_category_found,
-            style: TextStyle(color: MyTheme.font_grey),
-          )));
-    } else {
-      // should not be happening
+          },
+        ),
+      );
+    } else if (!homeData.isCategoryInitial && homeData.featuredCategoryList.length == 0) {
       return Container(
         height: 100,
+        child: Center(
+          child: Text(
+            AppLocalizations.of(context)!.no_category_found,
+            style: TextStyle(color: MyTheme.font_grey),
+          ),
+        ),
       );
+    } else {
+      return const SizedBox(height: 100);
     }
   }
-
-  // Widget buildHomeFeatureProductHorizontalList(HomePresenter homeData) {
-  //   if (homeData.isFeaturedProductInitial == true &&
-  //       homeData.featuredProductList.length == 0) {
-  //     return Row(
-  //       children: [
-  //         Padding(
-  //             padding: const EdgeInsets.all(16.0),
-  //             child: ShimmerHelper().buildBasicShimmer(
-  //                 height: 120.0,
-  //                 width: (MediaQuery.of(context).size.width - 64) / 3)),
-  //         Padding(
-  //             padding: const EdgeInsets.all(16.0),
-  //             child: ShimmerHelper().buildBasicShimmer(
-  //                 height: 120.0,
-  //                 width: (MediaQuery.of(context).size.width - 64) / 3)),
-  //         Padding(
-  //             padding: const EdgeInsets.all(16.0),
-  //             child: ShimmerHelper().buildBasicShimmer(
-  //                 height: 120.0,
-  //                 width: (MediaQuery.of(context).size.width - 160) / 3)),
-  //       ],
-  //     );
-  //   } else if (homeData.featuredProductList.length > 0) {
-  //     return SingleChildScrollView(
-  //       child: SizedBox(
-  //         height: 248,
-  //         child: NotificationListener<ScrollNotification>(
-  //           onNotification: (ScrollNotification scrollInfo) {
-  //             if (scrollInfo.metrics.pixels ==
-  //                 scrollInfo.metrics.maxScrollExtent) {
-  //               homeData.fetchFeaturedProducts();
-  //             }
-  //             return true;
-  //           },
-  //           child: ListView.separated(
-  //             padding: const EdgeInsets.all(18.0),
-  //             separatorBuilder: (context, index) => SizedBox(
-  //               width: 14,
-  //             ),
-  //             itemCount: homeData.totalFeaturedProductData! >
-  //                     homeData.featuredProductList.length
-  //                 ? homeData.featuredProductList.length + 1
-  //                 : homeData.featuredProductList.length,
-  //             scrollDirection: Axis.horizontal,
-  //             //itemExtent: 135,
-
-  //             physics: const BouncingScrollPhysics(
-  //                 parent: AlwaysScrollableScrollPhysics()),
-  //             itemBuilder: (context, index) {
-  //               return (index == homeData.featuredProductList.length)
-  //                   ? SpinKitFadingFour(
-  //                       itemBuilder: (BuildContext context, int index) {
-  //                         return DecoratedBox(
-  //                           decoration: BoxDecoration(
-  //                             color: Colors.white,
-  //                           ),
-  //                         );
-  //                       },
-  //                     )
-  //                   : MiniProductCard(
-  //                       id: homeData.featuredProductList[index].id,
-  //                       slug: homeData.featuredProductList[index].slug,
-  //                       image:
-  //                           homeData.featuredProductList[index].thumbnail_image,
-  //                       name: homeData.featuredProductList[index].name,
-  //                       main_price:
-  //                           homeData.featuredProductList[index].main_price,
-  //                       stroked_price:
-  //                           homeData.featuredProductList[index].stroked_price,
-  //                       has_discount:
-  //                           homeData.featuredProductList[index].has_discount,
-  //                       is_wholesale:
-  //                           homeData.featuredProductList[index].isWholesale,
-  //                       discount: homeData.featuredProductList[index].discount,
-  //                     );
-  //             },
-  //           ),
-  //         ),
-  //       ),
-  //     );
-  //   } else {
-  //     return Container(
-  //         height: 100,
-  //         child: Center(
-  //             child: Text(
-  //           AppLocalizations.of(context)!.no_related_product,
-  //           style: TextStyle(color: MyTheme.font_grey),
-  //         )));
-  //   }
-  // }
-
 
   Widget buildHomeCarouselSlider(context, HomePresenter homeData) {
     if (homeData.isCarouselInitial && homeData.carouselImageList.length == 0) {
