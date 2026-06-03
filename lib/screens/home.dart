@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:active_ecommerce_flutter/ui_elements/auction_products_carousel.dart';
 import 'package:go_router/go_router.dart';
 
 class Home extends StatefulWidget {
@@ -490,12 +491,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget buildHotAuctionsCarousel(BuildContext context, HomePresenter homeData) {
     // Check if auction products exist
-    if (homeData.auctionProductList == null || homeData.auctionProductList!.isEmpty) {
+    if (homeData.allProductList == null || homeData.allProductList!.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return AuctionProductsCarousel(
-      products: homeData.auctionProductList!,
+      products: homeData.allProductList!,
       title: AppLocalizations.of(context)!.hot_auctions_ucf,
       onViewAll: () {
         // Navigate to all auctions page
