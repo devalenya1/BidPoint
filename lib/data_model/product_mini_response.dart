@@ -54,6 +54,17 @@ class Product {
     this.sales,
     this.links,
     this.isWholesale,
+    this.auction_end_date,
+    this.starting_bid,
+    this.min_bid_price,
+    this.highest_bid,
+    this.swipe_right,
+    this.swipe_left,
+    this.point_per_bid,
+    this.auction_start_date,
+    this.point_per_bid_custom,
+    this.point_multiplier_system,
+    this.auction_product,
   });
 
   int? id;
@@ -68,6 +79,18 @@ class Product {
   int? sales;
   Links? links;
   bool? isWholesale;
+  
+  String? auction_end_date;
+  String? starting_bid;
+  String? min_bid_price;
+  String? highest_bid;
+  String? swipe_right;
+  String? swipe_left;
+  String? point_per_bid;
+  String? auction_start_date;
+  String? point_per_bid_custom;
+  String? point_multiplier_system;
+  int? auction_product;
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json["id"],
@@ -82,6 +105,17 @@ class Product {
         sales: json["sales"],
         links: Links.fromJson(json["links"]),
         isWholesale: json["is_wholesale"],
+        auction_end_date: json["auction_end_date"],
+        starting_bid: json["starting_bid"],
+        min_bid_price: json["min_bid_price"],
+        highest_bid: json["highest_bid"],
+        swipe_right: json["swipe_right"],
+        swipe_left: json["swipe_left"],
+        point_per_bid: json["point_per_bid"],
+        auction_start_date: json["auction_start_date"],
+        point_per_bid_custom: json["point_per_bid_custom"],
+        point_multiplier_system: json["point_multiplier_system"],
+        auction_product: json["auction_product"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -96,7 +130,17 @@ class Product {
         "rating": rating,
         "sales": sales,
         "links": links!.toJson(),
-        "is_wholesale": isWholesale,
+        "is_wholesale": isWholesale,        "auction_end_date": auction_end_date,
+        "auction_start_date": auction_start_date,
+        "starting_bid": starting_bid,
+        "min_bid_price": min_bid_price,
+        "highest_bid": highest_bid,
+        "swipe_right": swipe_right,
+        "swipe_left": swipe_left,
+        "point_per_bid": point_per_bid,
+        "point_per_bid_custom": point_per_bid_custom,
+        "point_multiplier_system": point_multiplier_system,
+        "auction_product": auction_product,
       };
 }
 
