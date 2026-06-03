@@ -1,6 +1,6 @@
 # active_ecommerce_flutter
 
-This is the flutter mobile application for active ecommerce cms
+This is the flutter mobile application for Bidpoint
 
 ## Getting Started
 

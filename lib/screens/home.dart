@@ -7,9 +7,6 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/presenter/home_presenter.dart';
 import 'package:active_ecommerce_flutter/screens/category_products.dart';
 import 'package:active_ecommerce_flutter/screens/filter.dart';
-import 'package:active_ecommerce_flutter/screens/flash_deal_list.dart';
-import 'package:active_ecommerce_flutter/screens/todays_deal_products.dart';
-import 'package:active_ecommerce_flutter/screens/top_sellers.dart';
 import 'package:active_ecommerce_flutter/ui_elements/mini_product_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -99,55 +96,55 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             slivers: <Widget>[
                               SliverList(
                                 delegate: SliverChildListDelegate([
-                                  AppConfig.purchase_code == ""
-                                      ? Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            9.0,
-                                            16.0,
-                                            9.0,
-                                            0.0,
-                                          ),
-                                          child: Container(
-                                            height: 140,
-                                            color: Colors.black,
-                                            child: Stack(
-                                              children: [
-                                                Positioned(
-                                                    left: 20,
-                                                    top: 0,
-                                                    child: AnimatedBuilder(
-                                                        animation: homeData
-                                                            .pirated_logo_animation,
-                                                        builder:
-                                                            (context, child) {
-                                                          return Image.asset(
-                                                            "assets/pirated_square.png",
-                                                            height: homeData
-                                                                .pirated_logo_animation
-                                                                .value,
-                                                            color: Colors.white,
-                                                          );
-                                                        })),
-                                                Center(
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 24.0,
-                                                            left: 24,
-                                                            right: 24),
-                                                    child: Text(
-                                                      "This is a pirated app. Do not use this. It may have security issues.",
-                                                      style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 18),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        )
-                                      : Container(),
+                                  // AppConfig.purchase_code == ""
+                                  //     ? Padding(
+                                  //         padding: const EdgeInsets.fromLTRB(
+                                  //           9.0,
+                                  //           16.0,
+                                  //           9.0,
+                                  //           0.0,
+                                  //         ),
+                                  //         child: Container(
+                                  //           height: 140,
+                                  //           color: Colors.black,
+                                  //           child: Stack(
+                                  //             children: [
+                                  //               Positioned(
+                                  //                   left: 20,
+                                  //                   top: 0,
+                                  //                   child: AnimatedBuilder(
+                                  //                       animation: homeData
+                                  //                           .pirated_logo_animation,
+                                  //                       builder:
+                                  //                           (context, child) {
+                                  //                         return Image.asset(
+                                  //                           "assets/pirated_square.png",
+                                  //                           height: homeData
+                                  //                               .pirated_logo_animation
+                                  //                               .value,
+                                  //                           color: Colors.white,
+                                  //                         );
+                                  //                       })),
+                                  //               Center(
+                                  //                 child: Padding(
+                                  //                   padding:
+                                  //                       const EdgeInsets.only(
+                                  //                           top: 24.0,
+                                  //                           left: 24,
+                                  //                           right: 24),
+                                  //                   child: Text(
+                                  //                     "This is a pirated app. Do not use this. It may have security issues.",
+                                  //                     style: TextStyle(
+                                  //                         color: Colors.white,
+                                  //                         fontSize: 18),
+                                  //                   ),
+                                  //                 ),
+                                  //               ),
+                                  //             ],
+                                  //           ),
+                                  //         ),
+                                  //       )
+                                  //     : Container(),
                                   buildHomeCarouselSlider(context, homeData),
                                   Padding(
                                     padding: const EdgeInsets.fromLTRB(
@@ -156,18 +153,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       18.0,
                                       0.0,
                                     ),
-                                    // child: buildHomeMenuRow1(context, homeData),
                                   ),
-                                  // buildHomeBannerOne(context, homeData),
-                                  // Padding(
-                                  //   padding: const EdgeInsets.fromLTRB(
-                                  //     18.0,
-                                  //     0.0,
-                                  //     18.0,
-                                  //     0.0,
-                                  //   ),
-                                  //   child: buildHomeMenuRow2(context),
-                                  // ),
+                                  
                                 ]),
                               ),
                               SliverList(
@@ -202,59 +189,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       context, homeData),
                                 ),
                               ),
-                              // SliverList(
-                              //   delegate: SliverChildListDelegate([
-                              //     Container(
-                              //       color: MyTheme.accent_color,
-                              //       child: Stack(
-                              //         children: [
-                              //           Container(
-                              //             height: 180,
-                              //             width: double.infinity,
-                              //             child: Row(
-                              //               mainAxisAlignment:
-                              //                   MainAxisAlignment.end,
-                              //               children: [
-                              //                 Image.asset(
-                              //                     "assets/background_1.png")
-                              //               ],
-                              //             ),
-                              //           ),
-                              //           Column(
-                              //             crossAxisAlignment:
-                              //                 CrossAxisAlignment.start,
-                              //             children: [
-                              //               Padding(
-                              //                 padding: const EdgeInsets.only(
-                              //                     top: 10.0,
-                              //                     right: 18.0,
-                              //                     left: 18.0),
-                              //                 child: Text(
-                              //                   AppLocalizations.of(context)!
-                              //                       .featured_products_ucf,
-                              //                   style: TextStyle(
-                              //                       color: Colors.white,
-                              //                       fontSize: 18,
-                              //                       fontWeight:
-                              //                           FontWeight.w700),
-                              //                 ),
-                              //               ),
-                              //               buildHomeFeatureProductHorizontalList(
-                              //                   homeData)
-                              //             ],
-                              //           ),
-                              //         ],
-                              //       ),
-                              //     ),
-                              //   ]),
-                              // ),
-                              SliverList(
-                                delegate: SliverChildListDelegate(
-                                  [
-                                    buildHomeBannerTwo(context, homeData),
-                                  ],
-                                ),
-                              ),
+                              
                               SliverList(
                                 delegate: SliverChildListDelegate([
                                   Padding(
@@ -308,7 +243,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       children: [
                                         Text(
                                           AppLocalizations.of(context)!
-                                              .all_products_ucf,
+                                              .ending_soon_ucf,
                                           style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.w700),
@@ -346,7 +281,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       children: [
                                         Text(
                                           AppLocalizations.of(context)!
-                                              .all_products_ucf,
+                                              .upcoming_ucf,
                                           style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.w700),
@@ -724,192 +659,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   //   }
   // }
 
-  // Widget buildHomeMenuRow1(BuildContext context, HomePresenter homeData) {
-  //   return Row(
-  //     children: [
-  //       if (homeData.isTodayDeal)
-  //         Flexible(
-  //           flex: 1,
-  //           fit: FlexFit.tight,
-  //           child: GestureDetector(
-  //             onTap: () {
-  //               Navigator.push(context, MaterialPageRoute(builder: (context) {
-  //                 return TodaysDealProducts();
-  //               }));
-  //             },
-  //             child: Container(
-  //               height: 90,
-  //               decoration: BoxDecorations.buildBoxDecoration_1(),
-  //               child: Column(
-  //                 children: [
-  //                   Padding(
-  //                     padding: const EdgeInsets.all(16.0),
-  //                     child: Container(
-  //                         height: 20,
-  //                         width: 20,
-  //                         child: Image.asset("assets/todays_deal.png")),
-  //                   ),
-  //                   Text(AppLocalizations.of(context)!.todays_deal_ucf,
-  //                       textAlign: TextAlign.center,
-  //                       style: TextStyle(
-  //                           color: Color.fromRGBO(132, 132, 132, 1),
-  //                           fontWeight: FontWeight.w300)),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       if (homeData.isTodayDeal && homeData.isFlashDeal) SizedBox(width: 14.0),
-  //       if (homeData.isFlashDeal)
-  //         Flexible(
-  //           flex: 1,
-  //           fit: FlexFit.tight,
-  //           child: GestureDetector(
-  //             onTap: () {
-  //               Navigator.push(context, MaterialPageRoute(builder: (context) {
-  //                 return FlashDealList();
-  //               }));
-  //             },
-  //             child: Container(
-  //               height: 90,
-  //               decoration: BoxDecorations.buildBoxDecoration_1(),
-  //               child: Column(
-  //                 children: [
-  //                   Padding(
-  //                     padding: const EdgeInsets.all(16.0),
-  //                     child: Container(
-  //                         height: 20,
-  //                         width: 20,
-  //                         child: Image.asset("assets/flash_deal.png")),
-  //                   ),
-  //                   Text(AppLocalizations.of(context)!.flash_deal_ucf,
-  //                       textAlign: TextAlign.center,
-  //                       style: TextStyle(
-  //                           color: Color.fromRGBO(132, 132, 132, 1),
-  //                           fontWeight: FontWeight.w300)),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         )
-  //     ],
-  //   );
-  // }
-
-  // Widget buildHomeMenuRow2(BuildContext context) {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //     children: [
-  //       /* Flexible(
-  //         flex: 1,
-  //         fit: FlexFit.tight,
-  //         child: GestureDetector(
-  //           onTap: () {
-  //             Navigator.push(context, MaterialPageRoute(builder: (context) {
-  //               return CategoryList(
-  //                 is_top_category: true,
-  //               );
-  //             }));
-  //           },
-  //           child: Container(
-  //             height: 90,
-  //             width: MediaQuery.of(context).size.width / 3 - 4,
-  //             decoration: BoxDecorations.buildBoxDecoration_1(),
-  //             child: Column(
-  //               children: [
-  //                 Padding(
-  //                   padding: const EdgeInsets.all(16.0),
-  //                   child: Container(
-  //                       height: 20,
-  //                       width: 20,
-  //                       child: Image.asset("assets/top_categories.png")),
-  //                 ),
-  //                 Text(
-  //                   AppLocalizations.of(context).home_screen_top_categories,
-  //                   textAlign: TextAlign.center,
-  //                   style: TextStyle(
-  //                       color: Color.fromRGBO(132, 132, 132, 1),
-  //                       fontWeight: FontWeight.w300),
-  //                 )
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ),*/
-  //       Flexible(
-  //         flex: 1,
-  //         fit: FlexFit.tight,
-  //         child: GestureDetector(
-  //           onTap: () {
-  //             Navigator.push(context, MaterialPageRoute(builder: (context) {
-  //               return Filter(
-  //                 selected_filter: "brands",
-  //               );
-  //             }));
-  //           },
-  //           child: Container(
-  //             height: 90,
-  //             width: MediaQuery.of(context).size.width / 3 - 4,
-  //             decoration: BoxDecorations.buildBoxDecoration_1(),
-  //             child: Column(
-  //               children: [
-  //                 Padding(
-  //                   padding: const EdgeInsets.all(16.0),
-  //                   child: Container(
-  //                       height: 20,
-  //                       width: 20,
-  //                       child: Image.asset("assets/brands.png")),
-  //                 ),
-  //                 Text(AppLocalizations.of(context)!.brands_ucf,
-  //                     textAlign: TextAlign.center,
-  //                     style: TextStyle(
-  //                         color: Color.fromRGBO(132, 132, 132, 1),
-  //                         fontWeight: FontWeight.w300)),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //       if (vendor_system.$)
-  //         SizedBox(
-  //           width: 10,
-  //         ),
-  //       if (vendor_system.$)
-  //         Flexible(
-  //           flex: 1,
-  //           fit: FlexFit.tight,
-  //           child: GestureDetector(
-  //             onTap: () {
-  //               Navigator.push(context, MaterialPageRoute(builder: (context) {
-  //                 return TopSellers();
-  //               }));
-  //             },
-  //             child: Container(
-  //               height: 90,
-  //               width: MediaQuery.of(context).size.width / 3 - 4,
-  //               decoration: BoxDecorations.buildBoxDecoration_1(),
-  //               child: Column(
-  //                 children: [
-  //                   Padding(
-  //                     padding: const EdgeInsets.all(16.0),
-  //                     child: Container(
-  //                         height: 20,
-  //                         width: 20,
-  //                         child: Image.asset("assets/top_sellers.png")),
-  //                   ),
-  //                   Text(AppLocalizations.of(context)!.top_sellers_ucf,
-  //                       textAlign: TextAlign.center,
-  //                       style: TextStyle(
-  //                           color: Color.fromRGBO(132, 132, 132, 1),
-  //                           fontWeight: FontWeight.w300)),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //     ],
-  //   );
-  // }
 
   Widget buildHomeCarouselSlider(context, HomePresenter homeData) {
     if (homeData.isCarouselInitial && homeData.carouselImageList.length == 0) {
@@ -990,142 +739,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             },
           );
         }).toList(),
-      );
-    } else if (!homeData.isCarouselInitial &&
-        homeData.carouselImageList.length == 0) {
-      return Container(
-          height: 100,
-          child: Center(
-              child: Text(
-            AppLocalizations.of(context)!.no_carousel_image_found,
-            style: TextStyle(color: MyTheme.font_grey),
-          )));
-    } else {
-      // should not be happening
-      return Container(
-        height: 100,
-      );
-    }
-  }
-
-  Widget buildHomeBannerOne(context, HomePresenter homeData) {
-    if (homeData.isBannerOneInitial &&
-        homeData.bannerOneImageList.length == 0) {
-      return Padding(
-          padding:
-              const EdgeInsets.only(left: 18.0, right: 18, top: 10, bottom: 20),
-          child: ShimmerHelper().buildBasicShimmer(height: 120));
-    } else if (homeData.bannerOneImageList.length > 0) {
-      return Padding(
-        padding: app_language_rtl.$!
-            ? const EdgeInsets.only(right: 9.0)
-            : const EdgeInsets.only(left: 9.0),
-        child: CarouselSlider(
-          options: CarouselOptions(
-              aspectRatio: 270 / 120,
-              viewportFraction: .75,
-              initialPage: 0,
-              padEnds: false,
-              enableInfiniteScroll: false,
-              reverse: false,
-              autoPlay: true,
-              onPageChanged: (index, reason) {
-                // setState(() {
-                //   homeData.current_slider = index;
-                // });
-              }),
-          items: homeData.bannerOneImageList.map((i) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Padding(
-                  padding: const EdgeInsets.only(
-                      left: 9.0, right: 9, top: 20.0, bottom: 20),
-                  child: Container(
-                    //color: Colors.amber,
-                    width: double.infinity,
-                    child: InkWell(
-                      onTap: () {
-                        var url =
-                            i.url?.split(AppConfig.DOMAIN_PATH).last ?? "";
-                        print(url);
-                        GoRouter.of(context).go(url);
-                      },
-                      child: AIZImage.radiusImage(i.photo, 6),
-                    ),
-                  ),
-                );
-              },
-            );
-          }).toList(),
-        ),
-      );
-    } else if (!homeData.isBannerOneInitial &&
-        homeData.bannerOneImageList.length == 0) {
-      return Container(
-          height: 100,
-          child: Center(
-              child: Text(
-            AppLocalizations.of(context)!.no_carousel_image_found,
-            style: TextStyle(color: MyTheme.font_grey),
-          )));
-    } else {
-      // should not be happening
-      return Container(
-        height: 100,
-      );
-    }
-  }
-
-  Widget buildHomeBannerTwo(context, HomePresenter homeData) {
-    if (homeData.isBannerTwoInitial &&
-        homeData.bannerTwoImageList.length == 0) {
-      return Padding(
-          padding:
-              const EdgeInsets.only(left: 18.0, right: 18, top: 10, bottom: 10),
-          child: ShimmerHelper().buildBasicShimmer(height: 120));
-    } else if (homeData.bannerTwoImageList.length > 0) {
-      return Padding(
-        padding: app_language_rtl.$!
-            ? const EdgeInsets.only(right: 9.0)
-            : const EdgeInsets.only(left: 9.0),
-        child: CarouselSlider(
-          options: CarouselOptions(
-              aspectRatio: 270 / 120,
-              viewportFraction: 0.7,
-              enableInfiniteScroll: true,
-              reverse: false,
-              autoPlay: true,
-              autoPlayInterval: Duration(seconds: 5),
-              autoPlayAnimationDuration: Duration(milliseconds: 1000),
-              autoPlayCurve: Curves.easeInExpo,
-              enlargeCenterPage: false,
-              scrollDirection: Axis.horizontal,
-              onPageChanged: (index, reason) {
-                // setState(() {
-                //   homeData.current_slider = index;
-                // });
-              }),
-          items: homeData.bannerTwoImageList.map((i) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Padding(
-                  padding: const EdgeInsets.only(
-                      left: 9.0, right: 9, top: 20.0, bottom: 10),
-                  child: Container(
-                      width: double.infinity,
-                      child: InkWell(
-                          onTap: () {
-                            var url =
-                                i.url?.split(AppConfig.DOMAIN_PATH).last ?? "";
-                            print(url);
-                            GoRouter.of(context).go(url);
-                          },
-                          child: AIZImage.radiusImage(i.photo, 6))),
-                );
-              },
-            );
-          }).toList(),
-        ),
       );
     } else if (!homeData.isCarouselInitial &&
         homeData.carouselImageList.length == 0) {
