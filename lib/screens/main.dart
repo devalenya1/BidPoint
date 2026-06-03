@@ -193,7 +193,7 @@ class _MainState extends State<Main> {
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Image.asset(
-                      "assets/points.png",  // Make sure this image exists in assets folder
+                      "assets/crown.png",  // Make sure this image exists in assets folder
                       color: _currentIndex == 2
                           ? MyTheme.accent_color
                           : const Color.fromRGBO(153, 153, 153, 1),
@@ -208,7 +208,7 @@ class _MainState extends State<Main> {
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: Image.asset(
-                      "assets/plus.png",  // Make sure this image exists in assets folder
+                      "assets/task-square.png",  // Make sure this image exists in assets folder
                       color: _currentIndex == 3
                           ? MyTheme.accent_color
                           : const Color.fromRGBO(153, 153, 153, 1),
