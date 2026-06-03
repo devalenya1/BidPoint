@@ -72,8 +72,8 @@ class _MainState extends State<Main> {
         slug: "",
         is_base_category: true,
       ),
-      PointsPage()
-      ActivityPage()
+      PointsPage(),
+      ActivityPage(),
       // Cart(
       //   has_bottomnav: true,
       //   from_navigation: true,
