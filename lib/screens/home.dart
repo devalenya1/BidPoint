@@ -190,7 +190,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       context, homeData),
                                 ),
                               ),
-                              
                               SliverList(
                                 delegate: SliverChildListDelegate([
                                   Padding(
@@ -214,25 +213,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       ],
                                     ),
                                   ),
-                                  // SingleChildScrollView(
-                                  //   child: Column(
-                                  //     children: [
-                                  //       buildHomeAllProducts2(
-                                  //           context, homeData),
-                                  //     ],
-                                  //   ),
-                                  // ),
-                                  // Add this after your existing slivers
-                                  SliverToBoxAdapter(
-                                    child: buildHotAuctionsCarousel(context, homeData),
+                                  SingleChildScrollView(
+                                    child: Column(
+                                      children: [
+                                        buildHomeAllProducts2(
+                                            context, homeData),
+                                      ],
+                                    ),
                                   ),
+                                  // Add this after your existing slivers
+                                  // SliverToBoxAdapter(
+                                  //   child: buildHotAuctionsCarousel(context, homeData),
+                                  // ),
                                   Container(
                                     height: 80,
                                   )
                                 ]),
                               ),
-
-
                               SliverList(
                                 delegate: SliverChildListDelegate([
                                   Padding(
@@ -269,8 +266,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   )
                                 ]),
                               ),
-
-
                               SliverList(
                                 delegate: SliverChildListDelegate([
                                   Padding(
@@ -453,57 +448,57 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
-  // Widget buildHomeAllProducts2(context, HomePresenter homeData) {
-  //   // if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
-  //   if (homeData.isAllProductInitial) {
-  //     return SingleChildScrollView(
-  //         child: ShimmerHelper().buildProductGridShimmer(
-  //             scontroller: homeData.allProductScrollController));
-  //   } else if (homeData.allProductList.length > 0) {
-  //     return MasonryGridView.count(
-  //         crossAxisCount: 2,
-  //         mainAxisSpacing: 14,
-  //         crossAxisSpacing: 14,
-  //         itemCount: homeData.allProductList.length,
-  //         shrinkWrap: true,
-  //         padding: EdgeInsets.only(top: 20.0, bottom: 10, left: 18, right: 18),
-  //         physics: NeverScrollableScrollPhysics(),
-  //         itemBuilder: (context, index) {
-  //           return ProductCard(
-  //             id: homeData.allProductList[index].id,
-  //             slug: homeData.allProductList[index].slug,
-  //             image: homeData.allProductList[index].thumbnail_image,
-  //             name: homeData.allProductList[index].name,
-  //             main_price: homeData.allProductList[index].main_price,
-  //             stroked_price: homeData.allProductList[index].stroked_price,
-  //             has_discount: homeData.allProductList[index].has_discount,
-  //             discount: homeData.allProductList[index].discount,
-  //             is_wholesale: homeData.allProductList[index].isWholesale,
-  //           );
-  //         });
-  //   } else if (homeData.totalAllProductData == 0) {
-  //     return Center(
-  //         child: Text(AppLocalizations.of(context)!.no_product_is_available));
-  //   } else {
-  //     return Container(); // should never be happening
-  //   }
-  // }
-
-  Widget buildHotAuctionsCarousel(BuildContext context, HomePresenter homeData) {
-    // Check if auction products exist
-    if (homeData.allProductList == null || homeData.allProductList!.isEmpty) {
-      return const SizedBox.shrink();
+  Widget buildHomeAllProducts2(context, HomePresenter homeData) {
+    // if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
+    if (homeData.isAllProductInitial) {
+      return SingleChildScrollView(
+          child: ShimmerHelper().buildProductGridShimmer(
+              scontroller: homeData.allProductScrollController));
+    } else if (homeData.allProductList.length > 0) {
+      return MasonryGridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 14,
+          crossAxisSpacing: 14,
+          itemCount: homeData.allProductList.length,
+          shrinkWrap: true,
+          padding: EdgeInsets.only(top: 20.0, bottom: 10, left: 18, right: 18),
+          physics: NeverScrollableScrollPhysics(),
+          itemBuilder: (context, index) {
+            return ProductCard(
+              id: homeData.allProductList[index].id,
+              slug: homeData.allProductList[index].slug,
+              image: homeData.allProductList[index].thumbnail_image,
+              name: homeData.allProductList[index].name,
+              main_price: homeData.allProductList[index].main_price,
+              stroked_price: homeData.allProductList[index].stroked_price,
+              has_discount: homeData.allProductList[index].has_discount,
+              discount: homeData.allProductList[index].discount,
+              is_wholesale: homeData.allProductList[index].isWholesale,
+            );
+          });
+    } else if (homeData.totalAllProductData == 0) {
+      return Center(
+          child: Text(AppLocalizations.of(context)!.no_product_is_available));
+    } else {
+      return Container(); // should never be happening
     }
-
-    return AuctionProductsCarousel(
-      products: homeData.allProductList!,
-      title: AppLocalizations.of(context)!.hot_auctions_ucf,
-      onViewAll: () {
-        // Navigate to all auctions page
-        // Navigator.push(context, MaterialPageRoute(builder: (context) => AllAuctionsPage()));
-      },
-    );
   }
+
+  // Widget buildHotAuctionsCarousel(BuildContext context, HomePresenter homeData) {
+  //   // Check if auction products exist
+  //   if (homeData.allProductList == null || homeData.allProductList!.isEmpty) {
+  //     return const SizedBox.shrink();
+  //   }
+
+  //   return AuctionProductsCarousel(
+  //     products: homeData.allProductList!,
+  //     title: AppLocalizations.of(context)!.hot_auctions_ucf,
+  //     onViewAll: () {
+  //       // Navigate to all auctions page
+  //       // Navigator.push(context, MaterialPageRoute(builder: (context) => AllAuctionsPage()));
+  //     },
+  //   );
+  // }
 
   Widget buildHomeFeaturedCategories(context, HomePresenter homeData) {
     if (homeData.isCategoryInitial && homeData.featuredCategoryList.length == 0) {
