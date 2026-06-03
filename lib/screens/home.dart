@@ -359,7 +359,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
-  
   Widget buildHomeEndingSoon(context, HomePresenter homeData) {
     if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
       return SingleChildScrollView(
@@ -402,8 +401,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       return Container(); // should never be happening
     }
   }
-
-
 
   Widget buildHomeUpcoming(context, HomePresenter homeData) {
     if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
