@@ -572,7 +572,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               color: const Color.fromRGBO(245, 247, 250, 1),
                               child: const Icon(
                                 Icons.category,
-                                size: 24,
+                                size: 25,
                                 color: Color.fromRGBO(107, 115, 119, 1),
                               ),
                             );
