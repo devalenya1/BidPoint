@@ -11,7 +11,7 @@ final List<Messenger> messengerList = [
       image: "dummy_assets/s1.jpg",
       name: "Fashion Vendor",
      ),
-  Messenger(id: "2", image: "assets/login_registration_form_logo.png", name: "ACTIVE ECOMMERCE CMS",),
+  Messenger(id: "2", image: "assets/login_registration_form_logo.png", name: "BidPoint",),
   Messenger(
       id: "3",
       image: "dummy_assets/s3.jpg",

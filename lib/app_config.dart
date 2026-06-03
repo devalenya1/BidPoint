@@ -6,9 +6,9 @@ class AppConfig {
   static String app_name = "BidPoint"; //this shows in the splash screen
 
   static String purchase_code =
-      "xxxxxxx"; //enter your purchase code for the app from codecanyon
+      "9a663b28-9ec7-4567-b05b-849cd4461fa44"; //enter your purchase code for the app from codecanyon
   static String system_key =
-      r"xxxxxx"; //enter your purchase code for the app from codecanyon
+      r"9a663b28-9ec7-4567-b05b-849cd4461fa44"; //enter your purchase code for the app from codecanyon
 
   //Default language config
   static String default_language = "en";
@@ -18,7 +18,7 @@ class AppConfig {
   //configure this
   static const bool HTTPS = true;
 
-  static const DOMAIN_PATH = "bidpoint.evergreenlifestyle.name.ng/install"; //localhost
+  static const DOMAIN_PATH = "bidpoint.evergreenlifestyle.name.ng/install";
 
   //do not configure these below
   static const String API_ENDPATH = "api/v2";
