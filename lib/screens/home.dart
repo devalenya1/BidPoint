@@ -185,7 +185,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               ),
                               SliverToBoxAdapter(
                                 child: SizedBox(
-                                  height: 154,
+                                  height: 80,
                                   child: buildHomeFeaturedCategories(
                                       context, homeData),
                                 ),
