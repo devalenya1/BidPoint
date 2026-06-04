@@ -255,7 +255,7 @@
     "placeholders": {
       "points": {
         "type": "int",
-        "example": 10
+        "example": "10"
       }
     }
   },
