@@ -188,6 +188,10 @@
   "recommended_ucf": "Recommended",
   "a_z_ucf": "A-Z",
   "something_went_wrong": "Something went wrong",
+  "notifications_ucf": "Notifications",
+  "@notifications_ucf": {
+    "description": "Notifications page title"
+  },
 
   "search_anything": "Search anything ...",
   "no_carousel_image_found": "No carousel image found",
