@@ -425,7 +425,7 @@ class _PointsPageState extends State<PointsPage> {
                     ),
                     const SizedBox(height: 4),
                     Row(
-                      crossAxisAlignment: Baseline.wrap,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '$_userPoints',
