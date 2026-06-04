@@ -1,0 +1,625 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:active_ecommerce_flutter/my_theme.dart';
+
+class PointsHistoryPage extends StatefulWidget {
+  const PointsHistoryPage({Key? key}) : super(key: key);
+
+  @override
+  State<PointsHistoryPage> createState() => _PointsHistoryPageState();
+}
+
+class _PointsHistoryPageState extends State<PointsHistoryPage> {
+  // Demo user data
+  String _userName = "John Doe";
+  String _userAvatar = "";
+  int _pointsBalance = 1250;
+  String _selectedFilter = 'All'; // All, Today, 7, 30
+  
+  // Demo points logs data
+  List<Map<String, dynamic>> _allPointsLogs = [];
+  List<Map<String, dynamic>> _filteredPointsLogs = [];
+  Map<String, int> _monthlyPoints = {};
+  List<String> _months = [];
+  int _selectedMonthIndex = 0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadDemoData();
+  }
+  
+  void _loadDemoData() {
+    // Demo points logs
+    _allPointsLogs = [
+      {
+        'id': 1,
+        'points': 500,
+        'type': 'earned',
+        'user': 'Sarah Johnson',
+        'came_from': 'Sarah Johnson',
+        'status': 1,
+        'date': DateTime(2024, 5, 15, 14, 30),
+      },
+      {
+        'id': 2,
+        'points': 100,
+        'type': 'earned',
+        'user': 'System',
+        'came_from': 'Daily Bonus',
+        'status': 1,
+        'date': DateTime(2024, 5, 14, 9, 15),
+      },
+      {
+        'id': 3,
+        'points': 50,
+        'type': 'spent',
+        'user': 'System',
+        'came_from': 'Bid placed on product',
+        'status': 1,
+        'date': DateTime(2024, 5, 13, 20, 0),
+      },
+      {
+        'id': 4,
+        'points': 200,
+        'type': 'earned',
+        'user': 'Mike Thompson',
+        'came_from': 'Mike Thompson',
+        'status': 1,
+        'date': DateTime(2024, 4, 28, 11, 45),
+      },
+      {
+        'id': 5,
+        'points': 75,
+        'type': 'earned',
+        'user': 'System',
+        'came_from': 'Weekly challenge',
+        'status': 1,
+        'date': DateTime(2024, 4, 20, 16, 20),
+      },
+      {
+        'id': 6,
+        'points': 30,
+        'type': 'spent',
+        'user': 'System',
+        'came_from': 'Bid placed',
+        'status': 0,
+        'date': DateTime(2024, 3, 15, 10, 0),
+      },
+      {
+        'id': 7,
+        'points': 300,
+        'type': 'earned',
+        'user': 'System',
+        'came_from': 'Special promotion',
+        'status': 1,
+        'date': DateTime(2024, 3, 10, 8, 30),
+      },
+      {
+        'id': 8,
+        'points': 150,
+        'type': 'earned',
+        'user': 'Emily Davis',
+        'came_from': 'Emily Davis',
+        'status': 1,
+        'date': DateTime(2024, 2, 25, 13, 0),
+      },
+      {
+        'id': 9,
+        'points': 80,
+        'type': 'earned',
+        'user': 'James Wilson',
+        'came_from': 'James Wilson',
+        'status': 1,
+        'date': DateTime(2024, 2, 18, 9, 45),
+      },
+    ];
+    
+    _applyFilter();
+    _calculateMonthlyPoints();
+  }
+  
+  void _applyFilter() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    setState(() {
+      switch (_selectedFilter) {
+        case 'Today':
+          _filteredPointsLogs = _allPointsLogs.where((log) {
+            final logDate = log['date'] as DateTime;
+            return logDate.year == today.year && 
+                   logDate.month == today.month && 
+                   logDate.day == today.day;
+          }).toList();
+          break;
+        case '7':
+          final sevenDaysAgo = today.subtract(const Duration(days: 7));
+          _filteredPointsLogs = _allPointsLogs.where((log) {
+            final logDate = log['date'] as DateTime;
+            return logDate.isAfter(sevenDaysAgo) || logDate.isAtSameMomentAs(sevenDaysAgo);
+          }).toList();
+          break;
+        case '30':
+          final thirtyDaysAgo = today.subtract(const Duration(days: 30));
+          _filteredPointsLogs = _allPointsLogs.where((log) {
+            final logDate = log['date'] as DateTime;
+            return logDate.isAfter(thirtyDaysAgo) || logDate.isAtSameMomentAs(thirtyDaysAgo);
+          }).toList();
+          break;
+        default:
+          _filteredPointsLogs = List.from(_allPointsLogs);
+      }
+    });
+  }
+  
+  void _calculateMonthlyPoints() {
+    final Map<String, int> monthlyTemp = {};
+    for (var log in _allPointsLogs) {
+      final date = log['date'] as DateTime;
+      final monthKey = _formatMonthYear(date);
+      final points = log['points'] as int;
+      final isEarned = log['type'] == 'earned';
+      monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (isEarned ? points : -points);
+    }
+    
+    _monthlyPoints = monthlyTemp;
+    _months = _monthlyPoints.keys.toList();
+    _months.sort((a, b) {
+      final dateA = DateTime.parse('01 $a');
+      final dateB = DateTime.parse('01 $b');
+      return dateB.compareTo(dateA);
+    });
+    
+    if (_months.isNotEmpty) {
+      _selectedMonthIndex = 0;
+    }
+  }
+  
+  String _formatMonthYear(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.year}';
+  }
+  
+  String _getUserDisplay(Map<String, dynamic> log) {
+    if (log['came_from'] != null && log['came_from'].toString().isNotEmpty) {
+      return log['came_from'];
+    }
+    return log['user'];
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.referral_points,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Profile Card
+                  _buildProfileCard(),
+                  
+                  // Filter Tabs
+                  _buildFilterTabs(),
+                  
+                  // Points History Section
+                  _buildPointsHistorySection(),
+                  
+                  // Monthly Points Balance Section
+                  if (_months.isNotEmpty) 
+                    _buildMonthlySection(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildProfileCard() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 55,
+            height: 55,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: _userAvatar.isNotEmpty
+                  ? Image.network(
+                      _userAvatar,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.person,
+                          size: 30,
+                          color: Color(0xFF94A3B8),
+                        );
+                      },
+                    )
+                  : const Icon(
+                      Icons.person,
+                      size: 30,
+                      color: Color(0xFF94A3B8),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // User Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _userName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.points_balance,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_pointsBalance.toString()} ${AppLocalizations.of(context)!.points_ucf}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildFilterTabs() {
+    final filters = ['All', 'Today', '7', '30'];
+    final filterLabels = {
+      'All': AppLocalizations.of(context)!.all_ucf,
+      'Today': AppLocalizations.of(context)!.today_ucf,
+      '7': AppLocalizations.of(context)!.last_7_days,
+      '30': AppLocalizations.of(context)!.last_30_days,
+    };
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: filters.map((filter) {
+            final isActive = _selectedFilter == filter;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedFilter = filter;
+                  _applyFilter();
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isActive ? MyTheme.accent_color : const Color(0xFFF6F6F6),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Text(
+                  filterLabels[filter] ?? filter,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isActive ? Colors.white : const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildPointsHistorySection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.points_history,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          if (_filteredPointsLogs.isEmpty)
+            _buildEmptyState()
+          else
+            Column(
+              children: _filteredPointsLogs.map((log) => _buildHistoryCard(log)).toList(),
+            ),
+          
+          // Pagination (demo)
+          if (_filteredPointsLogs.isNotEmpty)
+            _buildPagination(),
+          
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildHistoryCard(Map<String, dynamic> log) {
+    final date = log['date'] as DateTime;
+    final pointsValue = log['points'] as int;
+    final isEarned = log['type'] == 'earned';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF2F8)),
+      ),
+      child: Column(
+        children: [
+          _buildHistoryRow(
+            AppLocalizations.of(context)!.date_ucf,
+            '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}',
+          ),
+          _buildHistoryRow(
+            AppLocalizations.of(context)!.user_ucf,
+            _getUserDisplay(log),
+          ),
+          _buildHistoryRow(
+            AppLocalizations.of(context)!.points_ucf,
+            '${isEarned ? '+' : '-'}${pointsValue.toString()} ${AppLocalizations.of(context)!.pts_ucf}',
+            isHighlighted: true,
+            highlightColor: MyTheme.accent_color,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildHistoryRow(String label, String value, {
+    bool isHighlighted = false,
+    Color? highlightColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF666666),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
+              color: isHighlighted 
+                  ? (highlightColor ?? const Color(0xFF10B981))
+                  : const Color(0xFF333333),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _getMonthAbbreviation(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+  
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            '⭐',
+            style: TextStyle(fontSize: 32),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppLocalizations.of(context)!.no_points_history_found,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppLocalizations.of(context)!.share_referral_to_earn_points,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF94A3B8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildMonthlySection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.monthly_points_balance,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Month Selection Tabs
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_months.length, (index) {
+                final isActive = _selectedMonthIndex == index;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedMonthIndex = index;
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isActive ? MyTheme.accent_color : Colors.transparent,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Text(
+                      _months[index],
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isActive ? Colors.white : const Color(0xFF666666),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Summary Card for selected month
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFEEF2F8)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.total_points_earned,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${(_monthlyPoints[_months[_selectedMonthIndex]] ?? 0).toString()} ${AppLocalizations.of(context)!.points_ucf}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: MyTheme.accent_color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildPagination() {
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Text(
+              '1',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: MyTheme.accent_color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

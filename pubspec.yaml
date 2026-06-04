@@ -39,6 +39,7 @@ dependencies:
   toast: ^0.3.0
   shared_preferences: ^2.0.8
   dotted_line: ^3.0.1
+  share_plus: ^7.0.0
   timeline_list: ^0.0.3
   webview_flutter: ^4.2.0
   clipboard: ^0.1.2+8

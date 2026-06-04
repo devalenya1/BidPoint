@@ -330,7 +330,41 @@
   "withdraw_request": "Withdraw Request",
   "withdraw_request_history": "Withdraw Request History",
   "no_withdrawal_requests_found": "No withdrawal requests found",
-
+  "points_history": "Points History",
+  "cash_earnings_history": "Cash Earnings History",
+  "no_points_history": "No points history found",
+  "no_cash_earnings": "No cash earnings found",
+  "share_referral_subject": "Join me on BidPoint",
+  "share_referral_message": "Join me on BidPoint and get rewards!\n\nUse my referral code: {code}\n\nSign up here: {link}",
+  
+  "@share_referral_message": {
+    "description": "Share referral message",
+    "placeholders": {
+      "link": {
+        "type": "String",
+        "example": "https://bidpoint.com/ref/BIDPOINT2024"
+      },
+      "code": {
+        "type": "String",
+        "example": "BIDPOINT2024"
+      }
+    }
+  },
+  "monthly_cash_balance": "Monthly Cash Balance",
+  "monthly_points_balance": "Monthly Points Balance",
+  "total_cash_earned": "Total Cash Earned",
+  "total_points_earned": "Total Points Earned",
+  "share_referral_to_earn": "Share your referral link to start earning",
+  "earn_points_message": "Participate in activities to earn points",
+  "user_ucf": "User",
+  "order_id_ucf": "Order ID",
+  "status_ucf": "Status",
+  "referral_points": "Referral Points",
+  "pts_ucf": "pts",
+  "last_7_days": "Last 7 Days",
+  "last_30_days": "Last 30 Days",
+  "no_points_history_found": "No points history found",
+  "share_referral_to_earn_points": "Share your referral link to start earning points",
 
 
 

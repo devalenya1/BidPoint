@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
+import 'package:share_plus/share_plus.dart';
+
+// Demo Points History Page (create this file)
+import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
+
+// Demo Cash Earnings Page (create this file)
+import 'package:active_ecommerce_flutter/screens/cash_earnings_page.dart';
 
 class AffiliatePage extends StatefulWidget {
   const AffiliatePage({Key? key}) : super(key: key);
@@ -40,12 +47,15 @@ class _AffiliatePageState extends State<AffiliatePage> {
     );
   }
   
-  void _shareReferralLink() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.share_feature_message),
-        duration: const Duration(seconds: 2),
-      ),
+  void _shareReferralLink() async {
+    final String shareText = AppLocalizations.of(context)!.share_referral_message(
+      _referralLink,
+      _referralCode,
+    );
+    
+    await Share.share(
+      shareText,
+      subject: AppLocalizations.of(context)!.share_referral_subject,
     );
   }
   
@@ -63,20 +73,16 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   void _navigateToPoints() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.points_history_message),
-        duration: const Duration(seconds: 2),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PointsHistoryPage()),
     );
   }
   
   void _navigateToCash() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.cash_earnings_message),
-        duration: const Duration(seconds: 2),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CashEarningsPage()),
     );
   }
   
@@ -366,34 +372,41 @@ class _AffiliatePageState extends State<AffiliatePage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Container(
+        child: Image.asset(
+          'assets/Banner_Image.png',
           height: 150,
-          color: const Color(0xFFE2E8F0),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.card_giftcard,
-                  size: 50,
-                  color: MyTheme.accent_color.withOpacity(0.5),
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              height: 150,
+              color: const Color(0xFFE2E8F0),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_not_supported,
+                      size: 50,
+                      color: MyTheme.accent_color.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context)!.referral_banner,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: MyTheme.font_grey,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(context)!.referral_banner,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: MyTheme.font_grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
