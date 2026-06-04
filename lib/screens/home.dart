@@ -812,7 +812,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     children: [
                       Center(
                         child: Image.asset(
-                          'assets/chat.png',
+                          'assets/message.png',
                           height: 22,
                           width: 22,
                           color: MyTheme.dark_grey,
