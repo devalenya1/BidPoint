@@ -739,7 +739,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const NotificationsPage(),
+                      builder: (context) => NotificationsPage(),
                     ),
                   );
                 },
@@ -797,7 +797,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const MessengerList(), // Change to your chat page widget
+                      builder: (context) => MessengerList(), // Change to your chat page widget
                     ),
                   );
                 },
