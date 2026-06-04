@@ -39,7 +39,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         'id': 2,
         'type': 'bid',
         'title': 'Bid placed successfully',
-        'message': 'Your bid of $1,250 on iPhone 15 Pro Max has been placed',
+        'message': 'Your bid of \$1,250 on iPhone 15 Pro Max has been placed',
         'time': DateTime(2024, 5, 14, 9, 15),
         'isRead': true,
         'link': '/auction/2',

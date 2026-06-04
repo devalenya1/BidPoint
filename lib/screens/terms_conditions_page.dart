@@ -23,7 +23,9 @@ class TermsConditionsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: const ComingSoonPage(title: 'Terms & Conditions'),
+      body: const Center(
+        child: Text('Coming Soon - Terms & Conditions'),
+      ),
     );
   }
 }

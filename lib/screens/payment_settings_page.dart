@@ -348,144 +348,146 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         child: Center(
           child: GestureDetector(
             onTap: () {},
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.9,
-              maxWidth: 450,
-              constraints: const BoxConstraints(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 450,
                 maxHeight: 500,
               ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Modal Header
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Color(0xFFEEF2F8)),
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Modal Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Color(0xFFEEF2F8)),
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.bank_details,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _closeBankModal,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Modal Body
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildFormField(
-                            label: AppLocalizations.of(context)!.bank_name,
-                            hint: AppLocalizations.of(context)!.enter_bank_name,
-                            controller: _bankNameController,
+                          Text(
+                            AppLocalizations.of(context)!.bank_details,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
-                          const SizedBox(height: 16),
-                          _buildFormField(
-                            label: AppLocalizations.of(context)!.account_holder_name,
-                            hint: AppLocalizations.of(context)!.enter_account_holder_name,
-                            controller: _accountHolderController,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildFormField(
-                            label: AppLocalizations.of(context)!.account_number,
-                            hint: AppLocalizations.of(context)!.enter_account_number,
-                            controller: _accountNumberController,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  // Modal Footer
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Color(0xFFEEF2F8)),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
+                          GestureDetector(
                             onTap: _closeBankModal,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              width: 32,
+                              height: 32,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF6F6F6),
                                 borderRadius: BorderRadius.circular(50),
                               ),
-                              child: Text(
-                                AppLocalizations.of(context)!.cancel_ucf,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF64748B),
-                                ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Color(0xFF64748B),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _saveBankDetails,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: MyTheme.accent_color,
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(context)!.save_ucf,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    
+                    // Modal Body
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            _buildFormField(
+                              label: AppLocalizations.of(context)!.bank_name,
+                              hint: AppLocalizations.of(context)!.enter_bank_name,
+                              controller: _bankNameController,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildFormField(
+                              label: AppLocalizations.of(context)!.account_holder_name,
+                              hint: AppLocalizations.of(context)!.enter_account_holder_name,
+                              controller: _accountHolderController,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildFormField(
+                              label: AppLocalizations.of(context)!.account_number,
+                              hint: AppLocalizations.of(context)!.enter_account_number,
+                              controller: _accountNumberController,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // Modal Footer
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFEEF2F8)),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _closeBankModal,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF6F6F6),
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: Text(
+                                  AppLocalizations.of(context)!.cancel_ucf,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _saveBankDetails,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: MyTheme.accent_color,
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                                child: Text(
+                                  AppLocalizations.of(context)!.save_ucf,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -493,7 +495,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       ),
     );
   }
-  
+
   Widget _buildPaypalModal() {
     return GestureDetector(
       onTap: _closePaypalModal,

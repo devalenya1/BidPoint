@@ -441,7 +441,14 @@
   "enter_valid_email": "Please enter a valid email address",
   "bank_details_saved": "Bank details saved successfully",
   "paypal_details_saved": "PayPal details saved successfully",
-
+  
+  "outbid_message": "Someone placed a higher bid on {productName}",
+  "winning_message": "Your bid is currently the highest on {productName}",
+  "won_message": "Congratulations! You won {productName}",
+  "lost_message": "You didn't win {productName}",
+  "bid_points": "1 Bid = {points}",
+  "bid_again_message": "Bid again on {productName}",
+  
 
 
   "search_anything": "Search anything ...",

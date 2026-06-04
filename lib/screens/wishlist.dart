@@ -716,7 +716,7 @@ class _WishlistState extends State<Wishlist> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(16),
-        margin: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.only(top: 20),
       ),
       child: Column(
         children: [

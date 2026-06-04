@@ -462,7 +462,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 // Product Title
                 Text(
                   isOutbid 
-                      ? AppLocalizations.of(context)!.outbid_message(activity['productName'])
+                      ? AppLocalizations.of(context)!.outbid_message.replaceAll('{productName}', activity['productName'])
                       : isWinning
                           ? AppLocalizations.of(context)!.winning_message(activity['productName'])
                           : isWon

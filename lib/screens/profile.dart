@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import '../repositories/auth_repository.dart';
 import 'auction_bidded_products.dart';
@@ -76,7 +77,7 @@ class _ProfileState extends State<Profile> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
-      _userBalance = int.tryParse(user_balance.$?.toString() ?? "1250") ?? 1250;
+      _userBalance = user_balance.$ ?? 1250;
     });
   }
 
@@ -559,8 +560,8 @@ class _ProfileState extends State<Profile> {
   void _showLoginWarning() {
     ToastComponent.showDialog(
       AppLocalizations.of(context)!.you_need_to_log_in,
-      gravity: Toast.center,
-      duration: Toast.lengthLong,
+      gravity: ToastGravity.CENTER,
+      duration: Toast.LENGTH_LONG,
     );
   }
 }
