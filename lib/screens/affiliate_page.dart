@@ -40,7 +40,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
     // In real app, use Clipboard.setData
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context)!.copied_to_clipboard(type)),
+        content: Text(AppLocalizations.of(context)!.copied_to_clipboard),
         backgroundColor: MyTheme.accent_color,
         duration: const Duration(seconds: 2),
       ),
