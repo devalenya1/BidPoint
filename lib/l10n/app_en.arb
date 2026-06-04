@@ -185,7 +185,9 @@
   "bid_unit_ucf": "Bid =",
   "points_ucf": "Points",
   "activity_ucf": "Activity",
-
+  "recommended_ucf": "Recommended",
+  "a_z_ucf": "A-Z",
+  "something_went_wrong": "Something went wrong",
 
   "search_anything": "Search anything ...",
   "no_carousel_image_found": "No carousel image found",
