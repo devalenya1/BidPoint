@@ -146,7 +146,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     if (distance.isNegative) {
       setState(() {
-        _timeLeft[id] = "Ended";
+        _timeLeft[id] = AppLocalizations.of(context)!.ended_ucf;
       });
       _timers[id]?.cancel();
       return;
@@ -181,10 +181,22 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.activity_ucf,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black, // Black back button
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Column(
         children: [
-          // Custom Header
-          _buildHeader(),
           // Main Content
           Expanded(
             child: SingleChildScrollView(
@@ -212,56 +224,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: MyTheme.light_grey,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: MyTheme.light_grey,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 20,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          // Title
-          Text(
-            AppLocalizations.of(context)!.activity_ucf,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: MyTheme.dark_font_grey,
-            ),
-          ),
-          // Invisible placeholder for balance
-          const SizedBox(width: 40),
-        ],
-      ),
-    );
-  }
-  
   Widget _buildTabs() {
-    final List<String> tabNames = ['All', 'Outbid', 'Winning', 'Recently Ended'];
+    final List<String> tabNames = [
+      AppLocalizations.of(context)!.all_ucf,
+      AppLocalizations.of(context)!.outbid_ucf,
+      AppLocalizations.of(context)!.winning_ucf,
+      AppLocalizations.of(context)!.recently_ended_ucf
+    ];
     
     return Container(
       decoration: BoxDecoration(
@@ -325,23 +294,23 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     switch (type) {
       case "outbid":
         icon = "🎯";
-        title = "No outbid activities";
-        subtitle = "Your bids are currently leading!";
+        title = AppLocalizations.of(context)!.no_outbid_activities;
+        subtitle = AppLocalizations.of(context)!.no_outbid_subtitle;
         break;
       case "winning":
         icon = "🏆";
-        title = "No winning bids yet";
-        subtitle = "Place a bid to become the highest bidder";
+        title = AppLocalizations.of(context)!.no_winning_bids;
+        subtitle = AppLocalizations.of(context)!.no_winning_subtitle;
         break;
       case "ended":
         icon = "⏰";
-        title = "No ended auctions";
-        subtitle = "Check back later for completed auctions";
+        title = AppLocalizations.of(context)!.no_ended_auctions;
+        subtitle = AppLocalizations.of(context)!.no_ended_subtitle;
         break;
       default:
         icon = "📭";
-        title = "No activity found";
-        subtitle = "Start bidding on auctions to see your activity here";
+        title = AppLocalizations.of(context)!.no_activity_found;
+        subtitle = AppLocalizations.of(context)!.no_activity_subtitle;
     }
     
     return Container(
@@ -383,24 +352,24 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final isEnded = activity['status'] == 'ended' && activity['isAuctionEnded'];
     
     String statusText;
-    Color statusColor;
+    Color statusColor = MyTheme.dark_font_grey; // Same as page title color
     
     if (isOutbid) {
-      statusText = "You were outbid";
-      statusColor = const Color(0xFFDC2626);
+      statusText = AppLocalizations.of(context)!.you_were_outbid;
+      statusColor = MyTheme.dark_font_grey;
     } else if (isWinning) {
-      statusText = "Currently winning";
-      statusColor = const Color(0xFF10B981);
+      statusText = AppLocalizations.of(context)!.currently_winning;
+      statusColor = MyTheme.dark_font_grey;
     } else if (isWon) {
-      statusText = "You won this auction!";
-      statusColor = const Color(0xFFF59E0B);
+      statusText = AppLocalizations.of(context)!.you_won_auction;
+      statusColor = MyTheme.dark_font_grey;
     } else {
-      statusText = "Auction ended";
-      statusColor = const Color(0xFF64748B);
+      statusText = AppLocalizations.of(context)!.auction_ended;
+      statusColor = MyTheme.dark_font_grey;
     }
     
-    final timeLeft = _timeLeft[activity['id']] ?? "Loading...";
-    final isTimerEnded = timeLeft == "Ended";
+    final timeLeft = _timeLeft[activity['id']] ?? AppLocalizations.of(context)!.loading;
+    final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -493,12 +462,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 // Product Title
                 Text(
                   isOutbid 
-                      ? "Someone placed a higher bid on ${activity['productName']}"
+                      ? AppLocalizations.of(context)!.outbid_message(activity['productName'])
                       : isWinning
-                          ? "Your bid is currently the highest on ${activity['productName']}"
+                          ? AppLocalizations.of(context)!.winning_message(activity['productName'])
                           : isWon
-                              ? "Congratulations! You won ${activity['productName']}"
-                              : "You didn't win ${activity['productName']}",
+                              ? AppLocalizations.of(context)!.won_message(activity['productName'])
+                              : AppLocalizations.of(context)!.lost_message(activity['productName']),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -508,7 +477,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 const SizedBox(height: 8),
                 // Bid Label
                 Text(
-                  isWon || isEnded ? "Final bid:" : "Current bid:",
+                  isWon || isEnded 
+                      ? AppLocalizations.of(context)!.final_bid
+                      : AppLocalizations.of(context)!.current_bid,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -544,7 +515,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            "1 Bid = ${activity['pointsPerBid']}",
+                            AppLocalizations.of(context)!.bid_points(activity['pointsPerBid']),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -578,7 +549,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         // Navigate to bid again
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Bid again on ${activity['productName']}'),
+            content: Text(AppLocalizations.of(context)!.bid_again_message(activity['productName'])),
             backgroundColor: MyTheme.accent_color,
             duration: const Duration(seconds: 2),
           ),
@@ -593,7 +564,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           borderRadius: BorderRadius.circular(7),
         ),
         child: Text(
-          'Bid Again',
+          AppLocalizations.of(context)!.bid_again,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,
@@ -623,7 +594,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           borderRadius: BorderRadius.circular(7),
         ),
         child: Text(
-          'View Details',
+          AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,

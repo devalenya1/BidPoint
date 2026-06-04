@@ -209,33 +209,36 @@ class _PointsPageState extends State<PointsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.points_ucf,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black, // Changed to black for back button
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Stack(
         children: [
           // Main Content
-          Column(
-            children: [
-              // Custom Header
-              _buildHeader(),
-              // Main Scrollable Content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        // User Points Card
-                        _buildUserPointsCard(),
-                        const SizedBox(height: 24),
-                        // Purchase History
-                        _buildPurchaseHistory(),
-                        const SizedBox(height: 30),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                // User Points Card
+                _buildUserPointsCard(),
+                const SizedBox(height: 24),
+                // Purchase History
+                _buildPurchaseHistory(),
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
           // Bottom Drawer Overlay
           if (_isDrawerOpen)
@@ -281,54 +284,6 @@ class _PointsPageState extends State<PointsPage> {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: MyTheme.light_grey,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: MyTheme.light_grey,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 20,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          // Title
-          Text(
-            AppLocalizations.of(context)!.points_ucf,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: MyTheme.dark_font_grey,
-            ),
-          ),
-          // Invisible placeholder for balance
-          const SizedBox(width: 40),
         ],
       ),
     );
@@ -677,7 +632,7 @@ class _PointsPageState extends State<PointsPage> {
               child: const Icon(
                 Icons.close,
                 size: 16,
-                color: const Color(0xFF64748B),
+                color: Color(0xFF64748B),
               ),
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
 
 class AffiliatePage extends StatefulWidget {
   const AffiliatePage({Key? key}) : super(key: key);
@@ -32,7 +33,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
     // In real app, use Clipboard.setData
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$type copied to clipboard!'),
+        content: Text(AppLocalizations.of(context)!.copied_to_clipboard(type)),
         backgroundColor: MyTheme.accent_color,
         duration: const Duration(seconds: 2),
       ),
@@ -41,9 +42,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
   
   void _shareReferralLink() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share feature would open native share dialog'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.share_feature_message),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -55,28 +56,26 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   void _navigateToWithdrawHistory() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigate to withdraw history'),
-        duration: Duration(seconds: 2),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const WithdrawalPage()),
     );
   }
   
   void _navigateToPoints() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigate to points history'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.points_history_message),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
   
   void _navigateToCash() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigate to cash earnings history'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.cash_earnings_message),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -85,90 +84,47 @@ class _AffiliatePageState extends State<AffiliatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Custom Header
-          _buildHeader(),
-          // Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    // Profile Card
-                    _buildProfileCard(),
-                    const SizedBox(height: 16),
-                    // Stats Cards Row
-                    _buildStatsRow(),
-                    const SizedBox(height: 20),
-                    // Banner Image
-                    _buildBanner(),
-                    const SizedBox(height: 20),
-                    // How It Works Section
-                    _buildHowItWorks(),
-                    const SizedBox(height: 20),
-                    // Referral Link Section
-                    _buildReferralLink(),
-                    const SizedBox(height: 16),
-                    // Share Button
-                    _buildShareButton(),
-                    const SizedBox(height: 30),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.referrals_ucf,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 18,
-                color: Color(0xFF64748B),
-              ),
-            ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              // Profile Card
+              _buildProfileCard(),
+              const SizedBox(height: 16),
+              // Stats Cards Row
+              _buildStatsRow(),
+              const SizedBox(height: 20),
+              // Banner Image
+              _buildBanner(),
+              const SizedBox(height: 20),
+              // How It Works Section
+              _buildHowItWorks(),
+              const SizedBox(height: 20),
+              // Referral Link Section
+              _buildReferralLink(),
+              const SizedBox(height: 16),
+              // Share Button
+              _buildShareButton(),
+              const SizedBox(height: 30),
+            ],
           ),
-          // Title
-          const Text(
-            'Referrals',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          // Invisible placeholder
-          const SizedBox(width: 36),
-        ],
+        ),
       ),
     );
   }
@@ -237,7 +193,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       GestureDetector(
                         onTap: _navigateToWithdrawHistory,
                         child: Text(
-                          'Referral earnings \$${_referralEarnings.toStringAsFixed(2)}',
+                          '${AppLocalizations.of(context)!.referral_earnings} \$${_referralEarnings.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -260,9 +216,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
                 color: MyTheme.accent_color,
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: const Text(
-                'Withdraw',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)!.withdraw_ucf,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
@@ -289,9 +245,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Points Balance',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.points_balance,
+                  style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF666666),
                   ),
@@ -310,9 +266,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Text(
-                      'Points',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.points_ucf,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w400,
                         color: Color(0xFF666666),
@@ -321,20 +277,24 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                GestureDetector(
-                  onTap: _navigateToPoints,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'View',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                SizedBox(
+                  width: double.infinity,
+                  child: GestureDetector(
+                    onTap: _navigateToPoints,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: MyTheme.accent_color,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.view_ucf,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -355,9 +315,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Cash Earnings',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.cash_earnings,
+                  style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF666666),
                   ),
@@ -372,20 +332,24 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                GestureDetector(
-                  onTap: _navigateToCash,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'View',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                SizedBox(
+                  width: double.infinity,
+                  child: GestureDetector(
+                    onTap: _navigateToCash,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.view_ucf,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -421,7 +385,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Referral Banner',
+                  AppLocalizations.of(context)!.referral_banner,
                   style: TextStyle(
                     fontSize: 14,
                     color: MyTheme.font_grey,
@@ -439,18 +403,18 @@ class _AffiliatePageState extends State<AffiliatePage> {
     final List<Map<String, String>> steps = [
       {
         'number': '1',
-        'title': 'Invite a Friend',
-        'desc': 'Your friend receives 20 points when they sign up.',
+        'title': AppLocalizations.of(context)!.invite_friend,
+        'desc': AppLocalizations.of(context)!.invite_friend_desc,
       },
       {
         'number': '2',
-        'title': 'You Earn More',
-        'desc': 'Plus 20% in cash every time they make a points purchase',
+        'title': AppLocalizations.of(context)!.you_earn_more,
+        'desc': AppLocalizations.of(context)!.you_earn_more_desc,
       },
       {
         'number': '3',
-        'title': 'No Limits',
-        'desc': 'The more friends you invite, the more you earn.',
+        'title': AppLocalizations.of(context)!.no_limits,
+        'desc': AppLocalizations.of(context)!.no_limits_desc,
       },
     ];
     
@@ -464,9 +428,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Bring a friend, save big amount of money',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.bring_friend_save_money,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -532,9 +496,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Referral Link',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.referral_link,
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: Color(0xFF666666),
@@ -563,7 +527,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                 ),
               ),
               GestureDetector(
-                onTap: () => _copyToClipboard(_referralLink, 'Link'),
+                onTap: () => _copyToClipboard(_referralLink, AppLocalizations.of(context)!.link_ucf),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                   decoration: BoxDecoration(
@@ -572,9 +536,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       right: Radius.circular(7),
                     ),
                   ),
-                  child: const Text(
-                    'Copy',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.copy_ucf,
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: Colors.white,
@@ -608,9 +572,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
               color: Colors.white,
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Share Invite Link',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.share_invite_link,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,

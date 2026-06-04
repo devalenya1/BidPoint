@@ -193,6 +193,147 @@
     "description": "Notifications page title"
   },
 
+  "outbid_ucf": "Outbid",
+  "winning_ucf": "Winning",
+  "recently_ended_ucf": "Recently Ended",
+  "loading": "Loading...",
+  "you_were_outbid": "You were outbid",
+  "currently_winning": "Currently winning",
+  "you_won_auction": "You won this auction!",
+  "auction_ended": "Auction ended",
+  "final_bid": "Final bid:",
+  "current_bid": "Current bid:",
+  "bid_again": "Bid Again",
+  "view_details": "View Details",
+  "no_outbid_activities": "No outbid activities",
+  "no_outbid_subtitle": "Your bids are currently leading!",
+  "no_winning_bids": "No winning bids yet",
+  "no_winning_subtitle": "Place a bid to become the highest bidder",
+  "no_ended_auctions": "No ended auctions",
+  "no_ended_subtitle": "Check back later for completed auctions",
+  "no_activity_found": "No activity found",
+  "no_activity_subtitle": "Start bidding on auctions to see your activity here",
+  
+  "@outbid_message": {
+    "description": "Message when user is outbid",
+    "placeholders": {
+      "productName": {
+        "type": "String",
+        "example": "Vintage Rolex Watch"
+      }
+    }
+  },
+  "@winning_message": {
+    "description": "Message when user is winning",
+    "placeholders": {
+      "productName": {
+        "type": "String",
+        "example": "iPhone 15 Pro Max"
+      }
+    }
+  },
+  "@won_message": {
+    "description": "Message when user won auction",
+    "placeholders": {
+      "productName": {
+        "type": "String",
+        "example": "Canon EOS R5 Camera"
+      }
+    }
+  },
+  "@lost_message": {
+    "description": "Message when user lost auction",
+    "placeholders": {
+      "productName": {
+        "type": "String",
+        "example": "Nike Air Jordan 1"
+      }
+    }
+  },
+  "@bid_points": {
+    "description": "Points per bid message",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "example": 10
+      }
+    }
+  },
+  "@bid_again_message": {
+    "description": "Bid again snackbar message",
+    "placeholders": {
+      "productName": {
+        "type": "String",
+        "example": "Vintage Rolex Watch"
+      }
+    }
+  },
+  "referrals_ucf": "Referrals",
+  "referral_earnings": "Referral earnings",
+  "points_balance": "Points Balance",
+  "cash_earnings": "Cash Earnings",
+  "view_ucf": "View",
+  "referral_banner": "Referral Banner",
+  "invite_friend": "Invite a Friend",
+  "invite_friend_desc": "Your friend receives 20 points when they sign up.",
+  "you_earn_more": "You Earn More",
+  "you_earn_more_desc": "Plus 20% in cash every time they make a points purchase",
+  "no_limits": "No Limits",
+  "no_limits_desc": "The more friends you invite, the more you earn.",
+  "bring_friend_save_money": "Bring a friend, save big amount of money",
+  "referral_link": "Referral Link",
+  "copy_ucf": "Copy",
+  "share_invite_link": "Share Invite Link",
+  "link_ucf": "Link",
+  "copied_to_clipboard": "{type} copied to clipboard!",
+  "share_feature_message": "Share feature would open native share dialog",
+  "points_history_message": "Navigate to points history",
+  "cash_earnings_message": "Navigate to cash earnings history",
+  "available_balance": "Available Balance",
+  "withdrawal_amount": "Withdrawal Amount",
+  "withdrawal_method": "Withdrawal Method",
+  "min_ucf": "Min",
+  "max_ucf": "Max",
+  "request_withdrawal": "Request Withdrawal",
+  "withdrawal_history": "Withdrawal History",
+  "no_withdrawal_history": "No withdrawal history",
+  "enter_valid_amount": "Please enter a valid amount",
+  "insufficient_balance": "Insufficient balance",
+  "min_withdrawal_amount": "Minimum withdrawal amount is ${amount}",
+  "max_withdrawal_amount": "Maximum withdrawal amount is ${amount}",
+  "confirm_withdrawal": "Confirm Withdrawal",
+  "method_ucf": "Method",
+  "withdrawal_request_submitted": "Withdrawal request submitted successfully",
+  "completed_ucf": "Completed",
+  "failed_ucf": "Failed",
+  
+  "@min_withdrawal_amount": {
+    "description": "Minimum withdrawal amount message",
+    "placeholders": {
+      "amount": {
+        "type": "double",
+        "example": 10
+      }
+    }
+  },
+  "@max_withdrawal_amount": {
+    "description": "Maximum withdrawal amount message",
+    "placeholders": {
+      "amount": {
+        "type": "double",
+        "example": 1000
+      }
+    }
+  },
+  "affiliate_ucf": "Affiliate",
+  "affiliate_balance": "Affiliate Balance",
+  "withdraw_request": "Withdraw Request",
+  "withdraw_request_history": "Withdraw Request History",
+  "no_withdrawal_requests_found": "No withdrawal requests found",
+
+
+
+
   "search_anything": "Search anything ...",
   "no_carousel_image_found": "No carousel image found",
   "no_category_found": "No category found",
