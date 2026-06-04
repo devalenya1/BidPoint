@@ -888,7 +888,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const SearchPage(), // Your existing search page
+            builder: (context) => const Filter(), // Your existing search page
           ),
         );
       },
