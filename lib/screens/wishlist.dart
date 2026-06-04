@@ -711,35 +711,37 @@ class _WishlistState extends State<Wishlist> {
         subtext = AppLocalizations.of(context)!.add_products_to_wishlist_to_see_here;
     }
     
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FC),
-        borderRadius: BorderRadius.circular(16),
-        padding: const EdgeInsets.only(top: 20),
-      ),
-      child: Column(
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 48)),
-          const SizedBox(height: 12),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FC),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            Text(
+              text,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtext,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF94A3B8),
+            const SizedBox(height: 6),
+            Text(
+              subtext,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF94A3B8),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -77,7 +77,7 @@ class _ProfileState extends State<Profile> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
-      _userBalance = user_balance.$ ?? 1250;
+      _userBalance = 1250;
     });
   }
 
