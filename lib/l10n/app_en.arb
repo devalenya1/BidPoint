@@ -312,7 +312,7 @@
     "placeholders": {
       "amount": {
         "type": "double",
-        "example": 10
+        "example": "$10"
       }
     }
   },
@@ -321,7 +321,7 @@
     "placeholders": {
       "amount": {
         "type": "double",
-        "example": 1000
+        "example": "$1000"
       }
     }
   },
