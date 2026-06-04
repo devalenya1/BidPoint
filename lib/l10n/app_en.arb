@@ -285,7 +285,7 @@
   "copy_ucf": "Copy",
   "share_invite_link": "Share Invite Link",
   "link_ucf": "Link",
-  "copied_to_clipboard": "{type} copied to clipboard!",
+  "copied_to_clipboard": "Copied to clipboard!",
   "share_feature_message": "Share feature would open native share dialog",
   "points_history_message": "Navigate to points history",
   "cash_earnings_message": "Navigate to cash earnings history",
