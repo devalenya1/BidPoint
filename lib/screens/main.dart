@@ -41,28 +41,36 @@ class _MainState extends State<Main> {
     getCartCount();
   }
 
+  // In your Main screen's onTapped method, update to:
   void onTapped(int i) {
     fetchAll();
     
-    // Check login for protected routes
+    // Check login for protected routes (index 2,3,4)
     if (!is_logged_in.$ && (i == 2 || i == 3 || i == 4)) {
-      // Store the intended index before navigating to login
       _pendingIndex = i;
       
-      // Navigate to login and wait for result
       Navigator.push(
         context, 
-        MaterialPageRoute(builder: (context) => Login())
+        MaterialPageRoute(
+          builder: (context) => Login(
+            onLoginSuccess: () {
+              // After successful login, navigate to intended page
+              if (mounted && _pendingIndex != null) {
+                setState(() {
+                  _currentIndex = _pendingIndex!;
+                  _pendingIndex = null;
+                });
+              }
+            },
+          ),
+        ),
       ).then((_) {
-        // After returning from login, check if user is now logged in
-        if (is_logged_in.$ && _pendingIndex != null) {
-          // User logged in successfully, navigate to the intended page
+        if (mounted && is_logged_in.$ && _pendingIndex != null) {
           setState(() {
             _currentIndex = _pendingIndex!;
             _pendingIndex = null;
           });
         } else {
-          // User didn't log in, clear pending index
           _pendingIndex = null;
         }
       });
