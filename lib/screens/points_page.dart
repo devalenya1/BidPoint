@@ -129,6 +129,9 @@ class _PointsPageState extends State<PointsPage> {
   void _submitPurchase() {
     if (_selectedPackage == null) return;
     
+    // Close drawer first
+    _closeBuyPointsDrawer();
+    
     // Show confirmation dialog
     showDialog(
       context: context,
@@ -180,7 +183,6 @@ class _PointsPageState extends State<PointsPage> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                _closeBuyPointsDrawer();
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -217,7 +219,7 @@ class _PointsPageState extends State<PointsPage> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black, // Changed to black for back button
+        foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -254,12 +256,23 @@ class _PointsPageState extends State<PointsPage> {
                       height: MediaQuery.of(context).size.height * 0.75,
                       decoration: const BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(40),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(7),
+                          topRight: Radius.circular(7),
                         ),
                       ),
                       child: Column(
                         children: [
+                          // Drawer Handle (optional - like a drag indicator)
+                          Container(
+                            margin: const EdgeInsets.only(top: 12),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE2E8F0),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
                           // Drawer Header
                           _buildDrawerHeader(),
                           // Drawer Body
