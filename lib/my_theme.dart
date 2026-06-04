@@ -7,7 +7,7 @@ class MyTheme {
       Color.fromRGBO(229, 65, 28, .40); // this color is a dropshadow of
   static Color soft_accent_color = Color.fromRGBO(254, 234, 209, 1);
   static Color splash_screen_color = Color.fromRGBO(
-      230, 46, 4, 1); // if not sure , use the same color as accent color
+      0, 146, 172, 1); // if not sure , use the same color as accent color
   /*configurable colors ends*/
   /*If you are not a developer, do not change the bottom colors*/
   static const Color white = Color.fromRGBO(255, 255, 255, 1);

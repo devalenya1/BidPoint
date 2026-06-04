@@ -7,6 +7,9 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/presenter/home_presenter.dart';
 import 'package:active_ecommerce_flutter/screens/category_products.dart';
 import 'package:active_ecommerce_flutter/screens/filter.dart';
+import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
+import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
+import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/ui_elements/mini_product_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -14,7 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:active_ecommerce_flutter/ui_elements/auction_products_carousel.dart';
+// import 'package:active_ecommerce_flutter/ui_elements/auction_products_carousel.dart';
 import 'package:go_router/go_router.dart';
 
 class Home extends StatefulWidget {
@@ -716,48 +719,202 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   AppBar buildAppBar(double statusBarHeight, BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: false,
-      // Don't show the leading button
       backgroundColor: Colors.white,
       centerTitle: false,
       elevation: 0,
-      flexibleSpace: Padding(
-        // padding:
-        //     const EdgeInsets.only(top: 40.0, bottom: 22, left: 18, right: 18),
-        padding:
-            const EdgeInsets.only(top: 10.0, bottom: 10, left: 18, right: 18),
-        child: GestureDetector(
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-              return Filter();
-            }));
-          },
-          child: buildHomeSearchBox(context),
+      titleSpacing: 0,
+      title: Container(
+        padding: const EdgeInsets.only(left: 16, right: 16),
+        child: Row(
+          children: [
+            // Search Box - Takes remaining space
+            Expanded(
+              child: buildHomeSearchBox(context),
+            ),
+            // Notification Icon
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsPage(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Image.asset(
+                          'assets/notification.png',
+                          height: 22,
+                          width: 22,
+                          color: MyTheme.dark_grey,
+                        ),
+                      ),
+                      // Notification counter badge (demo)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MyTheme.accent_color,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            '3',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Chat Icon
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to your existing chat page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MessengerList(), // Change to your chat page widget
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Image.asset(
+                          'assets/chat.png',
+                          height: 22,
+                          width: 22,
+                          color: MyTheme.dark_grey,
+                        ),
+                      ),
+                      // Chat counter badge (demo)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MyTheme.accent_color,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            '2',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Affiliate Icon
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AffiliatePage(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/affiliate.png',
+                      height: 22,
+                      width: 22,
+                      color: MyTheme.dark_grey,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  buildHomeSearchBox(BuildContext context) {
-    return Container(
-      height: 36,
-      decoration: BoxDecorations.buildBoxDecoration_1(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.search_anything,
-              style: TextStyle(fontSize: 13.0, color: MyTheme.textfield_grey),
-            ),
-            Image.asset(
-              'assets/search.png',
-              height: 16,
-              //color: MyTheme.dark_grey,
-              color: MyTheme.dark_grey,
-            )
-          ],
+  Widget buildHomeSearchBox(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SearchPage(), // Your existing search page
+          ),
+        );
+      },
+      child: Container(
+        height: 40,
+        decoration: BoxDecorations.buildBoxDecoration_1(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.search_anything,
+                style: TextStyle(
+                  fontSize: 13.0,
+                  color: MyTheme.textfield_grey,
+                ),
+              ),
+              Image.asset(
+                'assets/search.png',
+                height: 16,
+                color: MyTheme.dark_grey,
+              ),
+            ],
+          ),
         ),
       ),
     );
