@@ -5,12 +5,12 @@ import 'package:active_ecommerce_flutter/main.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/presenter/bottom_appbar_index.dart';
 import 'package:active_ecommerce_flutter/presenter/cart_counter.dart';
-import 'package:active_ecommerce_flutter/screens/activity_page.dart'; // ADD THIS
+import 'package:active_ecommerce_flutter/screens/activity_page.dart';
 import 'package:active_ecommerce_flutter/screens/cart.dart';
 import 'package:active_ecommerce_flutter/screens/category_list.dart';
 import 'package:active_ecommerce_flutter/screens/home.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/screens/points_page.dart'; // ADD THIS
+import 'package:active_ecommerce_flutter/screens/points_page.dart';
 import 'package:active_ecommerce_flutter/screens/profile.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
@@ -31,6 +31,7 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> {
   int _currentIndex = 0;
+  int? _pendingIndex; // Store the index that was trying to be accessed
 
   BottomAppbarIndex bottomAppbarIndex = BottomAppbarIndex();
   CartCounter counter = CartCounter();
@@ -43,30 +44,30 @@ class _MainState extends State<Main> {
   void onTapped(int i) {
     fetchAll();
     
-    // Check login for protected routes (points is index 2 now)
-    if (!is_logged_in.$ && (i == 2)) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
+    // Check login for protected routes
+    if (!is_logged_in.$ && (i == 2 || i == 3 || i == 4)) {
+      // Store the intended index before navigating to login
+      _pendingIndex = i;
+      
+      // Navigate to login and wait for result
+      Navigator.push(
+        context, 
+        MaterialPageRoute(builder: (context) => Login())
+      ).then((_) {
+        // After returning from login, check if user is now logged in
+        if (is_logged_in.$ && _pendingIndex != null) {
+          // User logged in successfully, navigate to the intended page
+          setState(() {
+            _currentIndex = _pendingIndex!;
+            _pendingIndex = null;
+          });
+        } else {
+          // User didn't log in, clear pending index
+          _pendingIndex = null;
+        }
+      });
       return;
     }
-
-    // Check login for protected routes (activity is index 3 now)
-    if (!is_logged_in.$ && (i == 3)) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
-      return;
-    }
-
-
-    // Check login for protected routes (activity is index 3 now)
-    if (!is_logged_in.$ && (i == 4)) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
-      return;
-    }
-
-    // Handle dashboard navigation (if needed)
-    // if (i == 4) {
-    //   routes.push("/dashboard");
-    //   return;
-    // }
 
     setState(() {
       _currentIndex = i;
@@ -80,16 +81,14 @@ class _MainState extends State<Main> {
   void initState() {
     // Initialize children with all 5 pages
     _children = [
-      Home(),                                           // Index 0: Home
-      CategoryList(                                    // Index 1: Categories
+      Home(),
+      CategoryList(
         slug: "",
         is_base_category: true,
       ),
-      // const PointsPage(),                               // Index 2: Points (NEW)
-      // const ActivityPage(),   
-      PointsPage(),                               // Index 2: Points (NEW)
-      ActivityPage(),                         // Index 3: Activity (NEW)
-      Profile(),                                        // Index 4: Profile
+      PointsPage(),
+      ActivityPage(),
+      Profile(),
     ];
     
     fetchAll();
@@ -171,7 +170,6 @@ class _MainState extends State<Main> {
                 fontSize: 12,
               ),
               items: [
-                // 1. Home (Index 0)
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -186,7 +184,6 @@ class _MainState extends State<Main> {
                   label: AppLocalizations.of(context)!.home_ucf,
                 ),
                 
-                // 2. Categories (Index 1)
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -201,7 +198,6 @@ class _MainState extends State<Main> {
                   label: AppLocalizations.of(context)!.categories_ucf,
                 ),
                 
-                // 3. Points (Index 2) - NEW
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -216,7 +212,6 @@ class _MainState extends State<Main> {
                   label: AppLocalizations.of(context)!.points_ucf,
                 ),
                 
-                // 4. Activity (Index 3) - NEW
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -231,7 +226,6 @@ class _MainState extends State<Main> {
                   label: AppLocalizations.of(context)!.activity_ucf,
                 ),
                 
-                // 5. Profile (Index 4)
                 BottomNavigationBarItem(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
