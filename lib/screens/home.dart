@@ -18,6 +18,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 // import 'package:active_ecommerce_flutter/ui_elements/auction_products_carousel.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:go_router/go_router.dart';
 
 class Home extends StatefulWidget {
@@ -736,12 +738,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(left: 12),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NotificationsPage(),
-                    ),
-                  );
+                  // Check if user is logged in - same pattern as main.dart
+                  if (is_logged_in.$) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationsPage(),
+                      ),
+                    );
+                  } else {
+                    _redirectToLogin(context);
+                  }
                 },
                 child: Container(
                   width: 35,
@@ -760,29 +767,30 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Notification counter badge (demo)
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: MyTheme.accent_color,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            '3',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      // Notification counter badge (only show if logged in)
+                      if (is_logged_in.$)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: MyTheme.accent_color,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              '3',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -793,13 +801,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
-                  // Navigate to your existing chat page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MessengerList(), // Change to your chat page widget
-                    ),
-                  );
+                  // Check if user is logged in - same pattern as main.dart
+                  if (is_logged_in.$) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MessengerList(),
+                      ),
+                    );
+                  } else {
+                    _redirectToLogin(context);
+                  }
                 },
                 child: Container(
                   width: 35,
@@ -818,32 +830,33 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Chat counter badge (demo)
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: MyTheme.accent_color,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            '2',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      // Chat counter badge (only show if logged in)
+                      if (is_logged_in.$)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: MyTheme.accent_color,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              '2',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
-                ),
+                ), 
               ),
             ),
             // Affiliate Icon
@@ -851,12 +864,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AffiliatePage(),
-                    ),
-                  );
+                  // Check if user is logged in - same pattern as main.dart
+                  if (is_logged_in.$) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AffiliatePage(),
+                      ),
+                    );
+                  } else {
+                    _redirectToLogin(context);
+                  }
                 },
                 child: Container(
                   width: 35,
@@ -933,4 +951,27 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ),
     );
   }
+
+  void _redirectToLogin(BuildContext context) {
+    // Show a toast message
+    ToastComponent.showDialog(
+      AppLocalizations.of(context)!.you_need_to_log_in,
+      gravity: Toast.center,
+      duration: Toast.lengthLong,
+    );
+    
+    // Navigate to login page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Login(
+          onLoginSuccess: () {
+            // Refresh the page after successful login if needed
+            setState(() {});
+          },
+        ),
+      ),
+    );
+  }
+
 }
