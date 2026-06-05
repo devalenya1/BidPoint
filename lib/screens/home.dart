@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-// import 'package:active_ecommerce_flutter/ui_elements/auction_products_carousel.dart';
+import 'package:active_ecommerce_flutter/ui_elements/product_horizontal_carousel.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:go_router/go_router.dart';
@@ -102,55 +102,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             slivers: <Widget>[
                               SliverList(
                                 delegate: SliverChildListDelegate([
-                                  // AppConfig.purchase_code == ""
-                                  //     ? Padding(
-                                  //         padding: const EdgeInsets.fromLTRB(
-                                  //           9.0,
-                                  //           16.0,
-                                  //           9.0,
-                                  //           0.0,
-                                  //         ),
-                                  //         child: Container(
-                                  //           height: 140,
-                                  //           color: Colors.black,
-                                  //           child: Stack(
-                                  //             children: [
-                                  //               Positioned(
-                                  //                   left: 20,
-                                  //                   top: 0,
-                                  //                   child: AnimatedBuilder(
-                                  //                       animation: homeData
-                                  //                           .pirated_logo_animation,
-                                  //                       builder:
-                                  //                           (context, child) {
-                                  //                         return Image.asset(
-                                  //                           "assets/pirated_square.png",
-                                  //                           height: homeData
-                                  //                               .pirated_logo_animation
-                                  //                               .value,
-                                  //                           color: Colors.white,
-                                  //                         );
-                                  //                       })),
-                                  //               Center(
-                                  //                 child: Padding(
-                                  //                   padding:
-                                  //                       const EdgeInsets.only(
-                                  //                           top: 24.0,
-                                  //                           left: 24,
-                                  //                           right: 24),
-                                  //                   child: Text(
-                                  //                     "This is a pirated app. Do not use this. It may have security issues.",
-                                  //                     style: TextStyle(
-                                  //                         color: Colors.white,
-                                  //                         fontSize: 18),
-                                  //                   ),
-                                  //                 ),
-                                  //               ),
-                                  //             ],
-                                  //           ),
-                                  //         ),
-                                  //       )
-                                  //     : Container(),
                                   buildHomeCarouselSlider(context, homeData),
                                   Padding(
                                     padding: const EdgeInsets.fromLTRB(
@@ -226,10 +177,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       ],
                                     ),
                                   ),
-                                  // Add this after your existing slivers
-                                  // SliverToBoxAdapter(
-                                  //   child: buildHotAuctionsCarousel(context, homeData),
-                                  // ),
                                   Container(
                                     height: 80,
                                   )
@@ -365,142 +312,99 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget buildHomeEndingSoon(context, HomePresenter homeData) {
-    if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
-      return SingleChildScrollView(
-          child: ShimmerHelper().buildProductGridShimmer(
-              scontroller: homeData.allProductScrollController));
+    if (homeData.isAllProductInitial) {
+      return SizedBox(
+        height: 280,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 6,
+          itemBuilder: (context, index) {
+            return Container(
+              width: 160,
+              margin: const EdgeInsets.only(right: 12),
+              child: ShimmerHelper().buildBasicShimmer(height: 260),
+            );
+          },
+        ),
+      );
     } else if (homeData.allProductList.length > 0) {
-      //snapshot.hasData
-
-      return GridView.builder(
-        // 2
-        //addAutomaticKeepAlives: true,
-        itemCount: homeData.allProductList.length,
-        controller: homeData.allProductScrollController,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.618),
-        padding: EdgeInsets.all(16.0),
-        physics: NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          // 3
-          return ProductCard(
-            id: homeData.allProductList[index].id,
-            slug: homeData.allProductList[index].slug,
-            image: homeData.allProductList[index].thumbnail_image,
-            name: homeData.allProductList[index].name,
-            main_price: homeData.allProductList[index].main_price,
-            stroked_price: homeData.allProductList[index].stroked_price,
-            has_discount: homeData.allProductList[index].has_discount,
-            discount: homeData.allProductList[index].discount,
-          );
-        },
+      return ProductHorizontalCarousel(
+        products: homeData.allProductList,
+        scrollController: homeData.allProductScrollController,
       );
     } else if (homeData.totalAllProductData == 0) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.no_product_is_available));
+        child: Text(AppLocalizations.of(context)!.no_product_is_available),
+      );
     } else {
-      return Container(); // should never be happening
+      return Container();
     }
   }
 
   Widget buildHomeUpcoming(context, HomePresenter homeData) {
-    if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
-      return SingleChildScrollView(
-          child: ShimmerHelper().buildProductGridShimmer(
-              scontroller: homeData.allProductScrollController));
+    if (homeData.isAllProductInitial) {
+      return SizedBox(
+        height: 280,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 6,
+          itemBuilder: (context, index) {
+            return Container(
+              width: 160,
+              margin: const EdgeInsets.only(right: 12),
+              child: ShimmerHelper().buildBasicShimmer(height: 260),
+            );
+          },
+        ),
+      );
     } else if (homeData.allProductList.length > 0) {
-      //snapshot.hasData
-
-      return GridView.builder(
-        // 2
-        //addAutomaticKeepAlives: true,
-        itemCount: homeData.allProductList.length,
-        controller: homeData.allProductScrollController,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.618),
-        padding: EdgeInsets.all(16.0),
-        physics: NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          // 3
-          return ProductCard(
-            id: homeData.allProductList[index].id,
-            slug: homeData.allProductList[index].slug,
-            image: homeData.allProductList[index].thumbnail_image,
-            name: homeData.allProductList[index].name,
-            main_price: homeData.allProductList[index].main_price,
-            stroked_price: homeData.allProductList[index].stroked_price,
-            has_discount: homeData.allProductList[index].has_discount,
-            discount: homeData.allProductList[index].discount,
-          );
-        },
+      return ProductHorizontalCarousel(
+        products: homeData.allProductList,
+        scrollController: homeData.allProductScrollController,
       );
     } else if (homeData.totalAllProductData == 0) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.no_product_is_available));
+        child: Text(AppLocalizations.of(context)!.no_product_is_available),
+      );
     } else {
-      return Container(); // should never be happening
+      return Container();
     }
   }
 
   Widget buildHomeAllProducts2(context, HomePresenter homeData) {
-    // if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
     if (homeData.isAllProductInitial) {
-      return SingleChildScrollView(
-          child: ShimmerHelper().buildProductGridShimmer(
-              scontroller: homeData.allProductScrollController));
-    } else if (homeData.allProductList.length > 0) {
-      return MasonryGridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 14,
-          crossAxisSpacing: 14,
-          itemCount: homeData.allProductList.length,
-          shrinkWrap: true,
-          padding: EdgeInsets.only(top: 20.0, bottom: 10, left: 18, right: 18),
-          physics: NeverScrollableScrollPhysics(),
+      // Show shimmer for horizontal carousel
+      return SizedBox(
+        height: 280,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 6,
           itemBuilder: (context, index) {
-            return ProductCard(
-              id: homeData.allProductList[index].id,
-              slug: homeData.allProductList[index].slug,
-              image: homeData.allProductList[index].thumbnail_image,
-              name: homeData.allProductList[index].name,
-              main_price: homeData.allProductList[index].main_price,
-              stroked_price: homeData.allProductList[index].stroked_price,
-              has_discount: homeData.allProductList[index].has_discount,
-              discount: homeData.allProductList[index].discount,
-              is_wholesale: homeData.allProductList[index].isWholesale,
+            return Container(
+              width: 160,
+              margin: const EdgeInsets.only(right: 12),
+              child: ShimmerHelper().buildBasicShimmer(height: 260),
             );
-          });
+          },
+        ),
+      );
+    } else if (homeData.allProductList.length > 0) {
+      // Show horizontal carousel with responsive items
+      return ProductHorizontalCarousel(
+        products: homeData.allProductList,
+        scrollController: homeData.allProductScrollController,
+      );
     } else if (homeData.totalAllProductData == 0) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.no_product_is_available));
+        child: Text(AppLocalizations.of(context)!.no_product_is_available),
+      );
     } else {
-      return Container(); // should never be happening
+      return Container();
     }
   }
-
-  // Widget buildHotAuctionsCarousel(BuildContext context, HomePresenter homeData) {
-  //   // Check if auction products exist
-  //   if (homeData.allProductList == null || homeData.allProductList!.isEmpty) {
-  //     return const SizedBox.shrink();
-  //   }
-
-  //   return AuctionProductsCarousel(
-  //     products: homeData.allProductList!,
-  //     title: AppLocalizations.of(context)!.hot_auctions_ucf,
-  //     onViewAll: () {
-  //       // Navigate to all auctions page
-  //       // Navigator.push(context, MaterialPageRoute(builder: (context) => AllAuctionsPage()));
-  //     },
-  //   );
-  // }
 
   Widget buildHomeFeaturedCategories(context, HomePresenter homeData) {
     if (homeData.isCategoryInitial && homeData.featuredCategoryList.length == 0) {
@@ -515,7 +419,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       return SizedBox(
         height: 60, // Fixed height for the horizontal row (44px card + padding)
         child: ListView.builder(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 0),
           scrollDirection: Axis.horizontal,
           controller: homeData.featuredCategoryScrollController,
           physics: const BouncingScrollPhysics(),
@@ -553,8 +457,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   children: [
                     // Square Image Section (Left) - 44px x 44px
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 46,
+                      height: 46,
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.horizontal(
                           left: Radius.circular(10),
@@ -738,17 +642,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(left: 12),
               child: GestureDetector(
                 onTap: () {
-                  // Check if user is logged in - same pattern as main.dart
-                  if (is_logged_in.$) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsPage(),
-                      ),
-                    );
-                  } else {
-                    _redirectToLogin(context);
-                  }
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NotificationsPage(),
+                    ),
+                  );
                 },
                 child: Container(
                   width: 35,
@@ -767,30 +666,29 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Notification counter badge (only show if logged in)
-                      if (is_logged_in.$)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Text(
-                              '3',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                      // Notification counter badge (demo)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MyTheme.accent_color,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            '3',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -801,17 +699,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
-                  // Check if user is logged in - same pattern as main.dart
-                  if (is_logged_in.$) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MessengerList(),
-                      ),
-                    );
-                  } else {
-                    _redirectToLogin(context);
-                  }
+                  // Navigate to your existing chat page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MessengerList(), // Change to your chat page widget
+                    ),
+                  );
                 },
                 child: Container(
                   width: 35,
@@ -830,33 +724,32 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Chat counter badge (only show if logged in)
-                      if (is_logged_in.$)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Text(
-                              '2',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                      // Chat counter badge (demo)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MyTheme.accent_color,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            '2',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
+                      ),
                     ],
                   ),
-                ), 
+                ),
               ),
             ),
             // Affiliate Icon
@@ -864,17 +757,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
-                  // Check if user is logged in - same pattern as main.dart
-                  if (is_logged_in.$) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AffiliatePage(),
-                      ),
-                    );
-                  } else {
-                    _redirectToLogin(context);
-                  }
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AffiliatePage(),
+                    ),
+                  );
                 },
                 child: Container(
                   width: 35,
@@ -951,27 +839,4 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ),
     );
   }
-
-  void _redirectToLogin(BuildContext context) {
-    // Show a toast message
-    ToastComponent.showDialog(
-      AppLocalizations.of(context)!.you_need_to_log_in,
-      gravity: Toast.center,
-      duration: Toast.lengthLong,
-    );
-    
-    // Navigate to login page
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Login(
-          onLoginSuccess: () {
-            // Refresh the page after successful login if needed
-            setState(() {});
-          },
-        ),
-      ),
-    );
-  }
-
 }
