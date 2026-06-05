@@ -146,9 +146,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          AppLocalizations.of(context)!.cash_earnings,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        title: const Text(
+          'Cash Earnings',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
@@ -159,26 +159,22 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Profile Card
-                  _buildProfileCard(),
-                  
-                  // Cash History Section
-                  _buildCashHistorySection(filteredLogs),
-                  
-                  // Monthly Cash Balance Section
-                  if (_months.isNotEmpty) 
-                    _buildMonthlySection(),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Card
+            _buildProfileCard(),
+            
+            // Cash History Section
+            _buildCashHistorySection(filteredLogs),
+            
+            // Monthly Cash Balance Section
+            if (_months.isNotEmpty) 
+              _buildMonthlySection(),
+          ],
+        ),
       ),
     );
   }
@@ -242,9 +238,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text(
-                      AppLocalizations.of(context)!.cash_earnings,
-                      style: const TextStyle(
+                    const Text(
+                      'Cash Earnings',
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF64748B),
@@ -268,7 +264,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       ),
     );
   }
-  
+    
   Widget _buildCashHistorySection(List<Map<String, dynamic>> logs) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -276,9 +272,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          Text(
-            AppLocalizations.of(context)!.cash_earnings_history,
-            style: const TextStyle(
+          const Text(
+            'Cash Earnings History',
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -300,7 +296,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       ),
     );
   }
-  
+    
   Widget _buildHistoryCard(Map<String, dynamic> log) {
     final date = log['date'] as DateTime;
     
@@ -315,27 +311,27 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       child: Column(
         children: [
           _buildHistoryRow(
-            AppLocalizations.of(context)!.date_ucf,
+            'Date',
             '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}',
           ),
           _buildHistoryRow(
-            AppLocalizations.of(context)!.user_ucf,
+            'User',
             log['user'],
           ),
           _buildHistoryRow(
-            AppLocalizations.of(context)!.amount_ucf,
+            'Amount',
             '\$${log['amount'].toStringAsFixed(2)}',
             isHighlighted: true,
           ),
           if (log['orderId'] != null)
             _buildHistoryRow(
-              AppLocalizations.of(context)!.order_id_ucf,
+              'Order ID',
               '#${log['orderId']}',
             ),
           _buildHistoryRow(
-            AppLocalizations.of(context)!.status_ucf,
-            _getStatusText(log['status']),
-            statusColor: _getStatusColor(log['status']),
+            'Status',
+            log['status'] == 1 ? 'Completed' : 'Pending',
+            statusColor: log['status'] == 1 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
           ),
         ],
       ),
@@ -394,18 +390,18 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             style: TextStyle(fontSize: 32),
           ),
           const SizedBox(height: 8),
-          Text(
-            AppLocalizations.of(context)!.no_cash_earnings,
-            style: const TextStyle(
+          const Text(
+            'No cash earnings yet',
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Color(0xFF334155),
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            AppLocalizations.of(context)!.share_referral_to_earn,
-            style: const TextStyle(
+          const Text(
+            'Share your referral link to earn cash',
+            style: TextStyle(
               fontSize: 11,
               color: Color(0xFF94A3B8),
             ),
@@ -415,16 +411,16 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       ),
     );
   }
-  
+    
   Widget _buildMonthlySection() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context)!.monthly_cash_balance,
-            style: const TextStyle(
+          const Text(
+            'Monthly Cash Balance',
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -448,7 +444,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     margin: const EdgeInsets.only(right: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isActive ? MyTheme.accent_color : Colors.transparent,
+                      color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
@@ -477,9 +473,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             ),
             child: Column(
               children: [
-                Text(
-                  AppLocalizations.of(context)!.total_cash_earned,
-                  style: const TextStyle(
+                const Text(
+                  'Total Cash Earned',
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF666666),

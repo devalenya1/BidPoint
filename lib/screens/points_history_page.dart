@@ -197,7 +197,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)!.referral_points,
+          'Points History',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
@@ -209,29 +209,25 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Profile Card
-                  _buildProfileCard(),
-                  
-                  // Filter Tabs
-                  _buildFilterTabs(),
-                  
-                  // Points History Section
-                  _buildPointsHistorySection(),
-                  
-                  // Monthly Points Balance Section
-                  if (_months.isNotEmpty) 
-                    _buildMonthlySection(),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Card
+            _buildProfileCard(),
+            
+            // Filter Tabs
+            _buildFilterTabs(),
+            
+            // Points History Section
+            _buildPointsHistorySection(),
+            
+            // Monthly Points Balance Section
+            if (_months.isNotEmpty) 
+              _buildMonthlySection(),
+          ],
+        ),
       ),
     );
   }
@@ -295,9 +291,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text(
-                      AppLocalizations.of(context)!.points_balance,
-                      style: const TextStyle(
+                    const Text(
+                      'Points Balance',
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF64748B),
@@ -305,11 +301,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${_pointsBalance.toString()} ${AppLocalizations.of(context)!.points_ucf}',
+                      '${_pointsBalance.toString()} points',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: MyTheme.accent_color,
+                        color: Color(0xFF0092AC),
                       ),
                     ),
                   ],
@@ -324,12 +320,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildFilterTabs() {
     final filters = ['All', 'Today', '7', '30'];
-    final filterLabels = {
-      'All': AppLocalizations.of(context)!.all_ucf,
-      'Today': AppLocalizations.of(context)!.today_ucf,
-      '7': AppLocalizations.of(context)!.last_7_days,
-      '30': AppLocalizations.of(context)!.last_30_days,
-    };
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -350,11 +340,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isActive ? MyTheme.accent_color : const Color(0xFFF6F6F6),
+                  color: isActive ? const Color(0xFF0092AC) : const Color(0xFFF6F6F6),
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Text(
-                  filterLabels[filter] ?? filter,
+                  filter,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -375,9 +365,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context)!.points_history,
-            style: const TextStyle(
+          const Text(
+            'Points History',
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -488,18 +478,18 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             style: TextStyle(fontSize: 32),
           ),
           const SizedBox(height: 8),
-          Text(
-            AppLocalizations.of(context)!.no_points_history_found,
-            style: const TextStyle(
+          const Text(
+            'No points history found',
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Color(0xFF334155),
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            AppLocalizations.of(context)!.share_referral_to_earn_points,
-            style: const TextStyle(
+          const Text(
+            'Share your referral link to earn points',
+            style: TextStyle(
               fontSize: 11,
               color: Color(0xFF94A3B8),
             ),
@@ -509,16 +499,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       ),
     );
   }
-  
+
   Widget _buildMonthlySection() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context)!.monthly_points_balance,
-            style: const TextStyle(
+          const Text(
+            'Monthly Points Balance',
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -542,7 +532,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     margin: const EdgeInsets.only(right: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isActive ? MyTheme.accent_color : Colors.transparent,
+                      color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
@@ -571,9 +561,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
             child: Column(
               children: [
-                Text(
-                  AppLocalizations.of(context)!.total_points_earned,
-                  style: const TextStyle(
+                const Text(
+                  'Total Points Earned',
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF666666),
@@ -581,11 +571,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${(_monthlyPoints[_months[_selectedMonthIndex]] ?? 0).toString()} ${AppLocalizations.of(context)!.points_ucf}',
+                  '${(_monthlyPoints[_months[_selectedMonthIndex]] ?? 0).toString()} points',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: MyTheme.accent_color,
+                    color: Color(0xFF0092AC),
                   ),
                 ),
               ],

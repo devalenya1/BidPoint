@@ -99,11 +99,22 @@ class _CategoryListState extends State<CategoryList> {
       textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: null, // Remove default app bar to create custom header
+        appBar: AppBar(
+          title: Text(
+            getAppBarTitle(),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         body: Column(
           children: [
-            // Custom Header with Back Button
-            _buildHeader(),
             // Search Bar
             _buildSearchBar(),
             // Tabs (Recommended & A-Z)

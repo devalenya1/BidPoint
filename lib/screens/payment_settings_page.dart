@@ -138,44 +138,46 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.payment_settings,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Stack(
         children: [
-          Column(
-            children: [
-              // Top Header
-              _buildTopHeader(),
-              
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 85, 16, 30),
-                    child: Column(
-                      children: [
-                        // Bank Details Card
-                        _buildPaymentCard(
-                          icon: Icons.account_balance,
-                          title: AppLocalizations.of(context)!.bank_details,
-                          description: AppLocalizations.of(context)!.bank_details_desc,
-                          isConnected: _bankConnected,
-                          onTap: _openBankModal,
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // PayPal Details Card
-                        _buildPaymentCard(
-                          icon: Icons.payment,
-                          title: AppLocalizations.of(context)!.paypal_details,
-                          description: AppLocalizations.of(context)!.paypal_details_desc,
-                          isConnected: _paypalConnected,
-                          onTap: _openPaypalModal,
-                        ),
-                      ],
-                    ),
-                  ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+            child: Column(
+              children: [
+                // Bank Details Card
+                _buildPaymentCard(
+                  icon: Icons.account_balance,
+                  title: AppLocalizations.of(context)!.bank_details,
+                  description: AppLocalizations.of(context)!.bank_details_desc,
+                  isConnected: _bankConnected,
+                  onTap: _openBankModal,
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                
+                // PayPal Details Card
+                _buildPaymentCard(
+                  icon: Icons.payment,
+                  title: AppLocalizations.of(context)!.paypal_details,
+                  description: AppLocalizations.of(context)!.paypal_details_desc,
+                  isConnected: _paypalConnected,
+                  onTap: _openPaypalModal,
+                ),
+              ],
+            ),
           ),
           
           // Bank Modal
@@ -190,53 +192,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     );
   }
   
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: _navigateBack,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 18,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          // Title
-          Text(
-            AppLocalizations.of(context)!.payment_settings,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          // Invisible placeholder
-          const SizedBox(width: 36),
-        ],
-      ),
-    );
-  }
+ 
   
   Widget _buildPaymentCard({
     required IconData icon,

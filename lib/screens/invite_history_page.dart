@@ -107,85 +107,36 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Fixed Header
-          _buildTopHeader(),
-          
-          // Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 72, 16, 32),
-                child: Column(
-                  children: [
-                    // Stats Cards Row
-                    _buildStatsRow(),
-                    const SizedBox(height: 24),
-                    
-                    // Referral Link Section (commented out as in HTML)
-                    // _buildReferralSection(),
-                    // const SizedBox(height: 24),
-                    
-                    // Invite History Section
-                    _buildHistorySection(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.invite_history,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: _navigateBack,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 20,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          // Title
-          Text(
-            AppLocalizations.of(context)!.invite_history,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
-            ),
-          ),
-          // Invisible placeholder
-          const SizedBox(width: 36),
-        ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        child: Column(
+          children: [
+            // Stats Cards Row
+            _buildStatsRow(),
+            const SizedBox(height: 24),
+            
+            // Invite History Section
+            _buildHistorySection(),
+          ],
+        ),
       ),
     );
   }
+
   
   Widget _buildStatsRow() {
     return Row(

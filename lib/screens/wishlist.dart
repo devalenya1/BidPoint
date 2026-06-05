@@ -183,9 +183,11 @@ class _WishlistState extends State<Wishlist> {
     final distance = endDate.difference(now);
     
     if (distance.isNegative) {
-      setState(() {
-        _timeLeft[id] = AppLocalizations.of(context)!.ended_ucf;
-      });
+      if (mounted) {
+        setState(() {
+          _timeLeft[id] = "Ended";
+        });
+      }
       _timers[id]?.cancel();
       return;
     }
@@ -206,9 +208,11 @@ class _WishlistState extends State<Wishlist> {
       timeString = "${seconds}s";
     }
     
-    setState(() {
-      _timeLeft[id] = timeString;
-    });
+    if (mounted) {
+      setState(() {
+        _timeLeft[id] = timeString;
+      });
+    }
   }
   
   String _formatPrice(double price) {
@@ -221,20 +225,20 @@ class _WishlistState extends State<Wishlist> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          AppLocalizations.of(context)!.remove_from_wishlist,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        title: const Text(
+          'Remove from Wishlist',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
-        content: Text(
-          AppLocalizations.of(context)!.are_you_sure_remove_from_wishlist,
-          style: const TextStyle(fontSize: 14),
+        content: const Text(
+          'Are you sure you want to remove this item from your wishlist?',
+          style: TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              AppLocalizations.of(context)!.cancel_ucf,
-              style: const TextStyle(color: Color(0xFF64748B)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF64748B)),
             ),
           ),
           ElevatedButton(
@@ -243,7 +247,7 @@ class _WishlistState extends State<Wishlist> {
               backgroundColor: MyTheme.accent_color,
               foregroundColor: Colors.white,
             ),
-            child: Text(AppLocalizations.of(context)!.remove_ucf),
+            child: const Text('Remove'),
           ),
         ],
       ),
@@ -258,16 +262,10 @@ class _WishlistState extends State<Wishlist> {
       });
       
       ToastComponent.showDialog(
-        AppLocalizations.of(context)!.removed_from_wishlist,
+        'Removed from wishlist',
         gravity: Toast.center,
         duration: Toast.lengthShort,
       );
-    }
-  }
-  
-  void _navigateBack() {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
     }
   }
   
@@ -290,86 +288,48 @@ class _WishlistState extends State<Wishlist> {
     
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          'All Favorites',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Column(
         children: [
-          // Top Header
-          _buildTopHeader(),
+          // Tabs Section
+          _buildTabs(),
           
           // Main Content
           Expanded(
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    // Tabs Section
-                    _buildTabs(),
-                    const SizedBox(height: 16),
-                    
-                    // Tab Content
-                    if (currentItems.isEmpty)
-                      _buildEmptyState()
-                    else
-                      Column(
-                        children: currentItems.map((item) => 
-                          _buildActivityCard(item)
-                        ).toList(),
-                      ),
-                    
-                    const SizedBox(height: 30),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  
+                  // Tab Content
+                  if (currentItems.isEmpty)
+                    _buildEmptyState()
+                  else
+                    Column(
+                      children: currentItems.map((item) => 
+                        _buildWishlistCard(item)
+                      ).toList(),
+                    ),
+                  
+                  const SizedBox(height: 30),
+                ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: _navigateBack,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 20,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          // Title
-          Text(
-            AppLocalizations.of(context)!.all_favorites,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          // Invisible placeholder for balance
-          const SizedBox(width: 40),
         ],
       ),
     );
@@ -377,73 +337,65 @@ class _WishlistState extends State<Wishlist> {
   
   Widget _buildTabs() {
     final tabs = [
-      AppLocalizations.of(context)!.all_ucf,
-      AppLocalizations.of(context)!.live_ucf,
-      AppLocalizations.of(context)!.ending_soon_ucf,
-      AppLocalizations.of(context)!.outbid_ucf,
+      'All',
+      'Live',
+      'Ending Soon',
+      'Outbid',
     ];
     
     return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: List.generate(tabs.length, (index) {
-          final isActive = _selectedTab == index;
-          return Expanded(
-            child: GestureDetector(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(tabs.length, (index) {
+            final isActive = _selectedTab == index;
+            return GestureDetector(
               onTap: () {
                 setState(() {
                   _selectedTab = index;
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                margin: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Text(
                   tabs[index],
-                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }
   
-  Widget _buildActivityCard(Map<String, dynamic> item) {
+  Widget _buildWishlistCard(Map<String, dynamic> item) {
     final isEnded = item['isEnded'];
     final isOutbid = item['isOutbid'] == true;
     final isWinning = item['isWinning'] == true;
-    final isEndingSoon = item['isEndingSoon'] == true;
-    final timeLeft = _timeLeft[item['id']] ?? AppLocalizations.of(context)!.loading;
-    final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
+    final timeLeft = _timeLeft[item['id']] ?? 'Loading...';
+    final isTimerEnded = timeLeft == "Ended";
     
     String statusText;
     if (isEnded) {
-      statusText = AppLocalizations.of(context)!.auction_has_ended;
+      statusText = 'Auction has ended';
     } else if (isOutbid) {
-      statusText = AppLocalizations.of(context)!.someone_placed_higher_bid;
+      statusText = 'You were outbid! Someone placed a higher bid';
     } else if (isWinning) {
-      statusText = AppLocalizations.of(context)!.you_are_currently_winning;
-    } else if (isEndingSoon) {
-      statusText = AppLocalizations.of(context)!.ending_soon_place_your_bid;
+      statusText = 'You are currently winning this auction';
     } else {
-      statusText = AppLocalizations.of(context)!.place_your_bid_now;
+      statusText = 'Place your bid now';
     }
     
     return Container(
@@ -480,42 +432,43 @@ class _WishlistState extends State<Wishlist> {
                 ),
               ),
               // Timer Badge
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isTimerEnded ? const Color(0xFFDC3545) : const Color(0xFF009572),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 10,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        timeLeft,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+              if (!isEnded)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isTimerEnded ? const Color(0xFFDC3545) : const Color(0xFF009572),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          size: 10,
                           color: Colors.white,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          timeLeft,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               // Remove from wishlist button
               Positioned(
                 top: 0,
@@ -549,8 +502,10 @@ class _WishlistState extends State<Wishlist> {
                 // Product Name
                 Text(
                   item['productName'],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: Colors.black,
                   ),
@@ -560,18 +515,18 @@ class _WishlistState extends State<Wishlist> {
                 Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: isOutbid || isEnded 
-                        ? const Color(0xFF64748B) 
+                    color: isOutbid 
+                        ? const Color(0xFFDC2626)
                         : (isWinning ? const Color(0xFF10B981) : const Color(0xFFF59E0B)),
                   ),
                 ),
                 const SizedBox(height: 8),
                 // Bid Label
-                Text(
-                  AppLocalizations.of(context)!.current_bid,
-                  style: const TextStyle(
+                const Text(
+                  'Current bid',
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF94A3B8),
@@ -598,7 +553,7 @@ class _WishlistState extends State<Wishlist> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(
-                        '${AppLocalizations.of(context)!.one_bid} = ${_formatPrice(item['pointsPerBid'])}',
+                        '1 Bid = ${item['pointsPerBid']}',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -610,76 +565,37 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 const SizedBox(height: 12),
                 // Action Button
-                if (!isEnded)
-                  _buildBidNowButton(item)
-                else
-                  _buildViewDetailsButton(item),
+                GestureDetector(
+                  onTap: () {
+                    ToastComponent.showDialog(
+                      'Navigate to ${item['productName']}',
+                      gravity: Toast.center,
+                      duration: Toast.lengthShort,
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: MyTheme.accent_color, width: 1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isEnded ? 'View Details' : 'Bid Now',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-  
-  Widget _buildBidNowButton(Map<String, dynamic> item) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to product details
-        ToastComponent.showDialog(
-          'Navigate to ${item['productName']}',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: MyTheme.accent_color, width: 1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.bid_now,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: MyTheme.accent_color,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildViewDetailsButton(Map<String, dynamic> item) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to product details
-        ToastComponent.showDialog(
-          'View details of ${item['productName']}',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: MyTheme.accent_color, width: 1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.view_details,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: MyTheme.accent_color,
-          ),
-        ),
       ),
     );
   }
@@ -692,56 +608,49 @@ class _WishlistState extends State<Wishlist> {
     switch (_selectedTab) {
       case 1:
         icon = '🎯';
-        text = AppLocalizations.of(context)!.no_live_auction;
-        subtext = AppLocalizations.of(context)!.check_back_later_for_active_auctions;
+        text = 'No live auctions';
+        subtext = 'Check back later for active auctions';
         break;
       case 2:
         icon = '⏰';
-        text = AppLocalizations.of(context)!.no_auctions_ending_soon;
-        subtext = AppLocalizations.of(context)!.check_back_later_for_ending_auctions;
+        text = 'No auctions ending soon';
+        subtext = 'Check back later for ending auctions';
         break;
       case 3:
         icon = '🏆';
-        text = AppLocalizations.of(context)!.no_outbid_items;
-        subtext = AppLocalizations.of(context)!.you_are_currently_winning_all_bids;
+        text = 'No outbid items';
+        subtext = 'You are currently winning all your bids';
         break;
       default:
         icon = '❤️';
-        text = AppLocalizations.of(context)!.no_item_in_wishlist;
-        subtext = AppLocalizations.of(context)!.add_products_to_wishlist_to_see_here;
+        text = 'No items in wishlist';
+        subtext = 'Add products to wishlist to see them here';
     }
     
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FC),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 48)),
-            const SizedBox(height: 12),
-            Text(
-              text,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF334155),
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+      child: Column(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 48)),
+          const SizedBox(height: 16),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF334155),
             ),
-            const SizedBox(height: 6),
-            Text(
-              subtext,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF94A3B8),
-              ),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtext,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF94A3B8),
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

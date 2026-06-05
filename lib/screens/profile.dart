@@ -31,6 +31,7 @@ import 'package:active_ecommerce_flutter/screens/top_selling_products.dart';
 import 'package:active_ecommerce_flutter/screens/uploads/upload_file.dart';
 import 'package:active_ecommerce_flutter/screens/wallet.dart';
 import 'package:active_ecommerce_flutter/screens/wishlist.dart';
+import 'package:active_ecommerce_flutter/screens/notification_settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -143,92 +144,46 @@ class _ProfileState extends State<Profile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Top Header
-          _buildTopHeader(),
-          
-          // Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Profile Card
-                  _buildProfileCard(),
-                  
-                  // Menu Section
-                  _buildMenuSection(),
-                ],
-              ),
+      appBar: AppBar(
+        title: Text(
+          AppLocalizations.of(context)!.profile_ucf,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _navigateBack,
+        ),
+        actions: [
+          // Logout Button in AppBar
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+              onPressed: is_logged_in.$ ? _onTapLogout : () => context.push("/users/login"),
             ),
           ),
         ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+        child: Column(
+          children: [
+            // Profile Card
+            _buildProfileCard(),
+            
+            // Menu Section
+            _buildMenuSection(),
+          ],
+        ),
       ),
     );
   }
   
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: _navigateBack,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 20,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
-          // Title
-          Text(
-            AppLocalizations.of(context)!.profile_ucf,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          // Logout Button
-          GestureDetector(
-            onTap: is_logged_in.$ ? _onTapLogout : () => context.push("/users/login"),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.logout,
-                size: 20,
-                color: Color(0xFFDC2626),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
   
   Widget _buildProfileCard() {
     return Container(
@@ -248,8 +203,8 @@ class _ProfileState extends State<Profile> {
               children: [
                 // Avatar
                 Container(
-                  width: 72,
-                  height: 72,
+                  width: 45,
+                  height: 45,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
@@ -287,7 +242,7 @@ class _ProfileState extends State<Profile> {
                       Text(
                         _userName,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Colors.black,
                         ),
@@ -309,7 +264,7 @@ class _ProfileState extends State<Profile> {
           ),
           // Right side - Points Card
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -327,7 +282,7 @@ class _ProfileState extends State<Profile> {
                         color: Color(0xFF64748B),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 7),
                     GestureDetector(
                       onTap: _togglePointsVisibility,
                       child: Container(
@@ -339,7 +294,7 @@ class _ProfileState extends State<Profile> {
                         ),
                         child: Icon(
                           _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                          size: 18,
+                          size: 17,
                           color: MyTheme.accent_color,
                         ),
                       ),
@@ -353,7 +308,7 @@ class _ProfileState extends State<Profile> {
                     Text(
                       _pointsVisible ? '$_userBalance' : '****',
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Colors.black,
                       ),
@@ -362,7 +317,7 @@ class _ProfileState extends State<Profile> {
                     Text(
                       AppLocalizations.of(context)!.points_ucf,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
@@ -461,7 +416,7 @@ class _ProfileState extends State<Profile> {
                   label: AppLocalizations.of(context)!.notification_ucf,
                   onTap: () {
                     if (is_logged_in.$) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ComingSoonPage(title: 'Notification')));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationSettingsPage()));
                     } else {
                       _showLoginWarning();
                     }
