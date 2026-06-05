@@ -35,6 +35,10 @@ import '../custom/loading.dart';
 import '../repositories/address_repository.dart';
 
 class Login extends StatefulWidget {
+  final VoidCallback? onLoginSuccess;
+  
+  const Login({Key? key, this.onLoginSuccess}) : super(key: key);
+
   @override
   _LoginState createState() => _LoginState();
 }
@@ -73,6 +77,17 @@ class _LoginState extends State<Login> {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
     super.dispose();
+  }
+
+  // Helper method to handle successful login
+  void _handleLoginSuccess() {
+    // Call the callback if provided
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!();
+    }
+    
+    // Navigate to main screen
+    context.push("/");
   }
 
   onPressedLogin() async {
@@ -137,11 +152,7 @@ class _LoginState extends State<Login> {
         }
       }
 
-      // Navigator.pushAndRemoveUntil(context,
-      //     MaterialPageRoute(builder: (context) {
-      //   return Main();
-      // }), (newRoute) => false);
-      context.push("/");
+      _handleLoginSuccess();
     }
   }
 
@@ -169,9 +180,7 @@ class _LoginState extends State<Login> {
               gravity: Toast.center, duration: Toast.lengthLong);
 
           AuthHelper().setUserData(loginResponse);
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return Main();
-          }));
+          _handleLoginSuccess();
           FacebookAuth.instance.logOut();
         }
         // final userData = await FacebookAuth.instance.getUserData(fields: "email,birthday,friends,gender,link");
@@ -211,9 +220,7 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         AuthHelper().setUserData(loginResponse);
-        Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return Main();
-        }));
+        _handleLoginSuccess();
       }
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
@@ -251,9 +258,7 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         AuthHelper().setUserData(loginResponse);
-        Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return Main();
-        }));
+        _handleLoginSuccess();
       }
     } on Exception catch (e) {
       print("error is ....... $e");
@@ -308,25 +313,12 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         AuthHelper().setUserData(loginResponse);
-        Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return Main();
-        }));
+        _handleLoginSuccess();
       }
     } on Exception catch (e) {
       print(e);
       // TODO
     }
-
-    // Create an `OAuthCredential` from the credential returned by Apple.
-    // final oauthCredential = OAuthProvider("apple.com").credential(
-    //   idToken: appleCredential.identityToken,
-    //   rawNonce: rawNonce,
-    // );
-    //print(oauthCredential.accessToken);
-
-    // Sign in the user with Firebase. If the nonce we generated earlier does
-    // not match the nonce in `appleCredential.identityToken`, sign in will fail.
-    //return await FirebaseAuth.instance.signInWithCredential(oauthCredential);
   }
 
   @override
