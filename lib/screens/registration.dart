@@ -268,45 +268,148 @@ class _RegistrationState extends State<Registration> {
   }
 
   Column buildBody(BuildContext context, double _screen_width) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: _screen_width * (3 / 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  AppLocalizations.of(context)!.name_ucf,
-                  style: TextStyle(
-                      color: MyTheme.accent_color, fontWeight: FontWeight.w600),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Container(
-                  height: 36,
-                  child: TextField(
-                    controller: _nameController,
-                    autofocus: false,
-                    decoration: InputDecorations.buildInputDecoration_1(
-                        hint_text: "John Doe"),
+    return Container(
+      width: _screen_width,  // Make the outer container full width
+      // color: Colors.white,  
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: _screen_width * (3 / 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Text(
+                    AppLocalizations.of(context)!.name_ucf,
+                    style: TextStyle(
+                        color: MyTheme.accent_color, fontWeight: FontWeight.w600),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  _register_by == "email"
-                      ? AppLocalizations.of(context)!.email_ucf
-                      : AppLocalizations.of(context)!.phone_ucf,
-                  style: TextStyle(
-                      color: MyTheme.accent_color, fontWeight: FontWeight.w600),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Container(
+                    height: 36,
+                    child: TextField(
+                      controller: _nameController,
+                      autofocus: false,
+                      decoration: InputDecorations.buildInputDecoration_1(
+                          hint_text: "John Doe"),
+                    ),
+                  ),
                 ),
-              ),
-              if (_register_by == "email")
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Text(
+                    _register_by == "email"
+                        ? AppLocalizations.of(context)!.email_ucf
+                        : AppLocalizations.of(context)!.phone_ucf,
+                    style: TextStyle(
+                        color: MyTheme.accent_color, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (_register_by == "email")
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: 36,
+                          child: TextField(
+                            controller: _emailController,
+                            autofocus: false,
+                            decoration: InputDecorations.buildInputDecoration_1(
+                                hint_text: "johndoe@example.com"),
+                          ),
+                        ),
+                        otp_addon_installed.$
+                            ? GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _register_by = "phone";
+                                  });
+                                },
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .or_register_with_a_phone,
+                                  style: TextStyle(
+                                      color: MyTheme.accent_color,
+                                      fontStyle: FontStyle.italic,
+                                      decoration: TextDecoration.underline),
+                                ),
+                              )
+                            : Container()
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: 36,
+                          child: CustomInternationalPhoneNumberInput(
+                            countries: countries_code,
+                            onInputChanged: (PhoneNumber number) {
+                              print(number.phoneNumber);
+                              setState(() {
+                                _phone = number.phoneNumber;
+                              });
+                            },
+                            onInputValidated: (bool value) {
+                              print(value);
+                            },
+                            selectorConfig: SelectorConfig(
+                              selectorType: PhoneInputSelectorType.DIALOG,
+                            ),
+                            ignoreBlank: false,
+                            autoValidateMode: AutovalidateMode.disabled,
+                            selectorTextStyle:
+                                TextStyle(color: MyTheme.font_grey),
+                            // initialValue: PhoneNumber(
+                            //     isoCode: countries_code[0].toString()),
+                            textFieldController: _phoneNumberController,
+                            formatInput: true,
+                            keyboardType: TextInputType.numberWithOptions(
+                                signed: true, decimal: true),
+                            inputDecoration:
+                                InputDecorations.buildInputDecoration_phone(
+                                    hint_text: "01XXX XXX XXX"),
+                            onSaved: (PhoneNumber number) {
+                              //print('On Saved: $number');
+                            },
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _register_by = "email";
+                            });
+                          },
+                          child: Text(
+                            AppLocalizations.of(context)!
+                                .or_register_with_an_email,
+                            style: TextStyle(
+                                color: MyTheme.accent_color,
+                                fontStyle: FontStyle.italic,
+                                decoration: TextDecoration.underline),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Text(
+                    AppLocalizations.of(context)!.password_ucf,
+                    style: TextStyle(
+                        color: MyTheme.accent_color, fontWeight: FontWeight.w600),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Column(
@@ -315,329 +418,230 @@ class _RegistrationState extends State<Registration> {
                       Container(
                         height: 36,
                         child: TextField(
-                          controller: _emailController,
+                          controller: _passwordController,
                           autofocus: false,
+                          obscureText: true,
+                          enableSuggestions: false,
+                          autocorrect: false,
                           decoration: InputDecorations.buildInputDecoration_1(
-                              hint_text: "johndoe@example.com"),
+                              hint_text: "• • • • • • • •"),
                         ),
                       ),
-                      otp_addon_installed.$
-                          ? GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _register_by = "phone";
-                                });
-                              },
-                              child: Text(
-                                AppLocalizations.of(context)!
-                                    .or_register_with_a_phone,
-                                style: TextStyle(
-                                    color: MyTheme.accent_color,
-                                    fontStyle: FontStyle.italic,
-                                    decoration: TextDecoration.underline),
+                      // Password Strength Indicator
+                      if (_passwordController.text.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 4,
+                                child: LinearProgressIndicator(
+                                  value: _strengthProgress,
+                                  backgroundColor: Colors.grey.shade300,
+                                  color: _strengthColor,
+                                ),
                               ),
-                            )
-                          : Container()
+                              const SizedBox(height: 4),
+                              Text(
+                                _passwordStrength,
+                                style: TextStyle(
+                                  color: _strengthColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Text(
+                        AppLocalizations.of(context)!
+                            .password_must_contain_at_least_6_characters,
+                        style: TextStyle(
+                            color: MyTheme.textfield_grey,
+                            fontStyle: FontStyle.italic),
+                      )
                     ],
                   ),
-                )
-              else
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Text(
+                    AppLocalizations.of(context)!.retype_password_ucf,
+                    style: TextStyle(
+                        color: MyTheme.accent_color, fontWeight: FontWeight.w600),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Container(
+                    height: 36,
+                    child: TextField(
+                      controller: _passwordConfirmController,
+                      autofocus: false,
+                      obscureText: true,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      decoration: InputDecorations.buildInputDecoration_1(
+                          hint_text: "• • • • • • • •"),
+                    ),
+                  ),
+                ),
+                if (google_recaptcha.$)
+                  Container(
+                    height: _isCaptchaShowing ? 350 : 50,
+                    width: 300,
+                    child: Captcha(
+                      (keyValue) {
+                        googleRecaptchaKey = keyValue;
+                        setState(() {});
+                      },
+                      handleCaptcha: (data) {
+                        if (_isCaptchaShowing.toString() != data) {
+                          _isCaptchaShowing = data;
+                          setState(() {});
+                        }
+                      },
+                      isIOS: Platform.isIOS,
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        height: 36,
-                        child: CustomInternationalPhoneNumberInput(
-                          countries: countries_code,
-                          onInputChanged: (PhoneNumber number) {
-                            print(number.phoneNumber);
-                            setState(() {
-                              _phone = number.phoneNumber;
-                            });
-                          },
-                          onInputValidated: (bool value) {
-                            print(value);
-                          },
-                          selectorConfig: SelectorConfig(
-                            selectorType: PhoneInputSelectorType.DIALOG,
-                          ),
-                          ignoreBlank: false,
-                          autoValidateMode: AutovalidateMode.disabled,
-                          selectorTextStyle:
-                              TextStyle(color: MyTheme.font_grey),
-                          // initialValue: PhoneNumber(
-                          //     isoCode: countries_code[0].toString()),
-                          textFieldController: _phoneNumberController,
-                          formatInput: true,
-                          keyboardType: TextInputType.numberWithOptions(
-                              signed: true, decimal: true),
-                          inputDecoration:
-                              InputDecorations.buildInputDecoration_phone(
-                                  hint_text: "01XXX XXX XXX"),
-                          onSaved: (PhoneNumber number) {
-                            //print('On Saved: $number');
-                          },
-                        ),
+                        height: 15,
+                        width: 15,
+                        child: Checkbox(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6)),
+                            value: _isAgree,
+                            onChanged: (newValue) {
+                              _isAgree = newValue;
+                              setState(() {});
+                            }),
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _register_by = "email";
-                          });
-                        },
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .or_register_with_an_email,
-                          style: TextStyle(
-                              color: MyTheme.accent_color,
-                              fontStyle: FontStyle.italic,
-                              decoration: TextDecoration.underline),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Container(
+                          width: DeviceInfo(context).width! - 130,
+                          child: RichText(
+                              maxLines: 2,
+                              text: TextSpan(
+                                  style: TextStyle(
+                                      color: MyTheme.font_grey, fontSize: 12),
+                                  children: [
+                                    TextSpan(
+                                      text: "I agree to the",
+                                    ),
+                                    TextSpan(
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      CommonWebviewScreen(
+                                                        page_name:
+                                                            "Terms Conditions",
+                                                        url:
+                                                            "${AppConfig.RAW_BASE_URL}/mobile-page/terms",
+                                                      )));
+                                        },
+                                      style:
+                                          TextStyle(color: MyTheme.accent_color),
+                                      text: " Terms Conditions",
+                                    ),
+                                    TextSpan(
+                                      text: " &",
+                                    ),
+                                    TextSpan(
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      CommonWebviewScreen(
+                                                        page_name:
+                                                            "Privacy Policy",
+                                                        url:
+                                                            "${AppConfig.RAW_BASE_URL}/mobile-page/privacy-policy",
+                                                      )));
+                                        },
+                                      text: " Privacy Policy",
+                                      style:
+                                          TextStyle(color: MyTheme.accent_color),
+                                    )
+                                  ])),
                         ),
                       )
                     ],
                   ),
                 ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  AppLocalizations.of(context)!.password_ucf,
-                  style: TextStyle(
-                      color: MyTheme.accent_color, fontWeight: FontWeight.w600),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      height: 36,
-                      child: TextField(
-                        controller: _passwordController,
-                        autofocus: false,
-                        obscureText: true,
-                        enableSuggestions: false,
-                        autocorrect: false,
-                        decoration: InputDecorations.buildInputDecoration_1(
-                            hint_text: "• • • • • • • •"),
-                      ),
-                    ),
-                    // Password Strength Indicator
-                    if (_passwordController.text.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 4,
-                              child: LinearProgressIndicator(
-                                value: _strengthProgress,
-                                backgroundColor: Colors.grey.shade300,
-                                color: _strengthColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _passwordStrength,
-                              style: TextStyle(
-                                color: _strengthColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    Text(
-                      AppLocalizations.of(context)!
-                          .password_must_contain_at_least_6_characters,
-                      style: TextStyle(
-                          color: MyTheme.textfield_grey,
-                          fontStyle: FontStyle.italic),
-                    )
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  AppLocalizations.of(context)!.retype_password_ucf,
-                  style: TextStyle(
-                      color: MyTheme.accent_color, fontWeight: FontWeight.w600),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Container(
-                  height: 36,
-                  child: TextField(
-                    controller: _passwordConfirmController,
-                    autofocus: false,
-                    obscureText: true,
-                    enableSuggestions: false,
-                    autocorrect: false,
-                    decoration: InputDecorations.buildInputDecoration_1(
-                        hint_text: "• • • • • • • •"),
-                  ),
-                ),
-              ),
-              if (google_recaptcha.$)
-                Container(
-                  height: _isCaptchaShowing ? 350 : 50,
-                  width: 300,
-                  child: Captcha(
-                    (keyValue) {
-                      googleRecaptchaKey = keyValue;
-                      setState(() {});
-                    },
-                    handleCaptcha: (data) {
-                      if (_isCaptchaShowing.toString() != data) {
-                        _isCaptchaShowing = data;
-                        setState(() {});
-                      }
-                    },
-                    isIOS: Platform.isIOS,
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.only(top: 20.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 15,
-                      width: 15,
-                      child: Checkbox(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6)),
-                          value: _isAgree,
-                          onChanged: (newValue) {
-                            _isAgree = newValue;
-                            setState(() {});
-                          }),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Container(
-                        width: DeviceInfo(context).width! - 130,
-                        child: RichText(
-                            maxLines: 2,
-                            text: TextSpan(
-                                style: TextStyle(
-                                    color: MyTheme.font_grey, fontSize: 12),
-                                children: [
-                                  TextSpan(
-                                    text: "I agree to the",
-                                  ),
-                                  TextSpan(
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CommonWebviewScreen(
-                                                      page_name:
-                                                          "Terms Conditions",
-                                                      url:
-                                                          "${AppConfig.RAW_BASE_URL}/mobile-page/terms",
-                                                    )));
-                                      },
-                                    style:
-                                        TextStyle(color: MyTheme.accent_color),
-                                    text: " Terms Conditions",
-                                  ),
-                                  TextSpan(
-                                    text: " &",
-                                  ),
-                                  TextSpan(
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CommonWebviewScreen(
-                                                      page_name:
-                                                          "Privacy Policy",
-                                                      url:
-                                                          "${AppConfig.RAW_BASE_URL}/mobile-page/privacy-policy",
-                                                    )));
-                                      },
-                                    text: " Privacy Policy",
-                                    style:
-                                        TextStyle(color: MyTheme.accent_color),
-                                  )
-                                ])),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 30.0),
-                child: Container(
-                  height: 45,
-                  child: Btn.minWidthFixHeight(
-                    minWidth: MediaQuery.of(context).size.width,
-                    height: 50,
-                    color: MyTheme.accent_color,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(6.0))),
-                    child: Text(
-                      AppLocalizations.of(context)!.sign_up_ucf,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    onPressed: _isAgree!
-                        ? () {
-                            onPressSignUp();
-                          }
-                        : null,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 20.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Center(
-                        child: Text(
-                      AppLocalizations.of(context)!.already_have_an_account,
-                      style: TextStyle(color: MyTheme.font_grey, fontSize: 12),
-                    )),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    InkWell(
+                Padding(
+                  padding: const EdgeInsets.only(top: 30.0),
+                  child: Container(
+                    height: 45,
+                    child: Btn.minWidthFixHeight(
+                      minWidth: MediaQuery.of(context).size.width,
+                      height: 50,
+                      color: MyTheme.accent_color,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(6.0))),
                       child: Text(
-                        AppLocalizations.of(context)!.log_in,
+                        AppLocalizations.of(context)!.sign_up_ucf,
                         style: TextStyle(
-                            color: MyTheme.accent_color,
+                            color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w600),
                       ),
-                      onTap: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) {
-                          return Login();
-                        }));
-                      },
+                      onPressed: _isAgree!
+                          ? () {
+                              onPressSignUp();
+                            }
+                          : null,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        )
-      ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 20.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Center(
+                          child: Text(
+                        AppLocalizations.of(context)!.already_have_an_account,
+                        style: TextStyle(color: MyTheme.font_grey, fontSize: 12),
+                      )),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      InkWell(
+                        child: Text(
+                          AppLocalizations.of(context)!.log_in,
+                          style: TextStyle(
+                              color: MyTheme.accent_color,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        onTap: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) {
+                            return Login();
+                          }));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      );
     );
   }
 }
