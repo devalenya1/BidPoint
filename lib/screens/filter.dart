@@ -10,6 +10,11 @@ import 'package:active_ecommerce_flutter/repositories/category_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/search_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/shop_repository.dart';
+import 'package:active_ecommerce_flutter/screens/activity_page.dart';
+import 'package:active_ecommerce_flutter/screens/category_list.dart';
+import 'package:active_ecommerce_flutter/screens/home.dart';
+import 'package:active_ecommerce_flutter/screens/points_page.dart';
+import 'package:active_ecommerce_flutter/screens/profile.dart';
 import 'package:active_ecommerce_flutter/screens/seller_details.dart';
 import 'package:active_ecommerce_flutter/ui_elements/brand_square_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
@@ -101,6 +106,9 @@ class _FilterState extends State<Filter> {
 
   // Filter drawer visibility for mobile
   bool _isFilterDrawerOpen = false;
+  
+  // Bottom navigation current index
+  int _currentBottomIndex = 1; // Categories is index 1 in main navigation
 
   fetchFilteredBrands() async {
     var filteredBrandResponse = await BrandRepository().getFilterPageBrands();
@@ -298,8 +306,12 @@ class _FilterState extends State<Filter> {
   }
 
   _onSortChange() {
-    reset();
-    resetProductList();
+    // Reset and reload products with new sort
+    _productList.clear();
+    _isProductInitial = true;
+    _totalProductData = 0;
+    _productPage = 1;
+    _showProductLoadingContainer = false;
     fetchProductData();
   }
 
@@ -432,6 +444,117 @@ class _FilterState extends State<Filter> {
               _buildFilterBottomSheet(),
           ],
         ),
+        bottomNavigationBar: _buildBottomNavigationBar(),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return SizedBox(
+      height: 70,
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          setState(() {
+            _currentBottomIndex = index;
+          });
+          switch (index) {
+            case 0:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
+              break;
+            case 1:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => CategoryList(slug: "", is_base_category: true)));
+              break;
+            case 2:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PointsPage()));
+              break;
+            case 3:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ActivityPage()));
+              break;
+            case 4:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Profile()));
+              break;
+          }
+        },
+        currentIndex: _currentBottomIndex,
+        backgroundColor: Colors.white.withOpacity(0.95),
+        unselectedItemColor: const Color.fromRGBO(168, 175, 179, 1),
+        selectedItemColor: MyTheme.accent_color,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w400,
+          fontSize: 12,
+        ),
+        items: [
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/home.png",
+                color: _currentBottomIndex == 0
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/categories.png",
+                color: _currentBottomIndex == 1
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: 'Categories',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/crown.png",
+                color: _currentBottomIndex == 2
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: 'Points',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/task-square.png",
+                color: _currentBottomIndex == 3
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: 'Activity',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/profile.png",
+                color: _currentBottomIndex == 4
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
@@ -932,8 +1055,8 @@ class _FilterState extends State<Filter> {
         setState(() {
           _selectedSort = newValue;
         });
-        _onSortChange();
         Navigator.pop(context);
+        _onSortChange();
       },
     );
   }

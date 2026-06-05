@@ -59,6 +59,7 @@ class _ProfileState extends State<Profile> {
   ScrollController _mainScrollController = ScrollController();
   bool _pointsVisible = true;
   int _userBalance = 1250;
+  int _userCash = 150;
   String _userName = "John Doe";
   String _userEmail = "john.doe@example.com";
   String _userPhone = "+1234567890";
@@ -78,7 +79,8 @@ class _ProfileState extends State<Profile> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
-      _userBalance = 1250;
+      _userBalance = balance.$ ?? "0";
+      _userCash = affiliate_balance.$ ?? "0";
     });
   }
 
@@ -169,7 +171,7 @@ class _ProfileState extends State<Profile> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+        padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
         child: Column(
           children: [
             // Profile Card
@@ -188,10 +190,10 @@ class _ProfileState extends State<Profile> {
   Widget _buildProfileCard() {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -242,16 +244,16 @@ class _ProfileState extends State<Profile> {
                       Text(
                         _userName,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${AppLocalizations.of(context)!.referral_earnings} \$${_userBalance.toStringAsFixed(2)}',
+                        '${AppLocalizations.of(context)!.referral_earnings} \$${_userCash.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: MyTheme.accent_color,
                         ),
@@ -264,7 +266,7 @@ class _ProfileState extends State<Profile> {
           ),
           // Right side - Points Card
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -277,7 +279,7 @@ class _ProfileState extends State<Profile> {
                     Text(
                       AppLocalizations.of(context)!.referral_point,
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 8,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF64748B),
                       ),
@@ -286,15 +288,15 @@ class _ProfileState extends State<Profile> {
                     GestureDetector(
                       onTap: _togglePointsVisibility,
                       child: Container(
-                        width: 28,
-                        height: 28,
+                        width: 27,
+                        height: 27,
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                          size: 17,
+                          size: 16,
                           color: MyTheme.accent_color,
                         ),
                       ),
@@ -308,7 +310,7 @@ class _ProfileState extends State<Profile> {
                     Text(
                       _pointsVisible ? '$_userBalance' : '****',
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: Colors.black,
                       ),
@@ -317,7 +319,7 @@ class _ProfileState extends State<Profile> {
                     Text(
                       AppLocalizations.of(context)!.points_ucf,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),

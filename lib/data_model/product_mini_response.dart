@@ -54,17 +54,17 @@ class Product {
     this.sales,
     this.links,
     this.isWholesale,
-    // this.auction_end_date,
-    // this.starting_bid,
-    // this.min_bid_price,
-    // this.highest_bid,
-    // this.swipe_right,
-    // this.swipe_left,
-    // this.point_per_bid,
-    // this.auction_start_date,
-    // this.point_per_bid_custom,
-    // this.point_multiplier_system,
-    // this.auction_product,
+    this.auctionEndDate,
+    this.startingBid,
+    this.minBidPrice,
+    this.highestBid,
+    this.swipeRight,
+    this.swipeLeft,
+    this.pointPerBid,
+    this.auctionStartDate,
+    this.pointPerBidCustom,
+    this.pointMultiplierSystem,
+    this.auctionProduct,
   });
 
   int? id;
@@ -80,17 +80,17 @@ class Product {
   Links? links;
   bool? isWholesale;
   
-  // var auction_end_date;
-  // String? starting_bid;
-  // String? min_bid_price;
-  // String? highest_bid;
-  // String? swipe_right;
-  // String? swipe_left;
-  // String? point_per_bid;
-  // var auction_start_date;
-  // String? point_per_bid_custom;
-  // String? point_multiplier_system;
-  // String? auction_product;
+  var auctionEndDate;
+  String? startingBid;
+  String? minBidPrice;
+  String? highestBid;
+  String? swipeRight;
+  String? swipeLeft;
+  String? pointPerBid;
+  var auctionStartDate;
+  String? pointPerBidCustom;
+  String? pointMultiplierSystem;
+  String? auctionProduct;
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json["id"],
@@ -105,17 +105,17 @@ class Product {
         sales: json["sales"],
         links: json["links"] != null ? Links.fromJson(json["links"]) : null,
         isWholesale: json["is_wholesale"],
-        // auction_end_date: json["auction_end_date"],
-        // starting_bid: json["starting_bid"],
-        // min_bid_price: json["min_bid_price"],
-        // highest_bid: json["highest_bid"],
-        // swipe_right: json["swipe_right"],
-        // swipe_left: json["swipe_left"],
-        // point_per_bid: json["point_per_bid"],
-        // auction_start_date: json["auction_start_date"],
-        // point_per_bid_custom: json["point_per_bid_custom"],
-        // point_multiplier_system: json["point_multiplier_system"],
-        // auction_product: json["auction_product"],
+        auctionEndDate: json["auction_end_date"],
+        startingBid: json["starting_bid"],
+        minBidPrice: json["min_bid_price"],
+        highestBid: json["highest_bid"],
+        swipeRight: json["swipe_right"],
+        swipeLeft: json["swipe_left"],
+        pointPerBid: json["point_per_bid"],
+        auctionStartDate: json["auction_start_date"],
+        pointPerBidCustom: json["point_per_bid_custom"],
+        pointMultiplierSystem: json["point_multiplier_system"],
+        auctionProduct: json["auction_product"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -131,17 +131,17 @@ class Product {
         "sales": sales,
         "links": links!.toJson(),
         "is_wholesale": isWholesale,        
-        // "auction_end_date": auction_end_date,
-        // "auction_start_date": auction_start_date,
-        // "starting_bid": starting_bid,
-        // "min_bid_price": min_bid_price,
-        // "highest_bid": highest_bid,
-        // "swipe_right": swipe_right,
-        // "swipe_left": swipe_left,
-        // "point_per_bid": point_per_bid,
-        // "point_per_bid_custom": point_per_bid_custom,
-        // "point_multiplier_system": point_multiplier_system,
-        // "auction_product": auction_product,
+        "auction_end_date": auction_end_date,
+        "auction_start_date": auction_start_date,
+        "starting_bid": starting_bid,
+        "min_bid_price": min_bid_price,
+        "highest_bid": highest_bid,
+        "swipe_right": swipe_right,
+        "swipe_left": swipe_left,
+        "point_per_bid": point_per_bid,
+        "point_per_bid_custom": point_per_bid_custom,
+        "point_multiplier_system": point_multiplier_system,
+        "auction_product": auction_product,
       };
 }
 

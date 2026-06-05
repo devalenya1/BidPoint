@@ -35,166 +35,123 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Top Header - Matching HTML exactly
-          _buildTopHeader(),
-          // Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 30),
-              child: Column(
-                children: [
-                  // Bid Notifications Card
-                  _buildNotificationCard(
-                    title: 'Bid Notifications',
-                    icon: Icons.gavel,
-                    children: [
-                      _buildNotificationItem(
-                        label: 'New bid notification',
-                        value: _newBidNotification,
-                        onChanged: (val) => setState(() => _newBidNotification = val),
-                      ),
-                      _buildNotificationItem(
-                        label: 'Outbid notification',
-                        value: _outbidNotification,
-                        onChanged: (val) => setState(() => _outbidNotification = val),
-                      ),
-                    ],
-                  ),
-                  
-                  // Referral Notifications Card
-                  _buildNotificationCard(
-                    title: 'Referral Notifications',
-                    icon: Icons.people,
-                    children: [
-                      _buildNotificationItem(
-                        label: 'New referral notification',
-                        value: _newReferralNotification,
-                        onChanged: (val) => setState(() => _newReferralNotification = val),
-                      ),
-                      _buildNotificationItem(
-                        label: 'Earning notification',
-                        value: _earningNotification,
-                        onChanged: (val) => setState(() => _earningNotification = val),
-                      ),
-                      _buildNotificationItem(
-                        label: 'Withdrawal notification',
-                        value: _withdrawalNotification,
-                        onChanged: (val) => setState(() => _withdrawalNotification = val),
-                      ),
-                    ],
-                  ),
-                  
-                  // Point Notifications Card
-                  _buildNotificationCard(
-                    title: 'Point Notifications',
-                    icon: Icons.stars,
-                    children: [
-                      _buildNotificationItem(
-                        label: 'Point Purchase notification',
-                        value: _pointPurchaseNotification,
-                        onChanged: (val) => setState(() => _pointPurchaseNotification = val),
-                      ),
-                      _buildNotificationItem(
-                        label: 'Point deduction notification',
-                        value: _pointDeductionNotification,
-                        onChanged: (val) => setState(() => _pointDeductionNotification = val),
-                      ),
-                    ],
-                  ),
-                  
-                  // Chat Notifications Card
-                  _buildNotificationCard(
-                    title: 'Chat Notifications',
-                    icon: Icons.chat_bubble_outline,
-                    children: [
-                      _buildNotificationItem(
-                        label: 'New chat notification',
-                        value: _newChatNotification,
-                        onChanged: (val) => setState(() => _newChatNotification = val),
-                      ),
-                    ],
-                  ),
-                  
-                  // Product Notifications Card
-                  _buildNotificationCard(
-                    title: 'Product Notifications',
-                    icon: Icons.shopping_bag,
-                    children: [
-                      _buildNotificationItem(
-                        label: 'New product notification',
-                        value: _newProductNotification,
-                        onChanged: (val) => setState(() => _newProductNotification = val),
-                      ),
-                      _buildNotificationItem(
-                        label: 'Ending soon notification',
-                        value: _endingSoonNotification,
-                        onChanged: (val) => setState(() => _endingSoonNotification = val),
-                      ),
-                      _buildNotificationItem(
-                        label: 'Ended notification',
-                        value: _endedNotification,
-                        onChanged: (val) => setState(() => _endedNotification = val),
-                      ),
-                    ],
-                  ),
-                  
-                  // Save Button
-                  _buildSaveButton(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildTopHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFEEF2F8),
-            width: 1,
-          ),
+      appBar: AppBar(
+        title: const Text(
+          'Notification',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Cancel/Back Button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 18,
-                color: Color(0xFF64748B),
-              ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 30),
+        child: Column(
+          children: [
+            // Bid Notifications Card
+            _buildNotificationCard(
+              title: 'Bid Notifications',
+              icon: Icons.gavel,
+              children: [
+                _buildNotificationItem(
+                  label: 'New bid notification',
+                  value: _newBidNotification,
+                  onChanged: (val) => setState(() => _newBidNotification = val),
+                ),
+                _buildNotificationItem(
+                  label: 'Outbid notification',
+                  value: _outbidNotification,
+                  onChanged: (val) => setState(() => _outbidNotification = val),
+                ),
+              ],
             ),
-          ),
-          // Title
-          const Text(
-            'Notification',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
+            
+            // Referral Notifications Card
+            _buildNotificationCard(
+              title: 'Referral Notifications',
+              icon: Icons.people,
+              children: [
+                _buildNotificationItem(
+                  label: 'New referral notification',
+                  value: _newReferralNotification,
+                  onChanged: (val) => setState(() => _newReferralNotification = val),
+                ),
+                _buildNotificationItem(
+                  label: 'Earning notification',
+                  value: _earningNotification,
+                  onChanged: (val) => setState(() => _earningNotification = val),
+                ),
+                _buildNotificationItem(
+                  label: 'Withdrawal notification',
+                  value: _withdrawalNotification,
+                  onChanged: (val) => setState(() => _withdrawalNotification = val),
+                ),
+              ],
             ),
-          ),
-          // Invisible placeholder for balance (matching HTML)
-          const SizedBox(width: 36),
-        ],
+            
+            // Point Notifications Card
+            _buildNotificationCard(
+              title: 'Point Notifications',
+              icon: Icons.stars,
+              children: [
+                _buildNotificationItem(
+                  label: 'Point Purchase notification',
+                  value: _pointPurchaseNotification,
+                  onChanged: (val) => setState(() => _pointPurchaseNotification = val),
+                ),
+                _buildNotificationItem(
+                  label: 'Point deduction notification',
+                  value: _pointDeductionNotification,
+                  onChanged: (val) => setState(() => _pointDeductionNotification = val),
+                ),
+              ],
+            ),
+            
+            // Chat Notifications Card
+            _buildNotificationCard(
+              title: 'Chat Notifications',
+              icon: Icons.chat_bubble_outline,
+              children: [
+                _buildNotificationItem(
+                  label: 'New chat notification',
+                  value: _newChatNotification,
+                  onChanged: (val) => setState(() => _newChatNotification = val),
+                ),
+              ],
+            ),
+            
+            // Product Notifications Card
+            _buildNotificationCard(
+              title: 'Product Notifications',
+              icon: Icons.shopping_bag,
+              children: [
+                _buildNotificationItem(
+                  label: 'New product notification',
+                  value: _newProductNotification,
+                  onChanged: (val) => setState(() => _newProductNotification = val),
+                ),
+                _buildNotificationItem(
+                  label: 'Ending soon notification',
+                  value: _endingSoonNotification,
+                  onChanged: (val) => setState(() => _endingSoonNotification = val),
+                ),
+                _buildNotificationItem(
+                  label: 'Ended notification',
+                  value: _endedNotification,
+                  onChanged: (val) => setState(() => _endedNotification = val),
+                ),
+              ],
+            ),
+            
+            // Save Button
+            _buildSaveButton(),
+          ],
+        ),
       ),
     );
   }

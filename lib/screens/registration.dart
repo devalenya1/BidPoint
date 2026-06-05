@@ -272,7 +272,7 @@ class _RegistrationState extends State<Registration> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: _screen_width * (4 / 4),
+          width: _screen_width * (3 / 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

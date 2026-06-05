@@ -47,6 +47,15 @@ class UserInformation {
     this.remainingUploads,
     this.packageId,
     this.packageName,
+    
+    this.affiliateId,
+    this.paypalEmail,
+    this.bankName,
+    this.accountHolder,
+    this.ifscCode,
+    this.accountNumber,
+    this.affiliateBalance,
+    this.affiliateStatus,
   });
 
   String? name;
@@ -62,6 +71,14 @@ class UserInformation {
   var remainingUploads;
   var packageId;
   String? packageName;
+  String? affiliateId;
+  String? paypalEmail;
+  String? bankName;
+  String? accountHolder;
+  String? accountNumber;
+  String? ifscCode;
+  String? affiliateBalance;
+  String? affiliateStatus;
 
   factory UserInformation.fromJson(Map<String, dynamic> json) => UserInformation(
     name: json["name"],
@@ -76,7 +93,17 @@ class UserInformation {
     balance: json["balance"],
     remainingUploads: json["remaining_uploads"],
     packageId: json["package_id"],
-    packageName: json["package_name"],
+    packageName: json["package_name"], 
+
+    
+    affiliateId: json["affiliate_id"],
+    paypalEmail: json["paypal_email"],
+    bankName: json["bank_name"],
+    accountHolder: json["account_holder"],
+    accountNumber: json["account_number"],
+    ifscCode: json["ifsc_code"],
+    affiliateBalance: json["affiliate_balance"],
+    affiliateStatus: json["affiliate_status"], 
   );
 
   Map<String, dynamic> toJson() => {
@@ -93,5 +120,14 @@ class UserInformation {
     "remaining_uploads": remainingUploads,
     "package_id": packageId,
     "package_name": packageName,
+    
+    "affiliate_id": affiliateId,
+    "paypal_email": paypalEmail,
+    "bank_name": bankName,
+    "account_holder": accountHolder,
+    "ifsc_code": ifscCode,
+    "account_number": accountNumber,
+    "affiliate_balance": affiliateBalance,
+    "affiliate_status": affiliateStatus,
   };
 }
