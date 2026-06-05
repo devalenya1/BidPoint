@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/device_info.dart';
+import 'package:active_ecommerce_flutter/custom/lang_text.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one_context/one_context.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../repositories/auth_repository.dart';
 
 class CashEarningsPage extends StatefulWidget {
   const CashEarningsPage({Key? key}) : super(key: key);
@@ -25,8 +35,22 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   void initState() {
     super.initState();
     _loadDemoData();
+    if (is_logged_in.$ == true) {
+      _loadUserData();
+    }
   }
-  
+ 
+  void _loadUserData() {
+    setState(() {
+      _userName = user_name.$ ?? "John Doe";
+      _userEmail = user_email.$ ?? "";
+      _userPhone = user_phone.$ ?? "";
+      _userAvatar = avatar_original.$ ?? "";
+      _userPoints = balance.$ ?? "0";
+      _cashEarnings = affiliate_balance.$ ?? "0";
+    });
+  }
+   
   void _loadDemoData() {
     // Demo cash logs (matching the HTML structure)
     _cashLogs = [
@@ -116,18 +140,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.year}';
-  }
-  
-  String _getStatusText(int status) {
-    return status == 1 
-        ? AppLocalizations.of(context)!.completed_ucf 
-        : AppLocalizations.of(context)!.pending_ucf;
-  }
-  
-  Color _getStatusColor(int status) {
-    return status == 1 
-        ? const Color(0xFF10B981) 
-        : const Color(0xFFF59E0B);
   }
   
   List<Map<String, dynamic>> _getFilteredLogs() {

@@ -3,11 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
 import 'package:share_plus/share_plus.dart';
-
-// Demo Points History Page (create this file)
 import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
-
-// Demo Cash Earnings Page (create this file)
 import 'package:active_ecommerce_flutter/screens/cash_earnings_page.dart';
 
 class AffiliatePage extends StatefulWidget {
@@ -34,6 +30,21 @@ class _AffiliatePageState extends State<AffiliatePage> {
   void initState() {
     super.initState();
     _referralLink = "https://bidpoint.com/ref/$_referralCode";
+    if (is_logged_in.$ == true) {
+      _loadUserData();
+    }
+  }
+ 
+  void _loadUserData() {
+    setState(() {
+      _userName = user_name.$ ?? "John Doe";
+      _userAvatar = avatar_original.$ ?? "";
+      _pointsBalance = balance.$ ?? "0";
+      _cashEarnings = affiliate_balance.$ ?? "0";
+      _referralEarnings = affiliate_balance.$ ?? "0";
+      _referralCode = affiliate_balance.$ ?? "NONE";
+      _referralEarnings = affiliate_balance.$ ?? "0";
+    });
   }
   
   void _copyToClipboard(String text, String type) {

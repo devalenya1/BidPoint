@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/device_info.dart';
+import 'package:active_ecommerce_flutter/custom/lang_text.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one_context/one_context.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../repositories/auth_repository.dart';
 
 class PointsHistoryPage extends StatefulWidget {
   const PointsHistoryPage({Key? key}) : super(key: key);
@@ -27,6 +37,18 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   void initState() {
     super.initState();
     _loadDemoData();
+    if (is_logged_in.$ == true) {
+      _loadUserData();
+    }
+  }
+ 
+  void _loadUserData() {
+    setState(() {
+      _userName = user_name.$ ?? "John Doe";
+      _userEmail = user_email.$ ?? "";
+      _userAvatar = avatar_original.$ ?? "";
+      _pointsBalance = balance.$ ?? "0";
+    });
   }
   
   void _loadDemoData() {
@@ -196,9 +218,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Points History',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
@@ -408,16 +430,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       child: Column(
         children: [
           _buildHistoryRow(
-            AppLocalizations.of(context)!.date_ucf,
+            'Date',
             '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}',
           ),
           _buildHistoryRow(
-            AppLocalizations.of(context)!.user_ucf,
+            'User',
             _getUserDisplay(log),
           ),
           _buildHistoryRow(
-            AppLocalizations.of(context)!.points_ucf,
-            '${isEarned ? '+' : '-'}${pointsValue.toString()} ${AppLocalizations.of(context)!.pts_ucf}',
+            'Points',
+            '${isEarned ? '+' : '-'}${pointsValue.toString()} pts',
             isHighlighted: true,
             highlightColor: MyTheme.accent_color,
           ),
@@ -599,12 +621,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               color: const Color(0xFFF6F6F6),
               borderRadius: BorderRadius.circular(7),
             ),
-            child: Text(
+            child: const Text(
               '1',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: MyTheme.accent_color,
+                color: Color(0xFF0092AC),
               ),
             ),
           ),
