@@ -87,7 +87,7 @@ class _ProfileState extends State<Profile> {
   void _loadUserData() async {
     try {
       // Fetch user data from API
-      var userInfo = await ProfileRepository.getUserInfoResponse();
+      var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
@@ -101,13 +101,6 @@ class _ProfileState extends State<Profile> {
           _userCash = user.affiliateBalance ?? "0";
         });
         
-        // Also update shared preferences if needed
-        // user_name.$ = _userName;
-        // user_email.$ = _userEmail;
-        // user_phone.$ = _userPhone;
-        // avatar_original.$ = _userAvatar;
-        // Note: You'll need to add balance and affiliate_balance to shared_value_helper.dart
-        // if you want to store them globally
       }
     } catch (e) {
       print("Error loading user data: $e");

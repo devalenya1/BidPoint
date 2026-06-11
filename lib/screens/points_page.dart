@@ -67,7 +67,7 @@ class _PointsPageState extends State<PointsPage> {
   void _loadUserData() async {
     try {
       // Fetch user data from API
-      var userInfo = await ProfileRepository.getUserInfoResponse();
+      var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
