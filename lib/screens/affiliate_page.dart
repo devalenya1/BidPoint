@@ -2,7 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
+import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:active_ecommerce_flutter/custom/device_info.dart';
+import 'package:active_ecommerce_flutter/custom/lang_text.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one_context/one_context.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../repositories/auth_repository.dart';
 import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
 import 'package:active_ecommerce_flutter/screens/cash_earnings_page.dart';
 
