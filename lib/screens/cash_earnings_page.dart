@@ -54,7 +54,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   void _loadUserData() async {
     try {
       // Fetch user data from API
-      var userInfo = await ProfileRepository.getUserInfo();
+      var userInfo = await ProfileRepository.getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
