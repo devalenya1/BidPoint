@@ -84,21 +84,21 @@ var routes = GoRouter(
         pageBuilder: (BuildContext context, GoRouterState state) =>
             MaterialPage(child: Index()),
         routes: [
-          GoRoute(
-              path: "customer_products",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: MyClassifiedAds())),
-          GoRoute(
-              path: "customer-products",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: ClassifiedAds())),
-          GoRoute(
-              path: "customer-product/:slug",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: ClassifiedAdsDetails(
-                    slug: getParameter(state, "slug"),
-                  ))),
+          // GoRoute(
+          //     path: "customer_products",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: MyClassifiedAds())),
+          // GoRoute(
+          //     path: "customer-products",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: ClassifiedAds())),
+          // GoRoute(
+          //     path: "customer-product/:slug",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: ClassifiedAdsDetails(
+          //           slug: getParameter(state, "slug"),
+          //         ))),
           GoRoute(
               path: "product/:slug",
               pageBuilder: (BuildContext context, GoRouterState state) =>

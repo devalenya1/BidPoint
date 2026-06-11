@@ -27,7 +27,7 @@ class PointsPage extends StatefulWidget {
 
 class _PointsPageState extends State<PointsPage> {
   // Demo data - UI only
-  String _userPoints = 1250;
+  String _userPoints = "1250";
   String _userName = "John Doe";
   String _userEmail = "john.doe@example.com";
   String _userAvatar = "";
@@ -54,16 +54,6 @@ class _PointsPageState extends State<PointsPage> {
     }
   }
 
-  // void _loadUserData() {
-  //   setState(() {
-  //     _userName = user_name.$ ?? "John Doe";
-  //     _userEmail = user_email.$ ?? "";
-  //     _userPhone = user_phone.$ ?? "";
-  //     _userAvatar = avatar_original.$ ?? "";
-  //     _userPoints = balance.$ ?? "0";
-  //     _userCash = affiliate_balance.$ ?? "0";
-  //   });
-  // }
 
   void _loadUserData() async {
     try {
