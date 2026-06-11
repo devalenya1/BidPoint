@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -20,13 +21,16 @@ class CashEarningsPage extends StatefulWidget {
 }
 
 class _CashEarningsPageState extends State<CashEarningsPage> {
-  // Demo user data
-  String _userName = "John Doe";
+  // User data - initialized with empty/default values
+  String _userName = "";
+  String _userEmail = "";      // ADDED - was missing
+  String _userPhone = "";      // ADDED - was missing
   String _userAvatar = "";
-  double _cashEarnings = 1250.50;
+  String _userPoints = "0";    // ADDED - was missing, as String
+  String _cashEarnings = "0";  // Changed from double to String
   int _selectedMonthIndex = 0;
   
-  // Demo cash logs data
+  // Cash logs data
   List<Map<String, dynamic>> _cashLogs = [];
   Map<String, double> _monthlyCash = {};
   List<String> _months = [];
@@ -34,22 +38,10 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   @override
   void initState() {
     super.initState();
-    _loadDemoData();
     if (is_logged_in.$ == true) {
       _loadUserData();
     }
   }
- 
-  // void _loadUserData() {
-  //   setState(() {
-  //     _userName = user_name.$ ?? "John Doe";
-  //     _userEmail = user_email.$ ?? "";
-  //     _userPhone = user_phone.$ ?? "";
-  //     _userAvatar = avatar_original.$ ?? "";
-  //     _userPoints = balance.$ ?? "0";
-  //     _cashEarnings = affiliate_balance.$ ?? "0";
-  //   });
-  // }
 
   void _loadUserData() async {
     try {
@@ -60,7 +52,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         final user = userInfo.data![0];
         
         setState(() {
-          _userName = user.name ?? "John Doe";
+          _userName = user.name ?? "";
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
@@ -68,99 +60,47 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           _cashEarnings = user.affiliateBalance ?? "0";
         });
         
-        // Also update shared preferences if needed
-        // user_name.$ = _userName;
-        // user_email.$ = _userEmail;
-        // user_phone.$ = _userPhone;
-        // avatar_original.$ = _userAvatar;
-        // Note: You'll need to add balance and affiliate_balance to shared_value_helper.dart
-        // if you want to store them globally
+        // After loading user data, load cash earnings history
+        _loadCashEarningsHistory();
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
-  }  
-   
-  void _loadDemoData() {
-    // Demo cash logs (matching the HTML structure)
-    _cashLogs = [
-      {
-        'id': 1,
-        'amount': 125.50,
-        'user': 'Sarah Johnson',
-        'orderId': 'ORD-001234',
-        'status': 1, // 1: completed, 0: pending
-        'date': DateTime(2024, 5, 15),
-      },
-      {
-        'id': 2,
-        'amount': 50.00,
-        'user': 'Mike Thompson',
-        'orderId': 'ORD-001235',
-        'status': 1,
-        'date': DateTime(2024, 5, 14),
-      },
-      {
-        'id': 3,
-        'amount': 25.50,
-        'user': 'Emily Davis',
-        'orderId': 'ORD-001236',
-        'status': 0,
-        'date': DateTime(2024, 5, 13),
-      },
-      {
-        'id': 4,
-        'amount': 100.00,
-        'user': 'James Wilson',
-        'orderId': 'ORD-001237',
-        'status': 1,
-        'date': DateTime(2024, 4, 28),
-      },
-      {
-        'id': 5,
-        'amount': 75.25,
-        'user': 'Lisa Anderson',
-        'orderId': 'ORD-001238',
-        'status': 1,
-        'date': DateTime(2024, 4, 20),
-      },
-      {
-        'id': 6,
-        'amount': 30.00,
-        'user': 'Robert Brown',
-        'orderId': 'ORD-001239',
-        'status': 0,
-        'date': DateTime(2024, 3, 15),
-      },
-      {
-        'id': 7,
-        'amount': 200.00,
-        'user': 'Maria Garcia',
-        'orderId': 'ORD-001240',
-        'status': 1,
-        'date': DateTime(2024, 3, 10),
-      },
-    ];
-    
-    // Calculate monthly cash totals
-    final Map<String, double> monthlyTemp = {};
-    for (var log in _cashLogs) {
-      final date = log['date'] as DateTime;
-      final monthKey = _formatMonthYear(date);
-      monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (log['amount'] as double);
-    }
-    
-    _monthlyCash = monthlyTemp;
-    _months = _monthlyCash.keys.toList();
-    _months.sort((a, b) {
-      final dateA = DateTime.parse('01 ${a}');
-      final dateB = DateTime.parse('01 ${b}');
-      return dateB.compareTo(dateA);
-    });
-    
-    // Set default selected month to first
-    if (_months.isNotEmpty) {
-      _selectedMonthIndex = 0;
+  }
+  
+  void _loadCashEarningsHistory() async {
+    try {
+      // TODO: Replace with actual API call to get cash earnings history
+      // var cashHistory = await ProfileRepository().getCashEarningsResponse();
+      // _cashLogs = cashHistory.data ?? [];
+      
+      // For now, using empty list (remove demo data)
+      _cashLogs = [];
+      
+      // Calculate monthly cash totals
+      final Map<String, double> monthlyTemp = {};
+      for (var log in _cashLogs) {
+        final date = log['date'] as DateTime;
+        final monthKey = _formatMonthYear(date);
+        monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (log['amount'] as double);
+      }
+      
+      _monthlyCash = monthlyTemp;
+      _months = _monthlyCash.keys.toList();
+      _months.sort((a, b) {
+        final dateA = DateTime.parse('01 ${a}');
+        final dateB = DateTime.parse('01 ${b}');
+        return dateB.compareTo(dateA);
+      });
+      
+      // Set default selected month to first
+      if (_months.isNotEmpty) {
+        _selectedMonthIndex = 0;
+      }
+      
+      setState(() {});
+    } catch (e) {
+      print("Error loading cash earnings history: $e");
     }
   }
   
@@ -222,6 +162,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   }
   
   Widget _buildProfileCard() {
+    // Parse cash earnings to double for display, default to 0.0 if invalid
+    double cashEarningsValue = double.tryParse(_cashEarnings) ?? 0.0;
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -290,7 +233,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '\$${_cashEarnings.toStringAsFixed(2)}',
+                      '\$${cashEarningsValue.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,

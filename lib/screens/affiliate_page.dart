@@ -26,13 +26,15 @@ class AffiliatePage extends StatefulWidget {
 }
 
 class _AffiliatePageState extends State<AffiliatePage> {
-  // Demo user data
-  String _userName = "John Doe";
+  // User data - initialized with default values
+  String _userName = "";
+  String _userEmail = "";      // ADDED - was missing
+  String _userPhone = "";      // ADDED - was missing
   String _userAvatar = "";
-  double _referralEarnings = 1250.50;
-  int _pointsBalance = 1250;
-  double _cashEarnings = 1250.50;
-  String _referralCode = "BIDPOINT2024";
+  String _pointsBalance = "0";     // Changed from int to String
+  String _cashEarnings = "0";      // Changed from double to String
+  String _referralEarnings = "0";  // Changed from double to String
+  String _referralCode = "";
   String _referralLink = "";
   
   // UI state
@@ -41,59 +43,37 @@ class _AffiliatePageState extends State<AffiliatePage> {
   @override
   void initState() {
     super.initState();
-    _referralLink = "https://bidpoint.com/ref/$_referralCode";
     if (is_logged_in.$ == true) {
       _loadUserData();
     }
   }
- 
-  // void _loadUserData() {
-  //   setState(() {
-  //     _userName = user_name.$ ?? "John Doe";
-  //     _userAvatar = avatar_original.$ ?? "";
-  //     _pointsBalance = balance.$ ?? "0";
-  //     _cashEarnings = affiliate_balance.$ ?? "0";
-  //     _referralEarnings = affiliate_balance.$ ?? "0";
-  //     _referralCode = affiliate_balance.$ ?? "NONE";
-  //     _referralEarnings = affiliate_balance.$ ?? "0";
-  //   });
-  // }
 
   void _loadUserData() async {
-  try {
-    // Fetch user data from API
-    var userInfo = await ProfileRepository().getUserInfoResponse();
-    
-    if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-      final user = userInfo.data![0];
+    try {
+      // Fetch user data from API
+      var userInfo = await ProfileRepository().getUserInfoResponse();
       
-      setState(() {
-        _userName = user.name ?? "John Doe";
-        _userEmail = user.email ?? "";
-        _userPhone = user.phone ?? "";
-        _userAvatar = user.avatar ?? "";
-        _pointsBalance = user.balance ?? "0";
-        _cashEarnings = user.affiliateBalance ?? "0";
-        _referralEarnings = affiliateBalance.$ ?? "0";
-        _referralCode = affiliateBalance.$ ?? "NONE";
-        _referralEarnings = affiliateBalance.$ ?? "0";
-      });
-      
-      // Also update shared preferences if needed
-      // user_name.$ = _userName;
-      // user_email.$ = _userEmail;
-      // user_phone.$ = _userPhone;
-      // avatar_original.$ = _userAvatar;
-      // Note: You'll need to add balance and affiliate_balance to shared_value_helper.dart
-      // if you want to store them globally
+      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
+        final user = userInfo.data![0];
+        
+        setState(() {
+          _userName = user.name ?? "";
+          _userEmail = user.email ?? "";
+          _userPhone = user.phone ?? "";
+          _userAvatar = user.avatar ?? "";
+          _pointsBalance = user.balance ?? "0";
+          _cashEarnings = user.affiliateBalance ?? "0";
+          _referralEarnings = user.affiliateBalance ?? "0";
+          _referralCode = user.affiliateId ?? "NONE";
+          _referralLink = "https://bidpoint.com/ref/$_referralCode";
+        });
+      }
+    } catch (e) {
+      print("Error loading user data: $e");
     }
-  } catch (e) {
-    print("Error loading user data: $e");
   }
-}
   
   void _copyToClipboard(String text, String type) {
-    // In real app, use Clipboard.setData
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context)!.copied_to_clipboard),
@@ -255,7 +235,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       GestureDetector(
                         onTap: _navigateToWithdrawHistory,
                         child: Text(
-                          '${AppLocalizations.of(context)!.referral_earnings} \$${_referralEarnings.toStringAsFixed(2)}',
+                          '${AppLocalizations.of(context)!.referral_earnings} \$${_referralEarnings}',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -386,7 +366,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '\$${_cashEarnings.toStringAsFixed(2)}',
+                  '\$$_cashEarnings',
                   style: const TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.w700,

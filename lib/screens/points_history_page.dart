@@ -24,13 +24,16 @@ class PointsHistoryPage extends StatefulWidget {
 }
 
 class _PointsHistoryPageState extends State<PointsHistoryPage> {
-  // Demo user data
-  String _userName = "John Doe";
+  // User data - initialized with empty/default values
+  String _userName = "";
+  String _userEmail = "";      // ADDED - was missing
+  String _userPhone = "";      // ADDED - was missing
   String _userAvatar = "";
-  int _pointsBalance = 1250;
+  String _pointsBalance = "0";  // Changed from int to String
+  String _userCash = "0";       // ADDED - was missing
   String _selectedFilter = 'All'; // All, Today, 7, 30
   
-  // Demo points logs data
+  // Points logs data
   List<Map<String, dynamic>> _allPointsLogs = [];
   List<Map<String, dynamic>> _filteredPointsLogs = [];
   Map<String, int> _monthlyPoints = {};
@@ -40,20 +43,10 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   @override
   void initState() {
     super.initState();
-    _loadDemoData();
     if (is_logged_in.$ == true) {
       _loadUserData();
     }
   }
- 
-  // void _loadUserData() {
-  //   setState(() {
-  //     _userName = user_name.$ ?? "John Doe";
-  //     _userEmail = user_email.$ ?? "";
-  //     _userAvatar = avatar_original.$ ?? "";
-  //     _pointsBalance = balance.$ ?? "0";
-  //   });
-  // }
 
   void _loadUserData() async {
     try {
@@ -64,7 +57,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         final user = userInfo.data![0];
         
         setState(() {
-          _userName = user.name ?? "John Doe";
+          _userName = user.name ?? "";
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
@@ -72,107 +65,28 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           _userCash = user.affiliateBalance ?? "0";
         });
         
-        // Also update shared preferences if needed
-        // user_name.$ = _userName;
-        // user_email.$ = _userEmail;
-        // user_phone.$ = _userPhone;
-        // avatar_original.$ = _userAvatar;
-        // Note: You'll need to add balance and affiliate_balance to shared_value_helper.dart
-        // if you want to store them globally
+        // After loading user data, load points history
+        _loadPointsHistory();
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
-  }  
+  }
   
-  void _loadDemoData() {
-    // Demo points logs
-    _allPointsLogs = [
-      {
-        'id': 1,
-        'points': 500,
-        'type': 'earned',
-        'user': 'Sarah Johnson',
-        'came_from': 'Sarah Johnson',
-        'status': 1,
-        'date': DateTime(2024, 5, 15, 14, 30),
-      },
-      {
-        'id': 2,
-        'points': 100,
-        'type': 'earned',
-        'user': 'System',
-        'came_from': 'Daily Bonus',
-        'status': 1,
-        'date': DateTime(2024, 5, 14, 9, 15),
-      },
-      {
-        'id': 3,
-        'points': 50,
-        'type': 'spent',
-        'user': 'System',
-        'came_from': 'Bid placed on product',
-        'status': 1,
-        'date': DateTime(2024, 5, 13, 20, 0),
-      },
-      {
-        'id': 4,
-        'points': 200,
-        'type': 'earned',
-        'user': 'Mike Thompson',
-        'came_from': 'Mike Thompson',
-        'status': 1,
-        'date': DateTime(2024, 4, 28, 11, 45),
-      },
-      {
-        'id': 5,
-        'points': 75,
-        'type': 'earned',
-        'user': 'System',
-        'came_from': 'Weekly challenge',
-        'status': 1,
-        'date': DateTime(2024, 4, 20, 16, 20),
-      },
-      {
-        'id': 6,
-        'points': 30,
-        'type': 'spent',
-        'user': 'System',
-        'came_from': 'Bid placed',
-        'status': 0,
-        'date': DateTime(2024, 3, 15, 10, 0),
-      },
-      {
-        'id': 7,
-        'points': 300,
-        'type': 'earned',
-        'user': 'System',
-        'came_from': 'Special promotion',
-        'status': 1,
-        'date': DateTime(2024, 3, 10, 8, 30),
-      },
-      {
-        'id': 8,
-        'points': 150,
-        'type': 'earned',
-        'user': 'Emily Davis',
-        'came_from': 'Emily Davis',
-        'status': 1,
-        'date': DateTime(2024, 2, 25, 13, 0),
-      },
-      {
-        'id': 9,
-        'points': 80,
-        'type': 'earned',
-        'user': 'James Wilson',
-        'came_from': 'James Wilson',
-        'status': 1,
-        'date': DateTime(2024, 2, 18, 9, 45),
-      },
-    ];
-    
-    _applyFilter();
-    _calculateMonthlyPoints();
+  void _loadPointsHistory() async {
+    try {
+      // TODO: Replace with actual API call to get points history
+      // var pointsHistory = await ProfileRepository().getPointsHistoryResponse();
+      // _allPointsLogs = pointsHistory.data ?? [];
+      
+      // For now, using empty list (remove demo data)
+      _allPointsLogs = [];
+      
+      _applyFilter();
+      _calculateMonthlyPoints();
+    } catch (e) {
+      print("Error loading points history: $e");
+    }
   }
   
   void _applyFilter() {
@@ -244,7 +158,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     if (log['came_from'] != null && log['came_from'].toString().isNotEmpty) {
       return log['came_from'];
     }
-    return log['user'];
+    return log['user'] ?? 'System';
   }
   
   @override
@@ -357,7 +271,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${_pointsBalance.toString()} points',
+                      '$_pointsBalance points',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
