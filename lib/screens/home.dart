@@ -594,7 +594,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MessengerList(),
+                        builder: (context) => MessengerList(),
                       ),
                     );
                   } else {

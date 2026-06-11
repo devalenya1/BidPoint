@@ -460,19 +460,19 @@ class _FilterState extends State<Filter> {
           });
           switch (index) {
             case 0:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
               break;
             case 1:
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => CategoryList(slug: "", is_base_category: true)));
               break;
             case 2:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PointsPage()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PointsPage()));
               break;
             case 3:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ActivityPage()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ActivityPage()));
               break;
             case 4:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Profile()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Profile()));
               break;
           }
         },

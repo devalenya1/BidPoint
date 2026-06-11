@@ -267,7 +267,7 @@ class _RegistrationState extends State<Registration> {
         buildBody(context, _screen_width));
   }
 
-  Column buildBody(BuildContext context, double _screen_width) {
+  Widget buildBody(BuildContext context, double _screen_width) {  // Changed return type from Column to Widget
     return Container(
       width: _screen_width,  // Make the outer container full width
       // color: Colors.white,  
@@ -641,7 +641,8 @@ class _RegistrationState extends State<Registration> {
             ),
           )
         ],
-      );
+      ),
     );
-  }
+  } 
+  
 }

@@ -131,17 +131,17 @@ class Product {
         "sales": sales,
         "links": links!.toJson(),
         "is_wholesale": isWholesale,        
-        "auction_end_date": auction_end_date,
-        "auction_start_date": auction_start_date,
-        "starting_bid": starting_bid,
-        "min_bid_price": min_bid_price,
-        "highest_bid": highest_bid,
-        "swipe_right": swipe_right,
-        "swipe_left": swipe_left,
-        "point_per_bid": point_per_bid,
-        "point_per_bid_custom": point_per_bid_custom,
-        "point_multiplier_system": point_multiplier_system,
-        "auction_product": auction_product,
+        "auction_end_date": auctionEndDate,        // Changed from auction_end_date to auctionEndDate
+        "auction_start_date": auctionStartDate,    // Changed from auction_start_date to auctionStartDate
+        "starting_bid": startingBid,
+        "min_bid_price": minBidPrice,
+        "highest_bid": highestBid,
+        "swipe_right": swipeRight,
+        "swipe_left": swipeLeft,
+        "point_per_bid": pointPerBid,
+        "point_per_bid_custom": pointPerBidCustom,
+        "point_multiplier_system": pointMultiplierSystem,
+        "auction_product": auctionProduct,
       };
 }
 

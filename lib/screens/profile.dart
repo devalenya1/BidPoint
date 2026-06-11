@@ -58,8 +58,8 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   ScrollController _mainScrollController = ScrollController();
   bool _pointsVisible = true;
-  int _userBalance = 1250;
-  int _userCash = 150;
+  String _userBalance = "0";  // Changed from int to String
+  String _userCash = "0";     // Changed from int to String
   String _userName = "John Doe";
   String _userEmail = "john.doe@example.com";
   String _userPhone = "+1234567890";
@@ -79,8 +79,8 @@ class _ProfileState extends State<Profile> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
-      _userBalance = balance.$ ?? "0";
-      _userCash = affiliate_balance.$ ?? "0";
+      _userBalance = balance.$ ?? "0";        // balance.$ returns String?
+      _userCash = affiliate_balance.$ ?? "0"; // affiliate_balance.$ returns String?
     });
   }
 
@@ -251,7 +251,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${AppLocalizations.of(context)!.referral_earnings} \$${_userCash.toStringAsFixed(2)}',
+                        '${AppLocalizations.of(context)!.referral_earnings} \$$_userCash',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
