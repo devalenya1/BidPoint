@@ -14,6 +14,8 @@ class HomePresenter extends ChangeNotifier {
   int current_slider = 0;
   ScrollController? allProductScrollController;
   ScrollController? featuredCategoryScrollController;
+  ScrollController? endingSoonScrollController; // Added
+  ScrollController? upcomingScrollController; // Added
   ScrollController mainScrollController = ScrollController();
 
   late AnimationController pirated_logo_controller;
@@ -36,6 +38,20 @@ class HomePresenter extends ChangeNotifier {
   int featuredProductPage = 1;
   bool showFeaturedLoadingContainer = false;
 
+  // Ending Soon Products
+  var endingSoonProductList = [];
+  bool isEndingSoonInitial = true;
+  int? totalEndingSoonData = 0;
+  int endingSoonPage = 1;
+  bool showEndingSoonLoadingContainer = false;
+
+  // Upcoming Products
+  var upcomingProductList = [];
+  bool isUpcomingInitial = true;
+  int? totalUpcomingData = 0;
+  int upcomingPage = 1;
+  bool showUpcomingLoadingContainer = false;
+
   bool isTodayDeal = false;
   bool isFlashDeal = false;
 
@@ -53,6 +69,8 @@ class HomePresenter extends ChangeNotifier {
     fetchFeaturedCategories();
     fetchFeaturedProducts();
     fetchAllProducts();
+    fetchEndingSoonProducts(); // Added
+    fetchUpcomingProducts(); // Added
     fetchTodayDealData();
     fetchFlashDealData();
   }
@@ -121,6 +139,46 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Fetch Ending Soon Products
+  fetchEndingSoonProducts() async {
+    try {
+      var productResponse = await ProductRepository().getEndingSoonProducts(
+        page: endingSoonPage,
+      );
+      endingSoonPage++;
+      endingSoonProductList.addAll(productResponse.products!);
+      isEndingSoonInitial = false;
+      totalEndingSoonData = productResponse.meta?.total ?? 0;
+      showEndingSoonLoadingContainer = false;
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching ending soon products: $e");
+      isEndingSoonInitial = false;
+      totalEndingSoonData = 0;
+      notifyListeners();
+    }
+  }
+
+  // Fetch Upcoming Products
+  fetchUpcomingProducts() async {
+    try {
+      var productResponse = await ProductRepository().getUpcomingProducts(
+        page: upcomingPage,
+      );
+      upcomingPage++;
+      upcomingProductList.addAll(productResponse.products!);
+      isUpcomingInitial = false;
+      totalUpcomingData = productResponse.meta?.total ?? 0;
+      showUpcomingLoadingContainer = false;
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching upcoming products: $e");
+      isUpcomingInitial = false;
+      totalUpcomingData = 0;
+      notifyListeners();
+    }
+  }
+
   fetchAllProducts() async {
     var productResponse =
         await ProductRepository().getFilteredProducts(page: allProductPage);
@@ -150,6 +208,8 @@ class HomePresenter extends ChangeNotifier {
 
     resetFeaturedProductList();
     resetAllProductList();
+    resetEndingSoonProductList(); // Added
+    resetUpcomingProductList(); // Added
   }
 
   Future<void> onRefresh() async {
@@ -175,6 +235,26 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Reset Ending Soon Product List
+  resetEndingSoonProductList() {
+    endingSoonProductList.clear();
+    isEndingSoonInitial = true;
+    totalEndingSoonData = 0;
+    endingSoonPage = 1;
+    showEndingSoonLoadingContainer = false;
+    notifyListeners();
+  }
+
+  // Reset Upcoming Product List
+  resetUpcomingProductList() {
+    upcomingProductList.clear();
+    isUpcomingInitial = true;
+    totalUpcomingData = 0;
+    upcomingPage = 1;
+    showUpcomingLoadingContainer = false;
+    notifyListeners();
+  }
+
   mainScrollListener() {
     mainScrollController.addListener(() {
       //print("position: " + xcrollController.position.pixels.toString());
@@ -189,6 +269,38 @@ class HomePresenter extends ChangeNotifier {
         fetchAllProducts();
       }
     });
+  }
+
+  // Scroll listener for ending soon products
+  endingSoonScrollListener() {
+    if (endingSoonScrollController != null) {
+      endingSoonScrollController!.addListener(() {
+        if (endingSoonScrollController!.position.pixels ==
+            endingSoonScrollController!.position.maxScrollExtent) {
+          if (endingSoonProductList.length < (totalEndingSoonData ?? 0)) {
+            endingSoonPage++;
+            showEndingSoonLoadingContainer = true;
+            fetchEndingSoonProducts();
+          }
+        }
+      });
+    }
+  }
+
+  // Scroll listener for upcoming products
+  upcomingScrollListener() {
+    if (upcomingScrollController != null) {
+      upcomingScrollController!.addListener(() {
+        if (upcomingScrollController!.position.pixels ==
+            upcomingScrollController!.position.maxScrollExtent) {
+          if (upcomingProductList.length < (totalUpcomingData ?? 0)) {
+            upcomingPage++;
+            showUpcomingLoadingContainer = true;
+            fetchUpcomingProducts();
+          }
+        }
+      });
+    }
   }
 
   initPiratedAnimation(vnc) {
@@ -228,6 +340,12 @@ class HomePresenter extends ChangeNotifier {
   void dispose() {
     // TODO: implement dispose
     pirated_logo_controller.dispose();
+    if (endingSoonScrollController != null) {
+      endingSoonScrollController!.dispose();
+    }
+    if (upcomingScrollController != null) {
+      upcomingScrollController!.dispose();
+    }
     notifyListeners();
     super.dispose();
   }

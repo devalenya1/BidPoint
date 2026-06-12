@@ -572,6 +572,7 @@ class WishlistItem {
     this.productImage,
     this.productPrice,
     this.highestBid,
+    this.slug, // Add this line
     this.createdAt,
     this.updatedAt,
   });
@@ -582,6 +583,7 @@ class WishlistItem {
   String? productImage;
   String? productPrice;
   String? highestBid;
+  String? slug; // Add this line
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -592,6 +594,7 @@ class WishlistItem {
     productImage: json["product_image"],
     productPrice: json["product_price"],
     highestBid: json["highest_bid"],
+    slug: json["slug"], // Add this line
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -603,6 +606,7 @@ class WishlistItem {
     "product_image": productImage,
     "product_price": productPrice,
     "highest_bid": highestBid,
+    "slug": slug, // Add this line
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };

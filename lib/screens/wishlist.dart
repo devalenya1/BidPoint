@@ -96,6 +96,7 @@ class _WishlistState extends State<Wishlist> {
             'id': item.id,
             'wishlistId': item.id,
             'productId': item.productId,
+            'productSlug': item.slug ?? '', 
             'productSlug': item.productSlug, // Add this if available in your wishlist item
             'productName': item.productName ?? 'Unknown Product',
             'productImage': item.productImage,

@@ -218,4 +218,32 @@ class ProductRepository {
 
     return variantPriceResponseFromJson(response.body);
   }
+
+  // Add to product_repository.dart
+
+  Future<ProductMiniResponse> getEndingSoonProducts({int page = 1}) async {
+    String url = "${AppConfig.BASE_URL}/products/ending-soon?page=${page}";
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "App-Language": app_language.$!,
+      },
+    );
+    return productMiniResponseFromJson(response.body);
+  }
+
+  Future<ProductMiniResponse> getUpcomingProducts({int page = 1}) async {
+    String url = "${AppConfig.BASE_URL}/products/upcoming?page=${page}";
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "App-Language": app_language.$!,
+      },
+    );
+    return productMiniResponseFromJson(response.body);
+  }
+
+  
 }
