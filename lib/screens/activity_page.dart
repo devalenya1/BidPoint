@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'dart:async';
 
 class ActivityPage extends StatefulWidget {
@@ -13,20 +15,28 @@ class ActivityPage extends StatefulWidget {
 class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderStateMixin {
   int _selectedTab = 0; // 0: All, 1: Outbid, 2: Winning, 3: Recently Ended
   
-  // Demo activity data
-  List<Map<String, dynamic>> _allActivities = [];
-  List<Map<String, dynamic>> _outbidActivities = [];
-  List<Map<String, dynamic>> _winningActivities = [];
-  List<Map<String, dynamic>> _endedActivities = [];
+  // Real activity data from API
+  List<dynamic> _allActivities = [];
+  List<dynamic> _outbidActivities = [];
+  List<dynamic> _winningActivities = [];
+  List<dynamic> _endedActivities = [];
   
   // Timer controllers
   final Map<int, Timer> _timers = {};
   final Map<int, String> _timeLeft = {};
   
+  bool _isLoading = true;
+  
   @override
   void initState() {
     super.initState();
-    _loadDemoData();
+    if (is_logged_in.$ == true) {
+      _loadActivities();
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
   
   @override
@@ -37,98 +47,85 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     super.dispose();
   }
   
-  void _loadDemoData() {
-    // Demo activity data
-    _allActivities = [
-      {
-        'id': 1,
-        'productName': 'Vintage Rolex Watch',
-        'productImage': null,
-        'myBid': 1250.00,
-        'currentBid': 1350.00,
-        'pointsPerBid': 10,
-        'endDate': DateTime.now().add(const Duration(days: 2, hours: 5)),
-        'status': 'outbid', // outbid, winning, won, ended
-        'isAuctionEnded': false,
-      },
-      {
-        'id': 2,
-        'productName': 'iPhone 15 Pro Max - 1TB',
-        'productImage': null,
-        'myBid': 850.00,
-        'currentBid': 850.00,
-        'pointsPerBid': 15,
-        'endDate': DateTime.now().add(const Duration(days: 1, hours: 3)),
-        'status': 'winning',
-        'isAuctionEnded': false,
-      },
-      {
-        'id': 3,
-        'productName': 'Samsung Galaxy S24 Ultra',
-        'productImage': null,
-        'myBid': 620.00,
-        'currentBid': 620.00,
-        'pointsPerBid': 12,
-        'endDate': DateTime.now().add(const Duration(hours: 12)),
-        'status': 'winning',
-        'isAuctionEnded': false,
-      },
-      {
-        'id': 4,
-        'productName': 'MacBook Pro M3',
-        'productImage': null,
-        'myBid': 1950.00,
-        'currentBid': 1950.00,
-        'pointsPerBid': 20,
-        'endDate': DateTime.now().add(const Duration(days: 3)),
-        'status': 'winning',
-        'isAuctionEnded': false,
-      },
-      {
-        'id': 5,
-        'productName': 'Sony PlayStation 5',
-        'productImage': null,
-        'myBid': 450.00,
-        'currentBid': 480.00,
-        'pointsPerBid': 8,
-        'endDate': DateTime.now().add(const Duration(days: 5)),
-        'status': 'outbid',
-        'isAuctionEnded': false,
-      },
-      {
-        'id': 6,
-        'productName': 'Canon EOS R5 Camera',
-        'productImage': null,
-        'myBid': 2800.00,
-        'currentBid': 2800.00,
-        'pointsPerBid': 25,
-        'endDate': DateTime.now().subtract(const Duration(days: 1)),
-        'status': 'won',
-        'isAuctionEnded': true,
-      },
-      {
-        'id': 7,
-        'productName': 'Nike Air Jordan 1',
-        'productImage': null,
-        'myBid': 320.00,
-        'currentBid': 350.00,
-        'pointsPerBid': 5,
-        'endDate': DateTime.now().subtract(const Duration(days: 2)),
-        'status': 'ended',
-        'isAuctionEnded': true,
-      },
-    ];
+  Future<void> _loadActivities() async {
+    setState(() {
+      _isLoading = true;
+    });
     
-    // Filter activities by status
-    _outbidActivities = _allActivities.where((a) => a['status'] == 'outbid' && a['isAuctionEnded'] == false).toList();
-    _winningActivities = _allActivities.where((a) => a['status'] == 'winning' && a['isAuctionEnded'] == false).toList();
-    _endedActivities = _allActivities.where((a) => a['isAuctionEnded'] == true).toList();
-    
-    // Start timers
-    for (var activity in _allActivities) {
-      if (!activity['isAuctionEnded']) {
-        _startTimer(activity['id'], activity['endDate']);
+    try {
+      var userInfo = await ProfileRepository().getUserInfoResponse();
+      
+      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
+        final user = userInfo.data![0];
+        final auctionBids = user.auctionBids ?? [];
+        final distinctAuctionBids = user.distinctAuctionBids ?? [];
+        
+        // Process auction bids to create activities
+        // Since the API doesn't directly provide outbid/winning status,
+        // we'll use the bid data and product info to determine status
+        
+        List<dynamic> activities = [];
+        
+        // Get all products the user has bid on from distinct auction bids
+        for (var product in distinctAuctionBids) {
+          if (product.productId == null) continue;
+          
+          // Get user's highest bid for this product
+          final userBids = auctionBids.where((bid) => bid.productId == product.productId).toList();
+          final userHighestBid = userBids.isNotEmpty 
+              ? userBids.map((b) => b.amount ?? 0).reduce((a, b) => a > b ? a : b)
+              : 0;
+          
+          // Get highest bid overall for this product
+          final productHighestBid = product.amount ?? 0;
+          
+          // Determine status
+          bool isEnded = false; // You would need end date from product API
+          String status;
+          
+          if (userHighestBid >= productHighestBid && userHighestBid > 0) {
+            status = 'winning';
+          } else if (userHighestBid > 0 && userHighestBid < productHighestBid) {
+            status = 'outbid';
+          } else {
+            status = 'ended';
+          }
+          
+          // Create activity object
+          activities.add({
+            'id': product.productId,
+            'productId': product.productId,
+            'productName': product.productName ?? 'Unknown Product',
+            'productImage': product.productImage,
+            'myBid': userHighestBid,
+            'currentBid': productHighestBid,
+            'pointsPerBid': 10, // This might need to come from product data
+            'endDate': null, // You would need end date from product API
+            'status': status,
+            'isAuctionEnded': isEnded,
+            'formattedAmount': product.formattedAmount ?? '\$${productHighestBid.toString()}',
+          });
+        }
+        
+        // Filter activities
+        _outbidActivities = activities.where((a) => a['status'] == 'outbid' && a['isAuctionEnded'] == false).toList();
+        _winningActivities = activities.where((a) => a['status'] == 'winning' && a['isAuctionEnded'] == false).toList();
+        _endedActivities = activities.where((a) => a['isAuctionEnded'] == true).toList();
+        _allActivities = activities;
+        
+        // Start timers for activities with end dates
+        for (var activity in _allActivities) {
+          if (activity['endDate'] != null && !activity['isAuctionEnded']) {
+            _startTimer(activity['id'], activity['endDate']);
+          }
+        }
       }
+    } catch (e) {
+      print("Error loading activities: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
   
@@ -189,38 +186,37 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black, // Black back button
+        foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
-          // Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    // Tabs
-                    _buildTabs(),
-                    const SizedBox(height: 20),
-                    // Tab Content
-                    _selectedTab == 0 ? _buildActivityList(_allActivities, "all") :
-                    _selectedTab == 1 ? _buildActivityList(_outbidActivities, "outbid") :
-                    _selectedTab == 2 ? _buildActivityList(_winningActivities, "winning") :
-                    _buildActivityList(_endedActivities, "ended"),
-                    const SizedBox(height: 30),
-                  ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          _buildTabs(),
+                          const SizedBox(height: 20),
+                          _selectedTab == 0 ? _buildActivityList(_allActivities, "all") :
+                          _selectedTab == 1 ? _buildActivityList(_outbidActivities, "outbid") :
+                          _selectedTab == 2 ? _buildActivityList(_winningActivities, "winning") :
+                          _buildActivityList(_endedActivities, "ended"),
+                          const SizedBox(height: 30),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
   
@@ -274,7 +270,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildActivityList(List<Map<String, dynamic>> activities, String type) {
+  Widget _buildActivityList(List<dynamic> activities, String type) {
     if (activities.isEmpty) {
       return _buildEmptyState(type);
     }
@@ -325,18 +321,18 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           const SizedBox(height: 12),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF334155),
+              color: Color(0xFF334155),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              color: const Color(0xFF94A3B8),
+              color: Color(0xFF94A3B8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -345,14 +341,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildActivityCard(Map<String, dynamic> activity) {
+  Widget _buildActivityCard(dynamic activity) {
     final isOutbid = activity['status'] == 'outbid' && !activity['isAuctionEnded'];
     final isWinning = activity['status'] == 'winning' && !activity['isAuctionEnded'];
     final isWon = activity['status'] == 'won' && activity['isAuctionEnded'];
     final isEnded = activity['status'] == 'ended' && activity['isAuctionEnded'];
     
     String statusText;
-    Color statusColor = MyTheme.dark_font_grey; // Same as page title color
+    Color statusColor = MyTheme.dark_font_grey;
     
     if (isOutbid) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
@@ -368,7 +364,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       statusColor = MyTheme.dark_font_grey;
     }
     
-    final timeLeft = _timeLeft[activity['id']] ?? AppLocalizations.of(context)!.loading;
+    final timeLeft = activity['endDate'] != null 
+        ? (_timeLeft[activity['id']] ?? AppLocalizations.of(context)!.loading)
+        : AppLocalizations.of(context)!.ended_ucf;
     final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
     
     return Container(
@@ -395,52 +393,70 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    color: const Color(0xFFE2E8F0),
-                    child: const Icon(
-                      Icons.inventory_2,
-                      size: 50,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-                // Timer Badge
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isTimerEnded ? const Color(0xFFDC3545) : const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.access_time,
-                          size: 10,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          timeLeft,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                  child: activity['productImage'] != null && activity['productImage'].toString().isNotEmpty
+                      ? Image.network(
+                          activity['productImage'],
+                          fit: BoxFit.cover,
+                          width: 120,
+                          height: 140,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: const Color(0xFFE2E8F0),
+                              child: const Icon(
+                                Icons.inventory_2,
+                                size: 50,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: const Color(0xFFE2E8F0),
+                          child: const Icon(
+                            Icons.inventory_2,
+                            size: 50,
+                            color: Color(0xFF94A3B8),
                           ),
                         ),
-                      ],
+                ),
+                // Timer Badge
+                if (activity['endDate'] != null)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isTimerEnded ? const Color(0xFFDC3545) : const Color(0xFF009572),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            timeLeft,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -451,7 +467,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               children: [
                 // Status
                 Text(
-                  statusText,
+                  statusText, 
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -468,10 +484,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           : isWon
                               ? AppLocalizations.of(context)!.won_message(activity['productName'])
                               : AppLocalizations.of(context)!.lost_message(activity['productName']),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    color: const Color(0xFF80818B),
+                    color: Color(0xFF80818B),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -480,10 +496,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   isWon || isEnded 
                       ? AppLocalizations.of(context)!.final_bid
                       : AppLocalizations.of(context)!.current_bid,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF80818B),
+                    color: Color(0xFF80818B),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -493,7 +509,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   children: [
                     Text(
                       _formatPrice(activity['currentBid']),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: MyTheme.dark_font_grey,
@@ -532,7 +548,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 if (isOutbid)
                   _buildOutbidButton(activity)
                 else if (isWinning || isWon)
-                  _buildViewDetailsButton()
+                  _buildViewDetailsButton(activity['productId'])
                 else if (isEnded)
                   const SizedBox.shrink(),
               ],
@@ -543,7 +559,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildOutbidButton(Map<String, dynamic> activity) {
+  Widget _buildOutbidButton(dynamic activity) {
     return GestureDetector(
       onTap: () {
         // Navigate to bid again
@@ -576,15 +592,19 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildViewDetailsButton() {
+  Widget _buildViewDetailsButton(int? productId) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('View product details'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        if (productId != null) {
+          // Navigate to product details page
+          // Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailsPage(productId: productId)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('View product #$productId details'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       },
       child: Container(
         width: double.infinity,
@@ -596,7 +616,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         child: Text(
           AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: Colors.white,

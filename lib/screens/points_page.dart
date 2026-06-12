@@ -16,7 +16,6 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../repositories/auth_repository.dart';
 
 class PointsPage extends StatefulWidget {
   const PointsPage({Key? key}) : super(key: key);
@@ -26,131 +25,198 @@ class PointsPage extends StatefulWidget {
 }
 
 class _PointsPageState extends State<PointsPage> {
-  // Demo data - UI only
-  String _userPoints = "1250";
-  String _userName = "John Doe";
-  String _userEmail = "john.doe@example.com";
+  // User data
+  String _userPoints = "0";
+  String _userName = "";
+  String _userEmail = "";
   String _userAvatar = "";
   String _userPhone = "";
   
-
-
-  // Package data
+  // Package data - from API
   List<Map<String, dynamic>> _packages = [];
   Map<String, dynamic>? _selectedPackage;
   
-  // Purchase history data
-  List<Map<String, dynamic>> _purchaseHistory = [];
+  // Purchase history from API
+  List<dynamic> _purchaseHistory = [];
   
   // Drawer state
   bool _isDrawerOpen = false;
+  bool _isLoading = true;
+  bool _isPurchasing = false;
   
   @override
   void initState() {
     super.initState();
-    _loadDemoData();
     if (is_logged_in.$ == true) {
       _loadUserData();
+      _loadPackages();
+      _loadPurchaseHistory();
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
-
-
-  void _loadUserData() async {
+  
+  Future<void> _loadUserData() async {
     try {
-      // Fetch user data from API
       var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
         
         setState(() {
-          _userName = user.name ?? "John Doe";
+          _userName = user.name ?? "";
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
           _userPoints = user.balance ?? "0";
-          // _userCash = user.affiliateBalance ?? "0";
         });
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
   }
+  
+  Future<void> _loadPackages() async {
+    try {
+      // TODO: Replace with actual API call to get available packages
+      // var packages = await ProfileRepository().getPackages();
+      // For now, use empty list - no demo data
+      setState(() {
+        _packages = [];
+        _selectedPackage = null;
+      });
+    } catch (e) {
+      print("Error loading packages: $e");
+      setState(() {
+        _packages = [];
+      });
+    }
+  }
+  
+  Future<void> _loadPurchaseHistory() async {
+    setState(() {
+      _isLoading = true;
+    });
     
-  void _loadDemoData() {
-    // Demo packages
-    _packages = [
-      {
-        'id': 1,
-        'name': 'Basic',
-        'points': 100,
-        'price': 9.99,
-        'image': null,
-      },
-      {
-        'id': 2,
-        'name': 'Standard',
-        'points': 500,
-        'price': 39.99,
-        'image': null,
-      },
-      {
-        'id': 3,
-        'name': 'Premium',
-        'points': 1000,
-        'price': 69.99,
-        'image': null,
-      },
-      {
-        'id': 4,
-        'name': 'Platinum',
-        'points': 2500,
-        'price': 149.99,
-        'image': null,
-      },
-      {
-        'id': 5,
-        'name': 'Diamond',
-        'points': 5000,
-        'price': 279.99,
-        'image': null,
-      },
-    ];
-    
-    // Select second package as default (index 1)
-    if (_packages.length >= 2) {
-      _selectedPackage = _packages[1];
-    } else if (_packages.isNotEmpty) {
-      _selectedPackage = _packages[0];
+    try {
+      var userInfo = await ProfileRepository().getUserInfoResponse();
+      
+      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
+        final user = userInfo.data![0];
+        final payments = user.customerPackagePayments ?? [];
+        
+        setState(() {
+          _purchaseHistory = payments;
+        });
+      }
+    } catch (e) {
+      print("Error loading purchase history: $e");
+      setState(() {
+        _purchaseHistory = [];
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  Future<void> _submitPurchase() async {
+    if (_selectedPackage == null) {
+      ToastComponent.showDialog(AppLocalizations.of(context)!.select_package_first);
+      return;
     }
     
-    // Demo purchase history
-    _purchaseHistory = [
-      {
-        'id': 1,
-        'packageName': 'Premium Package',
-        'points': 1000,
-        'amount': 69.99,
-        'paymentMethod': 'paypal',
-        'date': DateTime(2024, 5, 15),
+    setState(() {
+      _isPurchasing = true;
+    });
+    
+    try {
+      // TODO: Replace with actual API call to purchase package
+      // var response = await ProfileRepository().purchasePackage(_selectedPackage!['id']);
+      
+      // Simulate API call
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // Close drawer
+      _closeBuyPointsDrawer();
+      
+      // Show success dialog
+      _showPurchaseSuccessDialog();
+      
+      // Refresh user data and purchase history
+      await _loadUserData();
+      await _loadPurchaseHistory();
+      
+    } catch (e) {
+      print("Error purchasing package: $e");
+      ToastComponent.showDialog(AppLocalizations.of(context)!.purchase_failed);
+    } finally {
+      setState(() {
+        _isPurchasing = false;
+      });
+    }
+  }
+  
+  void _showPurchaseSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Purchase Successful!',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Package: ${_selectedPackage!['name']}',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Points: ${_selectedPackage!['points']} points',
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Price: \$${_selectedPackage!['price']}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: MyTheme.accent_color,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyTheme.accent_color,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('OK'),
+            ),
+          ],
+        );
       },
-      {
-        'id': 2,
-        'packageName': 'Standard Package',
-        'points': 500,
-        'amount': 39.99,
-        'paymentMethod': 'stripe',
-        'date': DateTime(2024, 4, 10),
-      },
-      {
-        'id': 3,
-        'packageName': 'Basic Package',
-        'points': 100,
-        'amount': 9.99,
-        'paymentMethod': 'wallet',
-        'date': DateTime(2024, 3, 5),
-      },
-    ];
+    );
   }
   
   void _openBuyPointsDrawer() {
@@ -171,85 +237,23 @@ class _PointsPageState extends State<PointsPage> {
     });
   }
   
-  void _submitPurchase() {
-    if (_selectedPackage == null) return;
-    
-    // Close drawer first
-    _closeBuyPointsDrawer();
-    
-    // Show confirmation dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'Purchase Package',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: MyTheme.dark_font_grey,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Package: ${_selectedPackage!['name']}',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Points: ${_selectedPackage!['points']} points',
-                style: TextStyle(fontSize: 13, color: MyTheme.font_grey),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Price: \$${_selectedPackage!['price']}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: MyTheme.accent_color,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: MyTheme.font_grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // Show success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Package purchased successfully!'),
-                    backgroundColor: MyTheme.accent_color,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyTheme.accent_color,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Confirm'),
-            ),
-          ],
-        );
-      },
-    );
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+  
+  String _getPaymentMethodIcon(String method) {
+    switch (method.toLowerCase()) {
+      case 'paypal':
+        return '💰';
+      case 'stripe':
+        return '💳';
+      default:
+        return '💵';
+    }
   }
   
   @override
@@ -270,80 +274,85 @@ class _PointsPageState extends State<PointsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Stack(
-        children: [
-          // Main Content
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
               children: [
-                const SizedBox(height: 16),
-                // User Points Card
-                _buildUserPointsCard(),
-                const SizedBox(height: 24),
-                // Purchase History
-                _buildPurchaseHistory(),
-                const SizedBox(height: 30),
-              ],
-            ),
-          ),
-          // Bottom Drawer Overlay
-          if (_isDrawerOpen)
-            GestureDetector(
-              onTap: _closeBuyPointsDrawer,
-              child: Container(
-                color: Colors.black.withOpacity(0.5),
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
+                // Main Content
+                SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      // User Points Card
+                      _buildUserPointsCard(),
+                      const SizedBox(height: 24),
+                      // Purchase History
+                      _buildPurchaseHistory(),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+                // Bottom Drawer Overlay
+                if (_isDrawerOpen)
+                  GestureDetector(
+                    onTap: _closeBuyPointsDrawer,
                     child: Container(
-                      height: MediaQuery.of(context).size.height * 0.75,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(7),
-                          topRight: Radius.circular(7),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Drawer Handle (optional - like a drag indicator)
-                          Container(
-                            margin: const EdgeInsets.only(top: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          // Drawer Header
-                          _buildDrawerHeader(),
-                          // Drawer Body
-                          Expanded(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  // Package Cards Horizontal Scroll
-                                  _buildPackageSlider(),
-                                  const SizedBox(height: 28),
-                                  // Buy Button
-                                  _buildBuyButton(),
-                                ],
+                      color: Colors.black.withOpacity(0.5),
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            height: MediaQuery.of(context).size.height * 0.75,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(7),
+                                topRight: Radius.circular(7),
                               ),
                             ),
+                            child: Column(
+                              children: [
+                                // Drawer Handle
+                                Container(
+                                  margin: const EdgeInsets.only(top: 12),
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE2E8F0),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                // Drawer Header
+                                _buildDrawerHeader(),
+                                // Drawer Body
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      children: [
+                                        // Package Cards
+                                        _packages.isEmpty
+                                            ? _buildNoPackagesState()
+                                            : _buildPackageSlider(),
+                                        const SizedBox(height: 28),
+                                        // Buy Button
+                                        if (_packages.isNotEmpty)
+                                          _buildBuyButton(),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
+              ],
             ),
-        ],
-      ),
     );
   }
   
@@ -398,7 +407,7 @@ class _PointsPageState extends State<PointsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _userName,
+                      _userName.isNotEmpty ? _userName : 'User',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -441,7 +450,7 @@ class _PointsPageState extends State<PointsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$_userPoints',
+                          _userPoints,
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -517,7 +526,7 @@ class _PointsPageState extends State<PointsPage> {
     );
   }
   
-  Widget _buildHistoryItem(Map<String, dynamic> item) {
+  Widget _buildHistoryItem(dynamic item) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -539,10 +548,10 @@ class _PointsPageState extends State<PointsPage> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.shopping_bag,
-                    size: 30,
-                    color: Color(0xFF0092AC),
+                  child: Text(
+                    _getPaymentMethodIcon(item.paymentMethod ?? ''),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 30),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -552,7 +561,7 @@ class _PointsPageState extends State<PointsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item['packageName'],
+                        item.packageName ?? 'Package Purchase',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -561,7 +570,7 @@ class _PointsPageState extends State<PointsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${item['points']} points',
+                        '${item.amount ?? 0} points',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -576,7 +585,7 @@ class _PointsPageState extends State<PointsPage> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          item['paymentMethod'],
+                          item.paymentMethod ?? 'Unknown',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
@@ -595,7 +604,7 @@ class _PointsPageState extends State<PointsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '\$${item['amount']}',
+                '\$${(item.amount ?? 0).toDouble()}',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -604,7 +613,7 @@ class _PointsPageState extends State<PointsPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                _formatDate(item['date']),
+                item.createdAt != null ? _formatDate(item.createdAt!) : '',
                 style: TextStyle(
                   fontSize: 11,
                   color: const Color(0xFF64748B),
@@ -643,6 +652,39 @@ class _PointsPageState extends State<PointsPage> {
           const SizedBox(height: 6),
           Text(
             'Buy points and then check here, all points purchases will be displayed here.',
+            style: TextStyle(
+              fontSize: 11,
+              color: const Color(0xFF94A3B8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildNoPackagesState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      child: Column(
+        children: [
+          Icon(
+            Icons.card_giftcard_outlined,
+            size: 50,
+            color: const Color(0xFFCBD5E1),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No packages available',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Check back later for available packages',
             style: TextStyle(
               fontSize: 11,
               color: const Color(0xFF94A3B8),
@@ -795,7 +837,7 @@ class _PointsPageState extends State<PointsPage> {
   
   Widget _buildBuyButton() {
     return GestureDetector(
-      onTap: _submitPurchase,
+      onTap: _isPurchasing ? null : _submitPurchase,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -803,24 +845,27 @@ class _PointsPageState extends State<PointsPage> {
           color: MyTheme.accent_color,
           borderRadius: BorderRadius.circular(7),
         ),
-        child: Text(
-          'Buy Now',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
+        child: _isPurchasing
+            ? const Center(
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : Text(
+                'Buy Now',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
-  }
-  
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }

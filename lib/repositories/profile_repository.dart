@@ -96,6 +96,31 @@ class ProfileRepository {
     return userInfoResponseFromJson(response.body);
   }
 
+  Future<Map<String, dynamic>> updateAffiliatePaymentDetails({
+    required String paypalEmail,
+    required String bankName,
+    required String accountHolder,
+    required String accountNumber,
+    required String ifscCode,
+  }) async {
+    String url = "/affiliate/payment-details/update";
+    
+    final response = await ApiService().post(url, {
+      "paypal_email": paypalEmail,
+      "bank_name": bankName,
+      "account_holder": accountHolder,
+      "account_number": accountNumber,
+      "ifsc_code": ifscCode,
+    });
+    
+    return response;
+  }
+
+  Future<Map<String, dynamic>> getAffiliatePaymentDetails() async {
+    String url = "/affiliate/payment-details";
+    final response = await ApiService().post(url, {});
+    return response;
+  }
   
   // Future<dynamic> getUserInfoResponse() async {
 

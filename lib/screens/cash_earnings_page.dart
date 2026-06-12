@@ -21,31 +21,45 @@ class CashEarningsPage extends StatefulWidget {
 }
 
 class _CashEarningsPageState extends State<CashEarningsPage> {
-  // User data - initialized with empty/default values
+  // User data
   String _userName = "";
-  String _userEmail = "";      // ADDED - was missing
-  String _userPhone = "";      // ADDED - was missing
+  String _userEmail = "";
+  String _userPhone = "";
   String _userAvatar = "";
-  String _userPoints = "0";    // ADDED - was missing, as String
-  String _cashEarnings = "0";  // Changed from double to String
+  String _userPoints = "0";
+  String _cashEarnings = "0";
   int _selectedMonthIndex = 0;
   
-  // Cash logs data
-  List<Map<String, dynamic>> _cashLogs = [];
+  // Cash logs data from API
+  List<dynamic> _cashLogs = [];
   Map<String, double> _monthlyCash = {};
   List<String> _months = [];
+  
+  bool _isLoading = true;
   
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadUserData();
+      _loadData();
     }
   }
-
-  void _loadUserData() async {
+  
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    await _loadUserData();
+    await _loadCashEarningsHistory();
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
+  
+  Future<void> _loadUserData() async {
     try {
-      // Fetch user data from API
       var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
@@ -57,51 +71,117 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
           _userPoints = user.balance ?? "0";
-          _cashEarnings = user.affiliateBalance ?? "0";
+          _cashEarnings = user.affiliateBalance?.toString() ?? "0";
         });
         
-        // After loading user data, load cash earnings history
-        _loadCashEarningsHistory();
+        // Update shared_value_helper
+        user_name.$ = _userName;
+        user_email.$ = _userEmail;
+        user_phone.$ = _userPhone;
+        avatar_original.$ = _userAvatar;
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
   }
   
-  void _loadCashEarningsHistory() async {
+  Future<void> _loadCashEarningsHistory() async {
     try {
-      // TODO: Replace with actual API call to get cash earnings history
-      // var cashHistory = await ProfileRepository().getCashEarningsResponse();
-      // _cashLogs = cashHistory.data ?? [];
+      // Get affiliate logs from user info response
+      var userInfo = await ProfileRepository().getUserInfoResponse();
       
-      // For now, using empty list (remove demo data)
-      _cashLogs = [];
-      
-      // Calculate monthly cash totals
-      final Map<String, double> monthlyTemp = {};
-      for (var log in _cashLogs) {
-        final date = log['date'] as DateTime;
-        final monthKey = _formatMonthYear(date);
-        monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (log['amount'] as double);
+      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
+        final user = userInfo.data![0];
+        final affiliateLogs = user.affiliateLogs ?? [];
+        
+        // Get affiliate withdraw requests for withdrawal history
+        final withdrawRequests = user.affiliateWithdrawRequests ?? [];
+        
+        // Process affiliate logs for cash earnings (filter for bonus_type that earn cash)
+        // Based on your data, cash earnings would come from referral bonuses or sales
+        // For now, we'll track both earnings (positive amounts) and withdrawals
+        List<dynamic> allCashTransactions = [];
+        
+        // Add earnings from affiliate logs (positive amounts)
+        for (var log in affiliateLogs) {
+          // Skip point transactions, only include cash earnings
+          if (log.bonusType != 'point' && (log.amount ?? 0) > 0) {
+            allCashTransactions.add({
+              'type': 'earning',
+              'amount': (log.amount ?? 0).toDouble(),
+              'cameFrom': log.cameFrom ?? 'Affiliate earning',
+              'status': log.status == 1 ? 1 : 0,
+              'createdAt': log.createdAt,
+              'orderId': log.orderId,
+            });
+          }
+        }
+        
+        // Add withdrawals (negative amounts)
+        for (var request in withdrawRequests) {
+          allCashTransactions.add({
+            'type': 'withdrawal',
+            'amount': -(request.amount ?? 0).toDouble(),
+            'cameFrom': 'Withdrawal request',
+            'status': request.status == 1 ? 1 : 0,
+            'createdAt': request.createdAt,
+            'orderId': null,
+          });
+        }
+        
+        // Sort by date
+        allCashTransactions.sort((a, b) {
+          final dateA = a['createdAt'];
+          final dateB = b['createdAt'];
+          if (dateA == null || dateB == null) return 0;
+          return dateB.compareTo(dateA);
+        });
+        
+        _cashLogs = allCashTransactions;
+        
+        // Calculate monthly cash totals
+        final Map<String, double> monthlyTemp = {};
+        for (var log in _cashLogs) {
+          final date = log['createdAt'];
+          if (date == null) continue;
+          
+          final monthKey = _formatMonthYear(date);
+          monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (log['amount'] as double);
+        }
+        
+        _monthlyCash = monthlyTemp;
+        _months = _monthlyCash.keys.toList();
+        _months.sort((a, b) {
+          final dateA = _parseMonthYear(a);
+          final dateB = _parseMonthYear(b);
+          return dateB.compareTo(dateA);
+        });
+        
+        if (_months.isNotEmpty) {
+          _selectedMonthIndex = 0;
+        }
+        
+        setState(() {});
       }
-      
-      _monthlyCash = monthlyTemp;
-      _months = _monthlyCash.keys.toList();
-      _months.sort((a, b) {
-        final dateA = DateTime.parse('01 ${a}');
-        final dateB = DateTime.parse('01 ${b}');
-        return dateB.compareTo(dateA);
-      });
-      
-      // Set default selected month to first
-      if (_months.isNotEmpty) {
-        _selectedMonthIndex = 0;
-      }
-      
-      setState(() {});
     } catch (e) {
       print("Error loading cash earnings history: $e");
+      _cashLogs = [];
     }
+  }
+  
+  DateTime _parseMonthYear(String monthYear) {
+    const months = {
+      'January': 1, 'February': 2, 'March': 3, 'April': 4,
+      'May': 5, 'June': 6, 'July': 7, 'August': 8,
+      'September': 9, 'October': 10, 'November': 11, 'December': 12
+    };
+    
+    final parts = monthYear.split(' ');
+    final monthName = parts[0];
+    final year = int.parse(parts[1]);
+    final month = months[monthName] ?? 1;
+    
+    return DateTime(year, month);
   }
   
   String _formatMonthYear(DateTime date) {
@@ -112,13 +192,24 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     return '${months[date.month - 1]} ${date.year}';
   }
   
-  List<Map<String, dynamic>> _getFilteredLogs() {
+  List<dynamic> _getFilteredLogs() {
     if (_months.isEmpty) return [];
     final selectedMonth = _months[_selectedMonthIndex];
     return _cashLogs.where((log) {
-      final date = log['date'] as DateTime;
+      final date = log['createdAt'];
+      if (date == null) return false;
       return _formatMonthYear(date) == selectedMonth;
     }).toList();
+  }
+  
+  String _getMonthAbbreviation(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+  
+  String _formatTime(DateTime date) {
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
   
   @override
@@ -141,28 +232,23 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Card
-            _buildProfileCard(),
-            
-            // Cash History Section
-            _buildCashHistorySection(filteredLogs),
-            
-            // Monthly Cash Balance Section
-            if (_months.isNotEmpty) 
-              _buildMonthlySection(),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfileCard(),
+                  _buildCashHistorySection(filteredLogs),
+                  if (_months.isNotEmpty) _buildMonthlySection(),
+                ],
+              ),
+            ),
     );
   }
   
   Widget _buildProfileCard() {
-    // Parse cash earnings to double for display, default to 0.0 if invalid
     double cashEarningsValue = double.tryParse(_cashEarnings) ?? 0.0;
     
     return Container(
@@ -250,7 +336,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     );
   }
     
-  Widget _buildCashHistorySection(List<Map<String, dynamic>> logs) {
+  Widget _buildCashHistorySection(List<dynamic> logs) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -258,7 +344,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         children: [
           const SizedBox(height: 8),
           const Text(
-            'Cash Earnings History',
+            'Cash History',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -273,17 +359,16 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             Column(
               children: logs.map((log) => _buildHistoryCard(log)).toList(),
             ),
-          
-          // Pagination (demo - showing limited items)
-          if (logs.isNotEmpty && logs.length >= 5)
-            _buildPagination(),
         ],
       ),
     );
   }
     
-  Widget _buildHistoryCard(Map<String, dynamic> log) {
-    final date = log['date'] as DateTime;
+  Widget _buildHistoryCard(dynamic log) {
+    final date = log['createdAt'];
+    final amount = log['amount'] as double;
+    final isEarning = amount > 0;
+    final isWithdrawal = log['type'] == 'withdrawal';
     
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -297,16 +382,19 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         children: [
           _buildHistoryRow(
             'Date',
-            '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}',
+            date != null 
+                ? '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}, ${_formatTime(date)}'
+                : 'Unknown',
           ),
           _buildHistoryRow(
-            'User',
-            log['user'],
+            'Description',
+            log['cameFrom'] ?? (isWithdrawal ? 'Cash Withdrawal' : 'Affiliate Earning'),
           ),
           _buildHistoryRow(
-            'Amount',
-            '\$${log['amount'].toStringAsFixed(2)}',
+            isWithdrawal ? 'Withdrawn' : 'Earned',
+            '${isEarning ? '+' : ''}\$${amount.abs().toStringAsFixed(2)}',
             isHighlighted: true,
+            highlightColor: isEarning ? const Color(0xFF10B981) : const Color(0xFFEF4444),
           ),
           if (log['orderId'] != null)
             _buildHistoryRow(
@@ -325,10 +413,11 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   
   Widget _buildHistoryRow(String label, String value, {
     bool isHighlighted = false,
+    Color? highlightColor,
     Color? statusColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -340,25 +429,22 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
               color: Color(0xFF666666),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
-              color: isHighlighted 
-                  ? const Color(0xFF10B981)
-                  : (statusColor ?? const Color(0xFF333333)),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
+                color: isHighlighted 
+                    ? (highlightColor ?? const Color(0xFF10B981))
+                    : (statusColor ?? const Color(0xFF333333)),
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-  
-  String _getMonthAbbreviation(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month - 1];
   }
   
   Widget _buildEmptyState() {
@@ -398,13 +484,16 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   }
     
   Widget _buildMonthlySection() {
+    final selectedMonth = _months[_selectedMonthIndex];
+    final monthCash = _monthlyCash[selectedMonth] ?? 0.0;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Monthly Cash Balance',
+            'Monthly Cash Summary',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -459,7 +548,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             child: Column(
               children: [
                 const Text(
-                  'Total Cash Earned',
+                  'Net Cash',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -468,43 +557,25 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '\$${(_monthlyCash[_months[_selectedMonthIndex]] ?? 0).toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  '\$${monthCash.abs().toStringAsFixed(2)}',
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF10B981),
+                    color: monthCash >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  monthCash >= 0 ? 'Net earned this month' : 'Net withdrawn this month',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF94A3B8),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildPagination() {
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF6F6F6),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: const Text(
-              '1',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ),
         ],
       ),
     );

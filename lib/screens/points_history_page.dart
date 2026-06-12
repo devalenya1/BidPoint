@@ -24,33 +24,47 @@ class PointsHistoryPage extends StatefulWidget {
 }
 
 class _PointsHistoryPageState extends State<PointsHistoryPage> {
-  // User data - initialized with empty/default values
+  // User data
   String _userName = "";
-  String _userEmail = "";      // ADDED - was missing
-  String _userPhone = "";      // ADDED - was missing
+  String _userEmail = "";
+  String _userPhone = "";
   String _userAvatar = "";
-  String _pointsBalance = "0";  // Changed from int to String
-  String _userCash = "0";       // ADDED - was missing
-  String _selectedFilter = 'All'; // All, Today, 7, 30
+  String _pointsBalance = "0";
+  String _userCash = "0";
+  String _selectedFilter = 'All';
   
-  // Points logs data
-  List<Map<String, dynamic>> _allPointsLogs = [];
-  List<Map<String, dynamic>> _filteredPointsLogs = [];
+  // Points logs data from API
+  List<dynamic> _allPointsLogs = [];
+  List<dynamic> _filteredPointsLogs = [];
   Map<String, int> _monthlyPoints = {};
   List<String> _months = [];
   int _selectedMonthIndex = 0;
+  
+  bool _isLoading = true;
   
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadUserData();
+      _loadData();
     }
   }
-
-  void _loadUserData() async {
+  
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    await _loadUserData();
+    await _loadPointsHistory();
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
+  
+  Future<void> _loadUserData() async {
     try {
-      // Fetch user data from API
       var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
@@ -62,30 +76,41 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
           _pointsBalance = user.balance ?? "0";
-          _userCash = user.affiliateBalance ?? "0";
+          _userCash = user.affiliateBalance?.toString() ?? "0";
         });
         
-        // After loading user data, load points history
-        _loadPointsHistory();
+        // Update shared_value_helper
+        user_name.$ = _userName;
+        user_email.$ = _userEmail;
+        user_phone.$ = _userPhone;
+        avatar_original.$ = _userAvatar;
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
   }
   
-  void _loadPointsHistory() async {
+  Future<void> _loadPointsHistory() async {
     try {
-      // TODO: Replace with actual API call to get points history
-      // var pointsHistory = await ProfileRepository().getPointsHistoryResponse();
-      // _allPointsLogs = pointsHistory.data ?? [];
+      // Use affiliate_logs from user info response since it contains points transactions
+      var userInfo = await ProfileRepository().getUserInfoResponse();
       
-      // For now, using empty list (remove demo data)
-      _allPointsLogs = [];
-      
-      _applyFilter();
-      _calculateMonthlyPoints();
+      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
+        final user = userInfo.data![0];
+        final affiliateLogs = user.affiliateLogs ?? [];
+        
+        // Filter for point transactions only
+        _allPointsLogs = affiliateLogs.where((log) {
+          return log.bonusType == 'point';
+        }).toList();
+        
+        _applyFilter();
+        _calculateMonthlyPoints();
+      }
     } catch (e) {
       print("Error loading points history: $e");
+      _allPointsLogs = [];
+      _filteredPointsLogs = [];
     }
   }
   
@@ -97,7 +122,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       switch (_selectedFilter) {
         case 'Today':
           _filteredPointsLogs = _allPointsLogs.where((log) {
-            final logDate = log['date'] as DateTime;
+            final logDate = log.createdAt;
+            if (logDate == null) return false;
             return logDate.year == today.year && 
                    logDate.month == today.month && 
                    logDate.day == today.day;
@@ -106,14 +132,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         case '7':
           final sevenDaysAgo = today.subtract(const Duration(days: 7));
           _filteredPointsLogs = _allPointsLogs.where((log) {
-            final logDate = log['date'] as DateTime;
+            final logDate = log.createdAt;
+            if (logDate == null) return false;
             return logDate.isAfter(sevenDaysAgo) || logDate.isAtSameMomentAs(sevenDaysAgo);
           }).toList();
           break;
         case '30':
           final thirtyDaysAgo = today.subtract(const Duration(days: 30));
           _filteredPointsLogs = _allPointsLogs.where((log) {
-            final logDate = log['date'] as DateTime;
+            final logDate = log.createdAt;
+            if (logDate == null) return false;
             return logDate.isAfter(thirtyDaysAgo) || logDate.isAtSameMomentAs(thirtyDaysAgo);
           }).toList();
           break;
@@ -125,25 +153,46 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   void _calculateMonthlyPoints() {
     final Map<String, int> monthlyTemp = {};
+    
     for (var log in _allPointsLogs) {
-      final date = log['date'] as DateTime;
+      final date = log.createdAt;
+      if (date == null) continue;
+      
       final monthKey = _formatMonthYear(date);
-      final points = log['points'] as int;
-      final isEarned = log['type'] == 'earned';
+      final points = (log.amount ?? 0).abs();
+      // Points are negative for spending, positive for earning? 
+      // Based on your data, amount is negative (e.g., -42)
+      final isEarned = (log.amount ?? 0) > 0;
+      
       monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (isEarned ? points : -points);
     }
     
     _monthlyPoints = monthlyTemp;
     _months = _monthlyPoints.keys.toList();
     _months.sort((a, b) {
-      final dateA = DateTime.parse('01 $a');
-      final dateB = DateTime.parse('01 $b');
+      final dateA = _parseMonthYear(a);
+      final dateB = _parseMonthYear(b);
       return dateB.compareTo(dateA);
     });
     
     if (_months.isNotEmpty) {
       _selectedMonthIndex = 0;
     }
+  }
+  
+  DateTime _parseMonthYear(String monthYear) {
+    const months = {
+      'January': 1, 'February': 2, 'March': 3, 'April': 4,
+      'May': 5, 'June': 6, 'July': 7, 'August': 8,
+      'September': 9, 'October': 10, 'November': 11, 'December': 12
+    };
+    
+    final parts = monthYear.split(' ');
+    final monthName = parts[0];
+    final year = int.parse(parts[1]);
+    final month = months[monthName] ?? 1;
+    
+    return DateTime(year, month);
   }
   
   String _formatMonthYear(DateTime date) {
@@ -154,11 +203,17 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     return '${months[date.month - 1]} ${date.year}';
   }
   
-  String _getUserDisplay(Map<String, dynamic> log) {
-    if (log['came_from'] != null && log['came_from'].toString().isNotEmpty) {
-      return log['came_from'];
+  String _getMonthAbbreviation(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
+  
+  String _getUserDisplay(dynamic log) {
+    if (log.cameFrom != null && log.cameFrom.toString().isNotEmpty) {
+      return log.cameFrom;
     }
-    return log['user'] ?? 'System';
+    return _userName;
   }
   
   @override
@@ -179,26 +234,20 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Card
-            _buildProfileCard(),
-            
-            // Filter Tabs
-            _buildFilterTabs(),
-            
-            // Points History Section
-            _buildPointsHistorySection(),
-            
-            // Monthly Points Balance Section
-            if (_months.isNotEmpty) 
-              _buildMonthlySection(),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfileCard(),
+                  _buildFilterTabs(),
+                  _buildPointsHistorySection(),
+                  if (_months.isNotEmpty) _buildMonthlySection(),
+                ],
+              ),
+            ),
     );
   }
   
@@ -351,21 +400,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             Column(
               children: _filteredPointsLogs.map((log) => _buildHistoryCard(log)).toList(),
             ),
-          
-          // Pagination (demo)
-          if (_filteredPointsLogs.isNotEmpty)
-            _buildPagination(),
-          
-          const SizedBox(height: 20),
         ],
       ),
     );
   }
   
-  Widget _buildHistoryCard(Map<String, dynamic> log) {
-    final date = log['date'] as DateTime;
-    final pointsValue = log['points'] as int;
-    final isEarned = log['type'] == 'earned';
+  Widget _buildHistoryCard(dynamic log) {
+    final date = log.createdAt;
+    final pointsValue = (log.amount ?? 0).abs();
+    // If amount is negative, it's spent (deducted), if positive it's earned
+    final isEarned = (log.amount ?? 0) > 0;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -379,21 +423,27 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         children: [
           _buildHistoryRow(
             'Date',
-            '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}',
+            date != null 
+                ? '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}, ${_formatTime(date)}'
+                : 'Unknown',
           ),
           _buildHistoryRow(
-            'User',
-            _getUserDisplay(log),
+            'Description',
+            log.cameFrom ?? 'Points transaction',
           ),
           _buildHistoryRow(
             'Points',
-            '${isEarned ? '+' : '-'}${pointsValue.toString()} pts',
+            '${isEarned ? '+' : '-'}$pointsValue pts',
             isHighlighted: true,
-            highlightColor: MyTheme.accent_color,
+            highlightColor: isEarned ? const Color(0xFF10B981) : const Color(0xFFEF4444),
           ),
         ],
       ),
     );
+  }
+  
+  String _formatTime(DateTime date) {
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
   
   Widget _buildHistoryRow(String label, String value, {
@@ -401,7 +451,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     Color? highlightColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -413,25 +463,22 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               color: Color(0xFF666666),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
-              color: isHighlighted 
-                  ? (highlightColor ?? const Color(0xFF10B981))
-                  : const Color(0xFF333333),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
+                color: isHighlighted 
+                    ? (highlightColor ?? const Color(0xFF10B981))
+                    : const Color(0xFF333333),
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-  
-  String _getMonthAbbreviation(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month - 1];
   }
   
   Widget _buildEmptyState() {
@@ -469,8 +516,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       ),
     );
   }
-
+  
   Widget _buildMonthlySection() {
+    final selectedMonth = _months[_selectedMonthIndex];
+    final monthPoints = _monthlyPoints[selectedMonth] ?? 0;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -532,7 +582,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             child: Column(
               children: [
                 const Text(
-                  'Total Points Earned',
+                  'Net Points',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -541,43 +591,25 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${(_monthlyPoints[_months[_selectedMonthIndex]] ?? 0).toString()} points',
+                  '$monthPoints points',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF0092AC),
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  monthPoints >= 0 ? 'Earned this month' : 'Spent this month',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildPagination() {
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF6F6F6),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: const Text(
-              '1',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0092AC),
-              ),
-            ),
-          ),
         ],
       ),
     );

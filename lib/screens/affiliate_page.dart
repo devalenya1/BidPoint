@@ -26,31 +26,39 @@ class AffiliatePage extends StatefulWidget {
 }
 
 class _AffiliatePageState extends State<AffiliatePage> {
-  // User data - initialized with default values
+  // User data
   String _userName = "";
-  String _userEmail = "";      // ADDED - was missing
-  String _userPhone = "";      // ADDED - was missing
+  String _userEmail = "";
+  String _userPhone = "";
   String _userAvatar = "";
-  String _pointsBalance = "0";     // Changed from int to String
-  String _cashEarnings = "0";      // Changed from double to String
-  String _referralEarnings = "0";  // Changed from double to String
+  String _pointsBalance = "0";
+  String _cashEarnings = "0";
+  String _referralEarnings = "0";
   String _referralCode = "";
   String _referralLink = "";
   
   // UI state
   bool _pointsVisible = true;
+  bool _isLoading = true;
   
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
       _loadUserData();
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void _loadUserData() async {
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
-      // Fetch user data from API
       var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
@@ -62,28 +70,38 @@ class _AffiliatePageState extends State<AffiliatePage> {
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
           _pointsBalance = user.balance ?? "0";
-          _cashEarnings = user.affiliateBalance ?? "0";
-          _referralEarnings = user.affiliateBalance ?? "0";
-          _referralCode = user.affiliateId ?? "NONE";
+          _cashEarnings = user.affiliateBalance?.toString() ?? "0";
+          _referralEarnings = user.affiliateBalance?.toString() ?? "0";
+          _referralCode = user.affiliateId ?? "";
           _referralLink = "https://bidpoint.com/ref/$_referralCode";
         });
+        
+        // Update shared_value_helper
+        user_name.$ = _userName;
+        user_email.$ = _userEmail;
+        user_phone.$ = _userPhone;
+        avatar_original.$ = _userAvatar;
       }
     } catch (e) {
       print("Error loading user data: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
   
   void _copyToClipboard(String text, String type) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.copied_to_clipboard),
-        backgroundColor: MyTheme.accent_color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Copy to clipboard logic here
+    ToastComponent.showDialog(AppLocalizations.of(context)!.copied_to_clipboard);
   }
   
   void _shareReferralLink() async {
+    if (_referralCode.isEmpty) {
+      ToastComponent.showDialog(AppLocalizations.of(context)!.referral_code_not_available);
+      return;
+    }
+    
     final String shareText = AppLocalizations.of(context)!.share_referral_message(
       _referralLink,
       _referralCode,
@@ -140,34 +158,36 @@ class _AffiliatePageState extends State<AffiliatePage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              // Profile Card
-              _buildProfileCard(),
-              const SizedBox(height: 16),
-              // Stats Cards Row
-              _buildStatsRow(),
-              const SizedBox(height: 20),
-              // Banner Image
-              _buildBanner(),
-              const SizedBox(height: 20),
-              // How It Works Section
-              _buildHowItWorks(),
-              const SizedBox(height: 20),
-              // Referral Link Section
-              _buildReferralLink(),
-              const SizedBox(height: 16),
-              // Share Button
-              _buildShareButton(),
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    // Profile Card
+                    _buildProfileCard(),
+                    const SizedBox(height: 16),
+                    // Stats Cards Row
+                    _buildStatsRow(),
+                    const SizedBox(height: 20),
+                    // Banner Image
+                    _buildBanner(),
+                    const SizedBox(height: 20),
+                    // How It Works Section
+                    _buildHowItWorks(),
+                    const SizedBox(height: 20),
+                    // Referral Link Section
+                    _buildReferralLink(),
+                    const SizedBox(height: 16),
+                    // Share Button
+                    _buildShareButton(),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
+            ),
     );
   }
   
@@ -224,7 +244,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _userName,
+                        _userName.isNotEmpty ? _userName : 'User',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -235,7 +255,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       GestureDetector(
                         onTap: _navigateToWithdrawHistory,
                         child: Text(
-                          '${AppLocalizations.of(context)!.referral_earnings} \$${_referralEarnings}',
+                          '${AppLocalizations.of(context)!.referral_earnings} \$$_referralEarnings',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -274,129 +294,141 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   Widget _buildStatsRow() {
+    // Parse cash earnings to double for display
+    double cashValue = double.tryParse(_cashEarnings) ?? 0.0;
+    
     return Row(
       children: [
         // Points Balance Card
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FC),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.points_balance,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF666666),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      _pointsVisible ? '$_pointsBalance' : '****',
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      AppLocalizations.of(context)!.points_ucf,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: GestureDetector(
-                    onTap: _navigateToPoints,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: MyTheme.accent_color,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.view_ucf,
-                        textAlign: TextAlign.center,
+          child: GestureDetector(
+            onTap: _navigateToPoints,
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FC),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.points_balance,
                         style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          fontSize: 11,
+                          color: Color(0xFF666666),
                         ),
                       ),
+                      GestureDetector(
+                        onTap: _togglePointsVisibility,
+                        child: Icon(
+                          _pointsVisible ? Icons.visibility : Icons.visibility_off,
+                          size: 16,
+                          color: const Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        _pointsVisible ? '$_pointsBalance' : '****',
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        AppLocalizations.of(context)!.points_ucf,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: MyTheme.accent_color,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.view_ucf,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
         const SizedBox(width: 15),
         // Cash Earnings Card
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FC),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.cash_earnings,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF666666),
+          child: GestureDetector(
+            onTap: _navigateToCash,
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FC),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.cash_earnings,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF666666),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '\$$_cashEarnings',
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                  const SizedBox(height: 5),
+                  Text(
+                    '\$${cashValue.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: GestureDetector(
-                    onTap: _navigateToCash,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.view_ucf,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.view_ucf,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -542,6 +574,11 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   Widget _buildReferralLink() {
+    // Build referral link only if code exists
+    final displayLink = _referralCode.isNotEmpty 
+        ? _referralLink 
+        : AppLocalizations.of(context)!.referral_code_not_available;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -566,7 +603,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                   child: Text(
-                    _referralLink,
+                    displayLink,
                     style: const TextStyle(
                       fontSize: 11,
                       color: Color(0xFF333333),
@@ -575,26 +612,27 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => _copyToClipboard(_referralLink, AppLocalizations.of(context)!.link_ucf),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: MyTheme.accent_color,
-                    borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(7),
+              if (_referralCode.isNotEmpty)
+                GestureDetector(
+                  onTap: () => _copyToClipboard(_referralLink, AppLocalizations.of(context)!.link_ucf),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: MyTheme.accent_color,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(7),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.copy_ucf,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                    child: Text(
+                      AppLocalizations.of(context)!.copy_ucf,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -604,12 +642,12 @@ class _AffiliatePageState extends State<AffiliatePage> {
   
   Widget _buildShareButton() {
     return GestureDetector(
-      onTap: _shareReferralLink,
+      onTap: _referralCode.isNotEmpty ? _shareReferralLink : null,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
-          color: MyTheme.accent_color,
+          color: _referralCode.isNotEmpty ? MyTheme.accent_color : const Color(0xFFCCCCCC),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(

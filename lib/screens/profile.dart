@@ -58,11 +58,13 @@ class Profile extends StatefulWidget {
 class _ProfileState extends State<Profile> {
   ScrollController _mainScrollController = ScrollController();
   bool _pointsVisible = true;
-  String _userBalance = "0";  // Changed from int to String
-  String _userCash = "0";     // Changed from int to String
-  String _userName = "John Doe";
-  String _userEmail = "john.doe@example.com";
-  String _userPhone = "+1234567890";
+  
+  // Initialize with empty values, not demo data
+  String _userBalance = "0";
+  String _userCash = "0";
+  String _userName = "";
+  String _userEmail = "";
+  String _userPhone = "";
   String _userAvatar = "";
   
   @override
@@ -70,19 +72,20 @@ class _ProfileState extends State<Profile> {
     super.initState();
     if (is_logged_in.$ == true) {
       _loadUserData();
+    } else {
+      // If not logged in, try to load from shared preferences
+      _loadFromSharedPreferences();
     }
   }
 
-  // void _loadUserData() {
-  //   setState(() {
-  //     _userName = user_name.$ ?? "John Doe";
-  //     _userEmail = user_email.$ ?? "";
-  //     _userPhone = user_phone.$ ?? "";
-  //     _userAvatar = avatar_original.$ ?? "";
-  //     _userBalance = balance.$ ?? "0";        // balance.$ returns String?
-  //     _userCash = affiliate_balance.$ ?? "0"; // affiliate_balance.$ returns String?
-  //   });
-  // }
+  void _loadFromSharedPreferences() {
+    setState(() {
+      _userName = user_name.$ ?? "";
+      _userEmail = user_email.$ ?? "";
+      _userPhone = user_phone.$ ?? "";
+      _userAvatar = avatar_original.$ ?? "";
+    });
+  }
 
   void _loadUserData() async {
     try {
@@ -92,21 +95,32 @@ class _ProfileState extends State<Profile> {
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
         
+        // CRITICAL: Update shared_value_helper variables so other pages work
+        user_name.$ = user.name ?? "";
+        user_email.$ = user.email ?? "";
+        user_phone.$ = user.phone ?? "";
+        avatar_original.$ = user.avatar ?? "";
+        
         setState(() {
-          _userName = user.name ?? "John Doe";
+          _userName = user.name ?? "";
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
           _userBalance = user.balance ?? "0";
           _userCash = user.affiliateBalance ?? "0";
         });
-        
+      } else {
+        // API call succeeded but no data, fallback to shared preferences
+        _loadFromSharedPreferences();
       }
     } catch (e) {
       print("Error loading user data: $e");
+      // On error, try to use shared values as fallback
+      _loadFromSharedPreferences();
     }
   }
 
+  @override
   void dispose() {
     _mainScrollController.dispose();
     super.dispose();
@@ -183,7 +197,6 @@ class _ProfileState extends State<Profile> {
           onPressed: _navigateBack,
         ),
         actions: [
-          // Logout Button in AppBar
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
@@ -197,10 +210,7 @@ class _ProfileState extends State<Profile> {
         padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
         child: Column(
           children: [
-            // Profile Card
             _buildProfileCard(),
-            
-            // Menu Section
             _buildMenuSection(),
           ],
         ),
@@ -208,9 +218,22 @@ class _ProfileState extends State<Profile> {
     );
   }
   
-
-  
   Widget _buildProfileCard() {
+    // Show loading indicator while data is being fetched
+    if (_userName.isEmpty && is_logged_in.$ == true) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F6F6),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -221,12 +244,10 @@ class _ProfileState extends State<Profile> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left side - Avatar and User Info
           Expanded(
             flex: 2,
             child: Row(
               children: [
-                // Avatar
                 Container(
                   width: 45,
                   height: 45,
@@ -259,13 +280,12 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // User Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _userName,
+                        _userName.isNotEmpty ? _userName : "Guest User",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -287,7 +307,6 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          // Right side - Points Card
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
             decoration: BoxDecoration(
@@ -363,7 +382,6 @@ class _ProfileState extends State<Profile> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // My Account Section
           _buildSectionHeading(AppLocalizations.of(context)!.my_account),
           Container(
             padding: const EdgeInsets.all(16),
@@ -414,7 +432,6 @@ class _ProfileState extends State<Profile> {
           
           const SizedBox(height: 16),
           
-          // Security Section
           _buildSectionHeading(AppLocalizations.of(context)!.security),
           Container(
             padding: const EdgeInsets.all(16),
