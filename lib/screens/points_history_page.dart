@@ -4,6 +4,7 @@ import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
@@ -23,15 +24,15 @@ class PointsHistoryPage extends StatefulWidget {
   @override
   State<PointsHistoryPage> createState() => _PointsHistoryPageState();
 }
-
+ 
 class _PointsHistoryPageState extends State<PointsHistoryPage> {
   // User data
   String _userName = "";
   String _userEmail = "";
   String _userPhone = "";
   String _userAvatar = "";
-  String _pointsBalance = "0";
-  String _userCash = "0";
+  int _pointsBalance = 0;
+  double _userCash = 0.0;
   String _selectedFilter = 'All';
   
   // Points logs data from API
@@ -63,7 +64,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       _isLoading = false;
     });
   }
-  // Replace the _loadUserData method with:
+  
   Future<void> _loadUserData() async {
     try {
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -76,8 +77,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
-          _pointsBalance = user.balance ?? "0";
-          _userCash = user.affiliateBalance?.toString() ?? "0";
+          _pointsBalance = (user.balance ?? 0).toInt();
+          _userCash = user.affiliateBalance ?? 0.0;
         });
         
         // Save all user data to SharedPreferences

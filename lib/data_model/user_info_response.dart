@@ -87,7 +87,7 @@ class UserInformation {
   String? city;
   String? postalCode;
   String? phone;
-  String? balance;
+  double? balance;
   String? referralCode;
   dynamic? remainingUploads;
   dynamic? packageId;
@@ -95,15 +95,15 @@ class UserInformation {
   List<Notification>? notifications;
   int? unreadNotificationsCount;
   List<AffiliateLog>? affiliateLogs;
-  String? totalAffiliateEarnings;
+  double? totalAffiliateEarnings;
   List<AffiliateWithdrawRequest>? affiliateWithdrawRequests;
-  String? totalWithdrawnAmount;
-  String? pendingWithdrawAmount;
+  double? totalWithdrawnAmount;
+  double? pendingWithdrawAmount;
   List<Address>? addresses;
   int? addressCount;
   int? defaultAddressCount;
   List<CustomerPackagePayment>? customerPackagePayments;
-  String? totalPackagePayments;
+  double? totalPackagePayments;
   List<WishlistItem>? wishlist;
   int? wishlistCount;
   List<AuctionBid>? auctionBids;
@@ -116,8 +116,8 @@ class UserInformation {
   String? accountHolder;
   String? accountNumber;
   String? ifscCode;
-  dynamic? affiliateBalance;
-  dynamic? affiliateStatus;
+  double? affiliateBalance;
+  int? affiliateStatus;
 
   factory UserInformation.fromJson(Map<String, dynamic> json) => UserInformation(
     id: json["id"],
@@ -130,7 +130,7 @@ class UserInformation {
     city: json["city"],
     postalCode: json["postal_code"],
     phone: json["phone"],
-    balance: json["balance"],
+    balance: json["balance"]?.toDouble(),
     referralCode: json["referral_code"],
     remainingUploads: json["remaining_uploads"],
     packageId: json["package_id"],
@@ -142,12 +142,12 @@ class UserInformation {
     affiliateLogs: json["affiliate_logs"] != null
         ? List<AffiliateLog>.from(json["affiliate_logs"].map((x) => AffiliateLog.fromJson(x)))
         : [],
-    totalAffiliateEarnings: json["total_affiliate_earnings"],
+    totalAffiliateEarnings: json["total_affiliate_earnings"]?.toDouble(),
     affiliateWithdrawRequests: json["affiliate_withdraw_requests"] != null
         ? List<AffiliateWithdrawRequest>.from(json["affiliate_withdraw_requests"].map((x) => AffiliateWithdrawRequest.fromJson(x)))
         : [],
-    totalWithdrawnAmount: json["total_withdrawn_amount"],
-    pendingWithdrawAmount: json["pending_withdraw_amount"],
+    totalWithdrawnAmount: json["total_withdrawn_amount"]?.toDouble(),
+    pendingWithdrawAmount: json["pending_withdraw_amount"]?.toDouble(),
     addresses: json["addresses"] != null
         ? List<Address>.from(json["addresses"].map((x) => Address.fromJson(x)))
         : [],
@@ -156,7 +156,7 @@ class UserInformation {
     customerPackagePayments: json["customer_package_payments"] != null
         ? List<CustomerPackagePayment>.from(json["customer_package_payments"].map((x) => CustomerPackagePayment.fromJson(x)))
         : [],
-    totalPackagePayments: json["total_package_payments"],
+    totalPackagePayments: json["total_package_payments"]?.toDouble(),
     wishlist: json["wishlist"] != null
         ? List<WishlistItem>.from(json["wishlist"].map((x) => WishlistItem.fromJson(x)))
         : [],
@@ -175,7 +175,7 @@ class UserInformation {
     accountHolder: json["account_holder"],
     accountNumber: json["account_number"],
     ifscCode: json["ifsc_code"],
-    affiliateBalance: json["affiliate_balance"],
+    affiliateBalance: json["affiliate_balance"]?.toDouble(),
     affiliateStatus: json["affiliate_status"],
   );
 
@@ -280,8 +280,8 @@ class AffiliateLog {
   int? id;
   String? bonusType;
   String? cameFrom;
-  int? amount;
-  String? formattedAmount;
+  double? amount;
+  double? formattedAmount;
   int? status;
   dynamic? orderId;
   int? referredByUser;
@@ -291,8 +291,8 @@ class AffiliateLog {
     id: json["id"],
     bonusType: json["bonus_type"],
     cameFrom: json["came_from"],
-    amount: json["amount"],
-    formattedAmount: json["formatted_amount"],
+    amount: json["amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"]?.toDouble(),
     status: json["status"],
     orderId: json["order_id"],
     referredByUser: json["referred_by_user"],
@@ -323,16 +323,16 @@ class AffiliateWithdrawRequest {
   });
 
   int? id;
-  int? amount;
-  String? formattedAmount;
+  double? amount;
+  double? formattedAmount;
   int? status;
   DateTime? createdAt;
   DateTime? updatedAt;
 
   factory AffiliateWithdrawRequest.fromJson(Map<String, dynamic> json) => AffiliateWithdrawRequest(
     id: json["id"],
-    amount: json["amount"],
-    formattedAmount: json["formatted_amount"],
+    amount: json["amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"]?.toDouble(),
     status: json["status"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
@@ -453,8 +453,8 @@ class CustomerPackagePayment {
   int? customerPackageId;
   String? packageName;
   String? paymentMethod;
-  int? amount;
-  String? formattedAmount;
+  double? amount;
+  double? formattedAmount;
   PaymentDetails? paymentDetails;
   int? approval;
   int? offlinePayment;
@@ -468,8 +468,8 @@ class CustomerPackagePayment {
     customerPackageId: json["customer_package_id"],
     packageName: json["package_name"],
     paymentMethod: json["payment_method"],
-    amount: json["amount"],
-    formattedAmount: json["formatted_amount"],
+    amount: json["amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"]?.toDouble(),
     paymentDetails: json["payment_details"] != null ? PaymentDetails.fromJson(json["payment_details"]) : null,
     approval: json["approval"],
     offlinePayment: json["offline_payment"],
@@ -572,7 +572,7 @@ class WishlistItem {
     this.productImage,
     this.productPrice,
     this.highestBid,
-    this.slug, // Add this line
+    this.slug,
     this.createdAt,
     this.updatedAt,
   });
@@ -581,9 +581,9 @@ class WishlistItem {
   int? productId;
   String? productName;
   String? productImage;
-  String? productPrice;
-  String? highestBid;
-  String? slug; // Add this line
+  double? productPrice;
+  double? highestBid;
+  String? slug;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -592,9 +592,9 @@ class WishlistItem {
     productId: json["product_id"],
     productName: json["product_name"],
     productImage: json["product_image"],
-    productPrice: json["product_price"],
-    highestBid: json["highest_bid"],
-    slug: json["slug"], // Add this line
+    productPrice: json["product_price"]?.toDouble(),
+    highestBid: json["highest_bid"]?.toDouble(),
+    slug: json["slug"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -606,7 +606,7 @@ class WishlistItem {
     "product_image": productImage,
     "product_price": productPrice,
     "highest_bid": highestBid,
-    "slug": slug, // Add this line
+    "slug": slug,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };
@@ -630,7 +630,7 @@ class AuctionBid {
   String? productName;
   String? productImage;
   double? amount;
-  String? formattedAmount;
+  double? formattedAmount;
   String? dayOfBid;
   DateTime? createdAt;
   DateTime? updatedAt;
@@ -641,7 +641,7 @@ class AuctionBid {
     productName: json["product_name"],
     productImage: json["product_image"],
     amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"],
+    formattedAmount: json["formatted_amount"]?.toDouble(),
     dayOfBid: json["day_of_bid"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
@@ -678,7 +678,7 @@ class DistinctAuctionBid {
   String? productName;
   String? productImage;
   double? amount;
-  String? formattedAmount;
+  double? formattedAmount;
   String? dayOfBid;
   String? createdAt;
   String? updatedAt;
@@ -689,7 +689,7 @@ class DistinctAuctionBid {
     productName: json["product_name"],
     productImage: json["product_image"],
     amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"],
+    formattedAmount: json["formatted_amount"]?.toDouble(),
     dayOfBid: json["day_of_bid"],
     createdAt: json["created_at"],
     updatedAt: json["updated_at"],

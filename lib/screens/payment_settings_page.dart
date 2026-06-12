@@ -54,7 +54,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     super.dispose();
   }
   
-  // Replace the _loadPaymentDetails method with:
   Future<void> _loadPaymentDetails() async {
     setState(() {
       _isLoading = true;
@@ -67,20 +66,27 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         final user = userInfo.data![0];
         
         // Check PayPal connection
-        if (user.paypalEmail != null && user.paypalEmail!.isNotEmpty) {
+        final hasPaypal = user.paypalEmail != null && user.paypalEmail!.isNotEmpty;
+        if (hasPaypal) {
           _paypalEmailController.text = user.paypalEmail!;
           _paypalConnected = true;
+        } else {
+          _paypalConnected = false;
         }
         
-        // Check Bank connection
-        if (user.bankName != null && user.bankName!.isNotEmpty &&
-            user.accountHolder != null && user.accountHolder!.isNotEmpty &&
-            user.accountNumber != null && user.accountNumber!.isNotEmpty) {
+        // Check Bank connection - check if any bank field has value
+        final hasBankName = user.bankName != null && user.bankName!.isNotEmpty;
+        final hasAccountHolder = user.accountHolder != null && user.accountHolder!.isNotEmpty;
+        final hasAccountNumber = user.accountNumber != null && user.accountNumber!.isNotEmpty;
+        
+        if (hasBankName && hasAccountHolder && hasAccountNumber) {
           _bankNameController.text = user.bankName!;
           _accountHolderController.text = user.accountHolder!;
           _accountNumberController.text = user.accountNumber!;
           _ifscCodeController.text = user.ifscCode ?? '';
           _bankConnected = true;
+        } else {
+          _bankConnected = false;
         }
         
         // Save all user data to SharedPreferences
@@ -116,7 +122,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     
     try {
       final response = await ProfileRepository().updateAffiliatePaymentDetails(
-        paypalEmail: _paypalConnected ? _paypalEmailController.text : '',
+        paypalEmail: _paypalEmailController.text.trim(),
         bankName: _bankNameController.text.trim(),
         accountHolder: _accountHolderController.text.trim(),
         accountNumber: _accountNumberController.text.trim(),
@@ -164,10 +170,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     try {
       final response = await ProfileRepository().updateAffiliatePaymentDetails(
         paypalEmail: _paypalEmailController.text.trim(),
-        bankName: _bankConnected ? _bankNameController.text : '',
-        accountHolder: _bankConnected ? _accountHolderController.text : '',
-        accountNumber: _bankConnected ? _accountNumberController.text : '',
-        ifscCode: _bankConnected ? _ifscCodeController.text : '',
+        bankName: _bankNameController.text.trim(),
+        accountHolder: _accountHolderController.text.trim(),
+        accountNumber: _accountNumberController.text.trim(),
+        ifscCode: _ifscCodeController.text.trim(),
       );
       
       if (response['success'] == true) {
@@ -223,7 +229,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     
     try {
       final response = await ProfileRepository().updateAffiliatePaymentDetails(
-        paypalEmail: _paypalConnected ? _paypalEmailController.text : '',
+        paypalEmail: _paypalEmailController.text.trim(),
         bankName: '',
         accountHolder: '',
         accountNumber: '',
@@ -285,10 +291,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     try {
       final response = await ProfileRepository().updateAffiliatePaymentDetails(
         paypalEmail: '',
-        bankName: _bankConnected ? _bankNameController.text : '',
-        accountHolder: _bankConnected ? _accountHolderController.text : '',
-        accountNumber: _bankConnected ? _accountNumberController.text : '',
-        ifscCode: _bankConnected ? _ifscCodeController.text : '',
+        bankName: _bankNameController.text.trim(),
+        accountHolder: _accountHolderController.text.trim(),
+        accountNumber: _accountNumberController.text.trim(),
+        ifscCode: _ifscCodeController.text.trim(),
       );
       
       if (response['success'] == true) {

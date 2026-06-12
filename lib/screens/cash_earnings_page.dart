@@ -4,6 +4,7 @@ import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
@@ -27,8 +28,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   String _userEmail = "";
   String _userPhone = "";
   String _userAvatar = "";
-  String _userPoints = "0";
-  String _cashEarnings = "0";
+  int _userPoints = 0;
+  double _cashEarnings = 0.0;
   int _selectedMonthIndex = 0;
   
   // Cash logs data from API
@@ -59,7 +60,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     });
   }
   
-  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     try {
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -72,8 +72,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
-          _userPoints = user.balance ?? "0";
-          _cashEarnings = user.affiliateBalance?.toString() ?? "0";
+          _userPoints = (user.balance ?? 0).toInt();
+          _cashEarnings = user.affiliateBalance ?? 0.0;
         });
         
         // Save all user data to SharedPreferences
@@ -97,8 +97,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         final withdrawRequests = user.affiliateWithdrawRequests ?? [];
         
         // Process affiliate logs for cash earnings (filter for bonus_type that earn cash)
-        // Based on your data, cash earnings would come from referral bonuses or sales
-        // For now, we'll track both earnings (positive amounts) and withdrawals
         List<dynamic> allCashTransactions = [];
         
         // Add earnings from affiliate logs (positive amounts)
@@ -128,7 +126,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           });
         }
         
-        // Sort by date
+        // Sort by date (newest first)
         allCashTransactions.sort((a, b) {
           final dateA = a['createdAt'];
           final dateB = b['createdAt'];
@@ -248,8 +246,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   }
   
   Widget _buildProfileCard() {
-    double cashEarningsValue = double.tryParse(_cashEarnings) ?? 0.0;
-    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -318,7 +314,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '\$${cashEarningsValue.toStringAsFixed(2)}',
+                      FormatHelper.formatPrice(_cashEarnings),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -391,7 +387,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           ),
           _buildHistoryRow(
             isWithdrawal ? 'Withdrawn' : 'Earned',
-            '${isEarning ? '+' : ''}\$${amount.abs().toStringAsFixed(2)}',
+            '${isEarning ? '+' : ''}${FormatHelper.formatPrice(amount.abs())}',
             isHighlighted: true,
             highlightColor: isEarning ? const Color(0xFF10B981) : const Color(0xFFEF4444),
           ),
@@ -556,7 +552,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '\$${monthCash.abs().toStringAsFixed(2)}',
+                  FormatHelper.formatPrice(monthCash.abs()),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,

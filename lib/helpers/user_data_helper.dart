@@ -17,8 +17,8 @@ class UserDataHelper {
     user_city.$ = user.city ?? "";
     user_postal_code.$ = user.postalCode ?? "";
     
-    // Points Balance
-    points_balance.$ = user.balance ?? "0";
+    // Points Balance - convert double to string
+    points_balance.$ = user.balance?.toString() ?? "0";
     
     // Affiliate Fields
     affiliate_id.$ = user.affiliateId ?? "";
@@ -30,7 +30,7 @@ class UserDataHelper {
     affiliate_balance.$ = user.affiliateBalance?.toString() ?? "0";
     affiliate_status.$ = user.affiliateStatus ?? 0;
     referral_code.$ = user.referralCode ?? "";
-    total_affiliate_earnings.$ = user.totalAffiliateEarnings ?? "0";
+    total_affiliate_earnings.$ = user.totalAffiliateEarnings?.toString() ?? "0";
     
     // Package Info
     customer_package_id.$ = user.packageId ?? 0;
@@ -46,9 +46,9 @@ class UserDataHelper {
     default_address_count.$ = user.defaultAddressCount ?? 0;
     
     // Financial
-    total_withdrawn_amount.$ = user.totalWithdrawnAmount ?? "0";
-    pending_withdraw_amount.$ = user.pendingWithdrawAmount ?? "0";
-    total_package_payments.$ = user.totalPackagePayments ?? "0";
+    total_withdrawn_amount.$ = user.totalWithdrawnAmount?.toString() ?? "0";
+    pending_withdraw_amount.$ = user.pendingWithdrawAmount?.toString() ?? "0";
+    total_package_payments.$ = user.totalPackagePayments?.toString() ?? "0";
   }
   
   static void clearUserData() {

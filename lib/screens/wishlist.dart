@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/custom/useful_elements.dart';
@@ -81,17 +82,13 @@ class _WishlistState extends State<Wishlist> {
         final endingSoonThreshold = now.add(const Duration(days: 2));
         
         for (var item in wishlist) {
-          // Since auction end date and bid info might need additional API call
-          // For now, we'll use available data
-          final isEnded = false; // You would get this from product auction data
-          final userBid = item.highestBid != null 
-              ? double.tryParse(item.highestBid!.replaceAll('\$', '')) ?? 0
-              : 0;
-          final currentBid = double.tryParse(item.highestBid!.replaceAll('\$', '')) ?? 0;
+          // Get bid values as doubles (they are already numbers from API)
+          final userBid = item.highestBid ?? 0.0;
+          final currentBid = item.highestBid ?? 0.0;
+          final isEnded = false; // Would need auction end date from API
           final isOutbid = !isEnded && userBid > 0 && userBid < currentBid;
           final isWinning = !isEnded && !isOutbid && userBid == currentBid && userBid > 0;
           
-          // In _loadWishlistData method, when creating processedItems:
           processedItems.add({
             'id': item.id,
             'wishlistId': item.id,
@@ -99,8 +96,8 @@ class _WishlistState extends State<Wishlist> {
             'productSlug': item.slug ?? '',
             'productName': item.productName ?? 'Unknown Product',
             'productImage': item.productImage,
-            'productPrice': item.productPrice,
-            'highestBid': item.highestBid,
+            'productPrice': item.productPrice ?? 0.0,
+            'highestBid': item.highestBid ?? 0.0,
             'auctionEndDate': null,
             'currentBid': currentBid,
             'userBid': userBid,
@@ -186,17 +183,11 @@ class _WishlistState extends State<Wishlist> {
     }
   }
   
-  String _formatPrice(String? priceString) {
-    if (priceString == null) return '\$0.00';
-    // If price already has $ sign, return as is, otherwise add it
-    if (priceString.startsWith('\$')) return priceString;
-    return '\$${priceString}';
-  }
-  
-  double _extractPrice(String? priceString) {
-    if (priceString == null) return 0.0;
-    final cleaned = priceString.replaceAll('\$', '').replaceAll(',', '');
-    return double.tryParse(cleaned) ?? 0.0;
+  String _formatPrice(dynamic price) {
+    if (price == null) return '\$0.00';
+    if (price is double) return FormatHelper.formatPrice(price);
+    if (price is int) return FormatHelper.formatPrice(price.toDouble());
+    return '\$$price';
   }
   
   Future<void> _removeFromWishlist(int wishlistId) async {
@@ -579,7 +570,6 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 const SizedBox(height: 12),
                 // Action Button
-                // Action Button
                 GestureDetector(
                   onTap: () {
                     if (item['productSlug'] != null && item['productSlug'].toString().isNotEmpty) {
@@ -593,8 +583,6 @@ class _WishlistState extends State<Wishlist> {
                         ),
                       );
                     } else if (item['productId'] != null) {
-                      // If no slug, you might need to fetch product details by ID
-                      // Or you could modify ProductDetails to accept an ID
                       ToastComponent.showDialog(
                         'Product details not available',
                         gravity: Toast.center,

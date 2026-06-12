@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
@@ -71,14 +72,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         for (var product in distinctAuctionBids) {
           if (product.productId == null) continue;
           
-          // Get user's highest bid for this product
+          // Get user's highest bid for this product (amount is already double)
           final userBids = auctionBids.where((bid) => bid.productId == product.productId).toList();
           final userHighestBid = userBids.isNotEmpty 
-              ? userBids.map((b) => b.amount ?? 0).reduce((a, b) => a > b ? a : b)
-              : 0;
+              ? userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b)
+              : 0.0;
           
-          // Get highest bid overall for this product
-          final productHighestBid = product.amount ?? 0;
+          // Get highest bid overall for this product (amount is already double)
+          final productHighestBid = product.amount ?? 0.0;
           
           // Determine status
           bool isEnded = false; // You would need end date from product API
@@ -104,7 +105,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             'endDate': null, // You would need end date from product API
             'status': status,
             'isAuctionEnded': isEnded,
-            'formattedAmount': product.formattedAmount ?? '\$${productHighestBid.toString()}',
           });
         }
         
@@ -147,9 +147,11 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final distance = endDate.difference(now);
     
     if (distance.isNegative) {
-      setState(() {
-        _timeLeft[id] = AppLocalizations.of(context)!.ended_ucf;
-      });
+      if (mounted) {
+        setState(() {
+          _timeLeft[id] = AppLocalizations.of(context)!.ended_ucf;
+        });
+      }
       _timers[id]?.cancel();
       return;
     }
@@ -170,13 +172,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       timeString = "${seconds}s";
     }
     
-    setState(() {
-      _timeLeft[id] = timeString;
-    });
+    if (mounted) {
+      setState(() {
+        _timeLeft[id] = timeString;
+      });
+    }
   }
   
   String _formatPrice(double price) {
-    return '\$${price.toStringAsFixed(2)}';
+    return FormatHelper.formatPrice(price);
   }
   
   @override
@@ -602,7 +606,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       onTap: () {
         if (productId != null) {
           // Navigate to product details page
-          // Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailsPage(productId: productId)));
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('View product #$productId details'),

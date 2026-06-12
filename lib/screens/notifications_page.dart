@@ -20,7 +20,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<dynamic> _auctionNotifications = [];
   List<dynamic> _paymentNotifications = [];
   List<dynamic> _systemNotifications = [];
-  
+   
   bool _isLoading = true;
   
   @override
@@ -396,13 +396,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
       // TODO: Call API to mark notification as read
       // await ProfileRepository().markNotificationAsRead(notificationId);
       
-      // Update local state
+      // Update local state and reload to reflect changes
       setState(() {
         final index = _allNotifications.indexWhere((n) => n.id == notificationId);
         if (index != -1) {
-          // Create a new object with isRead = true
-          final notification = _allNotifications[index];
-          // Since we can't modify the original, we'll reload
+          // Since we can't modify the immutable object, reload from API
         }
       });
       

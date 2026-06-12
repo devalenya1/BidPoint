@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
@@ -32,9 +33,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
   String _userEmail = "";
   String _userPhone = "";
   String _userAvatar = "";
-  String _pointsBalance = "0";
-  String _cashEarnings = "0";
-  String _referralEarnings = "0";
+  int _pointsBalance = 0;
+  double _cashEarnings = 0.0;
+  double _referralEarnings = 0.0;
   String _referralCode = "";
   String _referralLink = "";
   
@@ -54,7 +55,6 @@ class _AffiliatePageState extends State<AffiliatePage> {
     }
   }
 
-  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     setState(() {
       _isLoading = true;
@@ -71,9 +71,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
-          _pointsBalance = user.balance ?? "0";
-          _cashEarnings = user.affiliateBalance?.toString() ?? "0";
-          _referralEarnings = user.affiliateBalance?.toString() ?? "0";
+          _pointsBalance = (user.balance ?? 0).toInt();
+          _cashEarnings = user.affiliateBalance ?? 0.0;
+          _referralEarnings = user.affiliateBalance ?? 0.0;
           _referralCode = user.affiliateId ?? "";
           _referralLink = "https://bidpoint.com/ref/$_referralCode";
         });
@@ -92,23 +92,20 @@ class _AffiliatePageState extends State<AffiliatePage> {
   
   void _copyToClipboard(String text, String type) {
     // Copy to clipboard logic here
-    ToastComponent.showDialog(AppLocalizations.of(context)!.copied_to_clipboard);
+    ToastComponent.showDialog('Copied to clipboard');
   }
   
   void _shareReferralLink() async {
     if (_referralCode.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.referral_code_not_available);
+      ToastComponent.showDialog('Referral code not available');
       return;
     }
     
-    final String shareText = AppLocalizations.of(context)!.share_referral_message(
-      _referralLink,
-      _referralCode,
-    );
+    final String shareText = 'Join me on BidPoint! Use my referral code: $_referralCode\n\n$_referralLink';
     
     await Share.share(
       shareText,
-      subject: AppLocalizations.of(context)!.share_referral_subject,
+      subject: 'Join BidPoint',
     );
   }
   
@@ -254,7 +251,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       GestureDetector(
                         onTap: _navigateToWithdrawHistory,
                         child: Text(
-                          '${AppLocalizations.of(context)!.referral_earnings} \$$_referralEarnings',
+                          '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_referralEarnings)}',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -293,9 +290,6 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   Widget _buildStatsRow() {
-    // Parse cash earnings to double for display
-    double cashValue = double.tryParse(_cashEarnings) ?? 0.0;
-    
     return Row(
       children: [
         // Points Balance Card
@@ -401,7 +395,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    '\$${cashValue.toStringAsFixed(2)}',
+                    FormatHelper.formatPrice(_cashEarnings),
                     style: const TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
@@ -576,7 +570,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
     // Build referral link only if code exists
     final displayLink = _referralCode.isNotEmpty 
         ? _referralLink 
-        : AppLocalizations.of(context)!.referral_code_not_available;
+        : 'Referral code not available';
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

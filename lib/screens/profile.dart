@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
@@ -60,9 +61,9 @@ class _ProfileState extends State<Profile> {
   ScrollController _mainScrollController = ScrollController();
   bool _pointsVisible = true;
   
-  // Initialize with empty values, not demo data
-  String _userBalance = "0";
-  String _userCash = "0";
+  // Initialize with empty values
+  double _userBalance = 0.0;
+  double _userCash = 0.0;
   String _userName = "";
   String _userEmail = "";
   String _userPhone = "";
@@ -75,7 +76,6 @@ class _ProfileState extends State<Profile> {
     if (is_logged_in.$ == true) {
       _loadUserData();
     } else {
-      // If not logged in, try to load from shared preferences
       _loadFromSharedPreferences();
       setState(() {
         _isLoading = false;
@@ -89,8 +89,8 @@ class _ProfileState extends State<Profile> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
-      _userBalance = points_balance.$ ?? "0";
-      _userCash = affiliate_balance.$ ?? "0";
+      _userBalance = double.tryParse(points_balance.$ ?? "0") ?? 0.0;
+      _userCash = double.tryParse(affiliate_balance.$ ?? "0") ?? 0.0;
     });
   }
 
@@ -100,7 +100,6 @@ class _ProfileState extends State<Profile> {
     });
     
     try {
-      // Fetch user data from API
       var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
@@ -114,16 +113,22 @@ class _ProfileState extends State<Profile> {
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
-          _userBalance = user.balance ?? "0";
-          _userCash = user.affiliateBalance?.toString() ?? "0";
+          _userBalance = user.balance ?? 0.0;
+          _userCash = user.affiliateBalance ?? 0.0;
         });
+        
+        // Update shared_value_helper
+        user_name.$ = _userName;
+        user_email.$ = _userEmail;
+        user_phone.$ = _userPhone;
+        avatar_original.$ = _userAvatar;
+        points_balance.$ = _userBalance.toString();
+        affiliate_balance.$ = _userCash.toString();
       } else {
-        // API call succeeded but no data, fallback to shared preferences
         _loadFromSharedPreferences();
       }
     } catch (e) {
       print("Error loading user data: $e");
-      // On error, try to use shared values as fallback
       _loadFromSharedPreferences();
     } finally {
       setState(() {
@@ -186,7 +191,6 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      // Clear all user data from SharedPreferences
       UserDataHelper.clearUserData();
       AuthHelper().clearUserData();
       context.go("/");
@@ -295,7 +299,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${AppLocalizations.of(context)!.referral_earnings} \$$_userCash',
+                        '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userCash)}',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -351,7 +355,7 @@ class _ProfileState extends State<Profile> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      _pointsVisible ? '$_userBalance' : '****',
+                      _pointsVisible ? _userBalance.toInt().toString() : '****',
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,

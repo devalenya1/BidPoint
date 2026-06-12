@@ -5,6 +5,7 @@ import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
@@ -27,7 +28,7 @@ class PointsPage extends StatefulWidget {
 
 class _PointsPageState extends State<PointsPage> {
   // User data - using shared_value_helper directly
-  String _userPoints = "0";
+  int _userPoints = 0;
   String _userName = "";
   String _userEmail = "";
   String _userAvatar = "";
@@ -67,10 +68,10 @@ class _PointsPageState extends State<PointsPage> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
+      _userPoints = int.tryParse(points_balance.$ ?? "0") ?? 0;
     });
   }
   
-  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     try {
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -83,7 +84,7 @@ class _PointsPageState extends State<PointsPage> {
           _userEmail = user.email ?? "";
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
-          _userPoints = user.balance ?? "0";
+          _userPoints = (user.balance ?? 0).toInt();
         });
         
         // Save all user data to SharedPreferences
@@ -233,7 +234,7 @@ class _PointsPageState extends State<PointsPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Price: \$${_selectedPackage!['price']}',
+                'Price: ${FormatHelper.formatPrice(_selectedPackage!['price'])}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -297,6 +298,10 @@ class _PointsPageState extends State<PointsPage> {
       default:
         return '💵';
     }
+  }
+  
+  String _formatPrice(double price) {
+    return FormatHelper.formatPrice(price);
   }
   
   @override
@@ -490,7 +495,7 @@ class _PointsPageState extends State<PointsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _userPoints,
+                          '$_userPoints',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -567,6 +572,8 @@ class _PointsPageState extends State<PointsPage> {
   }
   
   Widget _buildHistoryItem(dynamic item) {
+    final amount = item.amount ?? 0.0;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -610,7 +617,7 @@ class _PointsPageState extends State<PointsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${item.amount ?? 0} points',
+                        '${amount.toInt()} points',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -644,7 +651,7 @@ class _PointsPageState extends State<PointsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '\$${(item.amount ?? 0).toDouble()}',
+                _formatPrice(amount),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -813,7 +820,7 @@ class _PointsPageState extends State<PointsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    package['price'] == 0 ? 'Free' : '\$${package['price']}',
+                    package['price'] == 0 ? 'Free' : _formatPrice(package['price']),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
