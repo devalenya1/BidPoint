@@ -60,12 +60,12 @@ class _PointsPageState extends State<PointsPage> {
   }
   
   void _loadFromSharedPreferences() {
-    // Load user data from shared_value_helper
+    // Load user data from shared_value_helper with null safety
     setState(() {
-      _userName = user_name.$;
-      _userEmail = user_email.$;
-      _userPhone = user_phone.$;
-      _userAvatar = avatar_original.$;
+      _userName = user_name.$ ?? "";
+      _userEmail = user_email.$ ?? "";
+      _userPhone = user_phone.$ ?? "";
+      _userAvatar = avatar_original.$ ?? "";
     });
   }
   

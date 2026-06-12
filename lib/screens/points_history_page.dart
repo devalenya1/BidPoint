@@ -159,14 +159,30 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       if (date == null) continue;
       
       final monthKey = _formatMonthYear(date);
-      // Convert num to int safely
-      final points = (log.amount ?? 0).abs().toInt();
+      
+      // Get the amount and ensure it's an int
+      final amount = log.amount;
+      int pointsValue = 0;
+      if (amount != null) {
+        if (amount is int) {
+          pointsValue = amount.abs();
+        } else if (amount is double) {
+          pointsValue = amount.abs().toInt();
+        } else {
+          pointsValue = (amount as num).abs().toInt();
+        }
+      }
+      
       // Points are negative for spending, positive for earning
       final isEarned = (log.amount ?? 0) > 0;
+      final pointsToAdd = isEarned ? pointsValue : -pointsValue;
       
-      final currentValue = monthlyTemp[monthKey] ?? 0;
-      final pointsToAdd = isEarned ? points : -points;
-      monthlyTemp[monthKey] = currentValue + pointsToAdd;
+      // Get current value or default to 0
+      int currentValue = monthlyTemp[monthKey] ?? 0;
+      // Calculate new value
+      int newValue = currentValue + pointsToAdd;
+      // Assign back to map
+      monthlyTemp[monthKey] = newValue;
     }
     
     _monthlyPoints = monthlyTemp;
