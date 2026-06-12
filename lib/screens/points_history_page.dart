@@ -159,12 +159,14 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       if (date == null) continue;
       
       final monthKey = _formatMonthYear(date);
-      final points = (log.amount ?? 0).abs();
-      // Points are negative for spending, positive for earning? 
-      // Based on your data, amount is negative (e.g., -42)
+      // Convert num to int safely
+      final points = (log.amount ?? 0).abs().toInt();
+      // Points are negative for spending, positive for earning
       final isEarned = (log.amount ?? 0) > 0;
       
-      monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + (isEarned ? points : -points);
+      final currentValue = monthlyTemp[monthKey] ?? 0;
+      final pointsToAdd = isEarned ? points : -points;
+      monthlyTemp[monthKey] = currentValue + pointsToAdd;
     }
     
     _monthlyPoints = monthlyTemp;
@@ -407,7 +409,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildHistoryCard(dynamic log) {
     final date = log.createdAt;
-    final pointsValue = (log.amount ?? 0).abs();
+    final pointsValue = (log.amount ?? 0).abs().toInt();
     // If amount is negative, it's spent (deducted), if positive it's earned
     final isEarned = (log.amount ?? 0) > 0;
     

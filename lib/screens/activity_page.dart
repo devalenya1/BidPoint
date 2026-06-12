@@ -61,9 +61,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         final distinctAuctionBids = user.distinctAuctionBids ?? [];
         
         // Process auction bids to create activities
-        // Since the API doesn't directly provide outbid/winning status,
-        // we'll use the bid data and product info to determine status
-        
         List<dynamic> activities = [];
         
         // Get all products the user has bid on from distinct auction bids
@@ -509,7 +506,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   children: [
                     Text(
                       _formatPrice(activity['currentBid']),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: MyTheme.dark_font_grey,

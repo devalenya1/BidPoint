@@ -94,15 +94,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   Future<void> _saveBankDetails() async {
     // Validate
     if (_bankNameController.text.trim().isEmpty) {
-      _showError(AppLocalizations.of(context)!.enter_bank_name);
+      _showError('Please enter bank name');
       return;
     }
     if (_accountHolderController.text.trim().isEmpty) {
-      _showError(AppLocalizations.of(context)!.enter_account_holder_name);
+      _showError('Please enter account holder name');
       return;
     }
     if (_accountNumberController.text.trim().isEmpty) {
-      _showError(AppLocalizations.of(context)!.enter_account_number);
+      _showError('Please enter account number');
       return;
     }
     
@@ -125,16 +125,16 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _isBankModalOpen = false;
         });
         
-        _showSuccess(AppLocalizations.of(context)!.bank_details_saved);
+        _showSuccess('Bank details saved successfully');
         
         // Reload user data to update shared preferences
         await _loadPaymentDetails();
       } else {
-        _showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        _showError(response['message'] ?? 'Something went wrong');
       }
     } catch (e) {
       print("Error saving bank details: $e");
-      _showError(AppLocalizations.of(context)!.something_went_wrong);
+      _showError('Something went wrong');
     } finally {
       setState(() {
         _isSaving = false;
@@ -145,11 +145,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   Future<void> _savePaypalDetails() async {
     // Validate
     if (_paypalEmailController.text.trim().isEmpty) {
-      _showError(AppLocalizations.of(context)!.enter_paypal_email);
+      _showError('Please enter PayPal email');
       return;
     }
     if (!_paypalEmailController.text.contains('@')) {
-      _showError(AppLocalizations.of(context)!.enter_valid_email);
+      _showError('Please enter a valid email address');
       return;
     }
     
@@ -172,16 +172,16 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _isPaypalModalOpen = false;
         });
         
-        _showSuccess(AppLocalizations.of(context)!.paypal_details_saved);
+        _showSuccess('PayPal details saved successfully');
         
         // Reload user data to update shared preferences
         await _loadPaymentDetails();
       } else {
-        _showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        _showError(response['message'] ?? 'Something went wrong');
       }
     } catch (e) {
       print("Error saving PayPal details: $e");
-      _showError(AppLocalizations.of(context)!.something_went_wrong);
+      _showError('Something went wrong');
     } finally {
       setState(() {
         _isSaving = false;
@@ -193,8 +193,8 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.disconnect_bank),
-        content: Text(AppLocalizations.of(context)!.disconnect_bank_confirmation),
+        title: const Text('Disconnect Bank'),
+        content: const Text('Are you sure you want to disconnect your bank account?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -202,9 +202,9 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              AppLocalizations.of(context)!.disconnect,
-              style: const TextStyle(color: Colors.red),
+            child: const Text(
+              'Disconnect',
+              style: TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -235,14 +235,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _ifscCodeController.clear();
         });
         
-        _showSuccess(AppLocalizations.of(context)!.bank_details_disconnected);
+        _showSuccess('Bank account disconnected successfully');
         await _loadPaymentDetails();
       } else {
-        _showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        _showError(response['message'] ?? 'Something went wrong');
       }
     } catch (e) {
       print("Error disconnecting bank: $e");
-      _showError(AppLocalizations.of(context)!.something_went_wrong);
+      _showError('Something went wrong');
     } finally {
       setState(() {
         _isSaving = false;
@@ -254,8 +254,8 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.disconnect_paypal),
-        content: Text(AppLocalizations.of(context)!.disconnect_paypal_confirmation),
+        title: const Text('Disconnect PayPal'),
+        content: const Text('Are you sure you want to disconnect your PayPal account?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -263,9 +263,9 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              AppLocalizations.of(context)!.disconnect,
-              style: const TextStyle(color: Colors.red),
+            child: const Text(
+              'Disconnect',
+              style: TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -293,14 +293,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _paypalEmailController.clear();
         });
         
-        _showSuccess(AppLocalizations.of(context)!.paypal_details_disconnected);
+        _showSuccess('PayPal account disconnected successfully');
         await _loadPaymentDetails();
       } else {
-        _showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        _showError(response['message'] ?? 'Something went wrong');
       }
     } catch (e) {
       print("Error disconnecting PayPal: $e");
-      _showError(AppLocalizations.of(context)!.something_went_wrong);
+      _showError('Something went wrong');
     } finally {
       setState(() {
         _isSaving = false;
@@ -622,8 +622,8 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             ),
                             const SizedBox(height: 16),
                             _buildFormField(
-                              label: AppLocalizations.of(context)!.ifsc_code,
-                              hint: AppLocalizations.of(context)!.enter_ifsc_code,
+                              label: 'IFSC Code',
+                              hint: 'Enter IFSC Code',
                               controller: _ifscCodeController,
                             ),
                           ],

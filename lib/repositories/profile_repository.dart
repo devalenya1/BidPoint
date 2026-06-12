@@ -83,7 +83,7 @@ class ProfileRepository {
     return phoneEmailAvailabilityResponseFromJson(response.body);
   }
 
-  // THIS IS THE METHOD YOU NEED - MAKE SURE IT'S IN YOUR FILE
+  // Get user info response
   Future<UserInfoResponse> getUserInfoResponse() async {
     String url = "${AppConfig.BASE_URL}/customer/info";
     final response = await ApiRequest.get(
@@ -96,6 +96,7 @@ class ProfileRepository {
     return userInfoResponseFromJson(response.body);
   }
 
+  // Update affiliate payment details
   Future<Map<String, dynamic>> updateAffiliatePaymentDetails({
     required String paypalEmail,
     required String bankName,
@@ -103,33 +104,59 @@ class ProfileRepository {
     required String accountNumber,
     required String ifscCode,
   }) async {
-    String url = "/affiliate/payment-details/update";
+    String url = "${AppConfig.BASE_URL}/affiliate/payment-details/update";
     
-    final response = await ApiService().post(url, {
-      "paypal_email": paypalEmail,
-      "bank_name": bankName,
-      "account_holder": accountHolder,
-      "account_number": accountNumber,
-      "ifsc_code": ifscCode,
-    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${access_token.$}",
+        "App-Language": app_language.$!,
+      },
+      body: jsonEncode({
+        "paypal_email": paypalEmail,
+        "bank_name": bankName,
+        "account_holder": accountHolder,
+        "account_number": accountNumber,
+        "ifsc_code": ifscCode,
+      })
+    );
     
-    return response;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return responseData;
+    } else {
+      return {
+        'success': false,
+        'status': response.statusCode,
+        'message': 'Failed to update payment details'
+      };
+    }
   }
 
+  // Get affiliate payment details
   Future<Map<String, dynamic>> getAffiliatePaymentDetails() async {
-    String url = "/affiliate/payment-details";
-    final response = await ApiService().post(url, {});
-    return response;
+    String url = "${AppConfig.BASE_URL}/affiliate/payment-details";
+    
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${access_token.$}",
+        "App-Language": app_language.$!,
+      },
+      body: '{}'
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return responseData;
+    } else {
+      return {
+        'success': false,
+        'status': response.statusCode,
+        'message': 'Failed to get payment details'
+      };
+    }
   }
-  
-  // Future<dynamic> getUserInfoResponse() async {
-
-  //   String url=("${AppConfig.BASE_URL}/customer/info");
-
-  //   final response = await ApiRequest.get(url: url,
-  //       headers: {"Authorization": "Bearer ${access_token.$}","App-Language": app_language.$!,});
-
-
-  //   return userInfoResponseFromJson(response.body);
-  // }
 }

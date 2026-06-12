@@ -306,6 +306,7 @@
   "withdrawal_request_submitted": "Withdrawal request submitted successfully",
   "completed_ucf": "Completed",
   "failed_ucf": "Failed",
+  "referral_code_not_available": "referral code not available",
   
   "@min_withdrawal_amount": {
     "description": "Minimum withdrawal amount message",

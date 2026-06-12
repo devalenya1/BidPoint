@@ -25,14 +25,14 @@ class PointsPage extends StatefulWidget {
 }
 
 class _PointsPageState extends State<PointsPage> {
-  // User data
+  // User data - using shared_value_helper directly
   String _userPoints = "0";
   String _userName = "";
   String _userEmail = "";
   String _userAvatar = "";
   String _userPhone = "";
   
-  // Package data - from API
+  // Package data - Demo packages for now (API not ready)
   List<Map<String, dynamic>> _packages = [];
   Map<String, dynamic>? _selectedPackage;
   
@@ -48,14 +48,25 @@ class _PointsPageState extends State<PointsPage> {
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
+      _loadFromSharedPreferences();
       _loadUserData();
-      _loadPackages();
+      _loadDemoPackages();
       _loadPurchaseHistory();
     } else {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+  
+  void _loadFromSharedPreferences() {
+    // Load user data from shared_value_helper
+    setState(() {
+      _userName = user_name.$;
+      _userEmail = user_email.$;
+      _userPhone = user_phone.$;
+      _userAvatar = avatar_original.$;
+    });
   }
   
   Future<void> _loadUserData() async {
@@ -66,33 +77,66 @@ class _PointsPageState extends State<PointsPage> {
         final user = userInfo.data![0];
         
         setState(() {
-          _userName = user.name ?? "";
-          _userEmail = user.email ?? "";
-          _userPhone = user.phone ?? "";
-          _userAvatar = user.avatar ?? "";
+          _userName = user.name ?? _userName;
+          _userEmail = user.email ?? _userEmail;
+          _userPhone = user.phone ?? _userPhone;
+          _userAvatar = user.avatar ?? _userAvatar;
           _userPoints = user.balance ?? "0";
         });
+        
+        // Update shared_value_helper
+        user_name.$ = _userName;
+        user_email.$ = _userEmail;
+        user_phone.$ = _userPhone;
+        avatar_original.$ = _userAvatar;
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
   }
   
-  Future<void> _loadPackages() async {
-    try {
-      // TODO: Replace with actual API call to get available packages
-      // var packages = await ProfileRepository().getPackages();
-      // For now, use empty list - no demo data
-      setState(() {
-        _packages = [];
-        _selectedPackage = null;
-      });
-    } catch (e) {
-      print("Error loading packages: $e");
-      setState(() {
-        _packages = [];
-      });
-    }
+  void _loadDemoPackages() {
+    // Demo packages for UI display (API not ready yet)
+    setState(() {
+      _packages = [
+        {
+          'id': 1,
+          'name': 'Basic',
+          'points': 100,
+          'price': 9.99,
+          'image': null,
+        },
+        {
+          'id': 2,
+          'name': 'Standard',
+          'points': 500,
+          'price': 39.99,
+          'image': null,
+        },
+        {
+          'id': 3,
+          'name': 'Premium',
+          'points': 1000,
+          'price': 69.99,
+          'image': null,
+        },
+        {
+          'id': 4,
+          'name': 'Platinum',
+          'points': 2500,
+          'price': 149.99,
+          'image': null,
+        },
+        {
+          'id': 5,
+          'name': 'Diamond',
+          'points': 5000,
+          'price': 279.99,
+          'image': null,
+        },
+      ];
+      _selectedPackage = _packages[1]; // Select Standard package by default
+    });
   }
   
   Future<void> _loadPurchaseHistory() async {
@@ -125,7 +169,7 @@ class _PointsPageState extends State<PointsPage> {
   
   Future<void> _submitPurchase() async {
     if (_selectedPackage == null) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.select_package_first);
+      ToastComponent.showDialog('Please select a package first');
       return;
     }
     
@@ -152,7 +196,7 @@ class _PointsPageState extends State<PointsPage> {
       
     } catch (e) {
       print("Error purchasing package: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.purchase_failed);
+      ToastComponent.showDialog('Purchase failed. Please try again.');
     } finally {
       setState(() {
         _isPurchasing = false;
@@ -333,13 +377,10 @@ class _PointsPageState extends State<PointsPage> {
                                     child: Column(
                                       children: [
                                         // Package Cards
-                                        _packages.isEmpty
-                                            ? _buildNoPackagesState()
-                                            : _buildPackageSlider(),
+                                        _buildPackageSlider(),
                                         const SizedBox(height: 28),
                                         // Buy Button
-                                        if (_packages.isNotEmpty)
-                                          _buildBuyButton(),
+                                        _buildBuyButton(),
                                       ],
                                     ),
                                   ),
@@ -652,39 +693,6 @@ class _PointsPageState extends State<PointsPage> {
           const SizedBox(height: 6),
           Text(
             'Buy points and then check here, all points purchases will be displayed here.',
-            style: TextStyle(
-              fontSize: 11,
-              color: const Color(0xFF94A3B8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildNoPackagesState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      child: Column(
-        children: [
-          Icon(
-            Icons.card_giftcard_outlined,
-            size: 50,
-            color: const Color(0xFFCBD5E1),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No packages available',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Check back later for available packages',
             style: TextStyle(
               fontSize: 11,
               color: const Color(0xFF94A3B8),
