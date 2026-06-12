@@ -40,13 +40,22 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> with TickerProviderStateMixin {
   HomePresenter homeData = HomePresenter();
+  int _unreadNotificationCount = 0;
+  int _unreadMessageCount = 0;
 
   @override
   void initState() {
+    super.initState();
+    _loadCounts();
     Future.delayed(Duration.zero).then((value) {
       change();
     });
-    super.initState();
+  }
+
+  void _loadCounts() {
+    // Load from shared preferences
+    _unreadNotificationCount = unread_notifications_count.$ ?? 0;
+    _unreadMessageCount = 0; // You would get this from your chat API
   }
 
   change() {
@@ -130,7 +139,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           ),
                           SliverToBoxAdapter(
                             child: SizedBox(
-                              height: 50, // Reduced height for slimmer cards
+                              height: 50,
                               child: buildHomeFeaturedCategories(
                                   context, homeData),
                             ),
@@ -231,7 +240,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           },
         ),
       );
-    } else if (homeData.allProductList.length > 0) {
+    } else if (homeData.allProductList.isNotEmpty) {
       return ProductHorizontalCarousel(
         products: homeData.allProductList,
         scrollController: homeData.allProductScrollController,
@@ -246,7 +255,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget buildHomeEndingSoon(context, HomePresenter homeData) {
-    if (homeData.isAllProductInitial) {
+    if (homeData.isEndingSoonInitial) {
       return SizedBox(
         height: 280,
         child: ListView.builder(
@@ -262,12 +271,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           },
         ),
       );
-    } else if (homeData.allProductList.length > 0) {
+    } else if (homeData.endingSoonProductList.isNotEmpty) {
       return ProductHorizontalCarousel(
-        products: homeData.allProductList,
-        scrollController: homeData.allProductScrollController,
+        products: homeData.endingSoonProductList,
+        scrollController: homeData.endingSoonScrollController,
       );
-    } else if (homeData.totalAllProductData == 0) {
+    } else if (homeData.totalEndingSoonData == 0) {
       return Center(
         child: Text(AppLocalizations.of(context)!.no_product_is_available),
       );
@@ -277,7 +286,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget buildHomeUpcoming(context, HomePresenter homeData) {
-    if (homeData.isAllProductInitial) {
+    if (homeData.isUpcomingInitial) {
       return SizedBox(
         height: 280,
         child: ListView.builder(
@@ -293,12 +302,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           },
         ),
       );
-    } else if (homeData.allProductList.length > 0) {
+    } else if (homeData.upcomingProductList.isNotEmpty) {
       return ProductHorizontalCarousel(
-        products: homeData.allProductList,
-        scrollController: homeData.allProductScrollController,
+        products: homeData.upcomingProductList,
+        scrollController: homeData.upcomingScrollController,
       );
-    } else if (homeData.totalAllProductData == 0) {
+    } else if (homeData.totalUpcomingData == 0) {
       return Center(
         child: Text(AppLocalizations.of(context)!.no_product_is_available),
       );
@@ -308,7 +317,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget buildHomeFeaturedCategories(context, HomePresenter homeData) {
-    if (homeData.isCategoryInitial && homeData.featuredCategoryList.length == 0) {
+    if (homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
       return ShimmerHelper().buildHorizontalGridShimmerWithAxisCount(
         crossAxisSpacing: 12.0,
         mainAxisSpacing: 0,
@@ -316,9 +325,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         mainAxisExtent: 160.0,
         controller: homeData.featuredCategoryScrollController,
       );
-    } else if (homeData.featuredCategoryList.length > 0) {
+    } else if (homeData.featuredCategoryList.isNotEmpty) {
       return SizedBox(
-        height: 50, // Slimmer height
+        height: 50,
         child: ListView.builder(
           padding: const EdgeInsets.only(left: 16, right: 16),
           scrollDirection: Axis.horizontal,
@@ -330,11 +339,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             
             return GestureDetector(
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  return CategoryProducts(
-                    slug: category.slug,
-                  );
-                }));
+                if (category.slug != null) {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CategoryProducts(
+                      slug: category.slug!,
+                    );
+                  }));
+                }
               },
               child: Container(
                 width: 160,
@@ -349,14 +360,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
                 child: Row(
                   children: [
-                    // Square Image Section - No padding, full height
                     ClipRRect(
                       borderRadius: const BorderRadius.horizontal(
                         left: Radius.circular(8),
                       ),
                       child: FadeInImage.assetNetwork(
                         placeholder: 'assets/placeholder.png',
-                        image: category.banner,
+                        image: category.banner ?? '',
                         fit: BoxFit.cover,
                         width: 50,
                         height: 50,
@@ -374,12 +384,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         },
                       ),
                     ),
-                    // Text Section
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          category.name,
+                          category.name ?? '',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -397,7 +406,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           },
         ),
       );
-    } else if (!homeData.isCategoryInitial && homeData.featuredCategoryList.length == 0) {
+    } else if (!homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
       return Container(
         height: 60,
         child: Center(
@@ -413,7 +422,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget buildHomeCarouselSlider(context, HomePresenter homeData) {
-    if (homeData.isCarouselInitial && homeData.carouselImageList.length == 0) {
+    if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(
           left: 18,
@@ -425,7 +434,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           height: 120,
         ),
       );
-    } else if (homeData.carouselImageList.length > 0) {
+    } else if (homeData.carouselImageList.isNotEmpty) {
       return CarouselSlider(
         options: CarouselOptions(
           aspectRatio: 338 / 140,
@@ -434,8 +443,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           enableInfiniteScroll: true,
           reverse: false,
           autoPlay: true,
-          autoPlayInterval: Duration(seconds: 5),
-          autoPlayAnimationDuration: Duration(milliseconds: 1000),
+          autoPlayInterval: const Duration(seconds: 5),
+          autoPlayAnimationDuration: const Duration(milliseconds: 1000),
           autoPlayCurve: Curves.easeInExpo,
           enlargeCenterPage: false,
           scrollDirection: Axis.horizontal,
@@ -456,12 +465,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       height: 140,
                       child: InkWell(
                         onTap: () {
-                          var url =
-                              i.url?.split(AppConfig.DOMAIN_PATH).last ?? "";
-                          print(url);
-                          GoRouter.of(context).go(url);
+                          if (i.url != null) {
+                            var url = i.url!.split(AppConfig.DOMAIN_PATH).last ?? "";
+                            print(url);
+                            if (url.isNotEmpty) {
+                              GoRouter.of(context).go(url);
+                            }
+                          }
                         },
-                        child: AIZImage.radiusImage(i.photo, 6),
+                        child: i.photo != null
+                            ? AIZImage.radiusImage(i.photo!, 6)
+                            : Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(Icons.image, size: 50),
+                                ),
+                              ),
                       ),
                     ),
                     Align(
@@ -473,13 +492,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           return Container(
                             width: 7.0,
                             height: 7.0,
-                            margin: EdgeInsets.symmetric(
+                            margin: const EdgeInsets.symmetric(
                                 vertical: 10.0, horizontal: 4.0),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: homeData.current_slider == index
                                   ? MyTheme.white
-                                  : Color.fromRGBO(112, 112, 112, .3),
+                                  : const Color.fromRGBO(112, 112, 112, .3),
                             ),
                           );
                         }).toList(),
@@ -493,7 +512,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         }).toList(),
       );
     } else if (!homeData.isCarouselInitial &&
-        homeData.carouselImageList.length == 0) {
+        homeData.carouselImageList.isEmpty) {
       return Container(
           height: 100,
           child: Center(
@@ -556,8 +575,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Notification counter badge - only show when logged in
-                      if (is_logged_in.$)
+                      // Notification counter badge - only show when logged in and count > 0
+                      if (is_logged_in.$ && _unreadNotificationCount > 0)
                         Positioned(
                           top: 2,
                           right: 2,
@@ -570,9 +589,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               color: MyTheme.accent_color,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              '3',
-                              style: TextStyle(
+                            child: Text(
+                              '$_unreadNotificationCount',
+                              style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -618,8 +637,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Chat counter badge - only show when logged in
-                      if (is_logged_in.$)
+                      // Chat counter badge - only show when logged in and count > 0
+                      if (is_logged_in.$ && _unreadMessageCount > 0)
                         Positioned(
                           top: 2,
                           right: 2,
@@ -632,9 +651,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               color: MyTheme.accent_color,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              '2',
-                              style: TextStyle(
+                            child: Text(
+                              '$_unreadMessageCount',
+                              style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -649,7 +668,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
             // Affiliate Icon
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.Left(8),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {

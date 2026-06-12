@@ -13,6 +13,7 @@ import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -69,6 +70,7 @@ class _PointsPageState extends State<PointsPage> {
     });
   }
   
+  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     try {
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -77,18 +79,15 @@ class _PointsPageState extends State<PointsPage> {
         final user = userInfo.data![0];
         
         setState(() {
-          _userName = user.name ?? _userName;
-          _userEmail = user.email ?? _userEmail;
-          _userPhone = user.phone ?? _userPhone;
-          _userAvatar = user.avatar ?? _userAvatar;
+          _userName = user.name ?? "";
+          _userEmail = user.email ?? "";
+          _userPhone = user.phone ?? "";
+          _userAvatar = user.avatar ?? "";
           _userPoints = user.balance ?? "0";
         });
         
-        // Update shared_value_helper
-        user_name.$ = _userName;
-        user_email.$ = _userEmail;
-        user_phone.$ = _userPhone;
-        avatar_original.$ = _userAvatar;
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
       }
     } catch (e) {
       print("Error loading user data: $e");

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'dart:async';
 
@@ -60,6 +61,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         final auctionBids = user.auctionBids ?? [];
         final distinctAuctionBids = user.distinctAuctionBids ?? [];
         
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
+        
         // Process auction bids to create activities
         List<dynamic> activities = [];
         
@@ -103,6 +107,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             'formattedAmount': product.formattedAmount ?? '\$${productHighestBid.toString()}',
           });
         }
+        
+        // Update counts in SharedPreferences
+        auction_bids_count.$ = auctionBids.length;
+        distinct_auction_bids_count.$ = distinctAuctionBids.length;
         
         // Filter activities
         _outbidActivities = activities.where((a) => a['status'] == 'outbid' && a['isAuctionEnded'] == false).toList();

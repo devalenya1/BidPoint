@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -45,6 +46,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
         final notifications = user.notifications ?? [];
+        
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
+        
+        // Update unread notifications count in SharedPreferences
+        unread_notifications_count.$ = user.unreadNotificationsCount ?? 0;
         
         setState(() {
           _allNotifications = notifications;

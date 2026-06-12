@@ -8,6 +8,7 @@ import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -58,6 +59,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     });
   }
   
+  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     try {
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -74,17 +76,14 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           _cashEarnings = user.affiliateBalance?.toString() ?? "0";
         });
         
-        // Update shared_value_helper
-        user_name.$ = _userName;
-        user_email.$ = _userEmail;
-        user_phone.$ = _userPhone;
-        avatar_original.$ = _userAvatar;
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
   }
-  
+
   Future<void> _loadCashEarningsHistory() async {
     try {
       // Get affiliate logs from user info response

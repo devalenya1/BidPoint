@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 
 class PaymentSettingsPage extends StatefulWidget {
@@ -53,13 +54,13 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     super.dispose();
   }
   
+  // Replace the _loadPaymentDetails method with:
   Future<void> _loadPaymentDetails() async {
     setState(() {
       _isLoading = true;
     });
     
     try {
-      // Load from user info API
       var userInfo = await ProfileRepository().getUserInfoResponse();
       
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
@@ -81,6 +82,9 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _ifscCodeController.text = user.ifscCode ?? '';
           _bankConnected = true;
         }
+        
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
       }
     } catch (e) {
       print("Error loading payment details: $e");

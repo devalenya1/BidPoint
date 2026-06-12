@@ -11,6 +11,7 @@ import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -53,6 +54,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
     }
   }
 
+  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     setState(() {
       _isLoading = true;
@@ -76,11 +78,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
           _referralLink = "https://bidpoint.com/ref/$_referralCode";
         });
         
-        // Update shared_value_helper
-        user_name.$ = _userName;
-        user_email.$ = _userEmail;
-        user_phone.$ = _userPhone;
-        avatar_original.$ = _userAvatar;
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
       }
     } catch (e) {
       print("Error loading user data: $e");

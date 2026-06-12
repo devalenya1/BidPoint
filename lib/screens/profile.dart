@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/address.dart';
@@ -66,6 +67,7 @@ class _ProfileState extends State<Profile> {
   String _userEmail = "";
   String _userPhone = "";
   String _userAvatar = "";
+  bool _isLoading = true;
   
   @override
   void initState() {
@@ -75,6 +77,9 @@ class _ProfileState extends State<Profile> {
     } else {
       // If not logged in, try to load from shared preferences
       _loadFromSharedPreferences();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -84,10 +89,16 @@ class _ProfileState extends State<Profile> {
       _userEmail = user_email.$ ?? "";
       _userPhone = user_phone.$ ?? "";
       _userAvatar = avatar_original.$ ?? "";
+      _userBalance = points_balance.$ ?? "0";
+      _userCash = affiliate_balance.$ ?? "0";
     });
   }
 
   void _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
       // Fetch user data from API
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -95,11 +106,8 @@ class _ProfileState extends State<Profile> {
       if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
         final user = userInfo.data![0];
         
-        // CRITICAL: Update shared_value_helper variables so other pages work
-        user_name.$ = user.name ?? "";
-        user_email.$ = user.email ?? "";
-        user_phone.$ = user.phone ?? "";
-        avatar_original.$ = user.avatar ?? "";
+        // Save all user data to SharedPreferences using UserDataHelper
+        UserDataHelper.saveUserData(user);
         
         setState(() {
           _userName = user.name ?? "";
@@ -107,7 +115,7 @@ class _ProfileState extends State<Profile> {
           _userPhone = user.phone ?? "";
           _userAvatar = user.avatar ?? "";
           _userBalance = user.balance ?? "0";
-          _userCash = user.affiliateBalance ?? "0";
+          _userCash = user.affiliateBalance?.toString() ?? "0";
         });
       } else {
         // API call succeeded but no data, fallback to shared preferences
@@ -117,6 +125,10 @@ class _ProfileState extends State<Profile> {
       print("Error loading user data: $e");
       // On error, try to use shared values as fallback
       _loadFromSharedPreferences();
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -174,6 +186,8 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
+      // Clear all user data from SharedPreferences
+      UserDataHelper.clearUserData();
       AuthHelper().clearUserData();
       context.go("/");
     }
@@ -206,34 +220,21 @@ class _ProfileState extends State<Profile> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
-        child: Column(
-          children: [
-            _buildProfileCard(),
-            _buildMenuSection(),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
+              child: Column(
+                children: [
+                  _buildProfileCard(),
+                  _buildMenuSection(),
+                ],
+              ),
+            ),
     );
   }
   
   Widget _buildProfileCard() {
-    // Show loading indicator while data is being fetched
-    if (_userName.isEmpty && is_logged_in.$ == true) {
-      return Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF6F6F6),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),

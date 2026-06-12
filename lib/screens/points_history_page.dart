@@ -15,6 +15,7 @@ import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 
 class PointsHistoryPage extends StatefulWidget {
   const PointsHistoryPage({Key? key}) : super(key: key);
@@ -62,7 +63,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       _isLoading = false;
     });
   }
-  
+  // Replace the _loadUserData method with:
   Future<void> _loadUserData() async {
     try {
       var userInfo = await ProfileRepository().getUserInfoResponse();
@@ -79,17 +80,14 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           _userCash = user.affiliateBalance?.toString() ?? "0";
         });
         
-        // Update shared_value_helper
-        user_name.$ = _userName;
-        user_email.$ = _userEmail;
-        user_phone.$ = _userPhone;
-        avatar_original.$ = _userAvatar;
+        // Save all user data to SharedPreferences
+        UserDataHelper.saveUserData(user);
       }
     } catch (e) {
       print("Error loading user data: $e");
     }
   }
-  
+    
   Future<void> _loadPointsHistory() async {
     try {
       // Use affiliate_logs from user info response since it contains points transactions
