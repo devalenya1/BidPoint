@@ -15,7 +15,7 @@ import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 
 class PointsHistoryPage extends StatefulWidget {
   const PointsHistoryPage({Key? key}) : super(key: key);

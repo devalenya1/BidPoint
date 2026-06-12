@@ -47,8 +47,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class ProductDetails extends StatefulWidget {
   String slug;
+  int? id;
 
-  ProductDetails({Key? key, required this.slug}) : super(key: key);
+  ProductDetails({Key? key, required this.slug, this.id,}) : super(key: key);
 
   @override
   _ProductDetailsState createState() => _ProductDetailsState();

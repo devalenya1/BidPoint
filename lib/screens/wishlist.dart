@@ -91,18 +91,20 @@ class _WishlistState extends State<Wishlist> {
           final isOutbid = !isEnded && userBid > 0 && userBid < currentBid;
           final isWinning = !isEnded && !isOutbid && userBid == currentBid && userBid > 0;
           
+          // In _loadWishlistData method, when creating processedItems:
           processedItems.add({
             'id': item.id,
             'wishlistId': item.id,
             'productId': item.productId,
+            'productSlug': item.productSlug, // Add this if available in your wishlist item
             'productName': item.productName ?? 'Unknown Product',
             'productImage': item.productImage,
             'productPrice': item.productPrice,
             'highestBid': item.highestBid,
-            'auctionEndDate': null, // Would need from product API
+            'auctionEndDate': null,
             'currentBid': currentBid,
             'userBid': userBid,
-            'pointsPerBid': 10, // Would need from product API
+            'pointsPerBid': 10,
             'isEnded': isEnded,
             'isOutbid': isOutbid,
             'isWinning': isWinning,
@@ -577,17 +579,26 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 const SizedBox(height: 12),
                 // Action Button
+                // Action Button
                 GestureDetector(
                   onTap: () {
-                    if (item['productId'] != null) {
+                    if (item['productSlug'] != null && item['productSlug'].toString().isNotEmpty) {
+                      // Navigate using slug
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ProductDetails(
-                            id: item['productId'],
-                            slug: '',
+                            slug: item['productSlug'],
                           ),
                         ),
+                      );
+                    } else if (item['productId'] != null) {
+                      // If no slug, you might need to fetch product details by ID
+                      // Or you could modify ProductDetails to accept an ID
+                      ToastComponent.showDialog(
+                        'Product details not available',
+                        gravity: Toast.center,
+                        duration: Toast.lengthShort,
                       );
                     }
                   },
