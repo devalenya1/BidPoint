@@ -10,7 +10,8 @@ import 'package:active_ecommerce_flutter/data_model/phone_email_availability_res
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import 'package:flutter/foundation.dart';
-import '../helpers/debug_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
+import 'package:flutter/material.dart';  
 
 class ProfileRepository {
 

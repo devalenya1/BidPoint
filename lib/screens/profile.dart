@@ -49,6 +49,7 @@ import 'coming_soon_page.dart';
 import 'invite_history_page.dart';
 import 'payment_settings_page.dart';
 import 'terms_conditions_page.dart';
+import 'package:flutter/services.dart';
 
 class Profile extends StatefulWidget {
   Profile({Key? key, this.show_back_button = false}) : super(key: key);
@@ -225,249 +226,248 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  // ============ DEBUG FUNCTION ============
-  Future<void> _debugShowApiResponse() async {
-    try {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-      
-      var response = await ProfileRepository().getUserInfoResponse();
-      
-      // Close loading dialog
-      Navigator.pop(context);
-      
-      // Format the response as JSON
-      String jsonString;
-      if (response.data != null && response.data!.isNotEmpty) {
-        final user = response.data![0];
-        final userMap = {
-          "success": response.success,
-          "status": response.status,
-          "data": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "avatar": user.avatar,
-            "balance": user.balance,
-            "affiliateBalance": user.affiliateBalance,
-            "affiliateId": user.affiliateId,
-            "referralCode": user.referralCode,
-            "notifications_count": user.notifications?.length ?? 0,
-            "unread_notifications_count": user.unreadNotificationsCount,
-            "wishlist_count": user.wishlistCount ?? 0,
-            "auction_bids_count": user.auctionBidsCount ?? 0,
-            "affiliate_logs_count": user.affiliateLogs?.length ?? 0,
-            "withdraw_requests_count": user.affiliateWithdrawRequests?.length ?? 0,
-            "addresses_count": user.addressCount ?? 0,
-          },
-        };
-        jsonString = const JsonEncoder.withIndent('  ').convert(userMap);
-      } else {
-        jsonString = const JsonEncoder.withIndent('  ').convert({
-          "success": response.success,
-          "status": response.status,
-          "data": "No data received or empty response",
-        });
-      }
-      
-      // Show dialog with response
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                response.success == true ? Icons.check_circle : Icons.error,
-                color: response.success == true ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 10),
-              const Text('API Response Debug'),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxHeight: 500),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: response.success == true ? Colors.green[50] : Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        response.success == true ? Icons.check_circle : Icons.error,
-                        size: 16,
-                        color: response.success == true ? Colors.green : Colors.red,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        response.success == true 
-                            ? "Success: Data loaded correctly" 
-                            : "Error: Failed to load data",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: response.success == true ? Colors.green[700] : Colors.red[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "API Response Summary:",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildDebugRow("Status Code", "${response.status}"),
-                      _buildDebugRow("Success", "${response.success}"),
-                      _buildDebugRow("User Name", _userInfo?.name ?? "Not loaded"),
-                      _buildDebugRow("User Email", _userInfo?.email ?? "Not loaded"),
-                      _buildDebugRow("Points Balance", "${_userInfo?.balance ?? 0}"),
-                      _buildDebugRow("Affiliate Balance", "${_userInfo?.affiliateBalance ?? 0}"),
-                      _buildDivider(),
-                      _buildDebugRow("Notifications Count", "${_userInfo?.notifications?.length ?? 0}"),
-                      _buildDebugRow("Wishlist Count", "${_userInfo?.wishlistCount ?? 0}"),
-                      _buildDebugRow("Auction Bids", "${_userInfo?.auctionBidsCount ?? 0}"),
-                      _buildDebugRow("Affiliate Logs", "${_userInfo?.affiliateLogs?.length ?? 0}"),
-                      _buildDebugRow("Withdraw Requests", "${_userInfo?.affiliateWithdrawRequests?.length ?? 0}"),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "Raw JSON Response:",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SingleChildScrollView(
-                      child: SelectableText(
-                        jsonString,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontFamily: 'monospace',
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: jsonString));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Response copied to clipboard'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    } catch (e, stackTrace) {
-      // Close loading dialog if open
-      Navigator.pop(context);
-      
-      // Show error dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.error, color: Colors.red),
-              SizedBox(width: 10),
-              Text('API Error'),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Error: ${e.toString()}",
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SelectableText(
-                    stackTrace.toString(),
-                    style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
+
+// Then replace the _debugShowApiResponse method with this:
+Future<void> _debugShowApiResponse() async {
+  try {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    
+    var response = await ProfileRepository().getUserInfoResponse();
+    
+    // Close loading dialog
+    Navigator.pop(context);
+    
+    // Format the response as JSON
+    String jsonString;
+    if (response.data != null && response.data!.isNotEmpty) {
+      final user = response.data![0];
+      final summary = {
+        "success": response.success,
+        "status": response.status,
+        "data": {
+          "id": user.id,
+          "name": user.name,
+          "email": user.email,
+          "avatar": user.avatar,
+          "balance": user.balance,
+          "affiliateBalance": user.affiliateBalance,
+          "affiliateId": user.affiliateId,
+          "referralCode": user.referralCode,
+          "notifications_count": user.notifications?.length ?? 0,
+          "unread_notifications_count": user.unreadNotificationsCount,
+          "wishlist_count": user.wishlistCount ?? 0,
+          "auction_bids_count": user.auctionBidsCount ?? 0,
+          "affiliate_logs_count": user.affiliateLogs?.length ?? 0,
+          "withdraw_requests_count": user.affiliateWithdrawRequests?.length ?? 0,
+          "addresses_count": user.addressCount ?? 0,
+        },
+      };
+      jsonString = const JsonEncoder.withIndent('  ').convert(summary);
+    } else {
+      jsonString = const JsonEncoder.withIndent('  ').convert({
+        "success": response.success,
+        "status": response.status,
+        "data": "No data received or empty response",
+      });
     }
-  }
-  
-  Widget _buildDebugRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+    
+    // Show dialog with response
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              response.success == true ? Icons.check_circle : Icons.error,
+              color: response.success == true ? Colors.green : Colors.red,
+            ),
+            const SizedBox(width: 10),
+            const Text('API Response Debug'),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: response.success == true ? Colors.green[50] : Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      response.success == true ? Icons.check_circle : Icons.error,
+                      size: 16,
+                      color: response.success == true ? Colors.green : Colors.red,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      response.success == true 
+                          ? "Success: Data loaded correctly" 
+                          : "Error: Failed to load data",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: response.success == true ? Colors.green[700] : Colors.red[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "API Response Summary:",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    _buildDebugRow("Success", "${response.success}"),
+                    _buildDebugRow("Status Code", "${response.status}"),
+                    _buildDebugRow("User Name", _userInfo?.name ?? "Not loaded"),
+                    _buildDebugRow("User Email", _userInfo?.email ?? "Not loaded"),
+                    _buildDebugRow("Points Balance", "${_userInfo?.balance ?? 0}"),
+                    _buildDebugRow("Affiliate Balance", "${_userInfo?.affiliateBalance ?? 0}"),
+                    _buildDivider(),
+                    _buildDebugRow("Notifications Count", "${_userInfo?.notifications?.length ?? 0}"),
+                    _buildDebugRow("Wishlist Count", "${_userInfo?.wishlistCount ?? 0}"),
+                    _buildDebugRow("Auction Bids", "${_userInfo?.auctionBidsCount ?? 0}"),
+                    _buildDebugRow("Affiliate Logs", "${_userInfo?.affiliateLogs?.length ?? 0}"),
+                    _buildDebugRow("Withdraw Requests", "${_userInfo?.affiliateWithdrawRequests?.length ?? 0}"),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Raw JSON Response:",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      jsonString,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 12, color: Colors.blue),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: jsonString));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Response copied to clipboard'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  } catch (e, stackTrace) {
+    // Close loading dialog if open
+    Navigator.pop(context);
+    
+    // Show error dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 10),
+            Text('API Error'),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Error: ${e.toString()}",
+                style: const TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectableText(
+                  stackTrace.toString(),
+                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),
     );
   }
+}
+
+Widget _buildDebugRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11)),
+        Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+      ],
+    ),
+  );
+}
+
+// Widget _buildDivider() {
+//   return const Divider(height: 8, thickness: 0.5);
+// }
   
   Widget _buildDivider() {
     return const Padding(
@@ -495,7 +495,7 @@ class _ProfileState extends State<Profile> {
           onPressed: _navigateBack,
         ),
         actions: [
-          // DEBUG BUTTON (Only shows in debug mode)
+          // Debug button - shows in debug mode only
           if (kDebugMode)
             Padding(
               padding: const EdgeInsets.only(right: 4),
