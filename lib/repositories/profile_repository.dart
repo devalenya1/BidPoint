@@ -11,7 +11,9 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import 'package:flutter/foundation.dart';
 import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
-import 'package:flutter/material.dart';  
+import 'package:flutter/material.dart'; 
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 
 class ProfileRepository {
 
