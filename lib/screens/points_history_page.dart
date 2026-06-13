@@ -162,21 +162,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       
       final monthKey = _formatMonthYear(date);
       
-      // Get the amount and ensure it's an int
-      final amount = log.amount;
-      int pointsValue = 0;
-      if (amount != null) {
-        if (amount is int) {
-          pointsValue = amount.abs();
-        } else if (amount is double) {
-          pointsValue = amount.abs().toInt();
-        } else {
-          pointsValue = (amount as num).abs().toInt();
-        }
-      }
+      // Get the amount as double and convert to int points value
+      final amountValue = log.amount ?? 0.0;
+      int pointsValue = amountValue.abs().toInt();
       
       // Points are negative for spending, positive for earning
-      final isEarned = (log.amount ?? 0) > 0;
+      final isEarned = amountValue > 0;
       final pointsToAdd = isEarned ? pointsValue : -pointsValue;
       
       monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + pointsToAdd;
@@ -504,9 +495,10 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildHistoryCard(AffiliateLog log) {
     final date = log.createdAt;
-    final pointsValue = (log.amount ?? 0).abs().toInt();
+    final amountValue = log.amount ?? 0.0;
+    final pointsValue = amountValue.abs().toInt();
     // If amount is negative, it's spent (deducted), if positive it's earned
-    final isEarned = (log.amount ?? 0) > 0;
+    final isEarned = amountValue > 0;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 10),

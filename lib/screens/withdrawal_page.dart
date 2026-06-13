@@ -5,6 +5,7 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -49,6 +50,13 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     super.dispose();
   }
   
+  // Helper to get currency symbol
+  String _getCurrencySymbol() {
+    // You can customize this based on your app's currency
+    // For now, return '$' as default
+    return '\$';
+  }
+  
   // ============ FETCH WITHDRAWAL DATA FROM API ============
   Future<void> _fetchWithdrawalData() async {
     try {
@@ -69,6 +77,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       }
     } catch (e) {
       print("Error loading withdrawal data: $e");
+      ToastComponent.showDialog('Failed to load withdrawal data');
       _useDefaultData();
     } finally {
       setState(() {
@@ -122,10 +131,10 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       print("Error submitting withdrawal: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Failed to submit withdrawal request'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -253,7 +262,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14),
                                 child: Text(
-                                  FormatHelper.getCurrencySymbol(),
+                                  _getCurrencySymbol(),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -445,7 +454,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
             borderRadius: BorderRadius.circular(30),
           ),
           child: Text(
-            label ?? '${FormatHelper.getCurrencySymbol()}${amount.toStringAsFixed(2)}',
+            label ?? '${_getCurrencySymbol()}${amount.toStringAsFixed(2)}',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12,

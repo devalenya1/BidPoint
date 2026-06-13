@@ -28,18 +28,9 @@ class TermsConditionsPage extends StatelessWidget {
         ),
       ),
       
-      // body: const Center(
-      //   child: Text('Coming Soon - Terms & Conditions'),
-      // ),
+      body: const Center(
+        child: Text('Coming Soon - Terms & Conditions'),
+      ),
     );
   }
-  
-  @override
-  Widget build(BuildContext context) {
-    return CommonWebviewScreen(
-      url: "${AppConfig.RAW_BASE_URL}/mobile-page/terms-conditions",
-      page_name: AppLocalizations.of(context)!.terms_conditions,
-    );
-  }
-
 }

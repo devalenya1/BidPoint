@@ -5,9 +5,10 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 
-// Import the data model
-import '../data_model/user_info_response.dart';
+// Import the data model with a prefix to avoid naming conflict
+import '../data_model/user_info_response.dart' as model;
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -23,13 +24,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
   bool _isLoading = true;
   bool _isRefreshing = false;
   
-  UserInformation? _userInfo;  // Store the complete user info response
+  model.UserInformation? _userInfo;  // Store the complete user info response
   
   // Derived notification lists (processed from _userInfo)
-  List<Notification> _allNotifications = [];
-  List<Notification> _auctionNotifications = [];
-  List<Notification> _paymentNotifications = [];
-  List<Notification> _systemNotifications = [];
+  List<model.Notification> _allNotifications = [];
+  List<model.Notification> _auctionNotifications = [];
+  List<model.Notification> _paymentNotifications = [];
+  List<model.Notification> _systemNotifications = [];
   
   @override
   void initState() {
@@ -219,7 +220,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return '${months[date.month - 1]} ${date.day} ${date.year}, $hourFormat:$minute $ampm';
   }
   
-  List<Notification> _getCurrentNotifications() {
+  List<model.Notification> _getCurrentNotifications() {
     switch (_selectedTab) {
       case 1:
         return _auctionNotifications;
@@ -332,12 +333,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
-              children: List.generate(5, (index) => 
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
-                ),
-              ),
+              children: [
+                for (int i = 0; i < 5; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
+                  ),
+              ],
             ),
           ),
         ),
@@ -390,7 +392,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
   
-  Widget _buildNotificationItem(Notification notification) {
+  Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     final isRead = notification.isRead ?? false;
     

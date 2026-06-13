@@ -760,7 +760,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
             // Affiliate Icon
             Padding(
-              padding: const EdgeInsets.Insets.only(left: 8),
+              padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {
