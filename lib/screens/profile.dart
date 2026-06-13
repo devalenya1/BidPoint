@@ -477,55 +477,66 @@ Widget _buildDebugRow(String label, String value) {
     );
   }
 
-  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
+      title: Text(
+        AppLocalizations.of(context)!.profile_ucf,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      centerTitle: true,
+      elevation: 0,
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          AppLocalizations.of(context)!.profile_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _navigateBack,
-        ),
-        actions: [
-          // Debug button - shows in debug mode only
-          if (kDebugMode)
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: IconButton(
-                icon: const Icon(Icons.bug_report, color: Colors.orange),
-                onPressed: _debugShowApiResponse,
-                tooltip: 'Debug API Response',
+      foregroundColor: Colors.black,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _navigateBack,
+      ),
+      actions: [
+        // Debug menu button - Always visible for testing API responses
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.bug_report, color: Colors.orange),
+          onSelected: (value) {
+            if (value == 'debug_api') {
+              _debugShowApiResponse();
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'debug_api',
+              child: Row(
+                children: [
+                  Icon(Icons.api, size: 18),
+                  SizedBox(width: 8),
+                  Text('Debug API Response'),
+                ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
-              onPressed: is_logged_in.$ ? _onTapLogout : () => context.push("/users/login"),
-            ),
+          ],
+        ),
+        // Logout button
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+            onPressed: is_logged_in.$ ? _onTapLogout : () => context.push("/users/login"),
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: MyTheme.accent_color,
-        backgroundColor: Colors.white,
-        onRefresh: _onPageRefresh,
-        child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading (like ProductDetails)
-            : _buildBody(),
-      ),
-    );
-  }
-  
+        ),
+      ],
+    ),
+    body: RefreshIndicator(
+      color: MyTheme.accent_color,
+      backgroundColor: Colors.white,
+      onRefresh: _onPageRefresh,
+      child: _isLoading
+          ? _buildShimmer()
+          : _buildBody(),
+    ),
+  );
+}
+
   // ============ SHIMMER LOADING STATE (Like ProductDetails) ============
   Widget _buildShimmer() {
     return SingleChildScrollView(
