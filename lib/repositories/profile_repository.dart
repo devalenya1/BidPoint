@@ -10,6 +10,7 @@ import 'package:active_ecommerce_flutter/data_model/phone_email_availability_res
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import 'package:flutter/foundation.dart';
+import '../helpers/debug_helper.dart';
 
 class ProfileRepository {
 
@@ -83,17 +84,51 @@ class ProfileRepository {
     return phoneEmailAvailabilityResponseFromJson(response.body);
   }
 
-  // Get user info response
-  Future<UserInfoResponse> getUserInfoResponse() async {
+  // // Get user info response
+  // Future<UserInfoResponse> getUserInfoResponse() async {
+  //   String url = "${AppConfig.BASE_URL}/customer/info";
+  //   final response = await ApiRequest.get(
+  //     url: url,
+  //     headers: {
+  //       "Authorization": "Bearer ${access_token.$}",
+  //       "App-Language": app_language.$!,
+  //     },
+  //   );
+  //   return userInfoResponseFromJson(response.body);
+  // }
+
+
+  Future<dynamic> getUserInfoResponse({BuildContext? context}) async {
     String url = "${AppConfig.BASE_URL}/customer/info";
-    final response = await ApiRequest.get(
-      url: url,
-      headers: {
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-    );
-    return userInfoResponseFromJson(response.body);
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {"Authorization": "Bearer ${access_token.$}", "App-Language": app_language.$!},
+      );
+      
+      // Show debug popup with response
+      if (context != null && kDebugMode) {
+        DebugHelper.showApiResponseDialog(
+          context,
+          title: "User Info API Response",
+          responseData: response.body,
+          isSuccess: response.statusCode == 200,
+        );
+      }
+      
+      return userInfoResponseFromJson(response.body);
+    } catch (e, stackTrace) {
+      if (context != null && kDebugMode) {
+        DebugHelper.showErrorDialog(
+          context,
+          title: "Failed to fetch user info",
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+      rethrow;
+    }
   }
 
   // Update affiliate payment details
