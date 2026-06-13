@@ -4,6 +4,7 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
@@ -20,6 +21,9 @@ import '../repositories/auth_repository.dart';
 import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
 import 'package:active_ecommerce_flutter/screens/cash_earnings_page.dart';
 
+// Import the data model
+import '../data_model/user_info_response.dart';
+
 class AffiliatePage extends StatefulWidget {
   const AffiliatePage({Key? key}) : super(key: key);
 
@@ -28,67 +32,79 @@ class AffiliatePage extends StatefulWidget {
 }
 
 class _AffiliatePageState extends State<AffiliatePage> {
-  // User data
-  String _userName = "";
-  String _userEmail = "";
-  String _userPhone = "";
-  String _userAvatar = "";
-  int _pointsBalance = 0;
-  double _cashEarnings = 0.0;
-  double _referralEarnings = 0.0;
-  String _referralCode = "";
-  String _referralLink = "";
-  
-  // UI state
-  bool _pointsVisible = true;
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _pointsVisible = true;
+  
+  UserInformation? _userInfo;  // Store the complete user info response
   
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadUserData();
+      _fetchUserData();  // Fetch fresh data from API
     } else {
       setState(() {
         _isLoading = false;
       });
     }
   }
-
-  Future<void> _loadUserData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
+  
+  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  Future<void> _fetchUserData() async {
     try {
-      var userInfo = await ProfileRepository().getUserInfoResponse();
+      setState(() {
+        _isLoading = true;
+      });
       
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userName = user.name ?? "";
-          _userEmail = user.email ?? "";
-          _userPhone = user.phone ?? "";
-          _userAvatar = user.avatar ?? "";
-          _pointsBalance = (user.balance ?? 0).toInt();
-          _cashEarnings = user.affiliateBalance ?? 0.0;
-          _referralEarnings = user.affiliateBalance ?? 0.0;
-          _referralCode = user.affiliateId ?? "";
-          _referralLink = "https://bidpoint.com/ref/$_referralCode";
+          _userInfo = response.data![0];  // Store locally like _productDetails
         });
         
-        // Save all user data to SharedPreferences
-        UserDataHelper.saveUserData(user);
+        // Optional: Update global SharedValues for affiliate data
+        affiliate_balance.$ = _userInfo?.affiliateBalance?.toString() ?? "0";
+        affiliate_balance.save();
+        points_balance.$ = _userInfo?.balance?.toString() ?? "0";
+        points_balance.save();
+        
+        // Save all user data to SharedPreferences for other screens
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
+        }
       }
     } catch (e) {
       print("Error loading user data: $e");
+      ToastComponent.showDialog('Failed to load affiliate data');
     } finally {
       setState(() {
         _isLoading = false;
+        _isRefreshing = false;
       });
     }
   }
+  
+  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchUserData();
+  }
+  
+  // Helper getters for user data (derived from _userInfo)
+  String get _userName => _userInfo?.name ?? "";
+  String get _userEmail => _userInfo?.email ?? "";
+  String get _userPhone => _userInfo?.phone ?? "";
+  String get _userAvatar => _userInfo?.avatar ?? "";
+  int get _pointsBalance => (_userInfo?.balance ?? 0).toInt();
+  double get _cashEarnings => _userInfo?.affiliateBalance ?? 0.0;
+  double get _referralEarnings => _userInfo?.affiliateBalance ?? 0.0;
+  String get _referralCode => _userInfo?.affiliateId ?? "";
+  String get _referralLink => "https://bidpoint.com/ref/$_referralCode";
   
   void _copyToClipboard(String text, String type) {
     // Copy to clipboard logic here
@@ -136,6 +152,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
     );
   }
   
+  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,36 +171,82 @@ class _AffiliatePageState extends State<AffiliatePage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    // Profile Card
-                    _buildProfileCard(),
-                    const SizedBox(height: 16),
-                    // Stats Cards Row
-                    _buildStatsRow(),
-                    const SizedBox(height: 20),
-                    // Banner Image
-                    _buildBanner(),
-                    const SizedBox(height: 20),
-                    // How It Works Section
-                    _buildHowItWorks(),
-                    const SizedBox(height: 20),
-                    // Referral Link Section
-                    _buildReferralLink(),
-                    const SizedBox(height: 16),
-                    // Share Button
-                    _buildShareButton(),
-                    const SizedBox(height: 30),
-                  ],
-                ),
-              ),
-            ),
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()  // Show shimmer while loading
+            : _buildBody(),
+      ),
+    );
+  }
+  
+  // ============ SHIMMER LOADING STATE ============
+  Widget _buildShimmer() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // Profile Card shimmer
+          ShimmerHelper().buildBasicShimmer(height: 87, radius: 20),
+          const SizedBox(height: 16),
+          // Stats Row shimmer
+          Row(
+            children: [
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 14)),
+              const SizedBox(width: 15),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 14)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Banner shimmer
+          ShimmerHelper().buildBasicShimmer(height: 150, radius: 16),
+          const SizedBox(height: 20),
+          // How It Works shimmer
+          ShimmerHelper().buildBasicShimmer(height: 200, radius: 16),
+          const SizedBox(height: 20),
+          // Referral Link shimmer
+          ShimmerHelper().buildBasicShimmer(height: 80, radius: 16),
+          const SizedBox(height: 16),
+          // Share button shimmer
+          ShimmerHelper().buildBasicShimmer(height: 50, radius: 8),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+  
+  // ============ MAIN BODY ============
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            // Profile Card
+            _buildProfileCard(),
+            const SizedBox(height: 16),
+            // Stats Cards Row
+            _buildStatsRow(),
+            const SizedBox(height: 20),
+            // Banner Image
+            _buildBanner(),
+            const SizedBox(height: 20),
+            // How It Works Section
+            _buildHowItWorks(),
+            const SizedBox(height: 20),
+            // Referral Link Section
+            _buildReferralLink(),
+            const SizedBox(height: 16),
+            // Share Button
+            _buildShareButton(),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
     );
   }
   

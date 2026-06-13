@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+
+// Import the data model
+import '../data_model/user_info_response.dart';
 
 class PaymentSettingsPage extends StatefulWidget {
   const PaymentSettingsPage({Key? key}) : super(key: key);
@@ -13,30 +17,29 @@ class PaymentSettingsPage extends StatefulWidget {
 }
 
 class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
-  // Bank details
-  bool _bankConnected = false;
-  TextEditingController _bankNameController = TextEditingController();
-  TextEditingController _accountHolderController = TextEditingController();
-  TextEditingController _accountNumberController = TextEditingController();
-  TextEditingController _ifscCodeController = TextEditingController();
-  
-  // PayPal details
-  bool _paypalConnected = false;
-  TextEditingController _paypalEmailController = TextEditingController();
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _isSaving = false;
   
   // Modal visibility
   bool _isBankModalOpen = false;
   bool _isPaypalModalOpen = false;
   
-  // Loading states
-  bool _isLoading = true;
-  bool _isSaving = false;
+  // Form controllers
+  TextEditingController _bankNameController = TextEditingController();
+  TextEditingController _accountHolderController = TextEditingController();
+  TextEditingController _accountNumberController = TextEditingController();
+  TextEditingController _ifscCodeController = TextEditingController();
+  TextEditingController _paypalEmailController = TextEditingController();
+  
+  UserInformation? _userInfo;  // Store the complete user info response
   
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadPaymentDetails();
+      _fetchUserData();  // Fetch fresh data from API
     } else {
       setState(() {
         _isLoading = false;
@@ -54,52 +57,89 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     super.dispose();
   }
   
-  Future<void> _loadPaymentDetails() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
+  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  Future<void> _fetchUserData() async {
     try {
-      var userInfo = await ProfileRepository().getUserInfoResponse();
+      setState(() {
+        _isLoading = true;
+      });
       
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        setState(() {
+          _userInfo = response.data![0];  // Store locally like _productDetails
+        });
         
-        // Check PayPal connection
-        final hasPaypal = user.paypalEmail != null && user.paypalEmail!.isNotEmpty;
-        if (hasPaypal) {
-          _paypalEmailController.text = user.paypalEmail!;
-          _paypalConnected = true;
-        } else {
-          _paypalConnected = false;
+        // Load payment details into controllers
+        _loadPaymentDetailsFromUserInfo();
+        
+        // Save all user data to SharedPreferences for other screens
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
         }
-        
-        // Check Bank connection - check if any bank field has value
-        final hasBankName = user.bankName != null && user.bankName!.isNotEmpty;
-        final hasAccountHolder = user.accountHolder != null && user.accountHolder!.isNotEmpty;
-        final hasAccountNumber = user.accountNumber != null && user.accountNumber!.isNotEmpty;
-        
-        if (hasBankName && hasAccountHolder && hasAccountNumber) {
-          _bankNameController.text = user.bankName!;
-          _accountHolderController.text = user.accountHolder!;
-          _accountNumberController.text = user.accountNumber!;
-          _ifscCodeController.text = user.ifscCode ?? '';
-          _bankConnected = true;
-        } else {
-          _bankConnected = false;
-        }
-        
-        // Save all user data to SharedPreferences
-        UserDataHelper.saveUserData(user);
       }
     } catch (e) {
-      print("Error loading payment details: $e");
+      print("Error loading user data: $e");
+      _showError('Failed to load payment details');
     } finally {
       setState(() {
         _isLoading = false;
+        _isRefreshing = false;
       });
     }
   }
+  
+  // ============ LOAD PAYMENT DETAILS FROM STORED USER INFO ============
+  void _loadPaymentDetailsFromUserInfo() {
+    if (_userInfo == null) return;
+    
+    // Load PayPal details
+    final hasPaypal = _userInfo!.paypalEmail != null && _userInfo!.paypalEmail!.isNotEmpty;
+    if (hasPaypal) {
+      _paypalEmailController.text = _userInfo!.paypalEmail!;
+    }
+    
+    // Load Bank details
+    final hasBankName = _userInfo!.bankName != null && _userInfo!.bankName!.isNotEmpty;
+    final hasAccountHolder = _userInfo!.accountHolder != null && _userInfo!.accountHolder!.isNotEmpty;
+    final hasAccountNumber = _userInfo!.accountNumber != null && _userInfo!.accountNumber!.isNotEmpty;
+    
+    if (hasBankName && hasAccountHolder && hasAccountNumber) {
+      _bankNameController.text = _userInfo!.bankName!;
+      _accountHolderController.text = _userInfo!.accountHolder!;
+      _accountNumberController.text = _userInfo!.accountNumber!;
+      _ifscCodeController.text = _userInfo!.ifscCode ?? '';
+    }
+  }
+  
+  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchUserData();
+  }
+  
+  // Helper getters for payment status (derived from _userInfo)
+  bool get _bankConnected {
+    if (_userInfo == null) return false;
+    final hasBankName = _userInfo!.bankName != null && _userInfo!.bankName!.isNotEmpty;
+    final hasAccountHolder = _userInfo!.accountHolder != null && _userInfo!.accountHolder!.isNotEmpty;
+    final hasAccountNumber = _userInfo!.accountNumber != null && _userInfo!.accountNumber!.isNotEmpty;
+    return hasBankName && hasAccountHolder && hasAccountNumber;
+  }
+  
+  bool get _paypalConnected {
+    if (_userInfo == null) return false;
+    return _userInfo!.paypalEmail != null && _userInfo!.paypalEmail!.isNotEmpty;
+  }
+  
+  String get _displayBankName => _userInfo?.bankName ?? "";
+  String get _displayAccountHolder => _userInfo?.accountHolder ?? "";
+  String get _displayAccountNumber => _userInfo?.accountNumber ?? "";
+  String get _displayIfscCode => _userInfo?.ifscCode ?? "";
+  String get _displayPaypalEmail => _userInfo?.paypalEmail ?? "";
   
   Future<void> _saveBankDetails() async {
     // Validate
@@ -131,14 +171,13 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       
       if (response['success'] == true) {
         setState(() {
-          _bankConnected = true;
           _isBankModalOpen = false;
         });
         
         _showSuccess('Bank details saved successfully');
         
-        // Reload user data to update shared preferences
-        await _loadPaymentDetails();
+        // Refresh user data
+        await _fetchUserData();
       } else {
         _showError(response['message'] ?? 'Something went wrong');
       }
@@ -178,14 +217,13 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       
       if (response['success'] == true) {
         setState(() {
-          _paypalConnected = true;
           _isPaypalModalOpen = false;
         });
         
         _showSuccess('PayPal details saved successfully');
         
-        // Reload user data to update shared preferences
-        await _loadPaymentDetails();
+        // Refresh user data
+        await _fetchUserData();
       } else {
         _showError(response['message'] ?? 'Something went wrong');
       }
@@ -238,7 +276,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       
       if (response['success'] == true) {
         setState(() {
-          _bankConnected = false;
           _bankNameController.clear();
           _accountHolderController.clear();
           _accountNumberController.clear();
@@ -246,7 +283,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         });
         
         _showSuccess('Bank account disconnected successfully');
-        await _loadPaymentDetails();
+        await _fetchUserData();
       } else {
         _showError(response['message'] ?? 'Something went wrong');
       }
@@ -299,12 +336,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       
       if (response['success'] == true) {
         setState(() {
-          _paypalConnected = false;
           _paypalEmailController.clear();
         });
         
         _showSuccess('PayPal account disconnected successfully');
-        await _loadPaymentDetails();
+        await _fetchUserData();
       } else {
         _showError(response['message'] ?? 'Something went wrong');
       }
@@ -345,6 +381,12 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   }
   
   void _openBankModal() {
+    // Reset form with current values
+    _bankNameController.text = _displayBankName;
+    _accountHolderController.text = _displayAccountHolder;
+    _accountNumberController.text = _displayAccountNumber;
+    _ifscCodeController.text = _displayIfscCode;
+    
     setState(() {
       _isBankModalOpen = true;
     });
@@ -357,6 +399,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   }
   
   void _openPaypalModal() {
+    _paypalEmailController.text = _displayPaypalEmail;
     setState(() {
       _isPaypalModalOpen = true;
     });
@@ -368,6 +411,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     });
   }
   
+  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -386,47 +430,68 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           onPressed: _navigateBack,
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
-                  child: Column(
-                    children: [
-                      // Bank Details Card
-                      _buildPaymentCard(
-                        icon: Icons.account_balance,
-                        title: AppLocalizations.of(context)!.bank_details,
-                        description: AppLocalizations.of(context)!.bank_details_desc,
-                        isConnected: _bankConnected,
-                        onTap: _openBankModal,
-                        onDisconnect: _bankConnected ? _disconnectBank : null,
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // PayPal Details Card
-                      _buildPaymentCard(
-                        icon: Icons.payment,
-                        title: AppLocalizations.of(context)!.paypal_details,
-                        description: AppLocalizations.of(context)!.paypal_details_desc,
-                        isConnected: _paypalConnected,
-                        onTap: _openPaypalModal,
-                        onDisconnect: _paypalConnected ? _disconnectPaypal : null,
-                      ),
-                    ],
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()  // Show shimmer while loading
+            : Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                    child: Column(
+                      children: [
+                        // Bank Details Card
+                        _buildPaymentCard(
+                          icon: Icons.account_balance,
+                          title: AppLocalizations.of(context)!.bank_details,
+                          description: AppLocalizations.of(context)!.bank_details_desc,
+                          isConnected: _bankConnected,
+                          onTap: _openBankModal,
+                          onDisconnect: _bankConnected ? _disconnectBank : null,
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // PayPal Details Card
+                        _buildPaymentCard(
+                          icon: Icons.payment,
+                          title: AppLocalizations.of(context)!.paypal_details,
+                          description: AppLocalizations.of(context)!.paypal_details_desc,
+                          isConnected: _paypalConnected,
+                          onTap: _openPaypalModal,
+                          onDisconnect: _paypalConnected ? _disconnectPaypal : null,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                
-                // Bank Modal
-                if (_isBankModalOpen)
-                  _buildBankModal(),
-                
-                // PayPal Modal
-                if (_isPaypalModalOpen)
-                  _buildPaypalModal(),
-              ],
-            ),
+                  
+                  // Bank Modal
+                  if (_isBankModalOpen)
+                    _buildBankModal(),
+                  
+                  // PayPal Modal
+                  if (_isPaypalModalOpen)
+                    _buildPaypalModal(),
+                ],
+              ),
+      ),
+    );
+  }
+  
+  // ============ SHIMMER LOADING STATE ============
+  Widget _buildShimmer() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+      child: Column(
+        children: [
+          // Bank card shimmer
+          ShimmerHelper().buildBasicShimmer(height: 80, radius: 7),
+          const SizedBox(height: 8),
+          // PayPal card shimmer
+          ShimmerHelper().buildBasicShimmer(height: 80, radius: 7),
+        ],
+      ),
     );
   }
   

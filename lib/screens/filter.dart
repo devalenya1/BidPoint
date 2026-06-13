@@ -640,7 +640,7 @@ class _FilterState extends State<Filter> {
             ),
           ),
           const SizedBox(width: 8),
-          // Filter Button
+          // Filter Button - Only for products
           Expanded(
             child: GestureDetector(
               onTap: () {
@@ -648,7 +648,7 @@ class _FilterState extends State<Filter> {
                   _openFilterDrawer();
                 } else {
                   ToastComponent.showDialog(
-                      "You can use sorting while searching for products",
+                      "Filters are only available for products",
                       gravity: Toast.center,
                       duration: Toast.lengthLong);
                 }
@@ -672,7 +672,7 @@ class _FilterState extends State<Filter> {
             ),
           ),
           const SizedBox(width: 8),
-          // Sort Button
+          // Sort Button - Only for products
           Expanded(
             child: GestureDetector(
               onTap: () {
@@ -680,7 +680,7 @@ class _FilterState extends State<Filter> {
                   _showSortDialog();
                 } else {
                   ToastComponent.showDialog(
-                      "You can use filters while searching for products",
+                      "Sorting is only available for products",
                       gravity: Toast.center,
                       duration: Toast.lengthLong);
                 }
@@ -843,7 +843,6 @@ class _FilterState extends State<Filter> {
                                       if (isSelected) {
                                         _selectedCategories.remove(category.id);
                                       } else {
-                                        _selectedCategories.clear();
                                         _selectedCategories.add(category.id);
                                       }
                                     });
@@ -1061,7 +1060,7 @@ class _FilterState extends State<Filter> {
     );
   }
 
-  // Keep existing product list, brand list, shop list methods unchanged
+  // Product list display
   Container buildProductList() {
     return Container(
       child: Column(

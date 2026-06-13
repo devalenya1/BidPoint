@@ -23,6 +23,9 @@ import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:go_router/go_router.dart';
 
+// Import the data model
+import '../data_model/user_info_response.dart';
+
 class Home extends StatefulWidget {
   Home({
     Key? key,
@@ -41,70 +44,94 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> with TickerProviderStateMixin {
   HomePresenter homeData = HomePresenter();
-  int _unreadNotificationCount = 0;
-  int _unreadMessageCount = 0;
-
+  
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  bool _isLoadingCounts = true;
+  bool _isRefreshingCounts = false;
+  UserInformation? _userInfo;  // Store user info for counts
+  
+  // Display counts (derived from _userInfo or fallback)
+  int get _unreadNotificationCount {
+    // Not logged in → 0
+    if (is_logged_in.$ != true) return 0;
+    
+    // Logged in but no user info yet → 1 (shimmer/placeholder)
+    if (_userInfo == null) return 1;
+    
+    // Logged in with user info → actual count from API
+    return _userInfo!.unreadNotificationsCount ?? 0;
+  }
+  
+  int get _unreadMessageCount {
+    // Not logged in → 0
+    if (is_logged_in.$ != true) return 0;
+    
+    // Logged in but no user info yet → 1 (shimmer/placeholder)
+    if (_userInfo == null) return 1;
+    
+    // TODO: Get message count from chat repository when available
+    // For now, return 0 (actual count would come from chat API)
+    return 0;
+  }
+  
+  // Whether to show count badge
+  bool get _showNotificationBadge => is_logged_in.$ && _unreadNotificationCount > 0;
+  bool get _showMessageBadge => is_logged_in.$ && _unreadMessageCount > 0;
+  
   @override
   void initState() {
     super.initState();
-    _loadCounts();
+    _fetchCounts();
     Future.delayed(Duration.zero).then((value) {
       change();
     });
   }
-
-  void _loadCounts() async {
-    // For logged out users, show 0
+  
+  // ============ FETCH COUNTS FROM API ============
+  Future<void> _fetchCounts() async {
+    // If not logged in, don't fetch
     if (is_logged_in.$ != true) {
       setState(() {
-        _unreadNotificationCount = 0;
-        _unreadMessageCount = 0;
+        _isLoadingCounts = false;
       });
       return;
     }
     
-    // Try to load from SharedPreferences first
-    int savedNotificationCount = unread_notifications_count.$ ?? 0;
-    int savedMessageCount = 0; // You would get this from your chat API
-    
-    // If we have saved counts, use them
-    if (savedNotificationCount > 0) {
+    try {
       setState(() {
-        _unreadNotificationCount = savedNotificationCount;
-        _unreadMessageCount = savedMessageCount;
+        _isLoadingCounts = true;
       });
-    } else {
-      // If no saved counts, fetch from API
-      try {
-        var userInfo = await ProfileRepository().getUserInfoResponse();
-        if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-          final user = userInfo.data![0];
-          final apiNotificationCount = user.unreadNotificationsCount ?? 0;
-          
-          // Save to SharedPreferences for next time
-          unread_notifications_count.$ = apiNotificationCount;
-          
-          setState(() {
-            // If API returns 0, use demo value of 5 for testing
-            _unreadNotificationCount = apiNotificationCount > 0 ? apiNotificationCount : 5;
-            _unreadMessageCount = 5; // Demo value for messages
-          });
-        } else {
-          // If API fails or returns no data, use demo values
-          setState(() {
-            _unreadNotificationCount = 5;
-            _unreadMessageCount = 5;
-          });
-        }
-      } catch (e) {
-        print("Error loading notification counts: $e");
-        // On error, use demo values
+      
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _unreadNotificationCount = 5;
-          _unreadMessageCount = 5;
+          _userInfo = response.data![0];  // Store locally
         });
+        
+        // Update SharedValue for quick access elsewhere
+        unread_notifications_count.$ = _userInfo!.unreadNotificationsCount ?? 0;
+        unread_notifications_count.save();
       }
+    } catch (e) {
+      print("Error loading notification counts: $e");
+      // On error, user info remains null, so getters will return 1 as fallback
+    } finally {
+      setState(() {
+        _isLoadingCounts = false;
+      });
     }
+  }
+  
+  // ============ PULL TO REFRESH COUNTS ============
+  Future<void> _refreshCounts() async {
+    setState(() {
+      _isRefreshingCounts = true;
+    });
+    await _fetchCounts();
+    setState(() {
+      _isRefreshingCounts = false;
+    });
   }
 
   change() {
@@ -154,7 +181,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     RefreshIndicator(
                       color: MyTheme.accent_color,
                       backgroundColor: Colors.white,
-                      onRefresh: homeData.onRefresh,
+                      onRefresh: () async {
+                        await homeData.onRefresh();
+                        await _refreshCounts();
+                      },
                       displacement: 0,
                       child: CustomScrollView(
                         controller: homeData.mainScrollController,
@@ -602,7 +632,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       MaterialPageRoute(
                         builder: (context) => const NotificationsPage(),
                       ),
-                    );
+                    ).then((_) => _refreshCounts()); // Refresh counts after returning
                   } else {
                     _redirectToLogin();
                   }
@@ -624,8 +654,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Notification counter badge - show for logged in users only
-                      if (is_logged_in.$)
+                      // Notification counter badge
+                      if (_showNotificationBadge)
                         Positioned(
                           top: 2,
                           right: 2,
@@ -638,13 +668,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               color: MyTheme.accent_color,
                               borderRadius: BorderRadius.circular(10),
                             ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
                             child: Text(
-                              '$_unreadNotificationCount',
+                              _unreadNotificationCount > 99 
+                                  ? '99+' 
+                                  : '$_unreadNotificationCount',
                               style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
@@ -685,8 +722,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           width: 22,
                         ),
                       ),
-                      // Chat counter badge - show for logged in users only
-                      if (is_logged_in.$)
+                      // Chat counter badge
+                      if (_showMessageBadge)
                         Positioned(
                           top: 2,
                           right: 2,
@@ -699,13 +736,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               color: MyTheme.accent_color,
                               borderRadius: BorderRadius.circular(10),
                             ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
                             child: Text(
-                              '$_unreadMessageCount',
+                              _unreadMessageCount > 99 
+                                  ? '99+' 
+                                  : '$_unreadMessageCount',
                               style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
@@ -716,7 +760,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
             // Affiliate Icon
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.Insets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {

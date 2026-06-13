@@ -5,15 +5,14 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
-import 'package:active_ecommerce_flutter/custom/useful_elements.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/wishlist_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
-import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:toast/toast.dart';
+
+// Import the data model
+import '../data_model/user_info_response.dart';
 
 class Wishlist extends StatefulWidget {
   const Wishlist({Key? key}) : super(key: key);
@@ -25,23 +24,26 @@ class Wishlist extends StatefulWidget {
 class _WishlistState extends State<Wishlist> {
   int _selectedTab = 0; // 0: All, 1: Live, 2: Ending Soon, 3: Outbid
   
-  // Real wishlist data from API
-  List<dynamic> _wishlistItems = [];
-  List<dynamic> _liveItems = [];
-  List<dynamic> _endingSoonItems = [];
-  List<dynamic> _outbidItems = [];
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+  UserInformation? _userInfo;  // Store the complete user info response
+  
+  // Processed wishlist data (derived from _userInfo)
+  List<WishlistItem> _wishlistItems = [];
+  List<WishlistItem> _liveItems = [];
+  List<WishlistItem> _endingSoonItems = [];
+  List<WishlistItem> _outbidItems = [];
   
   // Timer controllers
   final Map<int, Timer> _timers = {};
   final Map<int, String> _timeLeft = {};
   
-  bool _isLoading = true;
-  
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadWishlistData();
+      _fetchWishlistData();  // Fetch fresh data from API
     } else {
       setState(() {
         _isLoading = false;
@@ -57,87 +59,105 @@ class _WishlistState extends State<Wishlist> {
     super.dispose();
   }
   
-  Future<void> _loadWishlistData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
+  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  Future<void> _fetchWishlistData() async {
     try {
-      // Load user data to get wishlist
-      var userInfo = await ProfileRepository().getUserInfoResponse();
+      setState(() {
+        _isLoading = true;
+      });
       
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        final wishlist = user.wishlist ?? [];
-        
-        // Save all user data to SharedPreferences
-        UserDataHelper.saveUserData(user);
-        
-        // Update wishlist count in SharedPreferences
-        wishlist_count.$ = wishlist.length;
-        
-        // Process wishlist items with auction data
-        List<dynamic> processedItems = [];
-        final now = DateTime.now();
-        final endingSoonThreshold = now.add(const Duration(days: 2));
-        
-        for (var item in wishlist) {
-          // Get bid values as doubles (they are already numbers from API)
-          final userBid = item.highestBid ?? 0.0;
-          final currentBid = item.highestBid ?? 0.0;
-          final isEnded = false; // Would need auction end date from API
-          final isOutbid = !isEnded && userBid > 0 && userBid < currentBid;
-          final isWinning = !isEnded && !isOutbid && userBid == currentBid && userBid > 0;
-          
-          processedItems.add({
-            'id': item.id,
-            'wishlistId': item.id,
-            'productId': item.productId,
-            'productSlug': item.slug ?? '',
-            'productName': item.productName ?? 'Unknown Product',
-            'productImage': item.productImage,
-            'productPrice': item.productPrice ?? 0.0,
-            'highestBid': item.highestBid ?? 0.0,
-            'auctionEndDate': null,
-            'currentBid': currentBid,
-            'userBid': userBid,
-            'pointsPerBid': 10,
-            'isEnded': isEnded,
-            'isOutbid': isOutbid,
-            'isWinning': isWinning,
-          });
-        }
-        
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _wishlistItems = processedItems;
-          
-          // Filter items for different tabs
-          _liveItems = processedItems.where((item) => !item['isEnded']).toList();
-          
-          _endingSoonItems = processedItems.where((item) {
-            final endDate = item['auctionEndDate'];
-            return !item['isEnded'] && endDate != null && endDate.isBefore(endingSoonThreshold);
-          }).toList();
-          
-          _outbidItems = processedItems.where((item) => item['isOutbid'] == true && !item['isEnded']).toList();
+          _userInfo = response.data![0];  // Store locally like _productDetails
         });
         
-        // Start timers for non-ended items with end dates
-        for (var item in processedItems) {
-          if (!item['isEnded'] && item['auctionEndDate'] != null) {
-            _startTimer(item['id'], item['auctionEndDate']);
-          }
-        }
+        // Process wishlist data from the stored user info
+        _processWishlistData();
+        
+        // Optional: Update global SharedValue for wishlist count
+        wishlist_count.$ = _userInfo?.wishlistCount ?? 0;
+        wishlist_count.save();
+      } else {
+        // Handle empty response
+        setState(() {
+          _wishlistItems = [];
+          _liveItems = [];
+          _endingSoonItems = [];
+          _outbidItems = [];
+        });
       }
     } catch (e) {
       print("Error loading wishlist data: $e");
+      ToastComponent.showDialog('Failed to load wishlist');
     } finally {
       setState(() {
         _isLoading = false;
+        _isRefreshing = false;
       });
     }
   }
   
+  // ============ PROCESS WISHLIST DATA (Extract from stored user info) ============
+  void _processWishlistData() {
+    if (_userInfo == null) return;
+    
+    final wishlist = _userInfo!.wishlist ?? [];
+    final now = DateTime.now();
+    final endingSoonThreshold = now.add(const Duration(days: 2));
+    
+    // Process and categorize wishlist items
+    List<WishlistItem> allItems = [];
+    List<WishlistItem> live = [];
+    List<WishlistItem> endingSoon = [];
+    List<WishlistItem> outbid = [];
+    
+    for (var item in wishlist) {
+      // Determine auction status
+      final isEnded = false; // Would need auction end date from API
+      final isOutbid = false; // Would need to compare user bid with current bid
+      final isWinning = !isEnded && !isOutbid;
+      
+      // Set timers for items with end dates
+      if (!isEnded) {
+        // Start timer if needed (would need end date from API)
+        // _startTimer(item.id, endDate);
+      }
+      
+      allItems.add(item);
+      
+      if (!isEnded) {
+        live.add(item);
+        
+        // Check if ending soon (would need end date)
+        // if (endDate != null && endDate.isBefore(endingSoonThreshold)) {
+        //   endingSoon.add(item);
+        // }
+      }
+      
+      if (isOutbid && !isEnded) {
+        outbid.add(item);
+      }
+    }
+    
+    setState(() {
+      _wishlistItems = allItems;
+      _liveItems = live;
+      _endingSoonItems = endingSoon;
+      _outbidItems = outbid;
+    });
+  }
+  
+  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchWishlistData();
+  }
+  
+  // ============ TIMER HELPERS ============
   void _startTimer(int id, DateTime endDate) {
     _updateTimeLeft(id, endDate);
     final timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -190,8 +210,8 @@ class _WishlistState extends State<Wishlist> {
     return '\$$price';
   }
   
+  // ============ REMOVE FROM WISHLIST ============
   Future<void> _removeFromWishlist(int wishlistId) async {
-    // Show confirmation dialog
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -230,14 +250,15 @@ class _WishlistState extends State<Wishlist> {
         // await WishlistRepository().removeFromWishlist(wishlistId);
         
         setState(() {
-          _wishlistItems.removeWhere((item) => item['wishlistId'] == wishlistId);
-          _liveItems.removeWhere((item) => item['wishlistId'] == wishlistId);
-          _endingSoonItems.removeWhere((item) => item['wishlistId'] == wishlistId);
-          _outbidItems.removeWhere((item) => item['wishlistId'] == wishlistId);
+          _wishlistItems.removeWhere((item) => item.id == wishlistId);
+          _liveItems.removeWhere((item) => item.id == wishlistId);
+          _endingSoonItems.removeWhere((item) => item.id == wishlistId);
+          _outbidItems.removeWhere((item) => item.id == wishlistId);
         });
         
         // Update wishlist count in SharedPreferences
         wishlist_count.$ = _wishlistItems.length;
+        wishlist_count.save();
         
         ToastComponent.showDialog(
           'Removed from wishlist',
@@ -251,7 +272,7 @@ class _WishlistState extends State<Wishlist> {
     }
   }
   
-  List<dynamic> _getCurrentItems() {
+  List<WishlistItem> _getCurrentItems() {
     switch (_selectedTab) {
       case 1:
         return _liveItems;
@@ -264,10 +285,9 @@ class _WishlistState extends State<Wishlist> {
     }
   }
   
+  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
   @override
   Widget build(BuildContext context) {
-    final currentItems = _getCurrentItems();
-    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -284,47 +304,96 @@ class _WishlistState extends State<Wishlist> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Tabs Section
-                _buildTabs(),
-                
-                // Main Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        
-                        // Tab Content
-                        if (currentItems.isEmpty)
-                          _buildEmptyState()
-                        else
-                          Column(
-                            children: currentItems.map((item) => 
-                              _buildWishlistCard(item)
-                            ).toList(),
-                          ),
-                        
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()  // Show shimmer while loading
+            : _buildBody(),
+      ),
+    );
+  }
+  
+  // ============ SHIMMER LOADING STATE ============
+  Widget _buildShimmer() {
+    return Column(
+      children: [
+        // Tabs shimmer
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.only(bottom: 16),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(4, (index) => 
+                Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  width: 100,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: MyTheme.shimmer_base,
+                    borderRadius: BorderRadius.circular(7),
                   ),
                 ),
+              ),
+            ),
+          ),
+        ),
+        // Cards shimmer
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: List.generate(3, (index) => 
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: ShimmerHelper().buildBasicShimmer(height: 140, radius: 16),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // ============ MAIN BODY ============
+  Widget _buildBody() {
+    final currentItems = _getCurrentItems();
+    
+    return Column(
+      children: [
+        _buildTabs(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                if (currentItems.isEmpty)
+                  _buildEmptyState()
+                else
+                  Column(
+                    children: currentItems.map((item) => 
+                      _buildWishlistCard(item)
+                    ).toList(),
+                  ),
+                const SizedBox(height: 30),
               ],
             ),
+          ),
+        ),
+      ],
     );
   }
   
   Widget _buildTabs() {
     final tabs = [
-      AppLocalizations.of(context)!.all_ucf,
-      'Live',
-      'Ending Soon',
-      'Outbid',
+      '${AppLocalizations.of(context)!.all_ucf} (${_wishlistItems.length})',
+      'Live (${_liveItems.length})',
+      'Ending Soon (${_endingSoonItems.length})',
+      'Outbid (${_outbidItems.length})',
     ];
     
     return Container(
@@ -364,12 +433,14 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  Widget _buildWishlistCard(dynamic item) {
-    final isEnded = item['isEnded'] ?? false;
-    final isOutbid = item['isOutbid'] ?? false;
-    final isWinning = item['isWinning'] ?? false;
-    final timeLeft = _timeLeft[item['id']] ?? 'Loading...';
+  Widget _buildWishlistCard(WishlistItem item) {
+    final timeLeft = _timeLeft[item.id] ?? 'Loading...';
     final isTimerEnded = timeLeft == "Ended";
+    
+    // Determine status
+    final isEnded = false; // Would need auction end date
+    final isOutbid = false; // Would need comparison
+    final isWinning = !isEnded && !isOutbid;
     
     String statusText;
     Color statusColor;
@@ -411,9 +482,9 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: item['productImage'] != null && item['productImage'].toString().isNotEmpty
+                  child: item.productImage != null && item.productImage!.isNotEmpty
                       ? Image.network(
-                          item['productImage'],
+                          item.productImage!,
                           fit: BoxFit.cover,
                           width: 120,
                           height: 140,
@@ -438,56 +509,19 @@ class _WishlistState extends State<Wishlist> {
                         ),
                 ),
               ),
-              // Timer Badge
-              if (!isEnded && item['auctionEndDate'] != null)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isTimerEnded ? const Color(0xFFDC3545) : const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.access_time,
-                          size: 10,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          timeLeft,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              // Timer Badge (would need end date)
               // Remove from wishlist button
               Positioned(
                 top: 0,
                 right: 0,
                 child: GestureDetector(
-                  onTap: () => _removeFromWishlist(item['wishlistId']),
+                  onTap: () => _removeFromWishlist(item.id!),
                   child: Container(
                     width: 32,
                     height: 32,
                     margin: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFB5E7F5),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFB5E7F5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -508,7 +542,7 @@ class _WishlistState extends State<Wishlist> {
               children: [
                 // Product Name
                 Text(
-                  item['productName'] ?? 'Unknown Product',
+                  item.productName ?? 'Unknown Product',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -544,7 +578,7 @@ class _WishlistState extends State<Wishlist> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _formatPrice(item['highestBid']),
+                      _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -557,9 +591,9 @@ class _WishlistState extends State<Wishlist> {
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Text(
-                        '1 Bid = ${item['pointsPerBid']}',
-                        style: const TextStyle(
+                      child: const Text(
+                        '1 Bid = 10',
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF0092AC),
@@ -572,17 +606,16 @@ class _WishlistState extends State<Wishlist> {
                 // Action Button
                 GestureDetector(
                   onTap: () {
-                    if (item['productSlug'] != null && item['productSlug'].toString().isNotEmpty) {
-                      // Navigate using slug
+                    if (item.slug != null && item.slug!.isNotEmpty) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ProductDetails(
-                            slug: item['productSlug'],
+                            slug: item.slug!,
                           ),
                         ),
                       );
-                    } else if (item['productId'] != null) {
+                    } else if (item.productId != null) {
                       ToastComponent.showDialog(
                         'Product details not available',
                         gravity: Toast.center,

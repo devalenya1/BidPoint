@@ -8,7 +8,7 @@ import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/address.dart';
@@ -41,6 +41,7 @@ import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../repositories/auth_repository.dart';
+import '../data_model/user_info_response.dart';
 import 'auction_bidded_products.dart';
 import 'auction_purchase_history.dart';
 import 'coming_soon_page.dart';
@@ -61,76 +62,19 @@ class _ProfileState extends State<Profile> {
   ScrollController _mainScrollController = ScrollController();
   bool _pointsVisible = true;
   
-  // Initialize with empty values
-  double _userBalance = 0.0;
-  double _userCash = 0.0;
-  String _userName = "";
-  String _userEmail = "";
-  String _userPhone = "";
-  String _userAvatar = "";
-  bool _isLoading = true;
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  bool _isLoading = true;           // Loading state
+  bool _isRefreshing = false;       // Pull-to-refresh state
+  UserInformation? _userInfo;       // Store the API response locally
   
+  // ============ INIT ============
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadUserData();
+      _fetchUserData();  // Fetch fresh data from API
     } else {
-      _loadFromSharedPreferences();
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _loadFromSharedPreferences() {
-    setState(() {
-      _userName = user_name.$ ?? "";
-      _userEmail = user_email.$ ?? "";
-      _userPhone = user_phone.$ ?? "";
-      _userAvatar = avatar_original.$ ?? "";
-      _userBalance = double.tryParse(points_balance.$ ?? "0") ?? 0.0;
-      _userCash = double.tryParse(affiliate_balance.$ ?? "0") ?? 0.0;
-    });
-  }
-
-  void _loadUserData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      var userInfo = await ProfileRepository().getUserInfoResponse();
-      
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        
-        // Save all user data to SharedPreferences using UserDataHelper
-        UserDataHelper.saveUserData(user);
-        
-        setState(() {
-          _userName = user.name ?? "";
-          _userEmail = user.email ?? "";
-          _userPhone = user.phone ?? "";
-          _userAvatar = user.avatar ?? "";
-          _userBalance = user.balance ?? 0.0;
-          _userCash = user.affiliateBalance ?? 0.0;
-        });
-        
-        // Update shared_value_helper
-        user_name.$ = _userName;
-        user_email.$ = _userEmail;
-        user_phone.$ = _userPhone;
-        avatar_original.$ = _userAvatar;
-        points_balance.$ = _userBalance.toString();
-        affiliate_balance.$ = _userCash.toString();
-      } else {
-        _loadFromSharedPreferences();
-      }
-    } catch (e) {
-      print("Error loading user data: $e");
-      _loadFromSharedPreferences();
-    } finally {
+      _loadFromSharedPreferences();  // Fallback for non-logged in
       setState(() {
         _isLoading = false;
       });
@@ -143,6 +87,81 @@ class _ProfileState extends State<Profile> {
     super.dispose();
   }
 
+  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  Future<void> _fetchUserData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        setState(() {
+          _userInfo = response.data![0];  // Store locally like _productDetails
+        });
+        
+        // Optional: Update SharedValues for global use (like cart counter in ProductDetails)
+        // Only update global state that OTHER screens need
+        if (_userInfo != null) {
+          user_name.$ = _userInfo!.name ?? "";
+          user_name.save();
+          user_email.$ = _userInfo!.email ?? "";
+          user_email.save();
+          user_phone.$ = _userInfo!.phone ?? "";
+          user_phone.save();
+          avatar_original.$ = _userInfo!.avatar ?? "";
+          avatar_original.save();
+          points_balance.$ = _userInfo!.balance?.toString() ?? "0";
+          points_balance.save();
+          affiliate_balance.$ = _userInfo!.affiliateBalance?.toString() ?? "0";
+          affiliate_balance.save();
+        }
+      } else {
+        _loadFromSharedPreferences();
+      }
+    } catch (e) {
+      print("Error loading user data: $e");
+      _loadFromSharedPreferences();
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+    }
+  }
+  
+  // Fallback for non-logged in users
+  void _loadFromSharedPreferences() {
+    setState(() {
+      _userInfo = UserInformation(
+        name: user_name.$ ?? "",
+        email: user_email.$ ?? "",
+        phone: user_phone.$ ?? "",
+        avatar: avatar_original.$ ?? "",
+        balance: double.tryParse(points_balance.$ ?? "0") ?? 0.0,
+        affiliateBalance: double.tryParse(affiliate_balance.$ ?? "0") ?? 0.0,
+      );
+    });
+  }
+  
+  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchUserData();
+  }
+  
+  // ============ RESET STATE (Like ProductDetails) ============
+  void _resetState() {
+    setState(() {
+      _userInfo = null;
+      _isLoading = true;
+    });
+  }
+
+  // ============ NAVIGATION HELPERS ============
   void _navigateBack() {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
@@ -191,12 +210,21 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      UserDataHelper.clearUserData();
       AuthHelper().clearUserData();
+      _resetState();
       context.go("/");
     }
   }
 
+  void _showLoginWarning() {
+    ToastComponent.showDialog(
+      AppLocalizations.of(context)!.you_need_to_log_in,
+      gravity: ToastGravity.CENTER,
+      duration: Toast.LENGTH_LONG,
+    );
+  }
+
+  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,20 +252,87 @@ class _ProfileState extends State<Profile> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
-              child: Column(
-                children: [
-                  _buildProfileCard(),
-                  _buildMenuSection(),
-                ],
-              ),
-            ),
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()  // Show shimmer while loading (like ProductDetails)
+            : _buildBody(),
+      ),
     );
   }
   
+  // ============ SHIMMER LOADING STATE (Like ProductDetails) ============
+  Widget _buildShimmer() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
+      child: Column(
+        children: [
+          // Profile card shimmer
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: [
+                      ShimmerHelper().buildBasicShimmer(height: 45, width: 45, radius: 45),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ShimmerHelper().buildBasicShimmer(height: 16, width: 120),
+                            const SizedBox(height: 8),
+                            ShimmerHelper().buildBasicShimmer(height: 12, width: 100),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ShimmerHelper().buildBasicShimmer(height: 50, width: 80, radius: 20),
+              ],
+            ),
+          ),
+          // Menu section shimmer
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: List.generate(6, (index) => 
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ShimmerHelper().buildBasicShimmer(height: 60, radius: 16),
+                )
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ============ MAIN BODY (Shows real data when loaded) ============
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
+      child: Column(
+        children: [
+          _buildProfileCard(),
+          _buildMenuSection(),
+        ],
+      ),
+    );
+  }
+  
+  // ============ PROFILE CARD (Using local _userInfo) ============
   Widget _buildProfileCard() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -265,9 +360,9 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   child: ClipOval(
-                    child: _userAvatar.isNotEmpty
+                    child: _userInfo?.avatar != null && _userInfo!.avatar!.isNotEmpty
                         ? Image.network(
-                            _userAvatar,
+                            _userInfo!.avatar!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
@@ -290,7 +385,7 @@ class _ProfileState extends State<Profile> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _userName.isNotEmpty ? _userName : "Guest User",
+                        _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : "Guest User",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -299,7 +394,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userCash)}',
+                        '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -355,7 +450,9 @@ class _ProfileState extends State<Profile> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      _pointsVisible ? _userBalance.toInt().toString() : '****',
+                      _pointsVisible 
+                          ? (_userInfo?.balance?.toInt() ?? 0).toString() 
+                          : '****',
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -381,6 +478,7 @@ class _ProfileState extends State<Profile> {
     );
   }
   
+  // ============ MENU SECTION ============
   Widget _buildMenuSection() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -556,14 +654,6 @@ class _ProfileState extends State<Profile> {
           ],
         ),
       ),
-    );
-  }
-  
-  void _showLoginWarning() {
-    ToastComponent.showDialog(
-      AppLocalizations.of(context)!.you_need_to_log_in,
-      gravity: ToastGravity.CENTER,
-      duration: Toast.LENGTH_LONG,
     );
   }
 }

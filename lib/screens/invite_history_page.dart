@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:flutter/services.dart';
+
+// Import the data model
+import '../data_model/user_info_response.dart';
 
 class InviteHistoryPage extends StatefulWidget {
   const InviteHistoryPage({Key? key}) : super(key: key);
@@ -11,78 +18,80 @@ class InviteHistoryPage extends StatefulWidget {
 }
 
 class _InviteHistoryPageState extends State<InviteHistoryPage> {
-  // Demo data
-  int _totalReferrals = 12;
-  int _totalPoints = 1250;
-  double _totalEarnings = 1250.50;
-  String _referralCode = "BIDPOINT2024";
-  String _referralLink = "";
+  // ============ LOCAL STATE ============
+  bool _isLoading = true;
+  bool _isRefreshing = false;
   
-  // Demo invite history data
-  List<Map<String, dynamic>> _inviteHistory = [];
+  UserInformation? _userInfo;  // Store user info for referral data
+  
+  // Referral data derived from _userInfo
+  int get _totalReferrals => _userInfo?.affiliateLogs?.where((log) => log.bonusType == 'referral').length ?? 0;
+  int get _totalPoints => (_userInfo?.balance ?? 0).toInt();
+  double get _totalEarnings => _userInfo?.affiliateBalance ?? 0.0;
+  String get _referralCode => _userInfo?.referralCode ?? "";
+  String get _referralLink => "https://bidpoint.com/ref/$_referralCode";
+  
+  // Invite history from API
+  List<AffiliateLog> get _inviteHistory => _userInfo?.affiliateLogs?.where((log) => 
+    log.bonusType == 'referral' && log.cameFrom != null
+  ).toList() ?? [];
   
   @override
   void initState() {
     super.initState();
-    _loadDemoData();
+    if (is_logged_in.$ == true) {
+      _fetchReferralData();
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
   
-  void _loadDemoData() {
-    _referralLink = "https://bidpoint.com/ref/$_referralCode";
-    
-    _inviteHistory = [
-      {
-        'id': 1,
-        'name': 'Sarah Johnson',
-        'points': 100,
-        'date': DateTime(2024, 5, 15),
-      },
-      {
-        'id': 2,
-        'name': 'Mike Thompson',
-        'points': 100,
-        'date': DateTime(2024, 5, 14),
-      },
-      {
-        'id': 3,
-        'name': 'Emily Davis',
-        'points': 100,
-        'date': DateTime(2024, 5, 10),
-      },
-      {
-        'id': 4,
-        'name': 'James Wilson',
-        'points': 100,
-        'date': DateTime(2024, 5, 5),
-      },
-      {
-        'id': 5,
-        'name': 'Lisa Anderson',
-        'points': 100,
-        'date': DateTime(2024, 4, 28),
-      },
-      {
-        'id': 6,
-        'name': 'Robert Brown',
-        'points': 100,
-        'date': DateTime(2024, 4, 20),
-      },
-      {
-        'id': 7,
-        'name': 'Maria Garcia',
-        'points': 100,
-        'date': DateTime(2024, 4, 15),
-      },
-      {
-        'id': 8,
-        'name': 'David Lee',
-        'points': 100,
-        'date': DateTime(2024, 4, 10),
-      },
-    ];
+  // ============ FETCH REFERRAL DATA FROM API ============
+  Future<void> _fetchReferralData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        setState(() {
+          _userInfo = response.data![0];  // Store locally
+        });
+      }
+    } catch (e) {
+      print("Error loading referral data: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+    }
+  }
+  
+  // ============ PULL TO REFRESH ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchReferralData();
   }
   
   void _copyToClipboard() {
+    if (_referralCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Referral code not available'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
     Clipboard.setData(ClipboardData(text: _referralLink));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -103,6 +112,15 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
   
+  String _getReferralName(AffiliateLog log) {
+    // If cameFrom has a name, use it, otherwise use generic
+    if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
+      return log.cameFrom!;
+    }
+    return 'Referred User';
+  }
+  
+  // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,25 +136,75 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _navigateBack,
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        child: Column(
-          children: [
-            // Stats Cards Row
-            _buildStatsRow(),
-            const SizedBox(height: 24),
-            
-            // Invite History Section
-            _buildHistorySection(),
-          ],
-        ),
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                child: Column(
+                  children: [
+                    // Stats Cards Row
+                    _buildStatsRow(),
+                    const SizedBox(height: 24),
+                    
+                    // Referral Link Section
+                    _buildReferralSection(),
+                    const SizedBox(height: 24),
+                    
+                    // Invite History Section
+                    _buildHistorySection(),
+                  ],
+                ),
+              ),
       ),
     );
   }
-
+  
+  // ============ SHIMMER LOADING STATE ============
+  Widget _buildShimmer() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Column(
+        children: [
+          // Stats Cards Row Shimmer
+          Row(
+            children: [
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
+              const SizedBox(width: 12),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
+              const SizedBox(width: 12),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Referral Link Section Shimmer
+          ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
+          const SizedBox(height: 24),
+          
+          // History Header Shimmer
+          ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
+          const SizedBox(height: 16),
+          
+          // History Items Shimmer
+          Column(
+            children: List.generate(5, (index) => 
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ShimmerHelper().buildBasicShimmer(height: 50, radius: 8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   
   Widget _buildStatsRow() {
     return Row(
@@ -154,7 +222,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         const SizedBox(width: 12),
         _buildStatCard(
           label: AppLocalizations.of(context)!.earnings_ucf,
-          value: '\$${_totalEarnings.toStringAsFixed(2)}',
+          value: FormatHelper.formatPrice(_totalEarnings),
         ),
       ],
     );
@@ -216,6 +284,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   }
   
   Widget _buildReferralSection() {
+    final displayLink = _referralCode.isNotEmpty 
+        ? _referralLink 
+        : 'Referral code not available';
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,7 +313,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Text(
-                    _referralLink,
+                    displayLink,
                     style: const TextStyle(
                       fontSize: 12,
                       fontFamily: 'monospace',
@@ -251,36 +323,37 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: _copyToClipboard,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: MyTheme.accent_color,
-                    borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(11),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.copy,
-                        size: 14,
-                        color: Colors.white,
+              if (_referralCode.isNotEmpty)
+                GestureDetector(
+                  onTap: _copyToClipboard,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: MyTheme.accent_color,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(11),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppLocalizations.of(context)!.copy_ucf,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.copy,
+                          size: 14,
                           color: Colors.white,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          AppLocalizations.of(context)!.copy_ucf,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -289,6 +362,8 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   }
   
   Widget _buildHistorySection() {
+    final history = _inviteHistory;
+    
     return Column(
       children: [
         // Table Header
@@ -347,7 +422,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         ),
         
         // History List
-        if (_inviteHistory.isEmpty)
+        if (history.isEmpty)
           _buildEmptyState()
         else
           Container(
@@ -355,26 +430,29 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             child: ListView.separated(
               shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
-              itemCount: _inviteHistory.length,
+              itemCount: history.length,
               separatorBuilder: (context, index) => Divider(
                 height: 0,
                 color: const Color(0xFFEEF2F8),
               ),
               itemBuilder: (context, index) {
-                final item = _inviteHistory[index];
-                return _buildHistoryItem(item);
+                final item = history[index];
+                return _buildHistoryItem(item, index);
               },
             ),
           ),
         
         // Pagination (if needed)
-        if (_inviteHistory.length > 5)
+        if (history.length > 5)
           _buildPagination(),
       ],
     );
   }
   
-  Widget _buildHistoryItem(Map<String, dynamic> item) {
+  Widget _buildHistoryItem(AffiliateLog item, int index) {
+    final pointsValue = (item.amount ?? 0).abs().toInt();
+    final isEarned = (item.amount ?? 0) > 0;
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
@@ -382,7 +460,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           Expanded(
             flex: 2,
             child: Text(
-              item['name'],
+              _getReferralName(item),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -393,19 +471,19 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           Expanded(
             flex: 1,
             child: Text(
-              '${item['points']}',
+              '${isEarned ? '+' : ''}$pointsValue',
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF0092AC),
+                color: isEarned ? const Color(0xFF0092AC) : const Color(0xFFEF4444),
               ),
             ),
           ),
           Expanded(
             flex: 1,
             child: Text(
-              _formatDate(item['date']),
+              item.createdAt != null ? _formatDate(item.createdAt!) : 'Unknown',
               textAlign: TextAlign.right,
               style: const TextStyle(
                 fontSize: 12,
@@ -451,27 +529,31 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   }
   
   Widget _buildPagination() {
+    final history = _inviteHistory;
+    final totalPages = (history.length / 10).ceil();
+    
     return Container(
       margin: const EdgeInsets.only(top: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        children: List.generate(totalPages > 5 ? 5 : totalPages, (index) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: index == 0 ? MyTheme.accent_color : Colors.white,
               border: Border.all(color: const Color(0xFFEEF2F8)),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              '1',
+            child: Text(
+              '${index + 1}',
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF1A1A2E),
+                color: index == 0 ? Colors.white : const Color(0xFF1A1A2E),
               ),
             ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
@@ -19,6 +20,9 @@ import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+// Import the data model
+import '../data_model/user_info_response.dart';
+
 class PointsPage extends StatefulWidget {
   const PointsPage({Key? key}) : super(key: key);
 
@@ -27,33 +31,24 @@ class PointsPage extends StatefulWidget {
 }
 
 class _PointsPageState extends State<PointsPage> {
-  // User data - using shared_value_helper directly
-  int _userPoints = 0;
-  String _userName = "";
-  String _userEmail = "";
-  String _userAvatar = "";
-  String _userPhone = "";
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _isPurchasing = false;
+  bool _isDrawerOpen = false;
+  
+  UserInformation? _userInfo;  // Store the complete user info response
   
   // Package data - Demo packages for now (API not ready)
   List<Map<String, dynamic>> _packages = [];
   Map<String, dynamic>? _selectedPackage;
   
-  // Purchase history from API
-  List<dynamic> _purchaseHistory = [];
-  
-  // Drawer state
-  bool _isDrawerOpen = false;
-  bool _isLoading = true;
-  bool _isPurchasing = false;
-  
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadFromSharedPreferences();
-      _loadUserData();
+      _fetchUserData();  // Fetch fresh data from API
       _loadDemoPackages();
-      _loadPurchaseHistory();
     } else {
       setState(() {
         _isLoading = false;
@@ -61,38 +56,46 @@ class _PointsPageState extends State<PointsPage> {
     }
   }
   
-  void _loadFromSharedPreferences() {
-    // Load user data from shared_value_helper with null safety
-    setState(() {
-      _userName = user_name.$ ?? "";
-      _userEmail = user_email.$ ?? "";
-      _userPhone = user_phone.$ ?? "";
-      _userAvatar = avatar_original.$ ?? "";
-      _userPoints = int.tryParse(points_balance.$ ?? "0") ?? 0;
-    });
-  }
-  
-  Future<void> _loadUserData() async {
+  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  Future<void> _fetchUserData() async {
     try {
-      var userInfo = await ProfileRepository().getUserInfoResponse();
+      setState(() {
+        _isLoading = true;
+      });
       
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userName = user.name ?? "";
-          _userEmail = user.email ?? "";
-          _userPhone = user.phone ?? "";
-          _userAvatar = user.avatar ?? "";
-          _userPoints = (user.balance ?? 0).toInt();
+          _userInfo = response.data![0];  // Store locally like _productDetails
         });
         
-        // Save all user data to SharedPreferences
-        UserDataHelper.saveUserData(user);
+        // Optional: Update global SharedValues for points balance
+        points_balance.$ = _userInfo?.balance?.toString() ?? "0";
+        points_balance.save();
+        
+        // Save all user data to SharedPreferences for other screens
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
+        }
       }
     } catch (e) {
       print("Error loading user data: $e");
+      ToastComponent.showDialog('Failed to load user data');
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
     }
+  }
+  
+  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchUserData();
   }
   
   void _loadDemoPackages() {
@@ -139,34 +142,6 @@ class _PointsPageState extends State<PointsPage> {
     });
   }
   
-  Future<void> _loadPurchaseHistory() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      var userInfo = await ProfileRepository().getUserInfoResponse();
-      
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        final payments = user.customerPackagePayments ?? [];
-        
-        setState(() {
-          _purchaseHistory = payments;
-        });
-      }
-    } catch (e) {
-      print("Error loading purchase history: $e");
-      setState(() {
-        _purchaseHistory = [];
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-  
   Future<void> _submitPurchase() async {
     if (_selectedPackage == null) {
       ToastComponent.showDialog('Please select a package first');
@@ -190,9 +165,8 @@ class _PointsPageState extends State<PointsPage> {
       // Show success dialog
       _showPurchaseSuccessDialog();
       
-      // Refresh user data and purchase history
-      await _loadUserData();
-      await _loadPurchaseHistory();
+      // Refresh user data
+      await _fetchUserData();
       
     } catch (e) {
       print("Error purchasing package: $e");
@@ -304,6 +278,32 @@ class _PointsPageState extends State<PointsPage> {
     return FormatHelper.formatPrice(price);
   }
   
+  // Helper to get purchase history from stored user info
+  List<CustomerPackagePayment> get _purchaseHistory {
+    return _userInfo?.customerPackagePayments ?? [];
+  }
+  
+  // Helper to get user points
+  int get _userPoints {
+    return (_userInfo?.balance ?? 0).toInt();
+  }
+  
+  // Helper to get user name
+  String get _userName {
+    return _userInfo?.name ?? "";
+  }
+  
+  // Helper to get user email
+  String get _userEmail {
+    return _userInfo?.email ?? "";
+  }
+  
+  // Helper to get user avatar
+  String get _userAvatar {
+    return _userInfo?.avatar ?? "";
+  }
+  
+  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -322,82 +322,120 @@ class _PointsPageState extends State<PointsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                // Main Content
-                SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      // User Points Card
-                      _buildUserPointsCard(),
-                      const SizedBox(height: 24),
-                      // Purchase History
-                      _buildPurchaseHistory(),
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
-                // Bottom Drawer Overlay
-                if (_isDrawerOpen)
-                  GestureDetector(
-                    onTap: _closeBuyPointsDrawer,
-                    child: Container(
-                      color: Colors.black.withOpacity(0.5),
-                      child: GestureDetector(
-                        onTap: () {},
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            height: MediaQuery.of(context).size.height * 0.75,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(7),
-                                topRight: Radius.circular(7),
-                              ),
-                            ),
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()  // Show shimmer while loading
+            : _buildBody(),
+      ),
+    );
+  }
+  
+  // ============ SHIMMER LOADING STATE ============
+  Widget _buildShimmer() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // User Points Card shimmer
+          ShimmerHelper().buildBasicShimmer(height: 180, radius: 24),
+          const SizedBox(height: 24),
+          // Purchase History header shimmer
+          ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
+          const SizedBox(height: 16),
+          // Purchase history items shimmer
+          Column(
+            children: List.generate(2, (index) => 
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ShimmerHelper().buildBasicShimmer(height: 80, radius: 16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+  
+  // ============ MAIN BODY ============
+  Widget _buildBody() {
+    return Stack(
+      children: [
+        // Main Content
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              // User Points Card
+              _buildUserPointsCard(),
+              const SizedBox(height: 24),
+              // Purchase History
+              _buildPurchaseHistory(),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+        // Bottom Drawer Overlay
+        if (_isDrawerOpen)
+          GestureDetector(
+            onTap: _closeBuyPointsDrawer,
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+              child: GestureDetector(
+                onTap: () {},
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    height: MediaQuery.of(context).size.height * 0.75,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(7),
+                        topRight: Radius.circular(7),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Drawer Handle
+                        Container(
+                          margin: const EdgeInsets.only(top: 12),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Drawer Header
+                        _buildDrawerHeader(),
+                        // Drawer Body
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
                             child: Column(
                               children: [
-                                // Drawer Handle
-                                Container(
-                                  margin: const EdgeInsets.only(top: 12),
-                                  width: 40,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE2E8F0),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                // Drawer Header
-                                _buildDrawerHeader(),
-                                // Drawer Body
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Column(
-                                      children: [
-                                        // Package Cards
-                                        _buildPackageSlider(),
-                                        const SizedBox(height: 28),
-                                        // Buy Button
-                                        _buildBuyButton(),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                // Package Cards
+                                _buildPackageSlider(),
+                                const SizedBox(height: 28),
+                                // Buy Button
+                                _buildBuyButton(),
                               ],
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-              ],
+                ),
+              ),
             ),
+          ),
+      ],
     );
   }
   
@@ -543,11 +581,13 @@ class _PointsPageState extends State<PointsPage> {
   }
   
   Widget _buildPurchaseHistory() {
+    final history = _purchaseHistory;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Purchase History',
+          'Purchase History (${history.length})',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -555,23 +595,23 @@ class _PointsPageState extends State<PointsPage> {
           ),
         ),
         const SizedBox(height: 16),
-        if (_purchaseHistory.isEmpty)
+        if (history.isEmpty)
           _buildEmptyState()
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _purchaseHistory.length,
+            itemCount: history.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return _buildHistoryItem(_purchaseHistory[index]);
+              return _buildHistoryItem(history[index]);
             },
           ),
       ],
     );
   }
   
-  Widget _buildHistoryItem(dynamic item) {
+  Widget _buildHistoryItem(CustomerPackagePayment item) {
     final amount = item.amount ?? 0.0;
     
     return Container(

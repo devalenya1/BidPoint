@@ -5,6 +5,7 @@ import 'package:active_ecommerce_flutter/custom/lang_text.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
@@ -18,6 +19,9 @@ import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 
+// Import the data model
+import '../data_model/user_info_response.dart';
+
 class PointsHistoryPage extends StatefulWidget {
   const PointsHistoryPage({Key? key}) : super(key: key);
 
@@ -26,91 +30,90 @@ class PointsHistoryPage extends StatefulWidget {
 }
  
 class _PointsHistoryPageState extends State<PointsHistoryPage> {
-  // User data
-  String _userName = "";
-  String _userEmail = "";
-  String _userPhone = "";
-  String _userAvatar = "";
-  int _pointsBalance = 0;
-  double _userCash = 0.0;
+  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  bool _isLoading = true;
+  bool _isRefreshing = false;
   String _selectedFilter = 'All';
-  
-  // Points logs data from API
-  List<dynamic> _allPointsLogs = [];
-  List<dynamic> _filteredPointsLogs = [];
-  Map<String, int> _monthlyPoints = {};
-  List<String> _months = [];
   int _selectedMonthIndex = 0;
   
-  bool _isLoading = true;
+  UserInformation? _userInfo;  // Store the complete user info response
+  
+  // Derived data (processed from _userInfo)
+  List<AffiliateLog> _allPointsLogs = [];
+  List<AffiliateLog> _filteredPointsLogs = [];
+  Map<String, int> _monthlyPoints = {};
+  List<String> _months = [];
   
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _loadData();
+      _fetchUserData();  // Fetch fresh data from API
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
   
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    await _loadUserData();
-    await _loadPointsHistory();
-    
-    setState(() {
-      _isLoading = false;
-    });
-  }
-  
-  Future<void> _loadUserData() async {
+  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  Future<void> _fetchUserData() async {
     try {
-      var userInfo = await ProfileRepository().getUserInfoResponse();
+      setState(() {
+        _isLoading = true;
+      });
       
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userName = user.name ?? "";
-          _userEmail = user.email ?? "";
-          _userPhone = user.phone ?? "";
-          _userAvatar = user.avatar ?? "";
-          _pointsBalance = (user.balance ?? 0).toInt();
-          _userCash = user.affiliateBalance ?? 0.0;
+          _userInfo = response.data![0];  // Store locally like _productDetails
         });
         
-        // Save all user data to SharedPreferences
-        UserDataHelper.saveUserData(user);
+        // Process points history from the stored user info
+        _processPointsHistory();
+        
+        // Optional: Update global SharedValues for points balance
+        points_balance.$ = _userInfo?.balance?.toString() ?? "0";
+        points_balance.save();
+        
+        // Save all user data to SharedPreferences for other screens
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
+        }
+      } else {
+        // Handle empty response
+        setState(() {
+          _allPointsLogs = [];
+          _filteredPointsLogs = [];
+          _monthlyPoints = {};
+          _months = [];
+        });
       }
     } catch (e) {
       print("Error loading user data: $e");
+      ToastComponent.showDialog('Failed to load points history');
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
     }
   }
+  
+  // ============ PROCESS POINTS HISTORY (Extract from stored user info) ============
+  void _processPointsHistory() {
+    if (_userInfo == null) return;
     
-  Future<void> _loadPointsHistory() async {
-    try {
-      // Use affiliate_logs from user info response since it contains points transactions
-      var userInfo = await ProfileRepository().getUserInfoResponse();
-      
-      if (userInfo.success == true && userInfo.data != null && userInfo.data!.isNotEmpty) {
-        final user = userInfo.data![0];
-        final affiliateLogs = user.affiliateLogs ?? [];
-        
-        // Filter for point transactions only
-        _allPointsLogs = affiliateLogs.where((log) {
-          return log.bonusType == 'point';
-        }).toList();
-        
-        _applyFilter();
-        _calculateMonthlyPoints();
-      }
-    } catch (e) {
-      print("Error loading points history: $e");
-      _allPointsLogs = [];
-      _filteredPointsLogs = [];
-    }
+    final affiliateLogs = _userInfo!.affiliateLogs ?? [];
+    
+    // Filter for point transactions only
+    _allPointsLogs = affiliateLogs.where((log) {
+      return log.bonusType == 'point';
+    }).toList();
+    
+    _applyFilter();
+    _calculateMonthlyPoints();
   }
   
   void _applyFilter() {
@@ -176,12 +179,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       final isEarned = (log.amount ?? 0) > 0;
       final pointsToAdd = isEarned ? pointsValue : -pointsValue;
       
-      // Get current value or default to 0
-      int currentValue = monthlyTemp[monthKey] ?? 0;
-      // Calculate new value
-      int newValue = currentValue + pointsToAdd;
-      // Assign back to map
-      monthlyTemp[monthKey] = newValue;
+      monthlyTemp[monthKey] = (monthlyTemp[monthKey] ?? 0) + pointsToAdd;
     }
     
     _monthlyPoints = monthlyTemp;
@@ -196,6 +194,22 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       _selectedMonthIndex = 0;
     }
   }
+  
+  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  Future<void> _onPageRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _fetchUserData();
+  }
+  
+  // Helper getters for user data (derived from _userInfo)
+  String get _userName => _userInfo?.name ?? "";
+  String get _userEmail => _userInfo?.email ?? "";
+  String get _userPhone => _userInfo?.phone ?? "";
+  String get _userAvatar => _userInfo?.avatar ?? "";
+  int get _pointsBalance => (_userInfo?.balance ?? 0).toInt();
+  double get _userCash => _userInfo?.affiliateBalance ?? 0.0;
   
   DateTime _parseMonthYear(String monthYear) {
     const months = {
@@ -226,13 +240,18 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     return months[month - 1];
   }
   
-  String _getUserDisplay(dynamic log) {
-    if (log.cameFrom != null && log.cameFrom.toString().isNotEmpty) {
-      return log.cameFrom;
+  String _getUserDisplay(AffiliateLog log) {
+    if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
+      return log.cameFrom!;
     }
     return _userName;
   }
   
+  String _formatTime(DateTime date) {
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+  
+  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -251,20 +270,81 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProfileCard(),
-                  _buildFilterTabs(),
-                  _buildPointsHistorySection(),
-                  if (_months.isNotEmpty) _buildMonthlySection(),
-                ],
+      body: RefreshIndicator(
+        color: MyTheme.accent_color,
+        backgroundColor: Colors.white,
+        onRefresh: _onPageRefresh,
+        child: _isLoading
+            ? _buildShimmer()  // Show shimmer while loading
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildProfileCard(),
+                    _buildFilterTabs(),
+                    _buildPointsHistorySection(),
+                    if (_months.isNotEmpty) _buildMonthlySection(),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+  
+  // ============ SHIMMER LOADING STATE ============
+  Widget _buildShimmer() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profile card shimmer
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ShimmerHelper().buildBasicShimmer(height: 87, radius: 20),
+          ),
+          // Filter tabs shimmer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(4, (index) => 
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 60,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: MyTheme.shimmer_base,
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                  ),
+                ),
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+          // Points History header shimmer
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Points History'),
+          ),
+          const SizedBox(height: 12),
+          // History cards shimmer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: List.generate(3, (index) => 
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ShimmerHelper().buildBasicShimmer(height: 100, radius: 14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
   
@@ -317,7 +397,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _userName,
+                  _userName.isNotEmpty ? _userName : 'User',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -380,7 +460,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Text(
-                  filter,
+                  filter == '7' ? '7 days' : (filter == '30' ? '30 days' : filter),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -422,7 +502,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     );
   }
   
-  Widget _buildHistoryCard(dynamic log) {
+  Widget _buildHistoryCard(AffiliateLog log) {
     final date = log.createdAt;
     final pointsValue = (log.amount ?? 0).abs().toInt();
     // If amount is negative, it's spent (deducted), if positive it's earned
@@ -457,10 +537,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         ],
       ),
     );
-  }
-  
-  String _formatTime(DateTime date) {
-    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
   
   Widget _buildHistoryRow(String label, String value, {
