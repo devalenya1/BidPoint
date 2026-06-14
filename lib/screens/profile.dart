@@ -426,9 +426,9 @@ Future<void> _debugShowApiResponse() async {
                             ),
                             if (token.isNotEmpty) ...[
                               const SizedBox(height: 4),
-                              Text(
+                              const Text(
                                 "Full Token:",
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                               SelectableText(
                                 token,
@@ -468,10 +468,9 @@ Future<void> _debugShowApiResponse() async {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Authorization: Bearer ${token.isNotEmpty ? token.substring(0, token.length > 30 ? 30 : token.length) + "..." : "None"}"),
+                            Text("Authorization: Bearer ${token.isNotEmpty ? (token.length > 30 ? token.substring(0, 30) + "..." : token) : "None"}"),
                             Text("App-Language: $appLanguage"),
                           ],
-                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                         ),
                       ),
                     ],
