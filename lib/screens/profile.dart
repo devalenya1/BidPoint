@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
@@ -228,7 +229,6 @@ class _ProfileState extends State<Profile> {
   }
 
 
-// Then replace the _debugShowApiResponse method with this:
 Future<void> _debugShowApiResponse() async {
   try {
     // Show loading indicator
@@ -238,129 +238,138 @@ Future<void> _debugShowApiResponse() async {
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
     
-    var response = await ProfileRepository().getUserInfoResponse();
+    String url = "${AppConfig.BASE_URL}/customer/info";
+    
+    // Make the API call directly to capture everything
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "Authorization": "Bearer ${access_token.$}", 
+        "App-Language": app_language.$!
+      },
+    );
     
     // Close loading dialog
     Navigator.pop(context);
     
-    // Format the response as JSON
-    String jsonString;
-    if (response.data != null && response.data!.isNotEmpty) {
-      final user = response.data![0];
-      final summary = {
-        "success": response.success,
-        "status": response.status,
-        "data": {
-          "id": user.id,
-          "name": user.name,
-          "email": user.email,
-          "avatar": user.avatar,
-          "balance": user.balance,
-          "affiliateBalance": user.affiliateBalance,
-          "affiliateId": user.affiliateId,
-          "referralCode": user.referralCode,
-          "notifications_count": user.notifications?.length ?? 0,
-          "unread_notifications_count": user.unreadNotificationsCount,
-          "wishlist_count": user.wishlistCount ?? 0,
-          "auction_bids_count": user.auctionBidsCount ?? 0,
-          "affiliate_logs_count": user.affiliateLogs?.length ?? 0,
-          "withdraw_requests_count": user.affiliateWithdrawRequests?.length ?? 0,
-          "addresses_count": user.addressCount ?? 0,
-        },
-      };
-      jsonString = const JsonEncoder.withIndent('  ').convert(summary);
-    } else {
-      jsonString = const JsonEncoder.withIndent('  ').convert({
-        "success": response.success,
-        "status": response.status,
-        "data": "No data received or empty response",
-      });
-    }
-    
-    // Show dialog with response
+    // Show detailed debug dialog with status and raw response
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
             Icon(
-              response.success == true ? Icons.check_circle : Icons.error,
-              color: response.success == true ? Colors.green : Colors.red,
+              response.statusCode == 200 ? Icons.check_circle : Icons.error,
+              color: response.statusCode == 200 ? Colors.green : Colors.red,
             ),
             const SizedBox(width: 10),
-            const Text('API Response Debug'),
+            const Text('API Debug Info'),
           ],
         ),
         content: Container(
           width: double.maxFinite,
           constraints: const BoxConstraints(maxHeight: 500),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: response.success == true ? Colors.green[50] : Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      response.success == true ? Icons.check_circle : Icons.error,
-                      size: 16,
-                      color: response.success == true ? Colors.green : Colors.red,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      response.success == true 
-                          ? "Success: Data loaded correctly" 
-                          : "Error: Failed to load data",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: response.success == true ? Colors.green[700] : Colors.red[700],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status Code
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: response.statusCode == 200 ? Colors.green[50] : Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Status Code: ${response.statusCode}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        response.statusCode == 200 
+                            ? "✅ Success - API responded correctly"
+                            : response.statusCode == 401 
+                                ? "🔐 Unauthorized - Token may be expired. Try logging out and back in."
+                                : response.statusCode == 404
+                                    ? "📍 Not Found - Wrong API endpoint. Check BASE_URL."
+                                    : "⚠️ Error - Something went wrong",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "API Response Summary:",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 12),
+                
+                // Token Info
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Authentication Info:",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Logged in: ${is_logged_in.$}",
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        "Token exists: ${access_token.$ != null && access_token.$!.isNotEmpty}",
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      if (access_token.$ != null && access_token.$!.isNotEmpty)
+                        Text(
+                          "Token preview: ${access_token.$!.substring(0, access_token.$!.length > 20 ? 20 : access_token.$!.length)}...",
+                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildDebugRow("Success", "${response.success}"),
-                    _buildDebugRow("Status Code", "${response.status}"),
-                    _buildDebugRow("User Name", _userInfo?.name ?? "Not loaded"),
-                    _buildDebugRow("User Email", _userInfo?.email ?? "Not loaded"),
-                    _buildDebugRow("Points Balance", "${_userInfo?.balance ?? 0}"),
-                    _buildDebugRow("Affiliate Balance", "${_userInfo?.affiliateBalance ?? 0}"),
-                    _buildDivider(),
-                    _buildDebugRow("Notifications Count", "${_userInfo?.notifications?.length ?? 0}"),
-                    _buildDebugRow("Wishlist Count", "${_userInfo?.wishlistCount ?? 0}"),
-                    _buildDebugRow("Auction Bids", "${_userInfo?.auctionBidsCount ?? 0}"),
-                    _buildDebugRow("Affiliate Logs", "${_userInfo?.affiliateLogs?.length ?? 0}"),
-                    _buildDebugRow("Withdraw Requests", "${_userInfo?.affiliateWithdrawRequests?.length ?? 0}"),
-                  ],
+                const SizedBox(height: 12),
+                
+                // URL Info
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "API Endpoint:",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        url,
+                        style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "Raw JSON Response:",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Container(
+                const SizedBox(height: 12),
+                
+                // Raw Response
+                const Text(
+                  "Raw Response Body:",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.grey[900],
@@ -368,7 +377,7 @@ Future<void> _debugShowApiResponse() async {
                   ),
                   child: SingleChildScrollView(
                     child: SelectableText(
-                      jsonString,
+                      response.body.isNotEmpty ? response.body : "(Empty response body)",
                       style: const TextStyle(
                         fontSize: 10,
                         fontFamily: 'monospace',
@@ -377,14 +386,14 @@ Future<void> _debugShowApiResponse() async {
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [
           TextButton.icon(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: jsonString));
+              Clipboard.setData(ClipboardData(text: response.body));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Response copied to clipboard'),
@@ -393,7 +402,7 @@ Future<void> _debugShowApiResponse() async {
               );
             },
             icon: const Icon(Icons.copy, size: 16),
-            label: const Text('Copy'),
+            label: const Text('Copy Response'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -402,6 +411,7 @@ Future<void> _debugShowApiResponse() async {
         ],
       ),
     );
+    
   } catch (e, stackTrace) {
     // Close loading dialog if open
     Navigator.pop(context);
@@ -414,7 +424,7 @@ Future<void> _debugShowApiResponse() async {
           children: [
             Icon(Icons.error, color: Colors.red),
             SizedBox(width: 10),
-            Text('API Error'),
+            Text('Network/Parse Error'),
           ],
         ),
         content: Container(

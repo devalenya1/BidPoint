@@ -21,7 +21,6 @@ import 'package:active_ecommerce_flutter/data_model/state_response.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
 class AddressRepository {
   Future<dynamic> getAddressList() async {

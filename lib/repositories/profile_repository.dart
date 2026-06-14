@@ -1,4 +1,6 @@
 import 'package:active_ecommerce_flutter/app_config.dart';
+import 'package:http/http.dart' as http;
+import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/data_model/check_response_model.dart';
 import 'package:active_ecommerce_flutter/data_model/profile_image_update_response.dart';
 import 'package:active_ecommerce_flutter/data_model/user_info_response.dart';
@@ -9,6 +11,7 @@ import 'package:active_ecommerce_flutter/data_model/device_token_update_response
 import 'package:active_ecommerce_flutter/data_model/phone_email_availability_response.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
+import 'package:active_ecommerce_flutter/middlewares/banned_user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
 import 'package:flutter/material.dart'; 
@@ -79,6 +82,7 @@ class ProfileRepository {
     final response = await ApiRequest.post(
       url:url,
       headers: {
+        "Content-Type": "application/json", 
         "Authorization": "Bearer ${access_token.$}",
         "App-Language": app_language.$!,
       },
@@ -107,7 +111,10 @@ class ProfileRepository {
     try {
       final response = await ApiRequest.get(
         url: url,
-        headers: {"Authorization": "Bearer ${access_token.$}", "App-Language": app_language.$!},
+        headers: {
+          "Authorization": "Bearer ${access_token.$}", 
+          "App-Language": app_language.$!
+        },
       );
       
       // Show debug popup with response
