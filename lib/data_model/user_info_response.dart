@@ -20,13 +20,18 @@ class UserInfoResponse {
   int? status;
 
   factory UserInfoResponse.fromJson(Map<String, dynamic> json) => UserInfoResponse(
-    data: List<UserInformation>.from(json["data"].map((x) => UserInformation.fromJson(x))),
+    // Handle both list and single object responses
+    data: json["data"] != null 
+        ? (json["data"] is List 
+            ? List<UserInformation>.from(json["data"].map((x) => UserInformation.fromJson(x)))
+            : [UserInformation.fromJson(json["data"])])
+        : [],
     success: json["success"],
     status: json["status"],
   );
 
   Map<String, dynamic> toJson() => {
-    "data": List<dynamic>.from(data!.map((x) => x.toJson())),
+    "data": data != null ? List<dynamic>.from(data!.map((x) => x.toJson())) : [],
     "success": success,
     "status": status,
   };
@@ -135,40 +140,58 @@ class UserInformation {
     remainingUploads: json["remaining_uploads"],
     packageId: json["package_id"],
     packageName: json["package_name"],
+    
+    // Notifications
     notifications: json["notifications"] != null 
         ? List<Notification>.from(json["notifications"].map((x) => Notification.fromJson(x)))
         : [],
     unreadNotificationsCount: json["unread_notifications_count"],
+    
+    // Affiliate Logs
     affiliateLogs: json["affiliate_logs"] != null
         ? List<AffiliateLog>.from(json["affiliate_logs"].map((x) => AffiliateLog.fromJson(x)))
         : [],
     totalAffiliateEarnings: json["total_affiliate_earnings"]?.toDouble(),
+    
+    // Affiliate Withdraw Requests
     affiliateWithdrawRequests: json["affiliate_withdraw_requests"] != null
         ? List<AffiliateWithdrawRequest>.from(json["affiliate_withdraw_requests"].map((x) => AffiliateWithdrawRequest.fromJson(x)))
         : [],
     totalWithdrawnAmount: json["total_withdrawn_amount"]?.toDouble(),
     pendingWithdrawAmount: json["pending_withdraw_amount"]?.toDouble(),
+    
+    // Addresses
     addresses: json["addresses"] != null
         ? List<Address>.from(json["addresses"].map((x) => Address.fromJson(x)))
         : [],
     addressCount: json["address_count"],
     defaultAddressCount: json["default_address_count"],
+    
+    // Customer Package Payments
     customerPackagePayments: json["customer_package_payments"] != null
         ? List<CustomerPackagePayment>.from(json["customer_package_payments"].map((x) => CustomerPackagePayment.fromJson(x)))
         : [],
     totalPackagePayments: json["total_package_payments"]?.toDouble(),
+    
+    // Wishlist
     wishlist: json["wishlist"] != null
         ? List<WishlistItem>.from(json["wishlist"].map((x) => WishlistItem.fromJson(x)))
         : [],
     wishlistCount: json["wishlist_count"],
+    
+    // Auction Bids
     auctionBids: json["auction_bids"] != null
         ? List<AuctionBid>.from(json["auction_bids"].map((x) => AuctionBid.fromJson(x)))
         : [],
     auctionBidsCount: json["auction_bids_count"],
+    
+    // Distinct Auction Bids
     distinctAuctionBids: json["distinct_auction_bids"] != null
         ? List<DistinctAuctionBid>.from(json["distinct_auction_bids"].map((x) => DistinctAuctionBid.fromJson(x)))
         : [],
     distinctAuctionBidsCount: json["distinct_auction_bids_count"],
+    
+    // Affiliate Info
     affiliateId: json["affiliate_id"]?.toString(),
     paypalEmail: json["paypal_email"],
     bankName: json["bank_name"],
