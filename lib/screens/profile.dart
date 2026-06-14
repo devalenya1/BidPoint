@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
@@ -239,20 +240,28 @@ Future<void> _debugShowApiResponse() async {
     );
     
     String url = "${AppConfig.BASE_URL}/customer/info";
+    String token = access_token.$ ?? "";
+    String appLanguage = app_language.$!;
+    
+    // Record start time to measure response time
+    final startTime = DateTime.now();
     
     // Make the API call directly to capture everything
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        "Authorization": "Bearer ${access_token.$}", 
-        "App-Language": app_language.$!
+        "Authorization": "Bearer $token", 
+        "App-Language": appLanguage
       },
     );
+    
+    // Calculate response time
+    final responseTime = DateTime.now().difference(startTime).inMilliseconds;
     
     // Close loading dialog
     Navigator.pop(context);
     
-    // Show detailed debug dialog with status and raw response
+    // Show detailed debug dialog with everything
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -268,12 +277,35 @@ Future<void> _debugShowApiResponse() async {
         ),
         content: Container(
           width: double.maxFinite,
-          constraints: const BoxConstraints(maxHeight: 500),
+          constraints: const BoxConstraints(maxHeight: 550),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Code
+                // ========== CONNECTION STATUS ==========
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.wifi, size: 16, color: Colors.green[700]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "✅ REACHED SERVER - Response received in ${responseTime}ms",
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[700]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // ========== STATUS CODE ==========
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -283,12 +315,23 @@ Future<void> _debugShowApiResponse() async {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Status Code: ${response.statusCode}",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            response.statusCode == 200 ? Icons.check_circle : Icons.error,
+                            size: 16,
+                            color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Status Code: ${response.statusCode}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -298,92 +341,183 @@ Future<void> _debugShowApiResponse() async {
                                 ? "🔐 Unauthorized - Token may be expired. Try logging out and back in."
                                 : response.statusCode == 404
                                     ? "📍 Not Found - Wrong API endpoint. Check BASE_URL."
-                                    : "⚠️ Error - Something went wrong",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                                    : response.statusCode == 500
+                                        ? "⚠️ Server Error - Issue on server side"
+                                        : "⚠️ Error - Something went wrong",
+                        style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
                 
-                // Token Info
+                // ========== FULL ENDPOINT LINK ==========
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Authentication Info:",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      const Row(
+                        children: [
+                          Icon(Icons.link, size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            "Full Endpoint URL:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Logged in: ${is_logged_in.$}",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      Text(
-                        "Token exists: ${access_token.$ != null && access_token.$!.isNotEmpty}",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      if (access_token.$ != null && access_token.$!.isNotEmpty)
-                        Text(
-                          "Token preview: ${access_token.$!.substring(0, access_token.$!.length > 20 ? 20 : access_token.$!.length)}...",
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: SelectableText(
+                          url,
                           style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                         ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
                 
-                // URL Info
+                // ========== ACCESS TOKEN USED ==========
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.purple[50],
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.purple[200]!),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "API Endpoint:",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      const Row(
+                        children: [
+                          Icon(Icons.key, size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            "Access Token Used:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        url,
-                        style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Token exists: ${token.isNotEmpty ? "✅ Yes" : "❌ No"}",
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            if (token.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                "Full Token:",
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                              SelectableText(
+                                token,
+                                style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
                 
-                // Raw Response
-                const Text(
-                  "Raw Response Body:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
+                // ========== REQUEST HEADERS ==========
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Request Headers Sent:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Authorization: Bearer ${token.isNotEmpty ? token.substring(0, token.length > 30 ? 30 : token.length) + "..." : "None"}"),
+                            Text("App-Language: $appLanguage"),
+                          ],
+                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // ========== RAW SERVER RESPONSE ==========
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      response.body.isNotEmpty ? response.body : "(Empty response body)",
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontFamily: 'monospace',
-                        color: Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.code, size: 14, color: Colors.white),
+                          SizedBox(width: 6),
+                          Text(
+                            "Raw Server Response:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: SingleChildScrollView(
+                          child: SelectableText(
+                            response.body.isNotEmpty ? response.body : "(Empty response body)",
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'monospace',
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -393,16 +527,25 @@ Future<void> _debugShowApiResponse() async {
         actions: [
           TextButton.icon(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: response.body));
+              final debugInfo = """
+=== API DEBUG INFO ===
+Endpoint: $url
+Status Code: ${response.statusCode}
+Response Time: ${responseTime}ms
+Token Used: $token
+Headers: Authorization: Bearer $token, App-Language: $appLanguage
+Raw Response: ${response.body}
+""";
+              Clipboard.setData(ClipboardData(text: debugInfo));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Response copied to clipboard'),
+                  content: Text('Debug info copied to clipboard'),
                   duration: Duration(seconds: 1),
                 ),
               );
             },
             icon: const Icon(Icons.copy, size: 16),
-            label: const Text('Copy Response'),
+            label: const Text('Copy All'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -429,10 +572,55 @@ Future<void> _debugShowApiResponse() async {
         ),
         content: Container(
           width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 400),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Show that server was NOT reached
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wifi_off, size: 16, color: Colors.red),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "❌ FAILED TO REACH SERVER - Check your internet connection",
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Show endpoint that was attempted
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Attempted Endpoint:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      "${AppConfig.BASE_URL}/customer/info",
+                      style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Show error details
               Text(
                 "Error: ${e.toString()}",
                 style: const TextStyle(fontSize: 12),
