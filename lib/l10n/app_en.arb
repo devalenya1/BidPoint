@@ -422,6 +422,9 @@
   "custom_range_ucf": "Custom Range",
   "sort_by_ucf": "Sort By",
   "unknown": "Unknown",
+  "upcoming_auctions_ucf": "Upcoming Auctions",
+  "notify_me_ucf": "Notify Me",
+
 
 
   "@min_withdrawal_amount": {

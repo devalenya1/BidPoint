@@ -13,6 +13,9 @@ import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/ui_elements/mini_product_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
+import 'package:active_ecommerce_flutter/ui_elements/hot_auction_section.dart';
+import 'package:active_ecommerce_flutter/ui_elements/ending_soon_section.dart';
+import 'package:active_ecommerce_flutter/ui_elements/upcoming_section.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -45,35 +48,24 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> with TickerProviderStateMixin {
   HomePresenter homeData = HomePresenter();
   
-  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  // ============ LOCAL STATE ============
   bool _isLoadingCounts = true;
   bool _isRefreshingCounts = false;
-  UserInformation? _userInfo;  // Store user info for counts
+  UserInformation? _userInfo;
   
-  // Display counts (derived from _userInfo or fallback)
+  // Display counts
   int get _unreadNotificationCount {
-    // Not logged in → 0
     if (is_logged_in.$ != true) return 0;
-    
-    // Logged in but no user info yet → 1 (shimmer/placeholder)
     if (_userInfo == null) return 1;
-    
-    // Logged in with user info → actual count from API
     return _userInfo!.unreadNotificationsCount ?? 0;
   }
   
   int get _unreadMessageCount {
-    // Not logged in → 0
     if (is_logged_in.$ != true) return 0;
-    
-    // Logged in but no user info yet → 1 (shimmer/placeholder)
     if (_userInfo == null) return 1;
-    
-    // Logged in with user info → actual message count from API
     return _userInfo!.unreadMessagesCount ?? 0;
   }
   
-  // Whether to show count badge
   bool get _showNotificationBadge => is_logged_in.$ && _unreadNotificationCount > 0;
   bool get _showMessageBadge => is_logged_in.$ && _unreadMessageCount > 0;
   
@@ -81,60 +73,42 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _fetchCounts();
+    
+    // Initialize scroll controllers in homeData
+    homeData.initScrollControllers();
+    
     Future.delayed(Duration.zero).then((value) {
       change();
     });
   }
   
-  // ============ FETCH COUNTS FROM API ============
   Future<void> _fetchCounts() async {
-    // If not logged in, don't fetch
     if (is_logged_in.$ != true) {
-      setState(() {
-        _isLoadingCounts = false;
-      });
+      setState(() => _isLoadingCounts = false);
       return;
     }
     
     try {
-      setState(() {
-        _isLoadingCounts = true;
-      });
+      setState(() => _isLoadingCounts = true);
       
       var response = await ProfileRepository().getUserInfoResponse();
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
-        setState(() {
-          _userInfo = response.data![0];  // Store locally
-        });
-        
-        // Update SharedValue for quick access elsewhere
+        setState(() => _userInfo = response.data![0]);
         unread_notifications_count.$ = _userInfo!.unreadNotificationsCount ?? 0;
         unread_notifications_count.save();
-        
-        // Also store message count if needed elsewhere
-        // unread_messages_count.$ = _userInfo!.unreadMessagesCount ?? 0;
-        // unread_messages_count.save();
       }
     } catch (e) {
       print("Error loading notification counts: $e");
-      // On error, user info remains null, so getters will return 1 as fallback
     } finally {
-      setState(() {
-        _isLoadingCounts = false;
-      });
+      setState(() => _isLoadingCounts = false);
     }
   }
   
-  // ============ PULL TO REFRESH COUNTS ============
   Future<void> _refreshCounts() async {
-    setState(() {
-      _isRefreshingCounts = true;
-    });
+    setState(() => _isRefreshingCounts = true);
     await _fetchCounts();
-    setState(() {
-      _isRefreshingCounts = false;
-    });
+    setState(() => _isRefreshingCounts = false);
   }
 
   change() {
@@ -150,31 +124,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   void _redirectToLogin() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const Login(),
-      ),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Login()));
   }
 
   @override
   Widget build(BuildContext context) {
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
-
     return WillPopScope(
-      onWillPop: () async {
-        print("Will scope home");
-        return widget.go_back;
-      },
+      onWillPop: () async => widget.go_back,
       child: Directionality(
-        textDirection:
-            app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
+        textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
         child: SafeArea(
           child: Scaffold(
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(50),
-              child: buildAppBar(statusBarHeight, context),
+              child: buildAppBar(),
             ),
             body: ListenableBuilder(
               listenable: homeData,
@@ -194,12 +157,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         physics: const BouncingScrollPhysics(
                             parent: AlwaysScrollableScrollPhysics()),
                         slivers: <Widget>[
+                          // Carousel Slider
                           SliverList(
                             delegate: SliverChildListDelegate([
-                              buildHomeCarouselSlider(context, homeData),
+                              buildHomeCarouselSlider(),
                               const SizedBox(height: 8),
                             ]),
                           ),
+                          
+                          // Featured Categories
                           SliverList(
                             delegate: SliverChildListDelegate([
                               Padding(
@@ -208,11 +174,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      AppLocalizations.of(context)!
-                                          .featured_categories_ucf,
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700),
+                                      AppLocalizations.of(context)!.featured_categories_ucf,
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                                     ),
                                   ],
                                 ),
@@ -222,10 +185,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           SliverToBoxAdapter(
                             child: SizedBox(
                               height: 50,
-                              child: buildHomeFeaturedCategories(
-                                  context, homeData),
+                              child: buildHomeFeaturedCategories(),
                             ),
                           ),
+                          
+                          // Hot Auctions Section
+                          if (!homeData.isHotAuctionInitial && homeData.hotAuctionProductList.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: HotAuctionSection(
+                                products: homeData.hotAuctionProductList,
+                                title: AppLocalizations.of(context)!.hot_auctions_ucf,
+                                viewAllRoute: '/hot-auctions',
+                              ),
+                            ),
+                          
+                          // All Products Section
                           SliverList(
                             delegate: SliverChildListDelegate([
                               Padding(
@@ -234,67 +208,45 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      AppLocalizations.of(context)!
-                                          .all_products_ucf,
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700),
+                                      AppLocalizations.of(context)!.all_products_ucf,
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                                     ),
                                   ],
                                 ),
                               ),
-                              buildHomeAllProducts2(context, homeData),
+                              buildHomeAllProducts2(),
                               const SizedBox(height: 16),
                             ]),
                           ),
-                          SliverList(
-                            delegate: SliverChildListDelegate([
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(18.0, 8.0, 20.0, 8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!
-                                          .ending_soon_ucf,
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                  ],
-                                ),
+                          
+                          // Ending Soon Section
+                          if (!homeData.isEndingSoonInitial && homeData.endingSoonProductList.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: EndingSoonSection(
+                                products: homeData.endingSoonProductList,
+                                title: AppLocalizations.of(context)!.ending_soon_ucf,
+                                viewAllRoute: '/ending-soon',
                               ),
-                              buildHomeEndingSoon(context, homeData),
-                              const SizedBox(height: 16),
-                            ]),
-                          ),
-                          SliverList(
-                            delegate: SliverChildListDelegate([
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(18.0, 8.0, 20.0, 8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!
-                                          .upcoming_ucf,
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                  ],
-                                ),
+                            ),
+                          
+                          // Upcoming Section
+                          if (!homeData.isUpcomingInitial && homeData.upcomingProductList.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: UpcomingSection(
+                                products: homeData.upcomingProductList,
+                                title: AppLocalizations.of(context)!.upcoming_auctions_ucf,
+                                viewAllRoute: '/upcoming-auctions',
                               ),
-                              buildHomeUpcoming(context, homeData),
-                              const SizedBox(height: 30),
-                            ]),
-                          ),
+                            ),
+                          
+                          const SliverToBoxAdapter(child: SizedBox(height: 30)),
                         ],
                       ),
                     ),
                     Align(
-                        alignment: Alignment.center,
-                        child: buildProductLoadingContainer(homeData))
+                      alignment: Alignment.center,
+                      child: buildProductLoadingContainer(),
+                    ),
                   ],
                 );
               },
@@ -305,7 +257,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildHomeAllProducts2(context, HomePresenter homeData) {
+  Widget buildHomeAllProducts2() {
     if (homeData.isAllProductInitial) {
       return SizedBox(
         height: 280,
@@ -336,69 +288,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
-  Widget buildHomeEndingSoon(context, HomePresenter homeData) {
-    if (homeData.isEndingSoonInitial) {
-      return SizedBox(
-        height: 280,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 6,
-          itemBuilder: (context, index) {
-            return Container(
-              width: 160,
-              margin: const EdgeInsets.only(right: 12),
-              child: ShimmerHelper().buildBasicShimmer(height: 260),
-            );
-          },
-        ),
-      );
-    } else if (homeData.endingSoonProductList.isNotEmpty) {
-      return ProductHorizontalCarousel(
-        products: homeData.endingSoonProductList,
-        scrollController: homeData.endingSoonScrollController,
-      );
-    } else if (homeData.totalEndingSoonData == 0) {
-      return Center(
-        child: Text(AppLocalizations.of(context)!.no_product_is_available),
-      );
-    } else {
-      return Container();
-    }
-  }
-
-  Widget buildHomeUpcoming(context, HomePresenter homeData) {
-    if (homeData.isUpcomingInitial) {
-      return SizedBox(
-        height: 280,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 6,
-          itemBuilder: (context, index) {
-            return Container(
-              width: 160,
-              margin: const EdgeInsets.only(right: 12),
-              child: ShimmerHelper().buildBasicShimmer(height: 260),
-            );
-          },
-        ),
-      );
-    } else if (homeData.upcomingProductList.isNotEmpty) {
-      return ProductHorizontalCarousel(
-        products: homeData.upcomingProductList,
-        scrollController: homeData.upcomingScrollController,
-      );
-    } else if (homeData.totalUpcomingData == 0) {
-      return Center(
-        child: Text(AppLocalizations.of(context)!.no_product_is_available),
-      );
-    } else {
-      return Container();
-    }
-  }
-
-  Widget buildHomeFeaturedCategories(context, HomePresenter homeData) {
+  Widget buildHomeFeaturedCategories() {
     if (homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
       return ShimmerHelper().buildHorizontalGridShimmerWithAxisCount(
         crossAxisSpacing: 12.0,
@@ -423,9 +313,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               onTap: () {
                 if (category.slug != null) {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(
-                      slug: category.slug!,
-                    );
+                    return CategoryProducts(slug: category.slug!);
                   }));
                 }
               },
@@ -435,17 +323,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color.fromRGBO(237, 242, 247, 1),
-                    width: 1,
-                  ),
+                  border: Border.all(color: const Color.fromRGBO(237, 242, 247, 1), width: 1),
                 ),
                 child: Row(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(8),
-                      ),
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
                       child: FadeInImage.assetNetwork(
                         placeholder: 'assets/placeholder.png',
                         image: category.banner ?? '',
@@ -457,11 +340,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             width: 50,
                             height: 50,
                             color: const Color.fromRGBO(245, 247, 250, 1),
-                            child: const Icon(
-                              Icons.category,
-                              size: 25,
-                              color: Color.fromRGBO(107, 115, 119, 1),
-                            ),
+                            child: const Icon(Icons.category, size: 25, color: Color.fromRGBO(107, 115, 119, 1)),
                           );
                         },
                       ),
@@ -471,11 +350,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           category.name ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color.fromRGBO(0, 0, 0, 1),
-                          ),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color.fromRGBO(0, 0, 0, 1)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -503,18 +378,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
-  Widget buildHomeCarouselSlider(context, HomePresenter homeData) {
+  Widget buildHomeCarouselSlider() {
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.only(
-          left: 18,
-          right: 18,
-          top: 0,
-          bottom: 20,
-        ),
-        child: ShimmerHelper().buildBasicShimmer(
-          height: 120,
-        ),
+        padding: const EdgeInsets.only(left: 18, right: 18, top: 0, bottom: 20),
+        child: ShimmerHelper().buildBasicShimmer(height: 120),
       );
     } else if (homeData.carouselImageList.isNotEmpty) {
       return CarouselSlider(
@@ -538,8 +406,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           return Builder(
             builder: (BuildContext context) {
               return Padding(
-                padding: const EdgeInsets.only(
-                    left: 18, right: 18, top: 0, bottom: 20),
+                padding: const EdgeInsets.only(left: 18, right: 18, top: 0, bottom: 20),
                 child: Stack(
                   children: <Widget>[
                     Container(
@@ -549,7 +416,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         onTap: () {
                           if (i.url != null) {
                             var url = i.url!.split(AppConfig.DOMAIN_PATH).last ?? "";
-                            print(url);
                             if (url.isNotEmpty) {
                               GoRouter.of(context).go(url);
                             }
@@ -559,9 +425,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             ? AIZImage.radiusImage(i.photo!, 6)
                             : Container(
                                 color: Colors.grey[300],
-                                child: const Center(
-                                  child: Icon(Icons.image, size: 50),
-                                ),
+                                child: const Center(child: Icon(Icons.image, size: 50)),
                               ),
                       ),
                     ),
@@ -574,13 +438,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           return Container(
                             width: 7.0,
                             height: 7.0,
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 10.0, horizontal: 4.0),
+                            margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: homeData.current_slider == index
-                                  ? MyTheme.white
-                                  : const Color.fromRGBO(112, 112, 112, .3),
+                              color: homeData.current_slider == index ? MyTheme.white : const Color.fromRGBO(112, 112, 112, .3),
                             ),
                           );
                         }).toList(),
@@ -593,23 +454,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           );
         }).toList(),
       );
-    } else if (!homeData.isCarouselInitial &&
-        homeData.carouselImageList.isEmpty) {
-      return Container(
-          height: 100,
-          child: Center(
-              child: Text(
-            AppLocalizations.of(context)!.no_carousel_image_found,
-            style: TextStyle(color: MyTheme.font_grey),
-          )));
-    } else {
+    } else if (!homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Container(
         height: 100,
+        child: Center(
+          child: Text(
+            AppLocalizations.of(context)!.no_carousel_image_found,
+            style: TextStyle(color: MyTheme.font_grey),
+          ),
+        ),
       );
+    } else {
+      return const SizedBox(height: 100);
     }
   }
 
-  AppBar buildAppBar(double statusBarHeight, BuildContext context) {
+  AppBar buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: Colors.white,
@@ -620,10 +480,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         padding: const EdgeInsets.only(left: 16, right: 16),
         child: Row(
           children: [
-            // Search Box - Takes remaining space
-            Expanded(
-              child: buildHomeSearchBox(context),
-            ),
+            Expanded(child: buildHomeSearchBox()),
             // Notification Icon
             Padding(
               padding: const EdgeInsets.only(left: 12),
@@ -632,10 +489,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   if (is_logged_in.$) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsPage(),
-                      ),
-                    ).then((_) => _refreshCounts()); // Refresh counts after returning
+                      MaterialPageRoute(builder: (context) => const NotificationsPage()),
+                    ).then((_) => _refreshCounts());
                   } else {
                     _redirectToLogin();
                   }
@@ -643,10 +498,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 child: Container(
                   width: 35,
                   height: 35,
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
                   child: Stack(
                     children: [
                       Center(
@@ -657,33 +509,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      // Notification counter badge
                       if (_showNotificationBadge)
                         Positioned(
                           top: 2,
                           right: 2,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10)),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                             child: Text(
-                              _unreadNotificationCount > 99 
-                                  ? '99+' 
-                                  : '$_unreadNotificationCount',
-                              style: const TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                              _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -693,18 +529,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            // Chat Icon - Now shows actual message count from API
+            // Chat Icon
             Padding(
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MessengerList(),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => MessengerList()));
                   } else {
                     _redirectToLogin();
                   }
@@ -712,46 +543,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 child: Container(
                   width: 35,
                   height: 35,
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
                   child: Stack(
                     children: [
-                      Center(
-                        child: Image.asset(
-                          'assets/message.png',
-                          height: 22,
-                          width: 22,
-                        ),
-                      ),
-                      // Chat counter badge - Now shows actual unread messages count
+                      Center(child: Image.asset('assets/message.png', height: 22, width: 22)),
                       if (_showMessageBadge)
                         Positioned(
                           top: 2,
                           right: 2,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10)),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                             child: Text(
-                              _unreadMessageCount > 99 
-                                  ? '99+' 
-                                  : '$_unreadMessageCount',
-                              style: const TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                              _unreadMessageCount > 99 ? '99+' : '$_unreadMessageCount',
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -767,12 +573,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AffiliatePage(),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AffiliatePage()));
                   } else {
                     _redirectToLogin();
                   }
@@ -780,17 +581,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 child: Container(
                   width: 35,
                   height: 35,
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
                   child: Center(
-                    child: Image.asset(
-                      'assets/affiliate.png',
-                      height: 22,
-                      width: 22,
-                      color: MyTheme.dark_grey,
-                    ),
+                    child: Image.asset('assets/affiliate.png', height: 22, width: 22, color: MyTheme.dark_grey),
                   ),
                 ),
               ),
@@ -801,15 +594,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildHomeSearchBox(BuildContext context) {
+  Widget buildHomeSearchBox() {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Filter(),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => Filter()));
       },
       child: Container(
         height: 40,
@@ -822,16 +610,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             children: [
               Text(
                 AppLocalizations.of(context)!.search_anything,
-                style: TextStyle(
-                  fontSize: 13.0,
-                  color: MyTheme.textfield_grey,
-                ),
+                style: TextStyle(fontSize: 13.0, color: MyTheme.textfield_grey),
               ),
-              Image.asset(
-                'assets/search.png',
-                height: 16,
-                color: MyTheme.dark_grey,
-              ),
+              Image.asset('assets/search.png', height: 16, color: MyTheme.dark_grey),
             ],
           ),
         ),
@@ -839,16 +620,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Container buildProductLoadingContainer(HomePresenter homeData) {
+  Container buildProductLoadingContainer() {
     return Container(
       height: homeData.showAllLoadingContainer ? 36 : 0,
       width: double.infinity,
       color: Colors.white,
       child: Center(
         child: Text(
-            homeData.totalAllProductData == homeData.allProductList.length
-                ? AppLocalizations.of(context)!.no_more_products_ucf
-                : AppLocalizations.of(context)!.loading_more_products_ucf),
+          homeData.totalAllProductData == homeData.allProductList.length
+              ? AppLocalizations.of(context)!.no_more_products_ucf
+              : AppLocalizations.of(context)!.loading_more_products_ucf,
+        ),
       ),
     );
   }

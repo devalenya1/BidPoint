@@ -14,8 +14,9 @@ class HomePresenter extends ChangeNotifier {
   int current_slider = 0;
   ScrollController? allProductScrollController;
   ScrollController? featuredCategoryScrollController;
-  ScrollController? endingSoonScrollController; // Added
-  ScrollController? upcomingScrollController; // Added
+  ScrollController? endingSoonScrollController;
+  ScrollController? upcomingScrollController;
+  ScrollController? hotAuctionScrollController;  // Added for Hot Auctions
   ScrollController mainScrollController = ScrollController();
 
   late AnimationController pirated_logo_controller;
@@ -37,6 +38,13 @@ class HomePresenter extends ChangeNotifier {
   int? totalFeaturedProductData = 0;
   int featuredProductPage = 1;
   bool showFeaturedLoadingContainer = false;
+
+  // Hot Auctions Products
+  var hotAuctionProductList = [];
+  bool isHotAuctionInitial = true;
+  int? totalHotAuctionData = 0;
+  int hotAuctionPage = 1;
+  bool showHotAuctionLoadingContainer = false;
 
   // Ending Soon Products
   var endingSoonProductList = [];
@@ -69,8 +77,9 @@ class HomePresenter extends ChangeNotifier {
     fetchFeaturedCategories();
     fetchFeaturedProducts();
     fetchAllProducts();
-    fetchEndingSoonProducts(); // Added
-    fetchUpcomingProducts(); // Added
+    fetchHotAuctionProducts();    // Added
+    fetchEndingSoonProducts();
+    fetchUpcomingProducts();
     fetchTodayDealData();
     fetchFlashDealData();
   }
@@ -139,6 +148,26 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Fetch Hot Auction Products
+  fetchHotAuctionProducts() async {
+    try {
+      var productResponse = await ProductRepository().getHotAuctions(
+        page: hotAuctionPage,
+      );
+      hotAuctionPage++;
+      hotAuctionProductList.addAll(productResponse.products!);
+      isHotAuctionInitial = false;
+      totalHotAuctionData = productResponse.meta?.total ?? 0;
+      showHotAuctionLoadingContainer = false;
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching hot auction products: $e");
+      isHotAuctionInitial = false;
+      totalHotAuctionData = 0;
+      notifyListeners();
+    }
+  }
+
   // Fetch Ending Soon Products
   fetchEndingSoonProducts() async {
     try {
@@ -182,11 +211,7 @@ class HomePresenter extends ChangeNotifier {
   fetchAllProducts() async {
     var productResponse =
         await ProductRepository().getFilteredProducts(page: allProductPage);
-    // if (productResponse.products!.isEmpty) {
-    //   ToastComponent.showDialog("No more products!", gravity: Toast.center);
-    //   return;
-    // }
-
+    
     allProductList.addAll(productResponse.products!);
     isAllProductInitial = false;
     totalAllProductData = productResponse.meta!.total;
@@ -208,8 +233,9 @@ class HomePresenter extends ChangeNotifier {
 
     resetFeaturedProductList();
     resetAllProductList();
-    resetEndingSoonProductList(); // Added
-    resetUpcomingProductList(); // Added
+    resetHotAuctionProductList();     // Added
+    resetEndingSoonProductList();
+    resetUpcomingProductList();
   }
 
   Future<void> onRefresh() async {
@@ -235,6 +261,16 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Reset Hot Auction Product List
+  resetHotAuctionProductList() {
+    hotAuctionProductList.clear();
+    isHotAuctionInitial = true;
+    totalHotAuctionData = 0;
+    hotAuctionPage = 1;
+    showHotAuctionLoadingContainer = false;
+    notifyListeners();
+  }
+
   // Reset Ending Soon Product List
   resetEndingSoonProductList() {
     endingSoonProductList.clear();
@@ -257,18 +293,29 @@ class HomePresenter extends ChangeNotifier {
 
   mainScrollListener() {
     mainScrollController.addListener(() {
-      //print("position: " + xcrollController.position.pixels.toString());
-      //print("max: " + xcrollController.position.maxScrollExtent.toString());
-
       if (mainScrollController.position.pixels ==
           mainScrollController.position.maxScrollExtent) {
         allProductPage++;
-        ToastComponent.showDialog("More Products Loading...",
-            gravity: Toast.center);
         showAllLoadingContainer = true;
         fetchAllProducts();
       }
     });
+  }
+
+  // Scroll listener for Hot Auction products
+  hotAuctionScrollListener() {
+    if (hotAuctionScrollController != null) {
+      hotAuctionScrollController!.addListener(() {
+        if (hotAuctionScrollController!.position.pixels ==
+            hotAuctionScrollController!.position.maxScrollExtent) {
+          if (hotAuctionProductList.length < (totalHotAuctionData ?? 0)) {
+            hotAuctionPage++;
+            showHotAuctionLoadingContainer = true;
+            fetchHotAuctionProducts();
+          }
+        }
+      });
+    }
   }
 
   // Scroll listener for ending soon products
@@ -303,6 +350,19 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
+  // Initialize scroll controllers
+  void initScrollControllers() {
+    hotAuctionScrollController = ScrollController();
+    endingSoonScrollController = ScrollController();
+    upcomingScrollController = ScrollController();
+    allProductScrollController = ScrollController();
+    featuredCategoryScrollController = ScrollController();
+    
+    hotAuctionScrollListener();
+    endingSoonScrollListener();
+    upcomingScrollListener();
+  }
+
   initPiratedAnimation(vnc) {
     pirated_logo_controller =
         AnimationController(vsync: vnc, duration: Duration(milliseconds: 2000));
@@ -319,34 +379,34 @@ class HomePresenter extends ChangeNotifier {
     pirated_logo_controller.forward();
   }
 
-  // incrementFeaturedProductPage(){
-  //   featuredProductPage++;
-  //   notifyListeners();
-  //
-  // }
-
   incrementCurrentSlider(index) {
     current_slider = index;
     notifyListeners();
   }
 
-  // void dispose() {
-  //   pirated_logo_controller.dispose();
-  //   notifyListeners();
-  // }
-  //
-
   @override
   void dispose() {
-    // TODO: implement dispose
     pirated_logo_controller.dispose();
-    if (endingSoonScrollController != null) {
-      endingSoonScrollController!.dispose();
-    }
-    if (upcomingScrollController != null) {
-      upcomingScrollController!.dispose();
-    }
+    hotAuctionScrollController?.dispose();
+    endingSoonScrollController?.dispose();
+    upcomingScrollController?.dispose();
+    allProductScrollController?.dispose();
+    featuredCategoryScrollController?.dispose();
     notifyListeners();
     super.dispose();
   }
+
+  // Add this method to HomePresenter class
+  void initScrollControllers() {
+    hotAuctionScrollController = ScrollController();
+    endingSoonScrollController = ScrollController();
+    upcomingScrollController = ScrollController();
+    allProductScrollController = ScrollController();
+    featuredCategoryScrollController = ScrollController();
+    
+    hotAuctionScrollListener();
+    endingSoonScrollListener();
+    upcomingScrollListener();
+  }
+  
 }

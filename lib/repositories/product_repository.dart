@@ -123,9 +123,6 @@ class ProductRepository {
     String url = ("${AppConfig.BASE_URL}/products/" + slug.toString());
     print("Product Url");
 
-    // Future<ProductDetailsResponse> getProductDetails({int? id = 0}) async {
-    //   String url = ("${AppConfig.BASE_URL}/products/" + id.toString());
-    //   print(url.toString());
     final response = await ApiRequest.get(url: url, headers: {
       "App-Language": app_language.$!,
     });
@@ -141,7 +138,6 @@ class ProductRepository {
       "App-Language": app_language.$!,
     });
 
-    //print(response.body.toString());
     return productDetailsResponseFromJson(response.body);
   }
 
@@ -159,9 +155,6 @@ class ProductRepository {
     final response = await ApiRequest.get(url: url, headers: {
       "App-Language": app_language.$!,
     });
-
-    // print("top selling product url ${url.toString()}");
-    // print("top selling product ${response.body.toString()}");
 
     return productMiniResponseFromJson(response.body);
   }
@@ -201,8 +194,6 @@ class ProductRepository {
     return variantPriceResponseFromJson(response.body);
   }
 
-
-
   Future<ProductMiniResponse> getFilteredProducts(
       {name = "",
       sort_key = "",
@@ -221,13 +212,11 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
-
   Future<ProductMiniResponse> getHotAuctions({int page = 1}) async {
     String url = "${AppConfig.BASE_URL}/products/hot-auctions?page=${page}";
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        // "Content-Type": "application/json",
         "App-Language": app_language.$!,
       },
     );
@@ -239,7 +228,6 @@ class ProductRepository {
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        // "Content-Type": "application/json",
         "App-Language": app_language.$!,
       },
     );
@@ -251,12 +239,50 @@ class ProductRepository {
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        // "Content-Type": "application/json",
         "App-Language": app_language.$!,
       },
     );
     return productMiniResponseFromJson(response.body);
   }
 
-  
+  // Notify Me for Auction
+  Future<Map<String, dynamic>> notifyMeForAuction(int productId) async {
+    String url = "${AppConfig.BASE_URL}/auction/notify-me";
+    
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({
+          "product_id": productId,
+        })
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? "You will be notified when this auction starts",
+          'status': response.statusCode,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': "Failed to set notification",
+          'status': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print("Error in notifyMeForAuction: $e");
+      return {
+        'success': false,
+        'message': "Network error. Please try again.",
+        'status': 500,
+      };
+    }
+  }
 }
