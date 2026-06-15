@@ -343,7 +343,7 @@ class _PointsPageState extends State<PointsPage> {
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
-                    height: MediaQuery.of(context).size.height * 0.40, // 40% of screen
+                    height: MediaQuery.of(context).size.height * 0.40,
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
@@ -353,7 +353,6 @@ class _PointsPageState extends State<PointsPage> {
                     ),
                     child: Column(
                       children: [
-                        // Drag Handle
                         Container(
                           margin: const EdgeInsets.only(top: 12),
                           width: 40,
@@ -363,7 +362,6 @@ class _PointsPageState extends State<PointsPage> {
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        // Header
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           child: Row(
@@ -397,7 +395,6 @@ class _PointsPageState extends State<PointsPage> {
                             ],
                           ),
                         ),
-                        // Package List
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -416,7 +413,6 @@ class _PointsPageState extends State<PointsPage> {
                                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                                     child: Row(
                                       children: [
-                                        // Radio button
                                         Container(
                                           width: 20,
                                           height: 20,
@@ -441,7 +437,6 @@ class _PointsPageState extends State<PointsPage> {
                                               : null,
                                         ),
                                         const SizedBox(width: 12),
-                                        // Package info
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,7 +460,6 @@ class _PointsPageState extends State<PointsPage> {
                                             ],
                                           ),
                                         ),
-                                        // Price
                                         Text(
                                           packagePrice == 0 ? AppLocalizations.of(context)!.free_ucf : _formatPrice(packagePrice),
                                           style: TextStyle(
@@ -482,44 +476,49 @@ class _PointsPageState extends State<PointsPage> {
                             ),
                           ),
                         ),
-                        // Buy Button
                         Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: GestureDetector(
-            onTap: _isPurchasing ? null : _submitPurchase,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: MyTheme.accent_color,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: _isPurchasing
-                  ? const Center(
-                      child: SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                          child: GestureDetector(
+                            onTap: _isPurchasing ? null : _submitPurchase,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: MyTheme.accent_color,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: _isPurchasing
+                                  ? const Center(
+                                      child: SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      AppLocalizations.of(context)!.buy_now_ucf,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
                         ),
-                      ),
-                    )
-                  : Text(
-                      AppLocalizations.of(context)!.buy_now_ucf,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                      ],
                     ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
       ],
-    ),
-  );
+    );
   }
   
   Widget _buildUserPointsCard() {
