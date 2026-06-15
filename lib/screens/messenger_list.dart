@@ -8,7 +8,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 
 class MessengerList extends StatefulWidget {
   @override
@@ -23,18 +23,14 @@ class _MessengerListState extends State<MessengerList> {
   int _page = 1;
   int? _totalData = 0;
   bool _showLoadingContainer = false;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     fetchData();
 
     _xcrollController.addListener(() {
-      //print("position: " + _xcrollController.position.pixels.toString());
-      //print("max: " + _xcrollController.position.maxScrollExtent.toString());
-
       if (_xcrollController.position.pixels ==
           _xcrollController.position.maxScrollExtent) {
         setState(() {
@@ -65,8 +61,14 @@ class _MessengerListState extends State<MessengerList> {
   }
 
   Future<void> _onRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
     reset();
-    fetchData();
+    await fetchData();
+    setState(() {
+      _isRefreshing = false;
+    });
   }
 
   @override
@@ -76,14 +78,13 @@ class _MessengerListState extends State<MessengerList> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: buildAppBar(context),
-        body: Stack(
-          children: [
-            RefreshIndicator(
-              color: MyTheme.accent_color,
-              backgroundColor: Colors.white,
-              onRefresh: _onRefresh,
-              displacement: 0,
-              child: CustomScrollView(
+        body: RefreshIndicator(
+          color: MyTheme.accent_color,
+          backgroundColor: Colors.white,
+          onRefresh: _onRefresh,
+          child: Stack(
+            children: [
+              CustomScrollView(
                 controller: _xcrollController,
                 physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics()),
@@ -98,10 +99,12 @@ class _MessengerListState extends State<MessengerList> {
                   )
                 ],
               ),
-            ),
-            Align(
-                alignment: Alignment.bottomCenter, child: buildLoadingContainer())
-          ],
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: buildLoadingContainer()
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -122,20 +125,17 @@ class _MessengerListState extends State<MessengerList> {
 
   AppBar buildAppBar(BuildContext context) {
     return AppBar(
-backgroundColor: Colors.white,
-      centerTitle: false,
-      leading: Builder(
-        builder: (context) => IconButton(
-          icon: UsefulElements.backButton(context),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      backgroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: true,
       title: Text(
         AppLocalizations.of(context)!.messages_ucf,
-        style: TextStyle(fontSize: 16, color: MyTheme.dark_font_grey,fontWeight: FontWeight.bold),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
-      elevation: 0.0,
-      titleSpacing: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
     );
   }
 
@@ -143,28 +143,55 @@ backgroundColor: Colors.white,
     if (_isInitial && _list.length == 0) {
       return SingleChildScrollView(
           child: ShimmerHelper()
-              .buildListShimmer(item_count: 10, item_height: 100.0));
+              .buildListShimmer(item_count: 10, item_height: 80.0));
     } else if (_list.length > 0) {
       return SingleChildScrollView(
         child: ListView.builder(
           itemCount: _list.length,
           scrollDirection: Axis.vertical,
           padding: EdgeInsets.all(0.0),
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
           itemBuilder: (context, index) {
             return Padding(
-              padding: const EdgeInsets.only(
-                  top: 4.0, bottom: 4.0, left: 16.0, right: 16.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: buildMessengerItemCard(index),
             );
           },
         ),
       );
     } else if (_totalData == 0) {
-      return Center(child: Text("No data is available"));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              '💬',
+              style: TextStyle(fontSize: 48),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context)!.no_messages_found,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              AppLocalizations.of(context)!.no_messages_found_desc,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF94A3B8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
     } else {
-      return Container(); // should never be happening
+      return Container();
     }
   }
 
@@ -180,77 +207,92 @@ backgroundColor: Colors.white,
           );
         }));
       },
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child:
-            Row(mainAxisAlignment: MainAxisAlignment.start, children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(35),
-              border: Border.all(
-                  color: Color.fromRGBO(112, 112, 112, .3), width: 1),
-              //shape: BoxShape.rectangle,
-            ),
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(35),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFEEF2F8)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
                 child: FadeInImage.assetNetwork(
                   placeholder: 'assets/placeholder.png',
-                  image:  _list[index].shop_logo,
-                  fit: BoxFit.contain,
-                )),
-          ),
-          Container(
-            height: 50,
-            width: 230,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _list[index].shop_name,
-                        textAlign: TextAlign.left,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(
-                            color: MyTheme.font_grey,
-                            fontSize: 13,
-                            height: 1.6,
-                            fontWeight: FontWeight.w600),
+                  image: _list[index].shop_logo ?? '',
+                  fit: BoxFit.cover,
+                  imageErrorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: const Color(0xFFE2E8F0),
+                      child: const Icon(
+                        Icons.store,
+                        size: 25,
+                        color: Color(0xFF94A3B8),
                       ),
-                      Text(
-                        _list[index].title,
-                        textAlign: TextAlign.left,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(
-                            color: MyTheme.medium_grey,
-                            height: 1.6,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              ],
+              ),
             ),
-          ),
-          Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: MyTheme.medium_grey,
-              size: 14,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _list[index].shop_name ?? '',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _list[index].title ?? '',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-          )
-        ]),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Color(0xFF94A3B8),
+                size: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

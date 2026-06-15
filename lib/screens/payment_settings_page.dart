@@ -5,6 +5,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -17,7 +18,7 @@ class PaymentSettingsPage extends StatefulWidget {
 }
 
 class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
-  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
   bool _isSaving = false;
@@ -39,7 +40,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _fetchUserData();  // Fetch fresh data from API
+      _fetchUserData();
     } else {
       setState(() {
         _isLoading = false;
@@ -57,7 +58,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     super.dispose();
   }
   
-  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  // ============ FETCH DATA FROM API ============
   Future<void> _fetchUserData() async {
     try {
       setState(() {
@@ -68,20 +69,18 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userInfo = response.data![0];  // Store locally like _productDetails
+          _userInfo = response.data![0];
         });
         
-        // Load payment details into controllers
         _loadPaymentDetailsFromUserInfo();
         
-        // Save all user data to SharedPreferences for other screens
         if (_userInfo != null) {
           UserDataHelper.saveUserData(_userInfo!);
         }
       }
     } catch (e) {
       print("Error loading user data: $e");
-      _showError('Failed to load payment details');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_payment_details);
     } finally {
       setState(() {
         _isLoading = false;
@@ -94,13 +93,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   void _loadPaymentDetailsFromUserInfo() {
     if (_userInfo == null) return;
     
-    // Load PayPal details
     final hasPaypal = _userInfo!.paypalEmail != null && _userInfo!.paypalEmail!.isNotEmpty;
     if (hasPaypal) {
       _paypalEmailController.text = _userInfo!.paypalEmail!;
     }
     
-    // Load Bank details
     final hasBankName = _userInfo!.bankName != null && _userInfo!.bankName!.isNotEmpty;
     final hasAccountHolder = _userInfo!.accountHolder != null && _userInfo!.accountHolder!.isNotEmpty;
     final hasAccountNumber = _userInfo!.accountNumber != null && _userInfo!.accountNumber!.isNotEmpty;
@@ -113,7 +110,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     }
   }
   
-  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  // ============ PULL TO REFRESH ============
   Future<void> _onPageRefresh() async {
     setState(() {
       _isRefreshing = true;
@@ -121,7 +118,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     await _fetchUserData();
   }
   
-  // Helper getters for payment status (derived from _userInfo)
+  // Helper getters for payment status
   bool get _bankConnected {
     if (_userInfo == null) return false;
     final hasBankName = _userInfo!.bankName != null && _userInfo!.bankName!.isNotEmpty;
@@ -142,17 +139,16 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   String get _displayPaypalEmail => _userInfo?.paypalEmail ?? "";
   
   Future<void> _saveBankDetails() async {
-    // Validate
     if (_bankNameController.text.trim().isEmpty) {
-      _showError('Please enter bank name');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_bank_name);
       return;
     }
     if (_accountHolderController.text.trim().isEmpty) {
-      _showError('Please enter account holder name');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_account_holder_name);
       return;
     }
     if (_accountNumberController.text.trim().isEmpty) {
-      _showError('Please enter account number');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_account_number);
       return;
     }
     
@@ -174,16 +170,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _isBankModalOpen = false;
         });
         
-        _showSuccess('Bank details saved successfully');
+        ToastComponent.showDialog(AppLocalizations.of(context)!.bank_details_saved_successfully);
         
-        // Refresh user data
         await _fetchUserData();
       } else {
-        _showError(response['message'] ?? 'Something went wrong');
+        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error saving bank details: $e");
-      _showError('Something went wrong');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -192,13 +187,12 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   }
   
   Future<void> _savePaypalDetails() async {
-    // Validate
     if (_paypalEmailController.text.trim().isEmpty) {
-      _showError('Please enter PayPal email');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_paypal_email);
       return;
     }
     if (!_paypalEmailController.text.contains('@')) {
-      _showError('Please enter a valid email address');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_valid_email);
       return;
     }
     
@@ -220,16 +214,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _isPaypalModalOpen = false;
         });
         
-        _showSuccess('PayPal details saved successfully');
+        ToastComponent.showDialog(AppLocalizations.of(context)!.paypal_details_saved_successfully);
         
-        // Refresh user data
         await _fetchUserData();
       } else {
-        _showError(response['message'] ?? 'Something went wrong');
+        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error saving PayPal details: $e");
-      _showError('Something went wrong');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -241,19 +234,27 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Disconnect Bank'),
-        content: const Text('Are you sure you want to disconnect your bank account?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          AppLocalizations.of(context)!.disconnect_bank,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          AppLocalizations.of(context)!.disconnect_bank_confirmation,
+          style: const TextStyle(fontSize: 14),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(AppLocalizations.of(context)!.cancel_ucf),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Disconnect',
-              style: TextStyle(color: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
+            child: Text(AppLocalizations.of(context)!.disconnect_ucf),
           ),
         ],
       ),
@@ -282,14 +283,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _ifscCodeController.clear();
         });
         
-        _showSuccess('Bank account disconnected successfully');
+        ToastComponent.showDialog(AppLocalizations.of(context)!.bank_disconnected_successfully);
         await _fetchUserData();
       } else {
-        _showError(response['message'] ?? 'Something went wrong');
+        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error disconnecting bank: $e");
-      _showError('Something went wrong');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -301,19 +302,27 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Disconnect PayPal'),
-        content: const Text('Are you sure you want to disconnect your PayPal account?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          AppLocalizations.of(context)!.disconnect_paypal,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          AppLocalizations.of(context)!.disconnect_paypal_confirmation,
+          style: const TextStyle(fontSize: 14),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(AppLocalizations.of(context)!.cancel_ucf),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Disconnect',
-              style: TextStyle(color: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
+            child: Text(AppLocalizations.of(context)!.disconnect_ucf),
           ),
         ],
       ),
@@ -339,39 +348,19 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _paypalEmailController.clear();
         });
         
-        _showSuccess('PayPal account disconnected successfully');
+        ToastComponent.showDialog(AppLocalizations.of(context)!.paypal_disconnected_successfully);
         await _fetchUserData();
       } else {
-        _showError(response['message'] ?? 'Something went wrong');
+        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error disconnecting PayPal: $e");
-      _showError('Something went wrong');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
       });
     }
-  }
-  
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-  
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: MyTheme.accent_color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
   
   void _navigateBack() {
@@ -381,7 +370,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   }
   
   void _openBankModal() {
-    // Reset form with current values
     _bankNameController.text = _displayBankName;
     _accountHolderController.text = _displayAccountHolder;
     _accountNumberController.text = _displayAccountNumber;
@@ -411,7 +399,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     });
   }
   
-  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
+  // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -427,7 +415,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: _navigateBack,
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -435,14 +423,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         backgroundColor: Colors.white,
         onRefresh: _onPageRefresh,
         child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading
+            ? _buildShimmer()
             : Stack(
                 children: [
                   SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
                     child: Column(
                       children: [
-                        // Bank Details Card
                         _buildPaymentCard(
                           icon: Icons.account_balance,
                           title: AppLocalizations.of(context)!.bank_details,
@@ -453,7 +441,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                         ),
                         const SizedBox(height: 8),
                         
-                        // PayPal Details Card
                         _buildPaymentCard(
                           icon: Icons.payment,
                           title: AppLocalizations.of(context)!.paypal_details,
@@ -466,11 +453,9 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     ),
                   ),
                   
-                  // Bank Modal
                   if (_isBankModalOpen)
                     _buildBankModal(),
                   
-                  // PayPal Modal
                   if (_isPaypalModalOpen)
                     _buildPaypalModal(),
                 ],
@@ -482,13 +467,12 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
       child: Column(
         children: [
-          // Bank card shimmer
           ShimmerHelper().buildBasicShimmer(height: 80, radius: 7),
           const SizedBox(height: 8),
-          // PayPal card shimmer
           ShimmerHelper().buildBasicShimmer(height: 80, radius: 7),
         ],
       ),
@@ -503,108 +487,107 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     required VoidCallback onTap,
     VoidCallback? onDisconnect,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            // Left side - Icon and Info
-            Expanded(
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6F6F6),
-                      borderRadius: BorderRadius.circular(7),
+    return InkWell(
+      onTap: onTap,  // Whole card is now tappable
+      borderRadius: BorderRadius.circular(7),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: const Color(0xFFEEF2F8)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F6F6),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 20,
+                        color: MyTheme.accent_color,
+                      ),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 20,
-                      color: MyTheme.accent_color,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F172A),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          description,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF64748B),
+                          const SizedBox(height: 2),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Right side - Status and Actions
-            Row(
-              children: [
-                if (onDisconnect != null)
-                  GestureDetector(
-                    onTap: onDisconnect,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      child: const Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: Color(0xFFEF4444),
+              Row(
+                children: [
+                  if (onDisconnect != null)
+                    GestureDetector(
+                      onTap: onDisconnect,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        child: const Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: Color(0xFFEF4444),
+                        ),
+                      ),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isConnected
+                          ? const Color(0xFF10B981).withOpacity(0.1)
+                          : const Color(0xFFEF4444).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      isConnected
+                          ? AppLocalizations.of(context)!.connected
+                          : AppLocalizations.of(context)!.not_connected,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: isConnected
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
                       ),
                     ),
                   ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isConnected
-                        ? const Color(0xFF10B981).withOpacity(0.1)
-                        : const Color(0xFFEF4444).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    isConnected
-                        ? AppLocalizations.of(context)!.connected
-                        : AppLocalizations.of(context)!.not_connected,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: isConnected
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onTap,
-                  child: const Icon(
+                  const SizedBox(width: 8),
+                  const Icon(
                     Icons.arrow_forward_ios,
                     size: 14,
                     color: Color(0xFF94A3B8),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -627,12 +610,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Modal Header
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       decoration: const BoxDecoration(
@@ -671,7 +653,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       ),
                     ),
                     
-                    // Modal Body
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.all(20),
@@ -697,8 +678,8 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             ),
                             const SizedBox(height: 16),
                             _buildFormField(
-                              label: 'IFSC Code',
-                              hint: 'Enter IFSC Code',
+                              label: AppLocalizations.of(context)!.ifsc_code,
+                              hint: AppLocalizations.of(context)!.enter_ifsc_code,
                               controller: _ifscCodeController,
                             ),
                           ],
@@ -706,7 +687,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       ),
                     ),
                     
-                    // Modal Footer
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                       decoration: const BoxDecoration(
@@ -720,10 +700,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             child: GestureDetector(
                               onTap: _closeBankModal,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF6F6F6),
-                                  borderRadius: BorderRadius.circular(50),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   AppLocalizations.of(context)!.cancel_ucf,
@@ -742,10 +722,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             child: GestureDetector(
                               onTap: _isSaving ? null : _saveBankDetails,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: MyTheme.accent_color,
-                                  borderRadius: BorderRadius.circular(50),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: _isSaving
                                     ? const SizedBox(
@@ -798,12 +778,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Modal Header
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       decoration: const BoxDecoration(
@@ -842,7 +821,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       ),
                     ),
                     
-                    // Modal Body
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.all(20),
@@ -855,7 +833,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       ),
                     ),
                     
-                    // Modal Footer
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                       decoration: const BoxDecoration(
@@ -869,10 +846,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             child: GestureDetector(
                               onTap: _closePaypalModal,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF6F6F6),
-                                  borderRadius: BorderRadius.circular(50),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   AppLocalizations.of(context)!.cancel_ucf,
@@ -891,10 +868,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             child: GestureDetector(
                               onTap: _isSaving ? null : _savePaypalDetails,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: MyTheme.accent_color,
-                                  borderRadius: BorderRadius.circular(50),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: _isSaving
                                     ? const SizedBox(
@@ -958,18 +935,18 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
               color: Color(0xFF94A3B8),
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: MyTheme.accent_color),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
       ],

@@ -20,6 +20,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../repositories/auth_repository.dart';
 import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
 import 'package:active_ecommerce_flutter/screens/cash_earnings_page.dart';
+import 'package:active_ecommerce_flutter/app_config.dart';
+import 'package:flutter/services.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -78,7 +80,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog('Failed to load affiliate data');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_affiliate_data);
     } finally {
       setState(() {
         _isLoading = false;
@@ -103,25 +105,27 @@ class _AffiliatePageState extends State<AffiliatePage> {
   int get _pointsBalance => (_userInfo?.balance ?? 0).toInt();
   double get _cashEarnings => _userInfo?.affiliateBalance ?? 0.0;
   double get _referralEarnings => _userInfo?.affiliateBalance ?? 0.0;
-  String get _referralCode => _userInfo?.affiliateId ?? "";
-  String get _referralLink => "https://bidpoint.com/ref/$_referralCode";
+  String get _referralCode => _userInfo?.referralCode ?? "";
+  
+  // UPDATED: Use AppConfig.RAW_BASE_URL for referral link
+  String get _referralLink => "${AppConfig.RAW_BASE_URL}/ref/$_referralCode";
   
   void _copyToClipboard(String text, String type) {
-    // Copy to clipboard logic here
-    ToastComponent.showDialog('Copied to clipboard');
+    Clipboard.setData(ClipboardData(text: text));
+    ToastComponent.showDialog(AppLocalizations.of(context)!.copied_to_clipboard);
   }
   
   void _shareReferralLink() async {
     if (_referralCode.isEmpty) {
-      ToastComponent.showDialog('Referral code not available');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.referral_code_not_available);
       return;
     }
     
-    final String shareText = 'Join me on BidPoint! Use my referral code: $_referralCode\n\n$_referralLink';
+    final String shareText = '${AppLocalizations.of(context)!.join_me_on_bidpoint} ${AppLocalizations.of(context)!.use_my_referral_code}: $_referralCode\n\n$_referralLink';
     
     await Share.share(
       shareText,
-      subject: 'Join BidPoint',
+      subject: AppLocalizations.of(context)!.join_bidpoint,
     );
   }
   
@@ -168,7 +172,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -176,7 +180,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
         backgroundColor: Colors.white,
         onRefresh: _onPageRefresh,
         child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading
+            ? _buildShimmer()
             : _buildBody(),
       ),
     );
@@ -189,10 +193,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          // Profile Card shimmer
           ShimmerHelper().buildBasicShimmer(height: 87, radius: 20),
           const SizedBox(height: 16),
-          // Stats Row shimmer
           Row(
             children: [
               Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 14)),
@@ -201,16 +203,12 @@ class _AffiliatePageState extends State<AffiliatePage> {
             ],
           ),
           const SizedBox(height: 20),
-          // Banner shimmer
           ShimmerHelper().buildBasicShimmer(height: 150, radius: 16),
           const SizedBox(height: 20),
-          // How It Works shimmer
           ShimmerHelper().buildBasicShimmer(height: 200, radius: 16),
           const SizedBox(height: 20),
-          // Referral Link shimmer
           ShimmerHelper().buildBasicShimmer(height: 80, radius: 16),
           const SizedBox(height: 16),
-          // Share button shimmer
           ShimmerHelper().buildBasicShimmer(height: 50, radius: 8),
           const SizedBox(height: 30),
         ],
@@ -220,31 +218,31 @@ class _AffiliatePageState extends State<AffiliatePage> {
   
   // ============ MAIN BODY ============
   Widget _buildBody() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            // Profile Card
-            _buildProfileCard(),
-            const SizedBox(height: 16),
-            // Stats Cards Row
-            _buildStatsRow(),
-            const SizedBox(height: 20),
-            // Banner Image
-            _buildBanner(),
-            const SizedBox(height: 20),
-            // How It Works Section
-            _buildHowItWorks(),
-            const SizedBox(height: 20),
-            // Referral Link Section
-            _buildReferralLink(),
-            const SizedBox(height: 16),
-            // Share Button
-            _buildShareButton(),
-            const SizedBox(height: 30),
-          ],
+    return RefreshIndicator(
+      color: MyTheme.accent_color,
+      backgroundColor: Colors.white,
+      onRefresh: _onPageRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              _buildProfileCard(),
+              const SizedBox(height: 16),
+              _buildStatsRow(),
+              const SizedBox(height: 20),
+              _buildBanner(),
+              const SizedBox(height: 20),
+              _buildHowItWorks(),
+              const SizedBox(height: 20),
+              _buildReferralLink(),
+              const SizedBox(height: 16),
+              _buildShareButton(),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
@@ -260,11 +258,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left side - Avatar and User Info
           Expanded(
             child: Row(
               children: [
-                // Avatar
                 Container(
                   width: 55,
                   height: 55,
@@ -297,13 +293,12 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // User Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _userName.isNotEmpty ? _userName : 'User',
+                        _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.user_ucf,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -328,7 +323,6 @@ class _AffiliatePageState extends State<AffiliatePage> {
               ],
             ),
           ),
-          // Right side - Withdraw button
           GestureDetector(
             onTap: _navigateToWithdrawHistory,
             child: Container(
@@ -355,7 +349,6 @@ class _AffiliatePageState extends State<AffiliatePage> {
   Widget _buildStatsRow() {
     return Row(
       children: [
-        // Points Balance Card
         Expanded(
           child: GestureDetector(
             onTap: _navigateToPoints,
@@ -436,7 +429,6 @@ class _AffiliatePageState extends State<AffiliatePage> {
           ),
         ),
         const SizedBox(width: 15),
-        // Cash Earnings Card
         Expanded(
           child: GestureDetector(
             onTap: _navigateToCash,
@@ -630,10 +622,9 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   Widget _buildReferralLink() {
-    // Build referral link only if code exists
     final displayLink = _referralCode.isNotEmpty 
         ? _referralLink 
-        : 'Referral code not available';
+        : AppLocalizations.of(context)!.referral_code_not_available;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

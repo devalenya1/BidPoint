@@ -6,7 +6,7 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';  // ADD THIS IMPORT
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'dart:async';
 
 // Import the data model
@@ -90,7 +90,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     } catch (e) {
       print("Error loading activities: $e");
-      ToastComponent.showDialog('Failed to load activities');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_activities);
     } finally {
       setState(() {
         _isLoading = false;
@@ -243,13 +243,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   
   // Helper to get product name for a bid
   String _getProductNameForBid(AuctionBid bid) {
-    if (_userInfo?.distinctAuctionBids == null) return 'Unknown Product';
+    if (_userInfo?.distinctAuctionBids == null) return AppLocalizations.of(context)!.unknown_product;
     
     final product = _userInfo!.distinctAuctionBids!.firstWhere(
       (p) => p.productId == bid.productId,
       orElse: () => DistinctAuctionBid(),
     );
-    return product.productName ?? 'Unknown Product';
+    return product.productName ?? AppLocalizations.of(context)!.unknown_product;
   }
   
   // Helper to get product image for a bid
@@ -282,6 +282,17 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     if (userBids.isEmpty) return 0.0;
     
     return userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
+  }
+  
+  // Helper to get point per bid for a product
+  int _getPointPerBidForProduct(int productId) {
+    if (_userInfo?.auctionBids == null) return 10;
+    
+    final userBids = _userInfo!.auctionBids!.where((b) => b.productId == productId).toList();
+    if (userBids.isEmpty) return 10;
+    
+    // Return pointPerBid from the first bid (should be same for all bids of this product)
+    return userBids.first.pointPerBid ?? 10;
   }
   
   // Helper to get product slug for navigation
@@ -324,7 +335,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -364,6 +375,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         // Cards shimmer
         Expanded(
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: List.generate(3, (index) => 
@@ -388,6 +400,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         _buildTabs(),
         Expanded(
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
@@ -520,6 +533,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final productSlug = _getProductSlugForBid(activity);
     final userHighestBid = _getUserHighestBidForProduct(productId);
     final currentBid = _getCurrentBidForProduct(productId);
+    final pointPerBid = _getPointPerBidForProduct(productId);
     
     // Determine status
     final isOutbid = userHighestBid > 0 && userHighestBid < currentBid;
@@ -544,7 +558,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
     
     final timeLeft = _timeLeft[productId] ?? AppLocalizations.of(context)!.loading;
-    final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -596,8 +609,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ),
                         ),
                 ),
-                // Timer Badge (would need end date)
-                // Remove from wishlist button is not needed here
               ],
             ),
           ),
@@ -616,15 +627,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Product Title
+                // Product Title with product name
                 Text(
                   isOutbid && !isEnded
-                      ? 'Someone placed a higher bid on $productName'
+                      ? AppLocalizations.of(context)!.someone_placed_higher_bid(productName)
                       : isWinning && !isEnded
-                          ? 'You are currently winning $productName'
+                          ? AppLocalizations.of(context)!.currently_winning_product(productName)
                           : isEnded && isWinning
-                              ? 'Congratulations! You won $productName'
-                              : 'Auction ended for $productName',
+                              ? AppLocalizations.of(context)!.congratulations_won_product(productName)
+                              : AppLocalizations.of(context)!.auction_ended_for_product(productName),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -674,7 +685,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '1 Bid = 10',
+                            AppLocalizations.of(context)!.bid_points(pointPerBid),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -695,7 +706,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -711,7 +722,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             ),
           );
         } else {
-          ToastComponent.showDialog('Product details not available');
+          ToastComponent.showDialog(AppLocalizations.of(context)!.product_details_not_available);
         }
       },
       child: Container(
@@ -746,7 +757,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             ),
           );
         } else {
-          ToastComponent.showDialog('Product details not available');
+          ToastComponent.showDialog(AppLocalizations.of(context)!.product_details_not_available);
         }
       },
       child: Container(

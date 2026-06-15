@@ -4,6 +4,8 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'dart:convert';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -21,7 +23,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _isRefreshing = false;
   bool _isSaving = false;
   
-  UserInformation? _userInfo;  // Store user info for notification settings
+  UserInformation? _userInfo;
   
   // Notification settings
   Map<String, bool> _notificationSettings = {
@@ -73,15 +75,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           _userInfo = response.data![0];
         });
         
-        // Load notification settings from user info
-        // Assuming notification settings are stored in user preferences
         _loadSettingsFromUserInfo();
       } else {
-        // Use default settings if API fails
         _useDefaultSettings();
       }
     } catch (e) {
       print("Error loading notification settings: $e");
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_notification_settings);
       _useDefaultSettings();
     } finally {
       setState(() {
@@ -92,13 +92,12 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   }
   
   void _loadSettingsFromUserInfo() {
-    // In a real implementation, these would come from the API
-    // For now, we use defaults
+    // Load from user preferences if available
+    // For now, use defaults
     _useDefaultSettings();
   }
   
   void _useDefaultSettings() {
-    // All settings default to true
     setState(() {
       _notificationSettings = {
         'new_bid': true,
@@ -124,31 +123,35 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     await _fetchNotificationSettings();
   }
   
-  // ============ SAVE SETTINGS ============
+  // ============ SAVE SETTINGS TO SERVER ============
   Future<void> _saveSettings() async {
     setState(() {
       _isSaving = true;
     });
     
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // In a real implementation, call the API to save settings
-    // await ProfileRepository().updateNotificationSettings(_notificationSettings);
-    
-    setState(() {
-      _isSaving = false;
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Notification settings saved successfully'),
-          backgroundColor: MyTheme.accent_color,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      Navigator.pop(context);
+    try {
+      final response = await ProfileRepository().updateNotificationSettings(_notificationSettings);
+      
+      if (response['success'] == true) {
+        ToastComponent.showDialog(
+          response['message'] ?? AppLocalizations.of(context)!.notification_settings_saved_successfully,
+        );
+        
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        ToastComponent.showDialog(
+          response['message'] ?? AppLocalizations.of(context)!.notification_settings_save_failed,
+        );
+      }
+    } catch (e) {
+      print("Error saving notification settings: $e");
+      ToastComponent.showDialog(AppLocalizations.of(context)!.notification_settings_save_failed);
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
   
@@ -164,9 +167,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Notification',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context)!.notification_ucf,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
@@ -174,7 +177,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -190,17 +193,17 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   children: [
                     // Bid Notifications Card
                     _buildNotificationCard(
-                      title: 'Bid Notifications',
+                      title: AppLocalizations.of(context)!.bid_notifications,
                       icon: Icons.gavel,
                       children: [
                         _buildNotificationItem(
-                          label: 'New bid notification',
+                          label: AppLocalizations.of(context)!.new_bid_notification,
                           key: 'new_bid',
                           value: _notificationSettings['new_bid'] ?? true,
                           onChanged: (val) => _updateSetting('new_bid', val),
                         ),
                         _buildNotificationItem(
-                          label: 'Outbid notification',
+                          label: AppLocalizations.of(context)!.outbid_notification,
                           key: 'outbid',
                           value: _notificationSettings['outbid'] ?? true,
                           onChanged: (val) => _updateSetting('outbid', val),
@@ -210,23 +213,23 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     
                     // Referral Notifications Card
                     _buildNotificationCard(
-                      title: 'Referral Notifications',
+                      title: AppLocalizations.of(context)!.referral_notifications,
                       icon: Icons.people,
                       children: [
                         _buildNotificationItem(
-                          label: 'New referral notification',
+                          label: AppLocalizations.of(context)!.new_referral_notification,
                           key: 'new_referral',
                           value: _notificationSettings['new_referral'] ?? true,
                           onChanged: (val) => _updateSetting('new_referral', val),
                         ),
                         _buildNotificationItem(
-                          label: 'Earning notification',
+                          label: AppLocalizations.of(context)!.earning_notification,
                           key: 'earning',
                           value: _notificationSettings['earning'] ?? true,
                           onChanged: (val) => _updateSetting('earning', val),
                         ),
                         _buildNotificationItem(
-                          label: 'Withdrawal notification',
+                          label: AppLocalizations.of(context)!.withdrawal_notification,
                           key: 'withdrawal',
                           value: _notificationSettings['withdrawal'] ?? true,
                           onChanged: (val) => _updateSetting('withdrawal', val),
@@ -236,17 +239,17 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     
                     // Point Notifications Card
                     _buildNotificationCard(
-                      title: 'Point Notifications',
+                      title: AppLocalizations.of(context)!.point_notifications,
                       icon: Icons.stars,
                       children: [
                         _buildNotificationItem(
-                          label: 'Point Purchase notification',
+                          label: AppLocalizations.of(context)!.point_purchase_notification,
                           key: 'point_purchase',
                           value: _notificationSettings['point_purchase'] ?? true,
                           onChanged: (val) => _updateSetting('point_purchase', val),
                         ),
                         _buildNotificationItem(
-                          label: 'Point deduction notification',
+                          label: AppLocalizations.of(context)!.point_deduction_notification,
                           key: 'point_deduction',
                           value: _notificationSettings['point_deduction'] ?? true,
                           onChanged: (val) => _updateSetting('point_deduction', val),
@@ -256,11 +259,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     
                     // Chat Notifications Card
                     _buildNotificationCard(
-                      title: 'Chat Notifications',
+                      title: AppLocalizations.of(context)!.chat_notifications,
                       icon: Icons.chat_bubble_outline,
                       children: [
                         _buildNotificationItem(
-                          label: 'New chat notification',
+                          label: AppLocalizations.of(context)!.new_chat_notification,
                           key: 'new_chat',
                           value: _notificationSettings['new_chat'] ?? true,
                           onChanged: (val) => _updateSetting('new_chat', val),
@@ -270,23 +273,23 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     
                     // Product Notifications Card
                     _buildNotificationCard(
-                      title: 'Product Notifications',
+                      title: AppLocalizations.of(context)!.product_notifications,
                       icon: Icons.shopping_bag,
                       children: [
                         _buildNotificationItem(
-                          label: 'New product notification',
+                          label: AppLocalizations.of(context)!.new_product_notification,
                           key: 'new_product',
                           value: _notificationSettings['new_product'] ?? true,
                           onChanged: (val) => _updateSetting('new_product', val),
                         ),
                         _buildNotificationItem(
-                          label: 'Ending soon notification',
+                          label: AppLocalizations.of(context)!.ending_soon_notification,
                           key: 'ending_soon',
                           value: _notificationSettings['ending_soon'] ?? true,
                           onChanged: (val) => _updateSetting('ending_soon', val),
                         ),
                         _buildNotificationItem(
-                          label: 'Ended notification',
+                          label: AppLocalizations.of(context)!.ended_notification,
                           key: 'ended',
                           value: _notificationSettings['ended'] ?? true,
                           onChanged: (val) => _updateSetting('ended', val),
@@ -310,22 +313,16 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 30),
       child: Column(
         children: [
-          // Bid Notifications card shimmer
           _buildShimmerCard(),
           const SizedBox(height: 12),
-          // Referral Notifications card shimmer
           _buildShimmerCard(),
           const SizedBox(height: 12),
-          // Point Notifications card shimmer
           _buildShimmerCard(),
           const SizedBox(height: 12),
-          // Chat Notifications card shimmer
           _buildShimmerCard(),
           const SizedBox(height: 12),
-          // Product Notifications card shimmer
           _buildShimmerCard(),
           const SizedBox(height: 20),
-          // Save button shimmer
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ShimmerHelper().buildBasicShimmer(height: 48, radius: 50),
@@ -345,7 +342,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       ),
       child: Column(
         children: [
-          // Header shimmer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -356,7 +352,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               ],
             ),
           ),
-          // Items shimmer
           ...List.generate(3, (index) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -422,7 +417,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               ],
             ),
           ),
-          // Card Body
           ...children,
         ],
       ),
@@ -445,15 +439,17 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF0F172A),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ),
-          // Custom Switch matching HTML style
+          // Custom Switch
           GestureDetector(
             onTap: () => onChanged(!value),
             child: AnimatedContainer(
@@ -505,10 +501,10 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     color: Colors.white,
                   ),
                 )
-              : const Text(
-                  'Save Settings',
+              : Text(
+                  AppLocalizations.of(context)!.save_settings,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,

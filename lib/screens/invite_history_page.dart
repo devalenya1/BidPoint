@@ -5,6 +5,7 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:flutter/services.dart';
 
 // Import the data model
@@ -29,7 +30,9 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   int get _totalPoints => (_userInfo?.balance ?? 0).toInt();
   double get _totalEarnings => _userInfo?.affiliateBalance ?? 0.0;
   String get _referralCode => _userInfo?.referralCode ?? "";
-  String get _referralLink => "https://bidpoint.com/ref/$_referralCode";
+  
+  // FIXED: Use AppConfig.RAW_BASE_URL for referral link
+  String get _referralLink => "${AppConfig.RAW_BASE_URL}/ref/$_referralCode";
   
   // Invite history from API
   List<AffiliateLog> get _inviteHistory => _userInfo?.affiliateLogs?.where((log) => 
@@ -83,10 +86,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   void _copyToClipboard() {
     if (_referralCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Referral code not available'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.referral_code_not_available),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -113,11 +116,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   }
   
   String _getReferralName(AffiliateLog log) {
-    // If cameFrom has a name, use it, otherwise use generic
     if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
       return log.cameFrom!;
     }
-    return 'Referred User';
+    return AppLocalizations.of(context)!.referred_user;
   }
   
   // ============ BUILD UI ============
@@ -136,7 +138,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: _navigateBack,
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -146,18 +148,14 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         child: _isLoading
             ? _buildShimmer()
             : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 child: Column(
                   children: [
-                    // Stats Cards Row
                     _buildStatsRow(),
                     const SizedBox(height: 24),
-                    
-                    // Referral Link Section
                     _buildReferralSection(),
                     const SizedBox(height: 24),
-                    
-                    // Invite History Section
                     _buildHistorySection(),
                   ],
                 ),
@@ -172,7 +170,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
         children: [
-          // Stats Cards Row Shimmer
           Row(
             children: [
               Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
@@ -183,16 +180,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             ],
           ),
           const SizedBox(height: 24),
-          
-          // Referral Link Section Shimmer
           ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
           const SizedBox(height: 24),
-          
-          // History Header Shimmer
           ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
           const SizedBox(height: 16),
-          
-          // History Items Shimmer
           Column(
             children: List.generate(5, (index) => 
               Padding(
@@ -286,7 +277,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   Widget _buildReferralSection() {
     final displayLink = _referralCode.isNotEmpty 
         ? _referralLink 
-        : 'Referral code not available';
+        : AppLocalizations.of(context)!.referral_code_not_available;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +357,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     
     return Column(
       children: [
-        // Table Header
         Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
@@ -421,7 +411,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           ),
         ),
         
-        // History List
         if (history.isEmpty)
           _buildEmptyState()
         else
@@ -442,7 +431,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             ),
           ),
         
-        // Pagination (if needed)
         if (history.length > 5)
           _buildPagination(),
       ],
@@ -466,6 +454,8 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF1A1A2E),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
@@ -483,7 +473,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           Expanded(
             flex: 1,
             child: Text(
-              item.createdAt != null ? _formatDate(item.createdAt!) : 'Unknown',
+              item.createdAt != null ? _formatDate(item.createdAt!) : AppLocalizations.of(context)!.unknown_ucf,
               textAlign: TextAlign.right,
               style: const TextStyle(
                 fontSize: 12,

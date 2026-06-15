@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'dart:convert';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -23,7 +24,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   bool _isRefreshing = false;
   bool _isSubmitting = false;
   
-  UserInformation? _userInfo;  // Store user info for balance and withdrawal history
+  UserInformation? _userInfo;
   
   double _availableBalance = 0.0;
   double _minimumWithdrawAmount = 10.00;
@@ -50,10 +51,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     super.dispose();
   }
   
-  // Helper to get currency symbol
   String _getCurrencySymbol() {
-    // You can customize this based on your app's currency
-    // For now, return '$' as default
     return '\$';
   }
   
@@ -77,7 +75,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       }
     } catch (e) {
       print("Error loading withdrawal data: $e");
-      ToastComponent.showDialog('Failed to load withdrawal data');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_withdrawal_data);
       _useDefaultData();
     } finally {
       setState(() {
@@ -102,42 +100,29 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     await _fetchWithdrawalData();
   }
   
-  // ============ SUBMIT WITHDRAWAL REQUEST ============
+  // ============ SUBMIT WITHDRAWAL REQUEST TO SERVER ============
   Future<void> _submitWithdrawalRequest(double amount) async {
     setState(() {
       _isSubmitting = true;
     });
     
     try {
-      // TODO: Call API to submit withdrawal request
-      // var response = await ProfileRepository().submitWithdrawalRequest(amount);
+      final response = await ProfileRepository().submitWithdrawalRequest(amount);
       
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Refresh data after successful submission
-      await _fetchWithdrawalData();
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.withdrawal_request_submitted),
-            backgroundColor: MyTheme.accent_color,
-            duration: const Duration(seconds: 2),
-          ),
+      if (response['success'] == true) {
+        ToastComponent.showDialog(
+          response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_submitted,
+        );
+        
+        await _fetchWithdrawalData();
+      } else {
+        ToastComponent.showDialog(
+          response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_failed,
         );
       }
     } catch (e) {
       print("Error submitting withdrawal: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to submit withdrawal request'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      ToastComponent.showDialog(AppLocalizations.of(context)!.withdrawal_request_failed);
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -145,287 +130,261 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     }
   }
   
+  // ============ CENTER POPUP DIALOG (Not Bottom Sheet) ============
   void _showWithdrawModal() {
-    showModalBottomSheet(
+    _amountController.clear();
+    _withdrawAmount = 0;
+    
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              title: Row(
                 children: [
-                  // Modal Header
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Color(0xFFEEF2F8)),
-                      ),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: MyTheme.accent_color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.withdraw_request,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 18,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      Icons.request_quote,
+                      color: MyTheme.accent_color,
+                      size: 24,
                     ),
                   ),
-                  
-                  // Modal Body
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Available Balance Display
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF6F6F6),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.available_balance,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF64748B),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                FormatHelper.formatPrice(_availableBalance),
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0092AC),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Withdrawal Amount Field
-                        Text(
-                          AppLocalizations.of(context)!.withdrawal_amount,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14),
-                                child: Text(
-                                  _getCurrencySymbol(),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _amountController,
-                                  keyboardType: TextInputType.number,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                  decoration: const InputDecoration(
-                                    hintText: '0.00',
-                                    hintStyle: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(vertical: 14),
-                                  ),
-                                  onChanged: (value) {
-                                    setModalState(() {
-                                      _withdrawAmount = double.tryParse(value) ?? 0;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Min/Max Hint
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${AppLocalizations.of(context)!.min_ucf}: ${FormatHelper.formatPrice(_minimumWithdrawAmount)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF94A3B8),
-                                ),
-                              ),
-                              Text(
-                                '${AppLocalizations.of(context)!.max_ucf}: ${FormatHelper.formatPrice(_availableBalance)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Quick Amount Buttons
-                        if (_availableBalance > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Row(
-                              children: [
-                                _buildQuickAmountButton(
-                                  amount: (_minimumWithdrawAmount < _availableBalance) 
-                                      ? _minimumWithdrawAmount 
-                                      : _availableBalance,
-                                  setModalState: setModalState,
-                                ),
-                                const SizedBox(width: 10),
-                                _buildQuickAmountButton(
-                                  amount: (25.0 < _availableBalance) ? 25.0 : _availableBalance,
-                                  setModalState: setModalState,
-                                ),
-                                const SizedBox(width: 10),
-                                _buildQuickAmountButton(
-                                  amount: (50.0 < _availableBalance) ? 50.0 : _availableBalance,
-                                  setModalState: setModalState,
-                                ),
-                                const SizedBox(width: 10),
-                                _buildQuickAmountButton(
-                                  amount: _availableBalance,
-                                  label: AppLocalizations.of(context)!.max_ucf,
-                                  setModalState: setModalState,
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Modal Footer
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Color(0xFFEEF2F8)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.withdraw_request,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF6F6F6),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(context)!.cancel_ucf,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _isSubmitting ? null : () => _validateAndSubmit(setModalState, context),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: _isSubmitting ? MyTheme.medium_grey : MyTheme.accent_color,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: _isSubmitting
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(
-                                      AppLocalizations.of(context)!.confirm_withdrawal,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ],
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F6F6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 18,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ),
                 ],
               ),
+              content: Container(
+                width: double.maxFinite,
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Available Balance Display
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F6F6),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.available_balance,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            FormatHelper.formatPrice(_availableBalance),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0092AC),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Withdrawal Amount Field
+                    Text(
+                      AppLocalizations.of(context)!.withdrawal_amount,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Text(
+                              _getCurrencySymbol(),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _amountController,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF0F172A),
+                              ),
+                              decoration: const InputDecoration(
+                                hintText: '0.00',
+                                hintStyle: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  _withdrawAmount = double.tryParse(value) ?? 0;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Min/Max Hint
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${AppLocalizations.of(context)!.min_ucf}: ${FormatHelper.formatPrice(_minimumWithdrawAmount)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          ),
+                          Text(
+                            '${AppLocalizations.of(context)!.max_ucf}: ${FormatHelper.formatPrice(_availableBalance)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Quick Amount Buttons
+                    if (_availableBalance > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          children: [
+                            _buildQuickAmountButton(
+                              amount: (_minimumWithdrawAmount < _availableBalance) 
+                                  ? _minimumWithdrawAmount 
+                                  : _availableBalance,
+                              setModalState: setModalState,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildQuickAmountButton(
+                              amount: (25.0 < _availableBalance) ? 25.0 : _availableBalance,
+                              setModalState: setModalState,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildQuickAmountButton(
+                              amount: (50.0 < _availableBalance) ? 50.0 : _availableBalance,
+                              setModalState: setModalState,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildQuickAmountButton(
+                              amount: _availableBalance,
+                              label: AppLocalizations.of(context)!.max_ucf,
+                              setModalState: setModalState,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.cancel_ucf,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _isSubmitting ? null : () => _validateAndSubmit(setModalState, context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyTheme.accent_color,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          AppLocalizations.of(context)!.confirm_withdrawal,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
             );
           },
         );
@@ -469,39 +428,23 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   
   void _validateAndSubmit(StateSetter setModalState, BuildContext modalContext) {
     if (_withdrawAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid amount'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_valid_amount);
       return;
     }
     
     if (_withdrawAmount > _availableBalance) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Insufficient balance'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      ToastComponent.showDialog(AppLocalizations.of(context)!.insufficient_balance);
       return;
     }
     
     if (_withdrawAmount < _minimumWithdrawAmount) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Minimum withdrawal amount is ${FormatHelper.formatPrice(_minimumWithdrawAmount)}'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
+      ToastComponent.showDialog(
+        '${AppLocalizations.of(context)!.min_withdrawal_amount} ${FormatHelper.formatPrice(_minimumWithdrawAmount)}'
       );
       return;
     }
     
-    // Close modal
+    // Close the modal
     Navigator.pop(modalContext);
     
     // Show confirmation dialog
@@ -524,9 +467,29 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '${AppLocalizations.of(context)!.amount_ucf}: ${FormatHelper.formatPrice(_withdrawAmount)}',
-                style: const TextStyle(fontSize: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6F6F6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.amount_ucf,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    Text(
+                      FormatHelper.formatPrice(_withdrawAmount),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -617,7 +580,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -626,7 +589,8 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : Padding(
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -734,103 +698,84 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                     const SizedBox(height: 16),
                     
                     // History List
-                    Expanded(
-                      child: _withdrawalHistory.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    '💰',
-                                    style: TextStyle(fontSize: 48),
+                    if (_withdrawalHistory.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _withdrawalHistory.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final withdrawal = _withdrawalHistory[index];
+                          final date = withdrawal.createdAt;
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F9FC),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 40,
+                                      child: Text(
+                                        '#${(index + 1).toString().padLeft(2, '0')}',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF666666),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          date != null ? _formatDate(date) : 'Unknown date',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF666666),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          FormatHelper.formatPrice(withdrawal.amount ?? 0),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF0092AC),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: _getStatusBackgroundColor(withdrawal.status ?? 0),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    AppLocalizations.of(context)!.no_withdrawal_requests_found,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF999999),
+                                  child: Text(
+                                    _getStatusText(withdrawal.status ?? 0),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _getStatusColor(withdrawal.status ?? 0),
                                     ),
                                   ),
-                                ],
-                              ),
-                            )
-                          : ListView.separated(
-                              itemCount: _withdrawalHistory.length,
-                              separatorBuilder: (context, index) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final withdrawal = _withdrawalHistory[index];
-                                final date = withdrawal.createdAt;
-                                return Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF8F9FC),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Left side - Index and Date
-                                      Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 40,
-                                            child: Text(
-                                              '#${(index + 1).toString().padLeft(2, '0')}',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF666666),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                date != null ? _formatDate(date) : 'Unknown date',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Color(0xFF666666),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                FormatHelper.formatPrice(withdrawal.amount ?? 0),
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFF0092AC),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      
-                                      // Right side - Status Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusBackgroundColor(withdrawal.status ?? 0),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          _getStatusText(withdrawal.status ?? 0),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: _getStatusColor(withdrawal.status ?? 0),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                ),
+                              ],
                             ),
-                    ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -838,14 +783,36 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     );
   }
   
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      child: Column(
+        children: [
+          const Text(
+            '💰',
+            style: TextStyle(fontSize: 48),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            AppLocalizations.of(context)!.no_withdrawal_requests_found,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF999999),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
-    return Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stats Cards Row Shimmer
           Row(
             children: [
               Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 16)),
@@ -853,21 +820,16 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
               Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 16)),
             ],
           ),
-          
           const SizedBox(height: 24),
-          
-          // History Header Shimmer
           ShimmerHelper().buildBasicShimmer(height: 20, width: 180),
           const SizedBox(height: 16),
-          
-          // History Items Shimmer
-          Expanded(
-            child: ListView.separated(
-              itemCount: 5,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => 
-                  ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
-            ),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 5,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) => 
+                ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
           ),
         ],
       ),

@@ -16,12 +16,12 @@ import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_horizontal_carousel.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -69,9 +69,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     // Logged in but no user info yet → 1 (shimmer/placeholder)
     if (_userInfo == null) return 1;
     
-    // TODO: Get message count from chat repository when available
-    // For now, return 0 (actual count would come from chat API)
-    return 0;
+    // Logged in with user info → actual message count from API
+    return _userInfo!.unreadMessagesCount ?? 0;
   }
   
   // Whether to show count badge
@@ -112,6 +111,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         // Update SharedValue for quick access elsewhere
         unread_notifications_count.$ = _userInfo!.unreadNotificationsCount ?? 0;
         unread_notifications_count.save();
+        
+        // Also store message count if needed elsewhere
+        // unread_messages_count.$ = _userInfo!.unreadMessagesCount ?? 0;
+        // unread_messages_count.save();
       }
     } catch (e) {
       print("Error loading notification counts: $e");
@@ -690,7 +693,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            // Chat Icon
+            // Chat Icon - Now shows actual message count from API
             Padding(
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
@@ -722,7 +725,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           width: 22,
                         ),
                       ),
-                      // Chat counter badge
+                      // Chat counter badge - Now shows actual unread messages count
                       if (_showMessageBadge)
                         Positioned(
                           top: 2,

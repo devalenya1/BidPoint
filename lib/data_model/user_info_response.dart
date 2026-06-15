@@ -56,6 +56,7 @@ class UserInformation {
     this.packageName,
     this.notifications,
     this.unreadNotificationsCount,
+    this.unreadMessagesCount,
     this.affiliateLogs,
     this.totalAffiliateEarnings,
     this.affiliateWithdrawRequests,
@@ -99,6 +100,7 @@ class UserInformation {
   String? packageName;
   List<Notification>? notifications;
   int? unreadNotificationsCount;
+  int? unreadMessagesCount;
   List<AffiliateLog>? affiliateLogs;
   double? totalAffiliateEarnings;
   List<AffiliateWithdrawRequest>? affiliateWithdrawRequests;
@@ -146,6 +148,7 @@ class UserInformation {
         ? List<Notification>.from(json["notifications"].map((x) => Notification.fromJson(x)))
         : [],
     unreadNotificationsCount: json["unread_notifications_count"],
+    unreadMessagesCount: json["unread_messages_count"] ?? 0,
     
     // Affiliate Logs
     affiliateLogs: json["affiliate_logs"] != null
@@ -220,6 +223,7 @@ class UserInformation {
     "package_name": packageName,
     "notifications": notifications != null ? List<dynamic>.from(notifications!.map((x) => x.toJson())) : [],
     "unread_notifications_count": unreadNotificationsCount,
+    "unread_messages_count": unreadMessagesCount,
     "affiliate_logs": affiliateLogs != null ? List<dynamic>.from(affiliateLogs!.map((x) => x.toJson())) : [],
     "total_affiliate_earnings": totalAffiliateEarnings,
     "affiliate_withdraw_requests": affiliateWithdrawRequests != null ? List<dynamic>.from(affiliateWithdrawRequests!.map((x) => x.toJson())) : [],
@@ -595,6 +599,7 @@ class WishlistItem {
     this.productImage,
     this.productPrice,
     this.highestBid,
+    this.pointPerBid,
     this.slug,
     this.createdAt,
     this.updatedAt,
@@ -606,6 +611,7 @@ class WishlistItem {
   String? productImage;
   double? productPrice;
   double? highestBid;
+  int? pointPerBid;
   String? slug;
   DateTime? createdAt;
   DateTime? updatedAt;
@@ -617,6 +623,7 @@ class WishlistItem {
     productImage: json["product_image"],
     productPrice: json["product_price"]?.toDouble(),
     highestBid: json["highest_bid"]?.toDouble(),
+    pointPerBid: json["point_per_bid"],
     slug: json["slug"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
@@ -629,6 +636,7 @@ class WishlistItem {
     "product_image": productImage,
     "product_price": productPrice,
     "highest_bid": highestBid,
+    "point_per_bid": pointPerBid,
     "slug": slug,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
@@ -644,6 +652,7 @@ class AuctionBid {
     this.amount,
     this.formattedAmount,
     this.dayOfBid,
+    this.pointPerBid,
     this.createdAt,
     this.updatedAt,
   });
@@ -655,6 +664,7 @@ class AuctionBid {
   double? amount;
   double? formattedAmount;
   String? dayOfBid;
+  int? pointPerBid;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -666,6 +676,7 @@ class AuctionBid {
     amount: json["amount"]?.toDouble(),
     formattedAmount: json["formatted_amount"]?.toDouble(),
     dayOfBid: json["day_of_bid"],
+    pointPerBid: json["point_per_bid"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -678,6 +689,7 @@ class AuctionBid {
     "amount": amount,
     "formatted_amount": formattedAmount,
     "day_of_bid": dayOfBid,
+    "point_per_bid": pointPerBid,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };

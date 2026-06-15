@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
@@ -27,7 +28,7 @@ class CashEarningsPage extends StatefulWidget {
 }
 
 class _CashEarningsPageState extends State<CashEarningsPage> {
-  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
   int _selectedMonthIndex = 0;
@@ -51,7 +52,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     }
   }
   
-  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  // ============ FETCH DATA FROM API ============
   Future<void> _fetchUserData() async {
     try {
       setState(() {
@@ -62,24 +63,21 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userInfo = response.data![0];  // Store locally like _productDetails
+          _userInfo = response.data![0];
         });
         
-        // Process cash logs from the stored user info
         _processCashLogs();
         
-        // Optional: Update global SharedValues for affiliate balance
         affiliate_balance.$ = _userInfo?.affiliateBalance?.toString() ?? "0";
         affiliate_balance.save();
         
-        // Save all user data to SharedPreferences for other screens
         if (_userInfo != null) {
           UserDataHelper.saveUserData(_userInfo!);
         }
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog('Failed to load cash earnings');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_cash_earnings);
     } finally {
       setState(() {
         _isLoading = false;
@@ -88,24 +86,22 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     }
   }
   
-  // ============ PROCESS CASH LOGS (Extract from stored user info) ============
+  // ============ PROCESS CASH LOGS ============
   void _processCashLogs() {
     if (_userInfo == null) return;
     
     final affiliateLogs = _userInfo!.affiliateLogs ?? [];
     final withdrawRequests = _userInfo!.affiliateWithdrawRequests ?? [];
     
-    // Process affiliate logs for cash earnings (filter for bonus_type that earn cash)
     List<Map<String, dynamic>> allCashTransactions = [];
     
     // Add earnings from affiliate logs (positive amounts)
     for (var log in affiliateLogs) {
-      // Skip point transactions, only include cash earnings
       if (log.bonusType != 'point' && (log.amount ?? 0) > 0) {
         allCashTransactions.add({
           'type': 'earning',
           'amount': (log.amount ?? 0).toDouble(),
-          'cameFrom': log.cameFrom ?? 'Affiliate earning',
+          'cameFrom': log.cameFrom ?? AppLocalizations.of(context)!.affiliate_earning,
           'status': log.status == 1 ? 1 : 0,
           'createdAt': log.createdAt,
           'orderId': log.orderId,
@@ -118,7 +114,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       allCashTransactions.add({
         'type': 'withdrawal',
         'amount': -(request.amount ?? 0).toDouble(),
-        'cameFrom': 'Withdrawal request',
+        'cameFrom': AppLocalizations.of(context)!.withdrawal_request,
         'status': request.status == 1 ? 1 : 0,
         'createdAt': request.createdAt,
         'orderId': null,
@@ -160,7 +156,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     setState(() {});
   }
   
-  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  // ============ PULL TO REFRESH ============
   Future<void> _onPageRefresh() async {
     setState(() {
       _isRefreshing = true;
@@ -168,7 +164,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     await _fetchUserData();
   }
   
-  // Helper getters for user data (derived from _userInfo)
+  // Helper getters for user data
   String get _userName => _userInfo?.name ?? "";
   String get _userEmail => _userInfo?.email ?? "";
   String get _userPhone => _userInfo?.phone ?? "";
@@ -219,7 +215,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
   
-  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
+  // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
     final filteredLogs = _getFilteredLogs();
@@ -227,9 +223,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Cash Earnings',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        title: Text(
+          AppLocalizations.of(context)!.cash_earnings,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
@@ -237,7 +233,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -245,8 +241,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         backgroundColor: Colors.white,
         onRefresh: _onPageRefresh,
         child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading
+            ? _buildShimmer()
             : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,22 +261,20 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile card shimmer
           Padding(
             padding: const EdgeInsets.all(16),
             child: ShimmerHelper().buildBasicShimmer(height: 87, radius: 20),
           ),
-          // Cash History header shimmer
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text('Cash History'),
           ),
           const SizedBox(height: 12),
-          // History cards shimmer
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -306,7 +301,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       ),
       child: Row(
         children: [
-          // Avatar
           Container(
             width: 55,
             height: 55,
@@ -339,13 +333,12 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             ),
           ),
           const SizedBox(width: 12),
-          // User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _userName.isNotEmpty ? _userName : 'User',
+                  _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.user_ucf,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -355,9 +348,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Text(
-                      'Cash Earnings',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.cash_earnings,
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF64748B),
@@ -369,7 +362,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF10B981),
+                        color: const Color(0xFF10B981),
                       ),
                     ),
                   ],
@@ -389,9 +382,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Cash History',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.cash_history,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -427,29 +420,31 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       child: Column(
         children: [
           _buildHistoryRow(
-            'Date',
+            AppLocalizations.of(context)!.date_ucf,
             date != null 
                 ? '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}, ${_formatTime(date)}'
-                : 'Unknown',
+                : AppLocalizations.of(context)!.unknown_ucf,
           ),
           _buildHistoryRow(
-            'Description',
-            log['cameFrom'] ?? (isWithdrawal ? 'Cash Withdrawal' : 'Affiliate Earning'),
+            AppLocalizations.of(context)!.description_ucf,
+            log['cameFrom'] ?? (isWithdrawal 
+                ? AppLocalizations.of(context)!.cash_withdrawal 
+                : AppLocalizations.of(context)!.affiliate_earning),
           ),
           _buildHistoryRow(
-            isWithdrawal ? 'Withdrawn' : 'Earned',
+            isWithdrawal ? AppLocalizations.of(context)!.withdrawn_ucf : AppLocalizations.of(context)!.earned_ucf,
             '${isEarning ? '+' : ''}${FormatHelper.formatPrice(amount.abs())}',
             isHighlighted: true,
             highlightColor: isEarning ? const Color(0xFF10B981) : const Color(0xFFEF4444),
           ),
           if (log['orderId'] != null)
             _buildHistoryRow(
-              'Order ID',
+              AppLocalizations.of(context)!.order_id_ucf,
               '#${log['orderId']}',
             ),
           _buildHistoryRow(
-            'Status',
-            log['status'] == 1 ? 'Completed' : 'Pending',
+            AppLocalizations.of(context)!.status_ucf,
+            log['status'] == 1 ? AppLocalizations.of(context)!.completed_ucf : AppLocalizations.of(context)!.pending_ucf,
             statusColor: log['status'] == 1 ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
           ),
         ],
@@ -507,18 +502,18 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             style: TextStyle(fontSize: 32),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'No cash earnings yet',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.no_cash_earnings_yet,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Color(0xFF334155),
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Share your referral link to earn cash',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.share_referral_link_to_earn_cash,
+            style: const TextStyle(
               fontSize: 11,
               color: Color(0xFF94A3B8),
             ),
@@ -538,9 +533,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Monthly Cash Summary',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.monthly_cash_summary,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: Colors.black,
@@ -593,9 +588,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             ),
             child: Column(
               children: [
-                const Text(
-                  'Net Cash',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.net_cash,
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF666666),
@@ -612,7 +607,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  monthCash >= 0 ? 'Net earned this month' : 'Net withdrawn this month',
+                  monthCash >= 0 
+                      ? AppLocalizations.of(context)!.net_earned_this_month 
+                      : AppLocalizations.of(context)!.net_withdrawn_this_month,
                   style: const TextStyle(
                     fontSize: 10,
                     color: Color(0xFF94A3B8),

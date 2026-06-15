@@ -4,8 +4,6 @@ import 'package:active_ecommerce_flutter/presenter/home_presenter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-
-
 import 'package:active_ecommerce_flutter/repositories/language_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/coupon_repository.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
@@ -30,12 +28,11 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
   ScrollController _mainScrollController = ScrollController();
   var _list = [];
   bool _isInitial = true;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     fetchList();
   }
 
@@ -72,8 +69,14 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
   }
 
   Future<void> _onRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
     reset();
-    fetchList();
+    await fetchList();
+    setState(() {
+      _isRefreshing = false;
+    });
   }
 
   onPopped(value) {
@@ -93,13 +96,10 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
   }
 
   onLanguageItemTap(index) {
-
     if (index != _selected_index) {
       setState(() {
         _selected_index = index;
       });
-
-      // if(Locale().)
 
       app_language.$ = _list[_selected_index].code;
       app_language.save();
@@ -108,8 +108,6 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
       app_language_rtl.$ = _list[_selected_index].rtl;
       app_language_rtl.save();
 
-      // var local_provider = new LocaleProvider();
-      // local_provider.setLocale(_list[_selected_index].code);
       Provider.of<LocaleProvider>(context, listen: false)
           .setLocale(_list[_selected_index].mobile_app_code);
       context.go('/');
@@ -121,40 +119,37 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
     return Directionality(
       textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: buildAppBar(context),
+        body: RefreshIndicator(
+          color: MyTheme.accent_color,
           backgroundColor: Colors.white,
-          appBar: buildAppBar(context),
-          body: Stack(
-            children: [
-              RefreshIndicator(
-                color: MyTheme.accent_color,
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                displacement: 0,
-                child: CustomScrollView(
-                  controller: _mainScrollController,
-                  physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics()),
-                  slivers: [
-                    SliverList(
-                      delegate: SliverChildListDelegate([
-                        Padding(
-                          padding: const EdgeInsets.all(18.0),
-                          child: buildLanguageMethodList(),
-                        ),
-                      ]),
-                    )
-                  ],
-                ),
-              ),
+          onRefresh: _onRefresh,
+          child: CustomScrollView(
+            controller: _mainScrollController,
+            physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
+            slivers: [
+              SliverList(
+                delegate: SliverChildListDelegate([
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: buildLanguageMethodList(),
+                  ),
+                ]),
+              )
             ],
-          )),
+          ),
+        ),
+      ),
     );
   }
 
   AppBar buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.white,
-      centerTitle: false,
+      elevation: 0,
+      centerTitle: true,
       leading: Builder(
         builder: (context) => IconButton(
           padding: EdgeInsets.zero,
@@ -163,11 +158,9 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
         ),
       ),
       title: Text(
-        "${AppLocalizations.of(context)!.change_language_ucf} (${app_language.$}) - (${app_mobile_language.$})",
-        style: TextStyle(fontSize: 16, color: MyTheme.dark_font_grey,fontWeight: FontWeight.bold),
+        AppLocalizations.of(context)!.change_language_ucf,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
-      elevation: 0.0,
-      titleSpacing: 0,
     );
   }
 
@@ -175,120 +168,134 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
     if (_isInitial && _list.length == 0) {
       return SingleChildScrollView(
           child: ShimmerHelper()
-              .buildListShimmer(item_count: 5, item_height: 100.0));
+              .buildListShimmer(item_count: 5, item_height: 80.0));
     } else if (_list.length > 0) {
-      return SingleChildScrollView(
-        child: ListView.separated(
-          separatorBuilder: (context, index) {
-            return SizedBox(
-              height: 14,
-            );
-          },
-          itemCount: _list.length,
-          scrollDirection: Axis.vertical,
-          physics: NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemBuilder: (context, index) {
-            return buildPaymentMethodItemCard(index);
-          },
-        ),
+      return ListView.separated(
+        separatorBuilder: (context, index) {
+          return const SizedBox(height: 12);
+        },
+        itemCount: _list.length,
+        scrollDirection: Axis.vertical,
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemBuilder: (context, index) {
+          return buildPaymentMethodItemCard(index);
+        },
       );
     } else if (!_isInitial && _list.length == 0) {
       return Container(
-          height: 100,
-          child: Center(
-              child: Text(
+        height: 100,
+        child: Center(
+          child: Text(
             AppLocalizations.of(context)!.no_language_is_added,
             style: TextStyle(color: MyTheme.font_grey),
-          )));
+          ),
+        ),
+      );
     }
+    return Container();
   }
 
   GestureDetector buildPaymentMethodItemCard(index) {
+    final isSelected = _selected_index == index;
+    
     return GestureDetector(
       onTap: () {
         onLanguageItemTap(index);
       },
-      child: Stack(
-        children: [
-          AnimatedContainer(
-            duration: Duration(milliseconds: 400),
-            decoration: BoxDecorations.buildBoxDecoration_1().copyWith(
-                border: Border.all(
-                    color: _selected_index == index
-                        ? MyTheme.accent_color
-                        : MyTheme.light_grey,
-                    width: _selected_index == index ? 1.0 : 0.0)),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                      width: 50,
-                      height: 50,
-                      child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child:
-                              /*Image.asset(
-                          _list[index].image,
-                          fit: BoxFit.fitWidth,
-                        ),*/
-                              FadeInImage.assetNetwork(
-                            placeholder: 'assets/placeholder.png',
-                            image: _list[index].image,
-                            fit: BoxFit.fitWidth,
-                          ))),
-                  Container(
-                    width: 150,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            "${_list[index].name} - ${_list[index].code} - ${_list[index].mobile_app_code}",
-                            textAlign: TextAlign.left,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            style: TextStyle(
-                                color: MyTheme.font_grey,
-                                fontSize: 14,
-                                height: 1.6,
-                                fontWeight: FontWeight.w400),
-                          ),
-                        ),
-                      ],
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? MyTheme.accent_color : const Color(0xFFEEF2F8),
+            width: isSelected ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF6F6F6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: FadeInImage.assetNetwork(
+                  placeholder: 'assets/placeholder.png',
+                  image: _list[index].image ?? '',
+                  fit: BoxFit.contain,
+                  imageErrorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F6F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.language,
+                        size: 24,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _list[index].name ?? '',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0F172A),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _list[index].code?.toUpperCase() ?? '',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
                     ),
                   ),
-                ]),
-          ),
-          app_language_rtl.$!
-              ? Positioned(
-                  left: 16,
-                  top: 16,
-                  child: buildCheckContainer(_selected_index == index),
-                )
-              : Positioned(
-                  right: 16,
-                  top: 16,
-                  child: buildCheckContainer(_selected_index == index),
-                )
-        ],
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: MyTheme.accent_color,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  size: 14,
+                  color: Colors.white,
+                ),
+              ),
+          ],
+        ),
       ),
     );
-  }
-
-  Container buildCheckContainer(bool check) {
-    return check
-        ? Container(
-            height: 16,
-            width: 16,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.0), color: Colors.green),
-            child: Padding(
-              padding: const EdgeInsets.all(3),
-              child: Icon(Icons.check, color: Colors.white, size: 10),
-            ),
-          )
-        : Container();
   }
 }

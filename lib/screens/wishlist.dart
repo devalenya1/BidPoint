@@ -9,6 +9,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/wishlist_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
+import 'package:flutter/services.dart';
 import 'package:toast/toast.dart';
 
 // Import the data model
@@ -90,7 +91,7 @@ class _WishlistState extends State<Wishlist> {
       }
     } catch (e) {
       print("Error loading wishlist data: $e");
-      ToastComponent.showDialog('Failed to load wishlist');
+      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_wishlist);
     } finally {
       setState(() {
         _isLoading = false;
@@ -117,23 +118,11 @@ class _WishlistState extends State<Wishlist> {
       // Determine auction status
       final isEnded = false; // Would need auction end date from API
       final isOutbid = false; // Would need to compare user bid with current bid
-      final isWinning = !isEnded && !isOutbid;
-      
-      // Set timers for items with end dates
-      if (!isEnded) {
-        // Start timer if needed (would need end date from API)
-        // _startTimer(item.id, endDate);
-      }
       
       allItems.add(item);
       
       if (!isEnded) {
         live.add(item);
-        
-        // Check if ending soon (would need end date)
-        // if (endDate != null && endDate.isBefore(endingSoonThreshold)) {
-        //   endingSoon.add(item);
-        // }
       }
       
       if (isOutbid && !isEnded) {
@@ -173,7 +162,7 @@ class _WishlistState extends State<Wishlist> {
     if (distance.isNegative) {
       if (mounted) {
         setState(() {
-          _timeLeft[id] = "Ended";
+          _timeLeft[id] = AppLocalizations.of(context)!.ended_ucf;
         });
       }
       _timers[id]?.cancel();
@@ -204,10 +193,10 @@ class _WishlistState extends State<Wishlist> {
   }
   
   String _formatPrice(dynamic price) {
-    if (price == null) return '\$0.00';
+    if (price == null) return FormatHelper.formatPrice(0);
     if (price is double) return FormatHelper.formatPrice(price);
     if (price is int) return FormatHelper.formatPrice(price.toDouble());
-    return '\$$price';
+    return FormatHelper.formatPrice(double.tryParse(price.toString()) ?? 0);
   }
   
   // ============ REMOVE FROM WISHLIST ============
@@ -216,20 +205,20 @@ class _WishlistState extends State<Wishlist> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Remove from Wishlist',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        title: Text(
+          AppLocalizations.of(context)!.remove_from_wishlist,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
-        content: const Text(
-          'Are you sure you want to remove this item from your wishlist?',
-          style: TextStyle(fontSize: 14),
+        content: Text(
+          AppLocalizations.of(context)!.remove_from_wishlist_confirmation,
+          style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF64748B)),
+            child: Text(
+              AppLocalizations.of(context)!.cancel_ucf,
+              style: const TextStyle(color: Color(0xFF64748B)),
             ),
           ),
           ElevatedButton(
@@ -238,7 +227,7 @@ class _WishlistState extends State<Wishlist> {
               backgroundColor: MyTheme.accent_color,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Remove'),
+            child: Text(AppLocalizations.of(context)!.remove_ucf),
           ),
         ],
       ),
@@ -261,13 +250,13 @@ class _WishlistState extends State<Wishlist> {
         wishlist_count.save();
         
         ToastComponent.showDialog(
-          'Removed from wishlist',
+          AppLocalizations.of(context)!.removed_from_wishlist,
           gravity: Toast.center,
           duration: Toast.lengthShort,
         );
       } catch (e) {
         print("Error removing from wishlist: $e");
-        ToastComponent.showDialog('Failed to remove from wishlist');
+        ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_remove_from_wishlist);
       }
     }
   }
@@ -301,7 +290,7 @@ class _WishlistState extends State<Wishlist> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: RefreshIndicator(
@@ -368,6 +357,7 @@ class _WishlistState extends State<Wishlist> {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
                 const SizedBox(height: 16),
@@ -391,9 +381,9 @@ class _WishlistState extends State<Wishlist> {
   Widget _buildTabs() {
     final tabs = [
       '${AppLocalizations.of(context)!.all_ucf} (${_wishlistItems.length})',
-      'Live (${_liveItems.length})',
-      'Ending Soon (${_endingSoonItems.length})',
-      'Outbid (${_outbidItems.length})',
+      '${AppLocalizations.of(context)!.live_ucf} (${_liveItems.length})',
+      '${AppLocalizations.of(context)!.ending_soon_ucf} (${_endingSoonItems.length})',
+      '${AppLocalizations.of(context)!.outbid_ucf} (${_outbidItems.length})',
     ];
     
     return Container(
@@ -434,8 +424,11 @@ class _WishlistState extends State<Wishlist> {
   }
   
   Widget _buildWishlistCard(WishlistItem item) {
-    final timeLeft = _timeLeft[item.id] ?? 'Loading...';
-    final isTimerEnded = timeLeft == "Ended";
+    final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
+    final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
+    
+    // Get point per bid from API (real value)
+    final int pointPerBid = item.pointPerBid ?? 10;
     
     // Determine status
     final isEnded = false; // Would need auction end date
@@ -446,16 +439,16 @@ class _WishlistState extends State<Wishlist> {
     Color statusColor;
     
     if (isEnded) {
-      statusText = 'Auction has ended';
+      statusText = AppLocalizations.of(context)!.auction_has_ended;
       statusColor = const Color(0xFF64748B);
     } else if (isOutbid) {
-      statusText = 'You were outbid! Someone placed a higher bid';
+      statusText = AppLocalizations.of(context)!.you_were_outbid;
       statusColor = const Color(0xFFDC2626);
     } else if (isWinning) {
-      statusText = 'You are currently winning this auction';
+      statusText = AppLocalizations.of(context)!.currently_winning;
       statusColor = const Color(0xFF10B981);
     } else {
-      statusText = 'Place your bid now';
+      statusText = AppLocalizations.of(context)!.place_your_bid_now;
       statusColor = const Color(0xFFF59E0B);
     }
     
@@ -509,7 +502,6 @@ class _WishlistState extends State<Wishlist> {
                         ),
                 ),
               ),
-              // Timer Badge (would need end date)
               // Remove from wishlist button
               Positioned(
                 top: 0,
@@ -542,7 +534,7 @@ class _WishlistState extends State<Wishlist> {
               children: [
                 // Product Name
                 Text(
-                  item.productName ?? 'Unknown Product',
+                  item.productName ?? AppLocalizations.of(context)!.unknown_product,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -563,9 +555,9 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 const SizedBox(height: 8),
                 // Bid Label
-                const Text(
-                  'Current bid',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.current_bid,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF94A3B8),
@@ -591,9 +583,9 @@ class _WishlistState extends State<Wishlist> {
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
-                        '1 Bid = 10',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.bid_points(pointPerBid),
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF0092AC),
@@ -617,7 +609,7 @@ class _WishlistState extends State<Wishlist> {
                       );
                     } else if (item.productId != null) {
                       ToastComponent.showDialog(
-                        'Product details not available',
+                        AppLocalizations.of(context)!.product_details_not_available,
                         gravity: Toast.center,
                         duration: Toast.lengthShort,
                       );
@@ -632,7 +624,7 @@ class _WishlistState extends State<Wishlist> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isEnded ? 'View Details' : 'Bid Now',
+                      isEnded ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.bid_now,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
@@ -658,23 +650,23 @@ class _WishlistState extends State<Wishlist> {
     switch (_selectedTab) {
       case 1:
         icon = '🎯';
-        text = 'No live auctions';
-        subtext = 'Check back later for active auctions';
+        text = AppLocalizations.of(context)!.no_live_auctions;
+        subtext = AppLocalizations.of(context)!.no_live_auctions_subtext;
         break;
       case 2:
         icon = '⏰';
-        text = 'No auctions ending soon';
-        subtext = 'Check back later for ending auctions';
+        text = AppLocalizations.of(context)!.no_ending_soon_auctions;
+        subtext = AppLocalizations.of(context)!.no_ending_soon_auctions_subtext;
         break;
       case 3:
         icon = '🏆';
-        text = 'No outbid items';
-        subtext = 'You are currently winning all your bids';
+        text = AppLocalizations.of(context)!.no_outbid_items;
+        subtext = AppLocalizations.of(context)!.no_outbid_items_subtext;
         break;
       default:
         icon = '❤️';
-        text = 'No items in wishlist';
-        subtext = 'Add products to wishlist to see them here';
+        text = AppLocalizations.of(context)!.no_items_in_wishlist;
+        subtext = AppLocalizations.of(context)!.no_items_in_wishlist_subtext;
     }
     
     return Container(
@@ -690,6 +682,7 @@ class _WishlistState extends State<Wishlist> {
               fontWeight: FontWeight.w600,
               color: Color(0xFF334155),
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
           Text(
