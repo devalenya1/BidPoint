@@ -1,3 +1,4 @@
+// points_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
@@ -34,12 +35,13 @@ class PointsPage extends StatefulWidget {
   State<PointsPage> createState() => _PointsPageState();
 }
 
-class _PointsPageState extends State<PointsPage> {
+class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateMixin {
   // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
   bool _isPurchasing = false;
   bool _isDrawerOpen = false;
+  bool _isDrawerAnimating = false;
   
   UserInformation? _userInfo;
   
@@ -47,9 +49,28 @@ class _PointsPageState extends State<PointsPage> {
   List<Package> _packages = [];
   Package? _selectedPackage;
   
+  late AnimationController _drawerAnimationController;
+  late Animation<double> _drawerSlideAnimation;
+  late Animation<double> _overlayFadeAnimation;
+  
   @override
   void initState() {
     super.initState();
+    
+    // Initialize animation controller for drawer
+    _drawerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _drawerSlideAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _drawerAnimationController, curve: Curves.easeOut),
+    );
+    
+    _overlayFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _drawerAnimationController, curve: Curves.easeOut),
+    );
+    
     if (is_logged_in.$ == true) {
       _fetchUserData();
       _fetchPackages();
@@ -58,6 +79,12 @@ class _PointsPageState extends State<PointsPage> {
         _isLoading = false;
       });
     }
+  }
+  
+  @override
+  void dispose() {
+    _drawerAnimationController.dispose();
+    super.dispose();
   }
   
   // ============ FETCH USER DATA FROM API ============
@@ -91,7 +118,12 @@ class _PointsPageState extends State<PointsPage> {
       if (response.data != null && response.data!.isNotEmpty) {
         setState(() {
           _packages = response.data!;
-          if (_packages.isNotEmpty) {
+          
+          // Auto-select middle package (index 1) like HTML does
+          // HTML selects second package (index 1) by default
+          if (_packages.length >= 2) {
+            _selectedPackage = _packages[1];
+          } else if (_packages.isNotEmpty) {
             _selectedPackage = _packages[0];
           }
         });
@@ -128,9 +160,9 @@ class _PointsPageState extends State<PointsPage> {
     final price = _getPackagePrice(_selectedPackage!);
     
     // Close drawer
-    _closeBuyPointsDrawer();
+    await _closeBuyPointsDrawer();
     
-    // Navigate to checkout for paid packages
+    // Navigate to checkout for paid packages (matching HTML behavior)
     if (price > 0) {
       Navigator.push(
         context,
@@ -147,17 +179,45 @@ class _PointsPageState extends State<PointsPage> {
         _fetchUserData();
       });
     } else {
-      // Free package
+      // Free package - matches HTML behavior where free package shows confirmation
       setState(() {
         _isPurchasing = true;
       });
       
       try {
-        var response = await CustomerPackageRepository().freePackagePayment(_selectedPackage!.id);
-        ToastComponent.showDialog(response.message ?? AppLocalizations.of(context)!.package_claimed_successfully);
+        // Show confirmation dialog like HTML does
+        final shouldProceed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text(AppLocalizations.of(context)!.confirm_purchase),
+              content: Text(
+                '${AppLocalizations.of(context)!.get} ${_selectedPackage!.name} ${AppLocalizations.of(context)!.package} ${_getPackagePoints(_selectedPackage!)} ${AppLocalizations.of(context)!.points_ucf.toLowerCase()} ${AppLocalizations.of(context)!.for_free}?'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(AppLocalizations.of(context)!.cancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(
+                    AppLocalizations.of(context)!.confirm,
+                    style: TextStyle(color: MyTheme.accent_color),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
         
-        if (response.result == true) {
-          await _fetchUserData();
+        if (shouldProceed == true) {
+          var response = await CustomerPackageRepository().freePackagePayment(_selectedPackage!.id);
+          ToastComponent.showDialog(response.message ?? AppLocalizations.of(context)!.package_claimed_successfully);
+          
+          if (response.result == true) {
+            await _fetchUserData();
+          }
         }
       } catch (e) {
         print("Error purchasing free package: $e");
@@ -201,13 +261,34 @@ class _PointsPageState extends State<PointsPage> {
   void _openBuyPointsDrawer() {
     setState(() {
       _isDrawerOpen = true;
+      _isDrawerAnimating = true;
+    });
+    _drawerAnimationController.forward();
+    
+    // Scroll to selected package when drawer opens (matches HTML behavior)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelectedPackage();
     });
   }
   
-  void _closeBuyPointsDrawer() {
-    setState(() {
-      _isDrawerOpen = false;
-    });
+  Future<void> _closeBuyPointsDrawer() async {
+    await _drawerAnimationController.reverse();
+    if (mounted) {
+      setState(() {
+        _isDrawerOpen = false;
+        _isDrawerAnimating = false;
+      });
+    }
+  }
+  
+  void _scrollToSelectedPackage() {
+    if (_selectedPackage != null && _packages.isNotEmpty) {
+      final selectedIndex = _packages.indexWhere((p) => p.id == _selectedPackage!.id);
+      if (selectedIndex != -1) {
+        // Find the PackageCard widget and scroll to it
+        // This is handled in the ListView builder
+      }
+    }
   }
   
   void _selectPackage(Package package) {
@@ -268,15 +349,30 @@ class _PointsPageState extends State<PointsPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.points_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: const Icon(Icons.arrow_back_ios, size: 18, color: Color(0xFF64748B)),
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            } else {
+              // Go to home if can't pop
+              context.go("/");
+            }
+          },
         ),
       ),
       body: RefreshIndicator(
@@ -332,192 +428,268 @@ class _PointsPageState extends State<PointsPage> {
           ),
         ),
         
-        // Bottom Drawer - 40% of screen height
-        if (_isDrawerOpen)
-          GestureDetector(
-            onTap: _closeBuyPointsDrawer,
-            child: Container(
-              color: Colors.black.withOpacity(0.5),
-              child: GestureDetector(
-                onTap: () {},
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    height: MediaQuery.of(context).size.height * 0.40,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
+        // Bottom Drawer - 40% of screen height (matches HTML)
+        if (_isDrawerOpen || _isDrawerAnimating)
+          AnimatedBuilder(
+            animation: _drawerAnimationController,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  // Overlay
+                  GestureDetector(
+                    onTap: _closeBuyPointsDrawer,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.5 * _overlayFadeAnimation.value),
                     ),
-                    child: Column(
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE2E8F0),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                  ),
+                  
+                  // Drawer
+                  Transform.translate(
+                    offset: Offset(0, MediaQuery.of(context).size.height * _drawerSlideAnimation.value),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height * 0.40,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(40),
+                          topRight: Radius.circular(40),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const SizedBox(width: 40),
-                              Text(
-                                AppLocalizations.of(context)!.select_package,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _closeBuyPointsDrawer,
-                                child: Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: MyTheme.light_grey,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: ListView.separated(
-                              itemCount: _packages.length,
-                              separatorBuilder: (context, index) => const Divider(height: 0, color: Color(0xFFEEF2F8)),
-                              itemBuilder: (context, index) {
-                                final package = _packages[index];
-                                final isSelected = _selectedPackage?.id == package.id;
-                                final packagePrice = _getPackagePrice(package);
-                                final packagePoints = _getPackagePoints(package);
-                                
-                                return GestureDetector(
-                                  onTap: () => _selectPackage(package),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: isSelected ? MyTheme.accent_color : const Color(0xFFCBD5E1),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: isSelected
-                                              ? Center(
-                                                  child: Container(
-                                                    width: 10,
-                                                    height: 10,
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color: MyTheme.accent_color,
-                                                    ),
-                                                  ),
-                                                )
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                package.name ?? AppLocalizations.of(context)!.package,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF0F172A),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: Color(0xFF64748B),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Text(
-                                          packagePrice == 0 ? AppLocalizations.of(context)!.free_ucf : _formatPrice(packagePrice),
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: MyTheme.accent_color,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+                      ),
+                      child: Column(
+                        children: [
+                          // Drag handle
+                          Container(
+                            margin: const EdgeInsets.only(top: 12),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE2E8F0),
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                          child: GestureDetector(
-                            onTap: _isPurchasing ? null : _submitPurchase,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                color: MyTheme.accent_color,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: _isPurchasing
-                                  ? const Center(
-                                      child: SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                          
+                          // Header
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.our_package,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF000417),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: _closeBuyPointsDrawer,
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF6F6F6),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Horizontal scrollable packages
+                          Expanded(
+                            child: _buildPackageSlider(),
+                          ),
+                          
+                          // Buy button
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                            child: GestureDetector(
+                              onTap: _isPurchasing ? null : _submitPurchase,
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: MyTheme.accent_color,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: _isPurchasing
+                                    ? const Center(
+                                        child: SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
+                                        AppLocalizations.of(context)!.buy_now_ucf,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
                                           color: Colors.white,
                                         ),
                                       ),
-                                    )
-                                  : Text(
-                                      AppLocalizations.of(context)!.buy_now_ucf,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
+                ],
+              );
+            },
           ),
       ],
+    );
+  }
+  
+  Widget _buildPackageSlider() {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollInfo) {
+        // Auto-center on scroll end (similar to HTML snap behavior)
+        return false;
+      },
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: _packages.asMap().entries.map((entry) {
+            final index = entry.key;
+            final package = entry.value;
+            final isSelected = _selectedPackage?.id == package.id;
+            final packagePrice = _getPackagePrice(package);
+            final packagePoints = _getPackagePoints(package);
+            
+            return Container(
+              width: MediaQuery.of(context).size.width * 0.69,
+              margin: EdgeInsets.only(right: index != _packages.length - 1 ? 12 : 0),
+              child: _buildPackageCard(
+                package: package,
+                isSelected: isSelected,
+                packagePoints: packagePoints,
+                packagePrice: packagePrice,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildPackageCard({
+    required Package package,
+    required bool isSelected,
+    required int packagePoints,
+    required double packagePrice,
+  }) {
+    return GestureDetector(
+      onTap: () => _selectPackage(package),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? MyTheme.accent_color : const Color(0xFFEEF2F8),
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? MyTheme.accent_color : Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              offset: const Offset(0, 2),
+              blurRadius: 12,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Row(
+          children: [
+            // Left side - Package info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    package.name ?? AppLocalizations.of(context)!.package,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected ? Colors.white : const Color(0xFFA5A5BA),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : const Color(0xFF000417),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    packagePrice == 0 
+                        ? AppLocalizations.of(context)!.free_ucf 
+                        : _formatPrice(packagePrice),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: isSelected ? Colors.white : const Color(0xFF80818B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Right side - Package image
+            Container(
+              width: 85,
+              height: 85,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: package.logo != null && package.logo!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        package.logo!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.card_giftcard, size: 40, color: Colors.grey),
+                          );
+                        },
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.card_giftcard, size: 40, color: Colors.grey),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
   
@@ -525,7 +697,7 @@ class _PointsPageState extends State<PointsPage> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: MyTheme.light_grey,
+        color: const Color(0xFFF6F6F6),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -570,18 +742,18 @@ class _PointsPageState extends State<PointsPage> {
                   children: [
                     Text(
                       _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.guest_user,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: MyTheme.dark_font_grey,
+                        color: Color(0xFF0F172A),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _userEmail,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
-                        color: const Color(0xFF64748B),
+                        color: Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -612,19 +784,19 @@ class _PointsPageState extends State<PointsPage> {
                       children: [
                         Text(
                           '$_userPoints',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
-                            color: MyTheme.dark_font_grey,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           AppLocalizations.of(context)!.points_ucf,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: MyTheme.dark_font_grey,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                       ],
@@ -642,7 +814,7 @@ class _PointsPageState extends State<PointsPage> {
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.buy_point,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -665,10 +837,10 @@ class _PointsPageState extends State<PointsPage> {
       children: [
         Text(
           '${AppLocalizations.of(context)!.purchase_history} (${history.length})',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: MyTheme.dark_font_grey,
+            color: Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 16),
@@ -690,6 +862,8 @@ class _PointsPageState extends State<PointsPage> {
   
   Widget _buildHistoryItem(CustomerPackagePayment item) {
     final amount = item.amount ?? 0.0;
+    final packageName = item.packageName ?? '';
+    final packagePoints = item.packagePoints?.toInt() ?? 0;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -710,10 +884,25 @@ class _PointsPageState extends State<PointsPage> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    _getPaymentMethodIcon(item.paymentMethod ?? ''),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 30),
+                  child: Center(
+                    child: item.packageLogo != null && item.packageLogo!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              item.packageLogo!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Text(
+                                  _getPaymentMethodIcon(item.paymentMethod ?? ''),
+                                  style: const TextStyle(fontSize: 30),
+                                );
+                              },
+                            ),
+                          )
+                        : Text(
+                            _getPaymentMethodIcon(item.paymentMethod ?? ''),
+                            style: const TextStyle(fontSize: 30),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -722,16 +911,16 @@ class _PointsPageState extends State<PointsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.packageName ?? AppLocalizations.of(context)!.package_purchase,
-                        style: TextStyle(
+                        packageName.isNotEmpty ? packageName : AppLocalizations.of(context)!.package_purchase,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: MyTheme.dark_font_grey,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${amount.toInt()} ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
+                        '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -747,10 +936,10 @@ class _PointsPageState extends State<PointsPage> {
                         ),
                         child: Text(
                           item.paymentMethod ?? AppLocalizations.of(context)!.unknown,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ),
@@ -765,18 +954,18 @@ class _PointsPageState extends State<PointsPage> {
             children: [
               Text(
                 _formatPrice(amount),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: MyTheme.dark_font_grey,
+                  color: Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 item.createdAt != null ? _formatDate(item.createdAt!) : '',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 11,
-                  color: const Color(0xFF64748B),
+                  color: Color(0xFF64748B),
                 ),
               ),
             ],

@@ -134,7 +134,14 @@ class _MessengerListState extends State<MessengerList> {
       ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          } else {
+            // Go to home if can't pop
+            context.go("/");
+          }
+        },
       ),
     );
   }

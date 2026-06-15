@@ -106,24 +106,6 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
-  Future<ProductMiniResponse> getFilteredProducts(
-      {name = "",
-      sort_key = "",
-      page = 1,
-      brands = "",
-      categories = "",
-      min = "",
-      max = ""}) async {
-    String url = ("${AppConfig.BASE_URL}/products/search" +
-        "?page=$page&name=${name}&sort_key=${sort_key}&brands=${brands}&categories=${categories}&min=${min}&max=${max}");
-
-    print(url.toString());
-    final response = await ApiRequest.get(url: url, headers: {
-      "App-Language": app_language.$!,
-    });
-    return productMiniResponseFromJson(response.body);
-  }
-
   Future<ProductMiniResponse> getDigitalProducts({
     page = 1,
   }) async {
@@ -219,14 +201,33 @@ class ProductRepository {
     return variantPriceResponseFromJson(response.body);
   }
 
-  // Add to product_repository.dart
+
+
+  Future<ProductMiniResponse> getFilteredProducts(
+      {name = "",
+      sort_key = "",
+      page = 1,
+      brands = "",
+      categories = "",
+      min = "",
+      max = ""}) async {
+    String url = ("${AppConfig.BASE_URL}/products/search" +
+        "?page=$page&name=${name}&sort_key=${sort_key}&brands=${brands}&categories=${categories}&min=${min}&max=${max}");
+
+    print(url.toString());
+    final response = await ApiRequest.get(url: url, headers: {
+      "App-Language": app_language.$!,
+    });
+    return productMiniResponseFromJson(response.body);
+  }
+
 
   Future<ProductMiniResponse> getHotAuctions({int page = 1}) async {
     String url = "${AppConfig.BASE_URL}/products/hot-auctions?page=${page}";
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        "Content-Type": "application/json",
+        // "Content-Type": "application/json",
         "App-Language": app_language.$!,
       },
     );
@@ -238,7 +239,7 @@ class ProductRepository {
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        "Content-Type": "application/json",
+        // "Content-Type": "application/json",
         "App-Language": app_language.$!,
       },
     );
@@ -250,7 +251,7 @@ class ProductRepository {
     final response = await ApiRequest.get(
       url: url,
       headers: {
-        "Content-Type": "application/json",
+        // "Content-Type": "application/json",
         "App-Language": app_language.$!,
       },
     );

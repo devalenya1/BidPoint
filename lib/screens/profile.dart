@@ -650,7 +650,14 @@ Raw Response: ${response.body}
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            } else {
+              // Go to home if can't pop
+              context.go("/");
+            }
+          },
         ),
         actions: [
           PopupMenuButton<String>(
