@@ -105,6 +105,13 @@ class Product {
   
   Links? links;
 
+  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  String? get thumbnail_image => thumbnailImage;
+  String? get main_price => mainPrice;
+  String? get stroked_price => strokedPrice;
+  bool? get has_discount => hasDiscount;
+  // ============ END SNAKE_CASE GETTERS ============
+
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json["id"],
         slug: json["slug"],

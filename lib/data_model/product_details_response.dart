@@ -138,6 +138,27 @@ class DetailedProduct {
   int? auctionProduct;
   List<Video>? videos;
 
+  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  String? get added_by => addedBy;
+  int? get seller_id => sellerId;
+  int? get shop_id => shopId;
+  String? get shop_slug => shopSlug;
+  String? get shop_name => shopName;
+  String? get shop_logo => shopLogo;
+  String? get thumbnail_image => thumbnailImage;
+  String? get price_high_low => priceHighLow;
+  List<ChoiceOption>? get choice_options => choiceOptions;
+  bool? get has_discount => hasDiscount;
+  String? get stroked_price => strokedPrice;
+  String? get main_price => mainPrice;
+  var get calculable_price => calculablePrice;
+  String? get currency_symbol => currencySymbol;
+  int? get current_stock => currentStock;
+  int? get rating_count => ratingCount;
+  int? get earn_point => earnPoint;
+  dynamic get video_link => videoLink;
+  // ============ END SNAKE_CASE GETTERS ============
+
   factory DetailedProduct.fromJson(Map<String, dynamic> json) => DetailedProduct(
         id: json["id"],
         name: json["name"],
