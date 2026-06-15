@@ -11,20 +11,12 @@ import 'package:active_ecommerce_flutter/screens/filter.dart';
 import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
-import 'package:active_ecommerce_flutter/ui_elements/mini_product_card.dart';
-import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/auction_product_card.dart';
-import 'package:active_ecommerce_flutter/ui_elements/ending_soon_section.dart';
-import 'package:active_ecommerce_flutter/ui_elements/upcoming_section.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:active_ecommerce_flutter/ui_elements/product_horizontal_carousel.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/services.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -142,112 +134,72 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             body: ListenableBuilder(
               listenable: homeData,
               builder: (context, child) {
-                return Stack(
-                  children: [
-                    RefreshIndicator(
-                      color: MyTheme.accent_color,
-                      backgroundColor: Colors.white,
-                      onRefresh: () async {
-                        await homeData.onRefresh();
-                        await _refreshCounts();
-                      },
-                      displacement: 0,
-                      child: CustomScrollView(
-                        controller: homeData.mainScrollController,
-                        physics: const BouncingScrollPhysics(
-                            parent: AlwaysScrollableScrollPhysics()),
-                        slivers: <Widget>[
-                          // Carousel Slider
-                          SliverList(
-                            delegate: SliverChildListDelegate([
-                              buildHomeCarouselSlider(),
-                              const SizedBox(height: 8),
-                            ]),
-                          ),
-                          
-                          // Featured Categories
-                          SliverList(
-                            delegate: SliverChildListDelegate([
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(18.0, 12.0, 18.0, 8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.featured_categories_ucf,
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ]),
-                          ),
-                          SliverToBoxAdapter(
-                            child: SizedBox(
-                              height: 50,
-                              child: buildHomeFeaturedCategories(),
-                            ),
-                          ),
-                          
-                          // Hot Auctions Section
-                          if (!homeData.isHotAuctionInitial && homeData.hotAuctionProductList.isNotEmpty)
-                            SliverToBoxAdapter(
-                              child: HotAuctionSection(
-                                products: homeData.hotAuctionProductList,
-                                title: AppLocalizations.of(context)!.hot_auctions_ucf,
-                                viewAllRoute: '/hot-auctions',
-                              ),
-                            ),
-                          
-                          // All Products Section
-                          SliverList(
-                            delegate: SliverChildListDelegate([
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(18.0, 16.0, 20.0, 8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.all_products_ucf,
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              buildHomeAllProducts2(),
-                              const SizedBox(height: 16),
-                            ]),
-                          ),
-                          
-                          // Ending Soon Section
-                          if (!homeData.isEndingSoonInitial && homeData.endingSoonProductList.isNotEmpty)
-                            SliverToBoxAdapter(
-                              child: EndingSoonSection(
-                                products: homeData.endingSoonProductList,
-                                title: AppLocalizations.of(context)!.ending_soon_ucf,
-                                viewAllRoute: '/ending-soon',
-                              ),
-                            ),
-                          
-                          // Upcoming Section
-                          if (!homeData.isUpcomingInitial && homeData.upcomingProductList.isNotEmpty)
-                            SliverToBoxAdapter(
-                              child: UpcomingSection(
-                                products: homeData.upcomingProductList,
-                                title: AppLocalizations.of(context)!.upcoming_auctions_ucf,
-                                viewAllRoute: '/upcoming-auctions',
-                              ),
-                            ),
-                          
-                          const SliverToBoxAdapter(child: SizedBox(height: 30)),
-                        ],
+                return RefreshIndicator(
+                  color: MyTheme.accent_color,
+                  backgroundColor: Colors.white,
+                  onRefresh: () async {
+                    await homeData.onRefresh();
+                    await _refreshCounts();
+                  },
+                  displacement: 0,
+                  child: CustomScrollView(
+                    controller: homeData.mainScrollController,
+                    physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics()),
+                    slivers: <Widget>[
+                      // Carousel Slider
+                      SliverList(
+                        delegate: SliverChildListDelegate([
+                          buildHomeCarouselSlider(),
+                          const SizedBox(height: 8),
+                        ]),
                       ),
-                    ),
-                    Align(
-                      alignment: Alignment.center,
-                      child: buildProductLoadingContainer(),
-                    ),
-                  ],
+                      
+                      // Featured Categories
+                      SliverList(
+                        delegate: SliverChildListDelegate([
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(18.0, 12.0, 18.0, 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.featured_categories_ucf,
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ]),
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 50,
+                          child: buildHomeFeaturedCategories(),
+                        ),
+                      ),
+                      
+                      // Hot Auctions Section
+                      if (!homeData.isHotAuctionInitial && homeData.hotAuctionProductList.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: _buildHotAuctionSection(),
+                        ),
+                      
+                      // Ending Soon Section
+                      if (!homeData.isEndingSoonInitial && homeData.endingSoonProductList.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: _buildEndingSoonSection(),
+                        ),
+                      
+                      // Upcoming Section
+                      if (!homeData.isUpcomingInitial && homeData.upcomingProductList.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: _buildUpcomingSection(),
+                        ),
+                      
+                      const SliverToBoxAdapter(child: SizedBox(height: 30)),
+                    ],
+                  ),
                 );
               },
             ),
@@ -257,35 +209,200 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildHomeAllProducts2() {
-    if (homeData.isAllProductInitial) {
-      return SizedBox(
-        height: 280,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 6,
-          itemBuilder: (context, index) {
-            return Container(
-              width: 160,
-              margin: const EdgeInsets.only(right: 12),
-              child: ShimmerHelper().buildBasicShimmer(height: 260),
-            );
-          },
+  // ============ HOT AUCTION SECTION ============
+  Widget _buildHotAuctionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.hot_auctions_ucf,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to hot auctions view all
+                  GoRouter.of(context).go('/hot-auctions');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                ),
+              ),
+            ],
+          ),
         ),
-      );
-    } else if (homeData.allProductList.isNotEmpty) {
-      return ProductHorizontalCarousel(
-        products: homeData.allProductList,
-        scrollController: homeData.allProductScrollController,
-      );
-    } else if (homeData.totalAllProductData == 0) {
-      return Center(
-        child: Text(AppLocalizations.of(context)!.no_product_is_available),
-      );
-    } else {
-      return Container();
-    }
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 320,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: homeData.hotAuctionProductList.length,
+            itemBuilder: (context, index) {
+              final product = homeData.hotAuctionProductList[index];
+              return Container(
+                width: MediaQuery.of(context).size.width * 0.7,
+                margin: const EdgeInsets.only(right: 12),
+                child: AuctionProductCard(
+                  id: product.id ?? 0,
+                  slug: product.slug ?? '',
+                  image: product.thumbnailImage,
+                  name: product.name,
+                  description: product.name,
+                  pointPerBid: product.pointPerBid ?? 0,
+                  auctionEndDate: product.auctionEndDate,
+                  currentBid: product.highestBid,
+                  startingBid: product.startingBid,
+                  isAuctionActive: product.auctionEndDate != null && 
+                      product.auctionEndDate is int && 
+                      product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ============ ENDING SOON SECTION ============
+  Widget _buildEndingSoonSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.ending_soon_ucf,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to ending soon view all
+                  GoRouter.of(context).go('/ending-soon');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 320,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: homeData.endingSoonProductList.length,
+            itemBuilder: (context, index) {
+              final product = homeData.endingSoonProductList[index];
+              return Container(
+                width: MediaQuery.of(context).size.width * 0.7,
+                margin: const EdgeInsets.only(right: 12),
+                child: AuctionProductCard(
+                  id: product.id ?? 0,
+                  slug: product.slug ?? '',
+                  image: product.thumbnailImage,
+                  name: product.name,
+                  description: product.name,
+                  pointPerBid: product.pointPerBid ?? 0,
+                  auctionEndDate: product.auctionEndDate,
+                  currentBid: product.highestBid,
+                  startingBid: product.startingBid,
+                  isAuctionActive: true,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ============ UPCOMING SECTION ============
+  Widget _buildUpcomingSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.upcoming_auctions_ucf,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to upcoming view all
+                  GoRouter.of(context).go('/upcoming-auctions');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 320,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: homeData.upcomingProductList.length,
+            itemBuilder: (context, index) {
+              final product = homeData.upcomingProductList[index];
+              return Container(
+                width: MediaQuery.of(context).size.width * 0.7,
+                margin: const EdgeInsets.only(right: 12),
+                child: AuctionProductCard(
+                  id: product.id ?? 0,
+                  slug: product.slug ?? '',
+                  image: product.thumbnailImage,
+                  name: product.name,
+                  description: product.name,
+                  pointPerBid: product.pointPerBid ?? 0,
+                  auctionEndDate: product.auctionStartDate != null 
+                      ? (product.auctionStartDate as DateTime).millisecondsSinceEpoch ~/ 1000
+                      : null,
+                  currentBid: product.startingBid,
+                  startingBid: product.startingBid,
+                  isAuctionActive: false,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
   }
 
   Widget buildHomeFeaturedCategories() {
@@ -617,100 +734,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
       ),
-    );
-  }
-
-  Container buildProductLoadingContainer() {
-    return Container(
-      height: homeData.showAllLoadingContainer ? 36 : 0,
-      width: double.infinity,
-      color: Colors.white,
-      child: Center(
-        child: Text(
-          homeData.totalAllProductData == homeData.allProductList.length
-              ? AppLocalizations.of(context)!.no_more_products_ucf
-              : AppLocalizations.of(context)!.loading_more_products_ucf,
-        ),
-      ),
-    );
-  }
-}
-
-// Add this HotAuctionSection widget if not exists
-class HotAuctionSection extends StatelessWidget {
-  final List<dynamic> products;
-  final String title;
-  final String viewAllRoute;
-
-  const HotAuctionSection({
-    Key? key,
-    required this.products,
-    required this.title,
-    required this.viewAllRoute,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    if (products.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black),
-              ),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text('View All', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 320,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                margin: const EdgeInsets.only(right: 12),
-                child: AuctionProductCard(
-                  id: product.id ?? 0,
-                  slug: product.slug ?? '',
-                  image: product.thumbnailImage,
-                  name: product.name,
-                  description: product.name,
-                  pointPerBid: product.pointPerBid ?? 0,
-                  auctionEndDate: product.auctionEndDate,
-                  currentBid: product.highestBid,
-                  startingBid: product.startingBid,
-                  isAuctionActive: product.auctionEndDate != null && 
-                      product.auctionEndDate is int && 
-                      product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
     );
   }
 }

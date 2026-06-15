@@ -52,6 +52,9 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   late Animation<double> _drawerSlideAnimation;
   late Animation<double> _overlayFadeAnimation;
   
+  // Scroll controller for package slider
+  final ScrollController _packageScrollController = ScrollController();
+  
   @override
   void initState() {
     super.initState();
@@ -83,6 +86,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   @override
   void dispose() {
     _drawerAnimationController.dispose();
+    _packageScrollController.dispose();
     super.dispose();
   }
   
@@ -118,14 +122,20 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         setState(() {
           _packages = response.data!;
           
-          // Auto-select middle package (index 1) like HTML does
-          // HTML selects second package (index 1) by default
+          // Auto-select middle/second package (index 1) like HTML does
           if (_packages.length >= 2) {
             _selectedPackage = _packages[1];
           } else if (_packages.isNotEmpty) {
             _selectedPackage = _packages[0];
           }
         });
+        
+        // Scroll to selected package after drawer opens
+        if (_selectedPackage != null && _packages.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToPackage(_selectedPackage!);
+          });
+        }
       }
     } catch (e) {
       print("Error loading packages: $e");
@@ -147,6 +157,28 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       _fetchUserData(),
       _fetchPackages(),
     ]);
+  }
+  
+  // ============ SCROLL TO SPECIFIC PACKAGE ============
+  void _scrollToPackage(Package package) {
+    final index = _packages.indexWhere((p) => p.id == package.id);
+    if (index != -1 && _packageScrollController.hasClients) {
+      // Calculate scroll position to center the package
+      final screenWidth = MediaQuery.of(context).size.width;
+      final cardWidth = screenWidth * 0.69; // 69% of screen width like HTML
+      final spacing = 12.0;
+      
+      double scrollPosition = index * (cardWidth + spacing);
+      // Center the card
+      scrollPosition = scrollPosition - (screenWidth / 2) + (cardWidth / 2);
+      if (scrollPosition < 0) scrollPosition = 0;
+      
+      _packageScrollController.animateTo(
+        scrollPosition,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
   
   // ============ SUBMIT PURCHASE (Connects to Payment Gateway) ============
@@ -266,7 +298,12 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     
     // Scroll to selected package when drawer opens (matches HTML behavior)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToSelectedPackage();
+      if (_selectedPackage != null) {
+        _scrollToPackage(_selectedPackage!);
+      } else if (_packages.isNotEmpty) {
+        final index = _packages.length >= 2 ? 1 : 0;
+        _scrollToPackage(_packages[index]);
+      }
     });
   }
   
@@ -277,16 +314,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         _isDrawerOpen = false;
         _isDrawerAnimating = false;
       });
-    }
-  }
-  
-  void _scrollToSelectedPackage() {
-    if (_selectedPackage != null && _packages.isNotEmpty) {
-      final selectedIndex = _packages.indexWhere((p) => p.id == _selectedPackage!.id);
-      if (selectedIndex != -1) {
-        // Find the PackageCard widget and scroll to it
-        // This is handled in the ListView builder
-      }
     }
   }
   
@@ -427,7 +454,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           ),
         ),
         
-        // Bottom Drawer - 40% of screen height (matches HTML)
+        // Bottom Drawer - Fixed at bottom, 40% of screen height (matches HTML)
         if (_isDrawerOpen || _isDrawerAnimating)
           AnimatedBuilder(
             animation: _drawerAnimationController,
@@ -442,109 +469,113 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     ),
                   ),
                   
-                  // Drawer
+                  // Drawer - Fixed at bottom
                   Transform.translate(
                     offset: Offset(0, MediaQuery.of(context).size.height * _drawerSlideAnimation.value),
-                    child: Container(
-                      height: MediaQuery.of(context).size.height * 0.40,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(40),
-                          topRight: Radius.circular(40),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Drag handle
-                          Container(
-                            margin: const EdgeInsets.only(top: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.40,
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(40),
+                            topRight: Radius.circular(40),
                           ),
-                          
-                          // Header
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!.our_package_ucf,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF000417),
+                        ),
+                        child: Column(
+                          children: [
+                            // Drag handle
+                            Container(
+                              margin: const EdgeInsets.only(top: 12),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE2E8F0),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            
+                            // Header
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.our_package_ucf,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF000417),
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  right: 0,
-                                  child: GestureDetector(
-                                    onTap: _closeBuyPointsDrawer,
-                                    child: Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF6F6F6),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: const Color(0xFF64748B),
+                                  Positioned(
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: _closeBuyPointsDrawer,
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF6F6F6),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          size: 16,
+                                          color: Color(0xFF64748B),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          
-                          // Horizontal scrollable packages
-                          Expanded(
-                            child: _buildPackageSlider(),
-                          ),
-                          
-                          // Buy button
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                            child: GestureDetector(
-                              onTap: _isPurchasing ? null : _submitPurchase,
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                decoration: BoxDecoration(
-                                  color: MyTheme.accent_color,
-                                  borderRadius: BorderRadius.circular(7),
-                                ),
-                                child: _isPurchasing
-                                    ? const Center(
-                                        child: SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                            
+                            // Horizontal scrollable packages
+                            Expanded(
+                              child: _buildPackageSlider(),
+                            ),
+                            
+                            // Buy button - Fixed at bottom of drawer
+                            Container(
+                              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              child: GestureDetector(
+                                onTap: _isPurchasing ? null : _submitPurchase,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: MyTheme.accent_color,
+                                    borderRadius: BorderRadius.circular(7),
+                                  ),
+                                  child: _isPurchasing
+                                      ? const Center(
+                                          child: SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : Text(
+                                          AppLocalizations.of(context)!.buy_now_ucf,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
                                             color: Colors.white,
                                           ),
                                         ),
-                                      )
-                                    : Text(
-                                        AppLocalizations.of(context)!.buy_now_ucf,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -559,12 +590,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   Widget _buildPackageSlider() {
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
-        // Auto-center on scroll end (similar to HTML snap behavior)
         return false;
       },
       child: SingleChildScrollView(
+        controller: _packageScrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const BouncingScrollPhysics(),
         child: Row(
           children: _packages.asMap().entries.map((entry) {
             final index = entry.key;
@@ -862,8 +894,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   Widget _buildHistoryItem(CustomerPackagePayment item) {
     final amount = item.amount ?? 0.0;
     final packageName = item.packageName ?? '';
-    // Calculate points from amount (since customerPackagePayment doesn't have packagePoints field)
-    final packagePoints = amount.toInt();
+    final packagePoints = _getPackagePointsFromPayment(item);
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -959,6 +990,22 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+  
+  int _getPackagePointsFromPayment(CustomerPackagePayment item) {
+    // Try to get points from the actual package
+    if (item.customerPackage != null && item.customerPackage!.amount != null) {
+      if (item.customerPackage!.amount is int) {
+        return item.customerPackage!.amount;
+      } else if (item.customerPackage!.amount is double) {
+        return (item.customerPackage!.amount as double).toInt();
+      } else if (item.customerPackage!.amount is String) {
+        return int.tryParse(item.customerPackage!.amount) ?? 0;
+      }
+    }
+    
+    // Fallback: estimate points from amount
+    return (item.amount ?? 0).toInt();
   }
   
   Widget _buildEmptyState() {

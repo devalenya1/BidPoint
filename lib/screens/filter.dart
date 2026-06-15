@@ -8,10 +8,19 @@ import 'package:active_ecommerce_flutter/repositories/brand_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/category_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/search_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
+import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
+import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
+
+// Import the data model
+import '../data_model/user_info_response.dart';
 
 class Filter extends StatefulWidget {
   Filter({
@@ -63,6 +72,27 @@ class _FilterState extends State<Filter> {
   
   // Track selected sort label for display
   String _selectedSortLabel = "";
+  
+  // Header state
+  bool _isLoadingCounts = true;
+  bool _isRefreshingCounts = false;
+  UserInformation? _userInfo;
+  
+  // Display counts
+  int get _unreadNotificationCount {
+    if (is_logged_in.$ != true) return 0;
+    if (_userInfo == null) return 1;
+    return _userInfo!.unreadNotificationsCount ?? 0;
+  }
+  
+  int get _unreadMessageCount {
+    if (is_logged_in.$ != true) return 0;
+    if (_userInfo == null) return 1;
+    return _userInfo!.unreadMessagesCount ?? 0;
+  }
+  
+  bool get _showNotificationBadge => is_logged_in.$ && _unreadNotificationCount > 0;
+  bool get _showMessageBadge => is_logged_in.$ && _unreadMessageCount > 0;
 
   @override
   void initState() {
@@ -71,6 +101,7 @@ class _FilterState extends State<Filter> {
     _fetchProductData();
     _setupScrollListeners();
     _updateSortLabel();
+    _fetchCounts();
   }
 
   void _updateSortLabel() {
@@ -96,6 +127,33 @@ class _FilterState extends State<Filter> {
       default:
         _selectedSortLabel = AppLocalizations.of(context)!.default_ucf;
     }
+  }
+
+  Future<void> _fetchCounts() async {
+    if (is_logged_in.$ != true) {
+      setState(() => _isLoadingCounts = false);
+      return;
+    }
+    
+    try {
+      setState(() => _isLoadingCounts = true);
+      
+      var response = await ProfileRepository().getUserInfoResponse();
+      
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        setState(() => _userInfo = response.data![0]);
+        unread_notifications_count.$ = _userInfo!.unreadNotificationsCount ?? 0;
+        unread_notifications_count.save();
+      }
+    } catch (e) {
+      print("Error loading notification counts: $e");
+    } finally {
+      setState(() => _isLoadingCounts = false);
+    }
+  }
+
+  void _redirectToLogin() {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Login()));
   }
 
   void _setupScrollListeners() {
@@ -318,16 +376,120 @@ class _FilterState extends State<Filter> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title only (no back button)
-          Text(
-            'All Products',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
+          // Search Row (from Home page)
+          Row(
+            children: [
+              Expanded(child: _buildSearchBox()),
+              // Notification Icon
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    if (is_logged_in.$) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NotificationsPage()),
+                      );
+                    } else {
+                      _redirectToLogin();
+                    }
+                  },
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Image.asset(
+                            'assets/notification.png',
+                            height: 22,
+                            width: 22,
+                            color: MyTheme.dark_grey,
+                          ),
+                        ),
+                        if (_showNotificationBadge)
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10)),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              child: Text(
+                                _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Chat Icon
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    if (is_logged_in.$) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MessengerList()));
+                    } else {
+                      _redirectToLogin();
+                    }
+                  },
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                    child: Stack(
+                      children: [
+                        Center(child: Image.asset('assets/message.png', height: 22, width: 22)),
+                        if (_showMessageBadge)
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10)),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              child: Text(
+                                _unreadMessageCount > 99 ? '99+' : '$_unreadMessageCount',
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Affiliate Icon
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    if (is_logged_in.$) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AffiliatePage()));
+                    } else {
+                      _redirectToLogin();
+                    }
+                  },
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                    child: Center(
+                      child: Image.asset('assets/affiliate.png', height: 22, width: 22, color: MyTheme.dark_grey),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           // Products count
           Text(
             '$_totalProductsFound ${AppLocalizations.of(context)!.products_found}',
@@ -337,13 +499,13 @@ class _FilterState extends State<Filter> {
             ),
           ),
           const SizedBox(height: 12),
-          // Sort and Filter buttons row - floated left, 40% width
+          // Sort and Filter buttons row - Sort 30%, Filter 10% of parent width
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              // Sort Button - with text and icon (40% width)
+              // Sort Button - 30% width
               SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4,
+                width: MediaQuery.of(context).size.width * 0.3,
                 child: GestureDetector(
                   onTap: _showSortDialog,
                   child: Container(
@@ -375,9 +537,9 @@ class _FilterState extends State<Filter> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Filter Icon Button - base color background, white icon (40% width)
+              // Filter Button - 10% width
               SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4,
+                width: MediaQuery.of(context).size.width * 0.1,
                 child: GestureDetector(
                   onTap: _openFilterDrawer,
                   child: Container(
@@ -398,6 +560,53 @@ class _FilterState extends State<Filter> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBox() {
+    return GestureDetector(
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (value) {
+                    _searchKey = value;
+                    _resetProductList();
+                  },
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.search_anything,
+                    hintStyle: TextStyle(fontSize: 13.0, color: MyTheme.textfield_grey),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  if (_searchController.text.isNotEmpty) {
+                    _searchKey = _searchController.text;
+                    _resetProductList();
+                  }
+                },
+                child: Image.asset('assets/search.png', height: 16, color: MyTheme.dark_grey),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -464,53 +673,7 @@ class _FilterState extends State<Filter> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Price Range Section with Slider
-                            Text(
-                              AppLocalizations.of(context)!.price_range_ucf,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 12),
-                            
-                            // Price Range Slider
-                            RangeSlider(
-                              values: _priceRange,
-                              min: _minPossiblePrice,
-                              max: _maxPossiblePrice,
-                              divisions: 100,
-                              activeColor: MyTheme.accent_color,
-                              inactiveColor: Colors.grey.shade300,
-                              onChanged: (RangeValues values) {
-                                setState(() {
-                                  _priceRange = values;
-                                });
-                              },
-                              labels: RangeLabels(
-                                '\$${_priceRange.start.toStringAsFixed(0)}',
-                                '\$${_priceRange.end.toStringAsFixed(0)}',
-                              ),
-                            ),
-                            
-                            // Min/Max Labels
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Min: \$${_priceRange.start.toStringAsFixed(0)}',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                  ),
-                                  Text(
-                                    'Max: \$${_priceRange.end.toStringAsFixed(0)}',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Categories Section
+                            // Categories Section (moved to top)
                             Text(
                               AppLocalizations.of(context)!.categories_ucf,
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -555,6 +718,52 @@ class _FilterState extends State<Filter> {
                                 ),
                               ),
                             )),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Price Range Section (moved below categories)
+                            Text(
+                              AppLocalizations.of(context)!.price_range_ucf,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            
+                            // Price Range Slider
+                            RangeSlider(
+                              values: _priceRange,
+                              min: _minPossiblePrice,
+                              max: _maxPossiblePrice,
+                              divisions: 100,
+                              activeColor: MyTheme.accent_color,
+                              inactiveColor: Colors.grey.shade300,
+                              onChanged: (RangeValues values) {
+                                setState(() {
+                                  _priceRange = values;
+                                });
+                              },
+                              labels: RangeLabels(
+                                '\$${_priceRange.start.toStringAsFixed(0)}',
+                                '\$${_priceRange.end.toStringAsFixed(0)}',
+                              ),
+                            ),
+                            
+                            // Min/Max Labels
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Min: \$${_priceRange.start.toStringAsFixed(0)}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  ),
+                                  Text(
+                                    'Max: \$${_priceRange.end.toStringAsFixed(0)}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -628,8 +837,8 @@ class _FilterState extends State<Filter> {
           controller: _productScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 140,
-            bottom: 20,
+            top: MediaQuery.of(context).padding.top + 180,
+            bottom: 70, // Space for bottom navigation bar
           ),
           child: MasonryGridView.count(
             shrinkWrap: true,

@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 
 class UpcomingSection extends StatefulWidget {
   final List<dynamic> products;
@@ -50,6 +51,8 @@ class _UpcomingSectionState extends State<UpcomingSection> {
       if (endDate != null && endDate is int && endDate > 0) {
         _startTimer(product.id, endDate);
       }
+      _notifying[product.id] = false;
+      _notified[product.id] = false;
     }
   }
 
@@ -98,15 +101,10 @@ class _UpcomingSectionState extends State<UpcomingSection> {
     }
   }
 
-  String _formatPrice(String? price) {
-    if (price == null || price.isEmpty) return '\$0.00';
-    if (SystemConfig.systemCurrency != null) {
-      return price.replaceAll(
-        SystemConfig.systemCurrency!.code ?? '',
-        SystemConfig.systemCurrency!.symbol ?? '\$',
-      );
-    }
-    return price;
+  String _formatPrice(double? price) {
+    if (price == null) return '\$0.00';
+    final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
+    return '$symbol${price.toStringAsFixed(2)}';
   }
 
   String _getProductName(String? name) {
@@ -126,13 +124,19 @@ class _UpcomingSectionState extends State<UpcomingSection> {
     return stripped;
   }
 
-  Future<void> _notifyMe(int productId) async {
+  Future<void> _notifyMe(int productId, String slug) async {
+    if (_notifying[productId] == true) return;
+    
     if (!is_logged_in.$) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const Login(),
-        ),
+      _showLoginDialog();
+      return;
+    }
+    
+    if (_notified[productId] == true) {
+      ToastComponent.showDialog(
+        'You will be notified when this auction starts!',
+        gravity: Toast.center,
+        duration: Toast.lengthShort,
       );
       return;
     }
@@ -150,16 +154,22 @@ class _UpcomingSectionState extends State<UpcomingSection> {
         });
         ToastComponent.showDialog(
           response['message'] ?? 'You will be notified when this auction starts!',
+          gravity: Toast.center,
+          duration: Toast.lengthShort,
         );
       } else {
         ToastComponent.showDialog(
           response['message'] ?? 'Failed to set notification. Please try again.',
+          gravity: Toast.center,
+          duration: Toast.lengthShort,
         );
       }
     } catch (e) {
       print("Error notifying for auction: $e");
       ToastComponent.showDialog(
         'Network error. Please check your connection and try again.',
+        gravity: Toast.center,
+        duration: Toast.lengthShort,
       );
     } finally {
       if (mounted) {
@@ -168,6 +178,32 @@ class _UpcomingSectionState extends State<UpcomingSection> {
         });
       }
     }
+  }
+  
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('Please login to set notification'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Login()),
+              );
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -195,7 +231,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
               ),
               GestureDetector(
                 onTap: () {
-                  // Navigate to view all
+                  GoRouter.of(context).go(widget.viewAllRoute);
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -245,9 +281,9 @@ class _UpcomingSectionState extends State<UpcomingSection> {
         product.auctionEndDate is int && 
         product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
     
-    final currentBid = (product.highestBid != null && product.highestBid!.isNotEmpty)
-        ? product.highestBid
-        : product.startingBid;
+    final currentBid = (product.highestBid != null && product.highestBid > 0)
+        ? (product.highestBid is double ? product.highestBid : double.tryParse(product.highestBid.toString()) ?? 0)
+        : (product.startingBid is double ? product.startingBid : double.tryParse(product.startingBid.toString()) ?? 0);
     
     final timeLeft = _timeLeft[product.id] ?? "Loading...";
     final showTimer = isActive && timeLeft != "Ended";
@@ -275,12 +311,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
             children: [
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AuctionProductsDetails(slug: product.slug),
-                    ),
-                  );
+                  GoRouter.of(context).go('/auction-product/${product.slug}');
                 },
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
@@ -350,12 +381,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                 // Product Name
                 GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AuctionProductsDetails(slug: product.slug),
-                      ),
-                    );
+                    GoRouter.of(context).go('/auction-product/${product.slug}');
                   },
                   child: Text(
                     _getProductName(product.name),
@@ -429,51 +455,47 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                 
                 // Notify Me Button
                 GestureDetector(
-                  onTap: isNotified ? null : () => _notifyMe(product.id),
+                  onTap: isNotified ? null : () => _notifyMe(product.id, product.slug),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    height: 35,
                     decoration: BoxDecoration(
                       color: isNotified ? Colors.grey : MyTheme.accent_color,
                       border: Border.all(color: Colors.white, width: 1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: isNotifying
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: Center(
-                              child: SizedBox(
-                                height: 16,
-                                width: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
+                    child: Center(
+                      child: isNotifying
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                isNotified ? 'Notified' : 'Notify Me',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isNotified ? 'Notified' : 'Notify Me',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              if (!isNotified) ...[
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.arrow_forward,
-                                  size: 10,
-                                  color: Colors.white,
-                                ),
+                                if (!isNotified) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.arrow_forward,
+                                    size: 10,
+                                    color: Colors.white,
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
+                            ),
+                    ),
                   ),
                 ),
               ],
