@@ -38,12 +38,10 @@ class _FilterState extends State<Filter> {
   String? _searchKey = "";
   TextEditingController _searchController = TextEditingController();
   
-  // Price range state (using buttons instead of inputs)
-  double _minPrice = 0;
-  double _maxPrice = 0;
-  double _selectedMinPrice = 0;
-  double _selectedMaxPrice = 0;
-  List<double> _priceRanges = [0, 25, 50, 100, 200, 500, 1000];
+  // Price range state (using slider)
+  RangeValues _priceRange = const RangeValues(0, 1000);
+  double _minPossiblePrice = 0;
+  double _maxPossiblePrice = 1000;
   
   // Data lists
   List<dynamic> _productList = [];
@@ -59,10 +57,12 @@ class _FilterState extends State<Filter> {
   
   // Bottom sheet visibility
   bool _isFilterDrawerOpen = false;
-  bool _isSortDrawerOpen = false;
   
   // Total products found
   int _totalProductsFound = 0;
+  
+  // Track selected sort label for display
+  String _selectedSortLabel = "";
 
   @override
   void initState() {
@@ -70,6 +70,32 @@ class _FilterState extends State<Filter> {
     _fetchFilteredCategories();
     _fetchProductData();
     _setupScrollListeners();
+    _updateSortLabel();
+  }
+
+  void _updateSortLabel() {
+    switch (_selectedSort) {
+      case "newest":
+        _selectedSortLabel = AppLocalizations.of(context)!.newest_ucf;
+        break;
+      case "oldest":
+        _selectedSortLabel = AppLocalizations.of(context)!.oldest_ucf;
+        break;
+      case "price_low_to_high":
+        _selectedSortLabel = AppLocalizations.of(context)!.price_low_to_high;
+        break;
+      case "price_high_to_low":
+        _selectedSortLabel = AppLocalizations.of(context)!.price_high_to_low;
+        break;
+      case "popularity":
+        _selectedSortLabel = AppLocalizations.of(context)!.popularity_ucf;
+        break;
+      case "top_rated":
+        _selectedSortLabel = AppLocalizations.of(context)!.top_rated_ucf;
+        break;
+      default:
+        _selectedSortLabel = AppLocalizations.of(context)!.default_ucf;
+    }
   }
 
   void _setupScrollListeners() {
@@ -101,8 +127,8 @@ class _FilterState extends State<Filter> {
       sort_key: _selectedSort,
       brands: "",
       categories: _selectedCategories.join(","),
-      max: _selectedMaxPrice > 0 ? _selectedMaxPrice.toString() : "",
-      min: _selectedMinPrice > 0 ? _selectedMinPrice.toString() : "",
+      max: _priceRange.end > 0 ? _priceRange.end.toString() : "",
+      min: _priceRange.start > 0 ? _priceRange.start.toString() : "",
     );
     
     setState(() {
@@ -129,16 +155,16 @@ class _FilterState extends State<Filter> {
     _resetProductList();
   }
 
-  void _onSortChange(String value) {
+  void _onSortChange(String value, String label) {
     setState(() {
       _selectedSort = value == "" ? null : value;
+      _selectedSortLabel = label;
       _productPage = 1;
       _productList.clear();
       _isProductInitial = true;
       _showProductLoadingContainer = false;
     });
     _fetchProductData();
-    _closeSortDrawer();
   }
 
   void _applyFilter() {
@@ -148,26 +174,102 @@ class _FilterState extends State<Filter> {
 
   void _clearFilters() {
     setState(() {
-      _selectedMinPrice = 0;
-      _selectedMaxPrice = 0;
+      _priceRange = RangeValues(_minPossiblePrice, _maxPossiblePrice);
       _selectedCategories.clear();
     });
   }
 
   void _openFilterDrawer() => setState(() => _isFilterDrawerOpen = true);
   void _closeFilterDrawer() => setState(() => _isFilterDrawerOpen = false);
-  void _openSortDrawer() => setState(() => _isSortDrawerOpen = true);
-  void _closeSortDrawer() => setState(() => _isSortDrawerOpen = false);
 
   Future<void> _onRefresh() async {
     _resetProductList();
   }
 
-  String _getTitle() {
-    if (widget.categoryName != null && widget.categoryName!.isNotEmpty) {
-      return widget.categoryName!;
-    }
-    return AppLocalizations.of(context)!.all_products_ucf;
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.sort_by_ucf,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSortOption("", AppLocalizations.of(context)!.default_ucf),
+              _buildSortOption("newest", AppLocalizations.of(context)!.newest_ucf),
+              _buildSortOption("oldest", AppLocalizations.of(context)!.oldest_ucf),
+              _buildSortOption("price_low_to_high", AppLocalizations.of(context)!.price_low_to_high),
+              _buildSortOption("price_high_to_low", AppLocalizations.of(context)!.price_high_to_low),
+              _buildSortOption("popularity", AppLocalizations.of(context)!.popularity_ucf),
+              _buildSortOption("top_rated", AppLocalizations.of(context)!.top_rated_ucf),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                AppLocalizations.of(context)!.cancel_ucf,
+                style: const TextStyle(color: Color(0xFF64748B)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(String value, String label) {
+    final isSelected = _selectedSort == value;
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+        _onSortChange(value, label);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? MyTheme.accent_color : Colors.grey.shade400,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: MyTheme.accent_color,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? MyTheme.accent_color : Colors.black87,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -195,13 +297,9 @@ class _FilterState extends State<Filter> {
               child: _buildProductLoadingContainer(),
             ),
             
-            // Filter Bottom Sheet (70% height)
+            // Filter Bottom Sheet
             if (_isFilterDrawerOpen)
               _buildFilterBottomSheet(),
-            
-            // Sort Bottom Sheet
-            if (_isSortDrawerOpen)
-              _buildSortBottomSheet(),
           ],
         ),
       ),
@@ -220,26 +318,14 @@ class _FilterState extends State<Filter> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Back button and title row
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.arrow_back, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  _getTitle(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          // Title only (no back button)
+          Text(
+            'All Products',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 8),
           // Products count
@@ -251,15 +337,17 @@ class _FilterState extends State<Filter> {
             ),
           ),
           const SizedBox(height: 12),
-          // Sort and Filter buttons row
+          // Sort and Filter buttons row - floated left, 40% width
           Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              // Sort Button
-              Expanded(
+              // Sort Button - with text and icon (40% width)
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.4,
                 child: GestureDetector(
-                  onTap: _openSortDrawer,
+                  onTap: _showSortDialog,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey.shade300),
                       borderRadius: BorderRadius.circular(8),
@@ -267,11 +355,19 @@ class _FilterState extends State<Filter> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.swap_vert, size: 16),
+                        const Icon(Icons.swap_vert, size: 16, color: Color(0xFF64748B)),
                         const SizedBox(width: 6),
-                        Text(
-                          AppLocalizations.of(context)!.sort_ucf,
-                          style: const TextStyle(fontSize: 14),
+                        Expanded(
+                          child: Text(
+                            _selectedSortLabel.isNotEmpty ? _selectedSortLabel : AppLocalizations.of(context)!.sort_ucf,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF334155),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -279,25 +375,21 @@ class _FilterState extends State<Filter> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Filter Button
-              Expanded(
+              // Filter Icon Button - base color background, white icon (40% width)
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.4,
                 child: GestureDetector(
                   onTap: _openFilterDrawer,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
+                      color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.filter_alt_outlined, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          AppLocalizations.of(context)!.filter_ucf,
-                          style: const TextStyle(fontSize: 14),
-                        ),
+                        Icon(Icons.filter_alt, size: 20, color: Colors.white),
                       ],
                     ),
                   ),
@@ -372,89 +464,50 @@ class _FilterState extends State<Filter> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Price Range Section
+                            // Price Range Section with Slider
                             Text(
                               AppLocalizations.of(context)!.price_range_ucf,
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 12),
-                            // Price buttons (like HTML)
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              children: _priceRanges.map((price) {
-                                final bool isSelected = _selectedMinPrice == 0 && price == 0
-                                    ? _selectedMaxPrice == 0
-                                    : _selectedMinPrice == 0 && _selectedMaxPrice == price;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      if (price == 0) {
-                                        _selectedMinPrice = 0;
-                                        _selectedMaxPrice = 0;
-                                      } else {
-                                        _selectedMinPrice = 0;
-                                        _selectedMaxPrice = price;
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? MyTheme.accent_color : Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: isSelected ? MyTheme.accent_color : Colors.grey.shade300,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      price == 0 ? AppLocalizations.of(context)!.any_ucf : '\$${price.toStringAsFixed(0)}+',
-                                      style: TextStyle(
-                                        color: isSelected ? Colors.white : Colors.black87,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 24),
                             
-                            // Custom Price Range
-                            Text(
-                              AppLocalizations.of(context)!.custom_range_ucf,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            // Price Range Slider
+                            RangeSlider(
+                              values: _priceRange,
+                              min: _minPossiblePrice,
+                              max: _maxPossiblePrice,
+                              divisions: 100,
+                              activeColor: MyTheme.accent_color,
+                              inactiveColor: Colors.grey.shade300,
+                              onChanged: (RangeValues values) {
+                                setState(() {
+                                  _priceRange = values;
+                                });
+                              },
+                              labels: RangeLabels(
+                                '\$${_priceRange.start.toStringAsFixed(0)}',
+                                '\$${_priceRange.end.toStringAsFixed(0)}',
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildPriceRangeField(
-                                    hint: AppLocalizations.of(context)!.min_ucf,
-                                    value: _selectedMinPrice,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _selectedMinPrice = value;
-                                      });
-                                    },
+                            
+                            // Min/Max Labels
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Min: \$${_priceRange.start.toStringAsFixed(0)}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Text("-"),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildPriceRangeField(
-                                    hint: AppLocalizations.of(context)!.max_ucf,
-                                    value: _selectedMaxPrice,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _selectedMaxPrice = value;
-                                      });
-                                    },
+                                  Text(
+                                    'Max: \$${_priceRange.end.toStringAsFixed(0)}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                            
                             const SizedBox(height: 24),
                             
                             // Categories Section
@@ -559,164 +612,6 @@ class _FilterState extends State<Filter> {
               );
             },
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPriceRangeField({
-    required String hint,
-    required double value,
-    required Function(double) onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextField(
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        ),
-        onChanged: (value) {
-          if (value.isNotEmpty) {
-            onChanged(double.tryParse(value) ?? 0);
-          } else {
-            onChanged(0);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildSortBottomSheet() {
-    return GestureDetector(
-      onTap: _closeSortDrawer,
-      child: Container(
-        color: Colors.black.withOpacity(0.5),
-        child: GestureDetector(
-          onTap: () {},
-          child: DraggableScrollableSheet(
-            initialChildSize: 0.5,
-            minChildSize: 0.3,
-            maxChildSize: 0.7,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Column(
-                  children: [
-                    // Drag Handle
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.sort_by_ucf,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          GestureDetector(
-                            onTap: _closeSortDrawer,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.close, size: 20),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    // Sort Options
-                    Expanded(
-                      child: SingleChildScrollView(
-                        controller: scrollController,
-                        child: Column(
-                          children: [
-                            _buildSortOption("", AppLocalizations.of(context)!.default_ucf),
-                            _buildSortOption("newest", AppLocalizations.of(context)!.newest_ucf),
-                            _buildSortOption("oldest", AppLocalizations.of(context)!.oldest_ucf),
-                            _buildSortOption("price_low_to_high", AppLocalizations.of(context)!.price_low_to_high),
-                            _buildSortOption("price_high_to_low", AppLocalizations.of(context)!.price_high_to_low),
-                            _buildSortOption("popularity", AppLocalizations.of(context)!.popularity_ucf),
-                            _buildSortOption("top_rated", AppLocalizations.of(context)!.top_rated_ucf),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSortOption(String value, String label) {
-    final isSelected = _selectedSort == value;
-    return GestureDetector(
-      onTap: () => _onSortChange(value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? MyTheme.accent_color.withOpacity(0.1) : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? MyTheme.accent_color : Colors.grey.shade400,
-                  width: 2,
-                ),
-              ),
-              child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: MyTheme.accent_color,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? MyTheme.accent_color : Colors.black87,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
         ),
       ),
     );
