@@ -1,4 +1,3 @@
-// points_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
@@ -190,19 +189,19 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text(AppLocalizations.of(context)!.confirm_purchase),
+              title: Text(AppLocalizations.of(context)!.confirm_purchase_ucf),
               content: Text(
-                '${AppLocalizations.of(context)!.get} ${_selectedPackage!.name} ${AppLocalizations.of(context)!.package} ${_getPackagePoints(_selectedPackage!)} ${AppLocalizations.of(context)!.points_ucf.toLowerCase()} ${AppLocalizations.of(context)!.for_free}?'
+                '${AppLocalizations.of(context)!.get_ucf} ${_selectedPackage!.name} ${AppLocalizations.of(context)!.package_ucf} ${_getPackagePoints(_selectedPackage!)} ${AppLocalizations.of(context)!.points_ucf.toLowerCase()} ${AppLocalizations.of(context)!.for_free_ucf}?'
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(AppLocalizations.of(context)!.cancel),
+                  child: Text(AppLocalizations.of(context)!.cancel_ucf),
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   child: Text(
-                    AppLocalizations.of(context)!.confirm,
+                    AppLocalizations.of(context)!.confirm_ucf,
                     style: TextStyle(color: MyTheme.accent_color),
                   ),
                 ),
@@ -475,7 +474,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                               alignment: Alignment.center,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context)!.our_package,
+                                  AppLocalizations.of(context)!.our_package_ucf,
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w700,
@@ -624,7 +623,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    package.name ?? AppLocalizations.of(context)!.package,
+                    package.name ?? AppLocalizations.of(context)!.package_ucf,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -863,7 +862,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   Widget _buildHistoryItem(CustomerPackagePayment item) {
     final amount = item.amount ?? 0.0;
     final packageName = item.packageName ?? '';
-    final packagePoints = item.packagePoints?.toInt() ?? 0;
+    // Calculate points from amount (since customerPackagePayment doesn't have packagePoints field)
+    final packagePoints = amount.toInt();
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -885,24 +885,10 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: item.packageLogo != null && item.packageLogo!.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              item.packageLogo!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Text(
-                                  _getPaymentMethodIcon(item.paymentMethod ?? ''),
-                                  style: const TextStyle(fontSize: 30),
-                                );
-                              },
-                            ),
-                          )
-                        : Text(
-                            _getPaymentMethodIcon(item.paymentMethod ?? ''),
-                            style: const TextStyle(fontSize: 30),
-                          ),
+                    child: Text(
+                      _getPaymentMethodIcon(item.paymentMethod ?? ''),
+                      style: const TextStyle(fontSize: 30),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),

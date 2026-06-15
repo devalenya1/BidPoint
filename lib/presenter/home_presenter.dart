@@ -350,7 +350,7 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-  // Initialize scroll controllers
+  // Initialize scroll controllers (ONLY ONE COPY - KEEP THIS ONE)
   void initScrollControllers() {
     hotAuctionScrollController = ScrollController();
     endingSoonScrollController = ScrollController();
@@ -395,18 +395,4 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
     super.dispose();
   }
-
-  // Add this method to HomePresenter class
-  void initScrollControllers() {
-    hotAuctionScrollController = ScrollController();
-    endingSoonScrollController = ScrollController();
-    upcomingScrollController = ScrollController();
-    allProductScrollController = ScrollController();
-    featuredCategoryScrollController = ScrollController();
-    
-    hotAuctionScrollListener();
-    endingSoonScrollListener();
-    upcomingScrollListener();
-  }
-  
 }

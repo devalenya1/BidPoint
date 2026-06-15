@@ -1,5 +1,6 @@
 // product_mini_response.dart
 import 'dart:convert';
+import 'package:flutter/material.dart';
 
 ProductMiniResponse productMiniResponseFromJson(String str) =>
     ProductMiniResponse.fromJson(json.decode(str));
@@ -8,14 +9,14 @@ String productMiniResponseToJson(ProductMiniResponse data) =>
     json.encode(data.toJson());
 
 class ProductMiniResponse {
-  List<Product>? data;
+  List<Product>? products;
   PaginationLinks? links;
   Meta? meta;
   bool? success;
   int? status;
 
   ProductMiniResponse({
-    this.data,
+    this.products,
     this.links,
     this.meta,
     this.success,
@@ -24,7 +25,7 @@ class ProductMiniResponse {
 
   factory ProductMiniResponse.fromJson(Map<String, dynamic> json) {
     return ProductMiniResponse(
-      data: json["data"] != null
+      products: json["data"] != null
           ? List<Product>.from(json["data"].map((x) => Product.fromJson(x)))
           : [],
       links: json["links"] != null ? PaginationLinks.fromJson(json["links"]) : null,
@@ -35,7 +36,7 @@ class ProductMiniResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        "data": data != null ? List<dynamic>.from(data!.map((x) => x.toJson())) : [],
+        "data": products != null ? List<dynamic>.from(products!.map((x) => x.toJson())) : [],
         "links": links?.toJson(),
         "meta": meta?.toJson(),
         "success": success,
@@ -203,7 +204,6 @@ class Product {
   
   String getDisplayPrice() {
     if (isAuctionProduct) {
-      // For auction products, show current highest bid or starting bid
       if (highestBid != null && highestBid!.isNotEmpty) {
         return highestBid!;
       }

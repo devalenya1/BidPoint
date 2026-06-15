@@ -424,7 +424,11 @@
   "unknown": "Unknown",
   "upcoming_auctions_ucf": "Upcoming Auctions",
   "notify_me_ucf": "Notify Me",
-
+  "confirm_purchase_ucf": "Confirm Purchase",
+  "get_ucf": "Get",
+  "package_ucf": "Package",
+  "for_free_ucf": "for free",
+  "our_package_ucf": "Our Package",
 
 
   "@min_withdrawal_amount": {

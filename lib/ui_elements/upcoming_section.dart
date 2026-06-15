@@ -150,22 +150,16 @@ class _UpcomingSectionState extends State<UpcomingSection> {
         });
         ToastComponent.showDialog(
           response['message'] ?? 'You will be notified when this auction starts!',
-          gravity: ToastGravity.CENTER,
-          duration: Toast.LENGTH_LONG,
         );
       } else {
         ToastComponent.showDialog(
           response['message'] ?? 'Failed to set notification. Please try again.',
-          gravity: ToastGravity.CENTER,
-          duration: Toast.LENGTH_LONG,
         );
       }
     } catch (e) {
       print("Error notifying for auction: $e");
       ToastComponent.showDialog(
         'Network error. Please check your connection and try again.',
-        gravity: ToastGravity.CENTER,
-        duration: Toast.LENGTH_LONG,
       );
     } finally {
       if (mounted) {

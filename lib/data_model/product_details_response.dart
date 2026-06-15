@@ -9,19 +9,19 @@ String productDetailResponseToJson(ProductDetailResponse data) =>
     json.encode(data.toJson());
 
 class ProductDetailResponse {
-  List<DetailedProduct>? data;
+  List<DetailedProduct>? products;
   bool? success;
   int? status;
 
   ProductDetailResponse({
-    this.data,
+    this.products,
     this.success,
     this.status,
   });
 
   factory ProductDetailResponse.fromJson(Map<String, dynamic> json) {
     return ProductDetailResponse(
-      data: json["data"] != null
+      products: json["data"] != null
           ? List<DetailedProduct>.from(
               json["data"].map((x) => DetailedProduct.fromJson(x)))
           : [],
@@ -31,8 +31,8 @@ class ProductDetailResponse {
   }
 
   Map<String, dynamic> toJson() => {
-        "data": data != null
-            ? List<dynamic>.from(data!.map((x) => x.toJson()))
+        "data": products != null
+            ? List<dynamic>.from(products!.map((x) => x.toJson()))
             : [],
         "success": success,
         "status": status,
