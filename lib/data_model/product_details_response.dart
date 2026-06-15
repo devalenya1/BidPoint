@@ -1,38 +1,41 @@
-// product_detail_response.dart
+// To parse this JSON data, do
+//
+//     final productDetailsResponse = productDetailsResponseFromJson(jsonString);
+// https://app.quicktype.io/
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
-ProductDetailResponse productDetailResponseFromJson(String str) =>
-    ProductDetailResponse.fromJson(json.decode(str));
+ProductDetailsResponse productDetailsResponseFromJson(String str) =>
+    ProductDetailsResponse.fromJson(json.decode(str));
 
-String productDetailResponseToJson(ProductDetailResponse data) =>
+String productDetailsResponseToJson(ProductDetailsResponse data) =>
     json.encode(data.toJson());
 
-class ProductDetailResponse {
-  List<DetailedProduct>? products;
-  bool? success;
-  int? status;
-
-  ProductDetailResponse({
-    this.products,
+class ProductDetailsResponse {
+  ProductDetailsResponse({
+    this.detailedProducts,
     this.success,
     this.status,
   });
 
-  factory ProductDetailResponse.fromJson(Map<String, dynamic> json) {
-    return ProductDetailResponse(
-      products: json["data"] != null
-          ? List<DetailedProduct>.from(
-              json["data"].map((x) => DetailedProduct.fromJson(x)))
-          : [],
-      success: json["success"] ?? false,
-      status: json["status"] ?? 200,
-    );
-  }
+  List<DetailedProduct>? detailedProducts;
+  bool? success;
+  int? status;
+
+  factory ProductDetailsResponse.fromJson(Map<String, dynamic> json) =>
+      ProductDetailsResponse(
+        detailedProducts: json["data"] != null
+            ? List<DetailedProduct>.from(
+                json["data"].map((x) => DetailedProduct.fromJson(x)))
+            : [],
+        success: json["success"],
+        status: json["status"],
+      );
 
   Map<String, dynamic> toJson() => {
-        "data": products != null
-            ? List<dynamic>.from(products!.map((x) => x.toJson()))
+        "data": detailedProducts != null
+            ? List<dynamic>.from(detailedProducts!.map((x) => x.toJson()))
             : [],
         "success": success,
         "status": status,
@@ -40,62 +43,6 @@ class ProductDetailResponse {
 }
 
 class DetailedProduct {
-  // Basic Information
-  int? id;
-  String? name;
-  String? addedBy;
-  int? sellerId;
-  int? shopId;
-  String? shopSlug;
-  String? shopName;
-  String? shopLogo;
-  String? thumbnailImage;
-  List<String>? tags;
-  String? priceHighLow;
-  String? unit;
-  double? rating;
-  int? ratingCount;
-  double? earnPoint;
-  String? description;
-  String? downloads;
-  dynamic videoLink; // Can be String or List
-  String? link;
-  int? estShippingTime;
-  
-  // Price Related
-  List<Photo>? photos;
-  List<Video>? videos;
-  bool? hasDiscount;
-  dynamic discount;
-  String? strokedPrice;
-  String? mainPrice;
-  double? calculablePrice;
-  String? currencySymbol;
-  int? currentStock;
-  
-  // Product Options
-  List<ChoiceOption>? choiceOptions;
-  List<dynamic>? colors;
-  
-  // Brand
-  Brand? brand;
-  
-  // Wholesale
-  List<Wholesale>? wholesale;
-  
-  // Auction Related
-  dynamic auctionEndDate; // Can be "Ended" (String) or timestamp (int)
-  dynamic auctionStartDate; // Can be "Upcoming" (String) or timestamp (int)
-  String? startingBid;
-  String? minBidPrice;
-  String? highestBid;
-  int? swipeRight;
-  int? swipeLeft;
-  int? pointPerBid;
-  int? pointPerBidCustom;
-  int? pointMultiplierSystem;
-  int? auctionProduct;
-
   DetailedProduct({
     this.id,
     this.name,
@@ -105,9 +52,19 @@ class DetailedProduct {
     this.shopSlug,
     this.shopName,
     this.shopLogo,
+    this.photos,
     this.thumbnailImage,
     this.tags,
     this.priceHighLow,
+    this.choiceOptions,
+    this.colors,
+    this.hasDiscount,
+    this.discount,
+    this.strokedPrice,
+    this.mainPrice,
+    this.calculablePrice,
+    this.currencySymbol,
+    this.currentStock,
     this.unit,
     this.rating,
     this.ratingCount,
@@ -116,20 +73,10 @@ class DetailedProduct {
     this.downloads,
     this.videoLink,
     this.link,
-    this.estShippingTime,
-    this.photos,
-    this.videos,
-    this.hasDiscount,
-    this.discount,
-    this.strokedPrice,
-    this.mainPrice,
-    this.calculablePrice,
-    this.currencySymbol,
-    this.currentStock,
-    this.choiceOptions,
-    this.colors,
     this.brand,
     this.wholesale,
+    this.estShippingTime,
+    // Auction Related
     this.auctionEndDate,
     this.auctionStartDate,
     this.startingBid,
@@ -141,68 +88,119 @@ class DetailedProduct {
     this.pointPerBidCustom,
     this.pointMultiplierSystem,
     this.auctionProduct,
+    this.videos,
   });
 
-  factory DetailedProduct.fromJson(Map<String, dynamic> json) {
-    return DetailedProduct(
-      id: json["id"] as int?,
-      name: json["name"] as String?,
-      addedBy: json["added_by"] as String?,
-      sellerId: json["seller_id"] as int?,
-      shopId: json["shop_id"] as int?,
-      shopSlug: json["shop_slug"] as String?,
-      shopName: json["shop_name"] as String?,
-      shopLogo: json["shop_logo"] as String?,
-      thumbnailImage: json["thumbnail_image"] as String?,
-      tags: json["tags"] != null
-          ? List<String>.from(json["tags"].map((x) => x.toString()))
-          : [],
-      priceHighLow: json["price_high_low"] as String?,
-      unit: json["unit"] as String?,
-      rating: (json["rating"] as num?)?.toDouble(),
-      ratingCount: json["rating_count"] as int?,
-      earnPoint: (json["earn_point"] as num?)?.toDouble(),
-      description: json["description"] as String?,
-      downloads: json["downloads"] as String?,
-      videoLink: json["video_link"],
-      link: json["link"] as String?,
-      estShippingTime: json["est_shipping_time"] as int?,
-      photos: json["photos"] != null
-          ? List<Photo>.from(json["photos"].map((x) => Photo.fromJson(x)))
-          : [],
-      videos: json["videos"] != null
-          ? List<Video>.from(json["videos"].map((x) => Video.fromJson(x)))
-          : [],
-      hasDiscount: json["has_discount"] as bool?,
-      discount: json["discount"],
-      strokedPrice: json["stroked_price"] as String?,
-      mainPrice: json["main_price"] as String?,
-      calculablePrice: (json["calculable_price"] as num?)?.toDouble(),
-      currencySymbol: json["currency_symbol"] as String?,
-      currentStock: json["current_stock"] as int?,
-      choiceOptions: json["choice_options"] != null
-          ? List<ChoiceOption>.from(
-              json["choice_options"].map((x) => ChoiceOption.fromJson(x)))
-          : [],
-      colors: json["colors"] as List<dynamic>?,
-      brand: json["brand"] != null ? Brand.fromJson(json["brand"]) : null,
-      wholesale: json["wholesale"] != null
-          ? List<Wholesale>.from(
-              json["wholesale"].map((x) => Wholesale.fromJson(x)))
-          : [],
-      auctionEndDate: json["auction_end_date"],
-      auctionStartDate: json["auction_start_date"],
-      startingBid: json["starting_bid"] as String?,
-      minBidPrice: json["min_bid_price"] as String?,
-      highestBid: json["highest_bid"] as String?,
-      swipeRight: json["swipe_right"] as int?,
-      swipeLeft: json["swipe_left"] as int?,
-      pointPerBid: json["point_per_bid"] as int?,
-      pointPerBidCustom: json["point_per_bid_custom"] as int?,
-      pointMultiplierSystem: json["point_multiplier_system"] as int?,
-      auctionProduct: json["auction_product"] as int?,
-    );
-  }
+  int? id;
+  String? name;
+  String? addedBy;
+  int? sellerId;
+  int? shopId;
+  String? shopSlug;
+  String? shopName;
+  String? shopLogo;
+  List<Photo>? photos;
+  String? thumbnailImage;
+  List<String>? tags;
+  String? priceHighLow;
+  List<ChoiceOption>? choiceOptions;
+  List<dynamic>? colors;
+  bool? hasDiscount;
+  var discount;
+  String? strokedPrice;
+  String? mainPrice;
+  var calculablePrice;
+  String? currencySymbol;
+  int? currentStock;
+  String? unit;
+  int? rating;
+  int? ratingCount;
+  int? earnPoint;
+  String? description;
+  String? downloads;
+  dynamic videoLink;
+  String? link;
+  Brand? brand;
+  List<Wholesale>? wholesale;
+  int? estShippingTime;
+  
+  // Auction Related
+  dynamic auctionEndDate;
+  dynamic auctionStartDate;
+  String? startingBid;
+  String? minBidPrice;
+  String? highestBid;
+  int? swipeRight;
+  int? swipeLeft;
+  int? pointPerBid;
+  int? pointPerBidCustom;
+  int? pointMultiplierSystem;
+  int? auctionProduct;
+  List<Video>? videos;
+
+  factory DetailedProduct.fromJson(Map<String, dynamic> json) => DetailedProduct(
+        id: json["id"],
+        name: json["name"],
+        addedBy: json["added_by"],
+        sellerId: json["seller_id"],
+        shopId: json["shop_id"],
+        shopSlug: json["shop_slug"],
+        shopName: json["shop_name"],
+        shopLogo: json["shop_logo"],
+        estShippingTime: json["est_shipping_time"],
+        photos: json["photos"] != null
+            ? List<Photo>.from(json["photos"].map((x) => Photo.fromJson(x)))
+            : [],
+        thumbnailImage: json["thumbnail_image"],
+        tags: json["tags"] != null
+            ? List<String>.from(json["tags"].map((x) => x))
+            : [],
+        priceHighLow: json["price_high_low"],
+        choiceOptions: json["choice_options"] != null
+            ? List<ChoiceOption>.from(
+                json["choice_options"].map((x) => ChoiceOption.fromJson(x)))
+            : [],
+        colors: json["colors"] != null
+            ? List<dynamic>.from(json["colors"].map((x) => x))
+            : [],
+        hasDiscount: json["has_discount"],
+        discount: json["discount"],
+        strokedPrice: json["stroked_price"],
+        mainPrice: json["main_price"],
+        calculablePrice: json["calculable_price"],
+        currencySymbol: json["currency_symbol"],
+        currentStock: json["current_stock"],
+        unit: json["unit"],
+        rating: json["rating"]?.toInt(),
+        ratingCount: json["rating_count"],
+        earnPoint: json["earn_point"]?.toInt(),
+        description: json["description"] == null || json["description"] == ""
+            ? "No Description is available"
+            : json['description'],
+        downloads: json["downloads"],
+        videoLink: json["video_link"],
+        link: json["link"],
+        brand: json["brand"] != null ? Brand.fromJson(json["brand"]) : null,
+        wholesale: json["wholesale"] != null
+            ? List<Wholesale>.from(
+                json["wholesale"].map((x) => Wholesale.fromJson(x)))
+            : [],
+        // Auction Related
+        auctionEndDate: json["auction_end_date"],
+        auctionStartDate: json["auction_start_date"],
+        startingBid: json["starting_bid"],
+        minBidPrice: json["min_bid_price"],
+        highestBid: json["highest_bid"],
+        swipeRight: json["swipe_right"],
+        swipeLeft: json["swipe_left"],
+        pointPerBid: json["point_per_bid"],
+        pointPerBidCustom: json["point_per_bid_custom"],
+        pointMultiplierSystem: json["point_multiplier_system"],
+        auctionProduct: json["auction_product"],
+        videos: json["videos"] != null
+            ? List<Video>.from(json["videos"].map((x) => Video.fromJson(x)))
+            : [],
+      );
 
   Map<String, dynamic> toJson() => {
         "id": id,
@@ -210,12 +208,26 @@ class DetailedProduct {
         "added_by": addedBy,
         "seller_id": sellerId,
         "shop_id": shopId,
+        "est_shipping_time": estShippingTime,
         "shop_slug": shopSlug,
         "shop_name": shopName,
         "shop_logo": shopLogo,
+        "photos": photos != null
+            ? List<dynamic>.from(photos!.map((x) => x.toJson()))
+            : [],
         "thumbnail_image": thumbnailImage,
-        "tags": tags,
+        "tags": tags != null ? List<dynamic>.from(tags!.map((x) => x)) : [],
         "price_high_low": priceHighLow,
+        "choice_options": choiceOptions != null
+            ? List<dynamic>.from(choiceOptions!.map((x) => x.toJson()))
+            : [],
+        "colors": colors != null ? List<dynamic>.from(colors!.map((x) => x)) : [],
+        "discount": discount,
+        "stroked_price": strokedPrice,
+        "main_price": mainPrice,
+        "calculable_price": calculablePrice,
+        "currency_symbol": currencySymbol,
+        "current_stock": currentStock,
         "unit": unit,
         "rating": rating,
         "rating_count": ratingCount,
@@ -224,20 +236,10 @@ class DetailedProduct {
         "downloads": downloads,
         "video_link": videoLink,
         "link": link,
-        "est_shipping_time": estShippingTime,
-        "photos": photos?.map((e) => e.toJson()).toList(),
-        "videos": videos?.map((e) => e.toJson()).toList(),
-        "has_discount": hasDiscount,
-        "discount": discount,
-        "stroked_price": strokedPrice,
-        "main_price": mainPrice,
-        "calculable_price": calculablePrice,
-        "currency_symbol": currencySymbol,
-        "current_stock": currentStock,
-        "choice_options": choiceOptions?.map((e) => e.toJson()).toList(),
-        "colors": colors,
         "brand": brand?.toJson(),
-        "wholesale": wholesale?.map((e) => e.toJson()).toList(),
+        "wholesale": wholesale != null
+            ? List<dynamic>.from(wholesale!.map((x) => x.toJson()))
+            : [],
         "auction_end_date": auctionEndDate,
         "auction_start_date": auctionStartDate,
         "starting_bid": startingBid,
@@ -249,6 +251,9 @@ class DetailedProduct {
         "point_per_bid_custom": pointPerBidCustom,
         "point_multiplier_system": pointMultiplierSystem,
         "auction_product": auctionProduct,
+        "videos": videos != null
+            ? List<dynamic>.from(videos!.map((x) => x.toJson()))
+            : [],
       };
 
   // ============ HELPER METHODS ============
@@ -301,9 +306,9 @@ class DetailedProduct {
       if (highestBid != null && highestBid!.isNotEmpty) {
         return highestBid!;
       }
-      return startingBid ?? 'N/A';
+      return startingBid ?? '0';
     }
-    return mainPrice ?? 'N/A';
+    return mainPrice ?? '0';
   }
   
   String getOriginalPrice() {
@@ -333,7 +338,7 @@ class DetailedProduct {
     if (isAuctionProduct && minBidPrice != null && minBidPrice!.isNotEmpty) {
       return minBidPrice!;
     }
-    return startingBid ?? 'N/A';
+    return startingBid ?? '0';
   }
   
   bool get hasHighestBid => highestBid != null && highestBid!.isNotEmpty;
@@ -375,7 +380,7 @@ class DetailedProduct {
   }
   
   // Rating helpers
-  double get averageRating => rating ?? 0.0;
+  double get averageRating => (rating ?? 0).toDouble();
   
   int get totalReviews => ratingCount ?? 0;
   
@@ -417,12 +422,12 @@ class DetailedProduct {
     if (dateTime != null) {
       return '${dateTime.year}/${dateTime.month}/${dateTime.day} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
     }
-    return auctionEndDate?.toString() ?? 'N/A';
+    return auctionEndDate?.toString() ?? '0';
   }
   
   // Price helpers
   String getFormattedPrice(String? price) {
-    if (price == null || price.isEmpty) return 'N/A';
+    if (price == null || price.isEmpty) return '0';
     return price;
   }
   
@@ -491,14 +496,17 @@ class DetailedProduct {
 }
 
 class Photo {
+  Photo({
+    this.variant,
+    this.path,
+  });
+
   String? variant;
   String? path;
 
-  Photo({this.variant, this.path});
-
   factory Photo.fromJson(Map<String, dynamic> json) => Photo(
-        variant: json["variant"] as String?,
-        path: json["path"] as String?,
+        variant: json["variant"],
+        path: json["path"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -508,14 +516,17 @@ class Photo {
 }
 
 class Video {
+  Video({
+    this.path,
+    this.thumbnail,
+  });
+
   String? path;
   String? thumbnail;
 
-  Video({this.path, this.thumbnail});
-
   factory Video.fromJson(Map<String, dynamic> json) => Video(
-        path: json["path"] as String?,
-        thumbnail: json["thumbnail"] as String?,
+        path: json["path"],
+        thumbnail: json["thumbnail"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -525,18 +536,23 @@ class Video {
 }
 
 class Brand {
+  Brand({
+    this.id,
+    this.slug,
+    this.name,
+    this.logo,
+  });
+
   int? id;
   String? slug;
   String? name;
   String? logo;
 
-  Brand({this.id, this.slug, this.name, this.logo});
-
   factory Brand.fromJson(Map<String, dynamic> json) => Brand(
-        id: json["id"] as int?,
-        slug: json["slug"] as String?,
-        name: json["name"] as String?,
-        logo: json["logo"] as String?,
+        id: json["id"],
+        slug: json["slug"],
+        name: json["name"],
+        logo: json["logo"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -550,33 +566,43 @@ class Brand {
 }
 
 class ChoiceOption {
+  ChoiceOption({
+    this.name,
+    this.title,
+    this.options,
+  });
+
   String? name;
   String? title;
   List<String>? options;
 
-  ChoiceOption({this.name, this.title, this.options});
-
   factory ChoiceOption.fromJson(Map<String, dynamic> json) => ChoiceOption(
-        name: json["name"] as String?,
-        title: json["title"] as String?,
+        name: json["name"],
+        title: json["title"],
         options: json["options"] != null
-            ? List<String>.from(json["options"].map((x) => x.toString()))
+            ? List<String>.from(json["options"].map((x) => x))
             : [],
       );
 
   Map<String, dynamic> toJson() => {
         "name": name,
         "title": title,
-        "options": options,
+        "options": options != null
+            ? List<dynamic>.from(options!.map((x) => x))
+            : [],
       };
 }
 
 class Wholesale {
-  dynamic minQty;
-  dynamic maxQty;
-  dynamic price;
+  var minQty;
+  var maxQty;
+  var price;
 
-  Wholesale({this.minQty, this.maxQty, this.price});
+  Wholesale({
+    this.minQty,
+    this.maxQty,
+    this.price,
+  });
 
   factory Wholesale.fromJson(Map<String, dynamic> json) => Wholesale(
         minQty: json["min_qty"],
@@ -601,7 +627,7 @@ class Wholesale {
   }
   
   String get priceText {
-    return price?.toString() ?? 'N/A';
+    return price?.toString() ?? '0.00';
   }
   
   String get quantityRangeText {

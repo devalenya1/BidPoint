@@ -1,4 +1,8 @@
-// product_mini_response.dart
+// To parse this JSON data, do
+//
+//     final productMiniResponse = productMiniResponseFromJson(jsonString);
+// https://app.quicktype.io/
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
@@ -9,35 +13,32 @@ String productMiniResponseToJson(ProductMiniResponse data) =>
     json.encode(data.toJson());
 
 class ProductMiniResponse {
-  List<Product>? products;
-  PaginationLinks? links;
-  Meta? meta;
-  bool? success;
-  int? status;
-
   ProductMiniResponse({
     this.products,
-    this.links,
     this.meta,
     this.success,
     this.status,
   });
 
-  factory ProductMiniResponse.fromJson(Map<String, dynamic> json) {
-    return ProductMiniResponse(
-      products: json["data"] != null
-          ? List<Product>.from(json["data"].map((x) => Product.fromJson(x)))
-          : [],
-      links: json["links"] != null ? PaginationLinks.fromJson(json["links"]) : null,
-      meta: json["meta"] != null ? Meta.fromJson(json["meta"]) : null,
-      success: json["success"] ?? false,
-      status: json["status"] ?? 200,
-    );
-  }
+  List<Product>? products;
+  bool? success;
+  int? status;
+  Meta? meta;
+
+  factory ProductMiniResponse.fromJson(Map<String, dynamic> json) =>
+      ProductMiniResponse(
+        products: json["data"] != null
+            ? List<Product>.from(json["data"].map((x) => Product.fromJson(x)))
+            : [],
+        meta: json["meta"] == null ? null : Meta.fromJson(json["meta"]),
+        success: json["success"],
+        status: json["status"],
+      );
 
   Map<String, dynamic> toJson() => {
-        "data": products != null ? List<dynamic>.from(products!.map((x) => x.toJson())) : [],
-        "links": links?.toJson(),
+        "data": products != null
+            ? List<dynamic>.from(products!.map((x) => x.toJson()))
+            : [],
         "meta": meta?.toJson(),
         "success": success,
         "status": status,
@@ -45,14 +46,43 @@ class ProductMiniResponse {
 }
 
 class Product {
+  Product({
+    this.id,
+    this.slug,
+    this.name,
+    this.thumbnailImage,
+    this.mainPrice,
+    this.strokedPrice,
+    this.hasDiscount,
+    this.discount,
+    this.rating,
+    this.reviewCount,
+    this.sales,
+    this.isWholesale,
+    // Auction related fields
+    this.auctionEndDate,
+    this.auctionStartDate,
+    this.startingBid,
+    this.minBidPrice,
+    this.highestBid,
+    // Swipe and points fields
+    this.swipeRight,
+    this.swipeLeft,
+    this.pointPerBid,
+    this.pointPerBidCustom,
+    this.pointMultiplierSystem,
+    this.auctionProduct,
+    this.links,
+  });
+
   int? id;
   String? slug;
   String? name;
   String? thumbnailImage;
-  bool? hasDiscount;
-  String? discount;
-  String? strokedPrice;
   String? mainPrice;
+  String? strokedPrice;
+  bool? hasDiscount;
+  var discount;
   double? rating;
   int? reviewCount;
   int? sales;
@@ -75,71 +105,44 @@ class Product {
   
   Links? links;
 
-  Product({
-    this.id,
-    this.slug,
-    this.name,
-    this.thumbnailImage,
-    this.hasDiscount,
-    this.discount,
-    this.strokedPrice,
-    this.mainPrice,
-    this.rating,
-    this.reviewCount,
-    this.sales,
-    this.isWholesale,
-    this.auctionEndDate,
-    this.auctionStartDate,
-    this.startingBid,
-    this.minBidPrice,
-    this.highestBid,
-    this.swipeRight,
-    this.swipeLeft,
-    this.pointPerBid,
-    this.pointPerBidCustom,
-    this.pointMultiplierSystem,
-    this.auctionProduct,
-    this.links,
-  });
-
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json["id"] as int?,
-      slug: json["slug"] as String?,
-      name: json["name"] as String?,
-      thumbnailImage: json["thumbnail_image"] as String?,
-      hasDiscount: json["has_discount"] as bool?,
-      discount: json["discount"] as String?,
-      strokedPrice: json["stroked_price"] as String?,
-      mainPrice: json["main_price"] as String?,
-      rating: (json["rating"] as num?)?.toDouble(),
-      reviewCount: json["review_count"] as int?,
-      sales: json["sales"] as int?,
-      isWholesale: json["is_wholesale"] as bool?,
-      auctionEndDate: json["auction_end_date"],
-      auctionStartDate: json["auction_start_date"],
-      startingBid: json["starting_bid"] as String?,
-      minBidPrice: json["min_bid_price"] as String?,
-      highestBid: json["highest_bid"] as String?,
-      swipeRight: json["swipe_right"] as int?,
-      swipeLeft: json["swipe_left"] as int?,
-      pointPerBid: json["point_per_bid"] as int?,
-      pointPerBidCustom: json["point_per_bid_custom"] as int?,
-      pointMultiplierSystem: json["point_multiplier_system"] as int?,
-      auctionProduct: json["auction_product"] as int?,
-      links: json["links"] != null ? Links.fromJson(json["links"]) : null,
-    );
-  }
+  factory Product.fromJson(Map<String, dynamic> json) => Product(
+        id: json["id"],
+        slug: json["slug"],
+        name: json["name"],
+        thumbnailImage: json["thumbnail_image"],
+        mainPrice: json["main_price"],
+        strokedPrice: json["stroked_price"],
+        hasDiscount: json["has_discount"],
+        discount: json["discount"],
+        rating: json["rating"]?.toDouble(),
+        reviewCount: json["review_count"],
+        sales: json["sales"],
+        isWholesale: json["is_wholesale"],
+        // Auction related fields
+        auctionEndDate: json["auction_end_date"],
+        auctionStartDate: json["auction_start_date"],
+        startingBid: json["starting_bid"],
+        minBidPrice: json["min_bid_price"],
+        highestBid: json["highest_bid"],
+        // Swipe and points fields
+        swipeRight: json["swipe_right"],
+        swipeLeft: json["swipe_left"],
+        pointPerBid: json["point_per_bid"],
+        pointPerBidCustom: json["point_per_bid_custom"],
+        pointMultiplierSystem: json["point_multiplier_system"],
+        auctionProduct: json["auction_product"],
+        links: json["links"] == null ? null : Links.fromJson(json["links"]),
+      );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "slug": slug,
         "name": name,
         "thumbnail_image": thumbnailImage,
+        "main_price": mainPrice,
+        "stroked_price": strokedPrice,
         "has_discount": hasDiscount,
         "discount": discount,
-        "stroked_price": strokedPrice,
-        "main_price": mainPrice,
         "rating": rating,
         "review_count": reviewCount,
         "sales": sales,
@@ -220,8 +223,8 @@ class Product {
   }
   
   String getDiscountText() {
-    if (hasDiscount == true && discount != null && discount!.isNotEmpty) {
-      return discount!;
+    if (hasDiscount == true && discount != null && discount.toString().isNotEmpty) {
+      return discount.toString();
     }
     return '';
   }
@@ -239,7 +242,7 @@ class Product {
     if (isAuctionProduct && minBidPrice != null && minBidPrice!.isNotEmpty) {
       return minBidPrice!;
     }
-    return startingBid ?? 'N/A';
+    return startingBid ?? '0.00';
   }
   
   bool get hasHighestBid => highestBid != null && highestBid!.isNotEmpty;
@@ -301,12 +304,14 @@ class Product {
 }
 
 class Links {
+  Links({
+    this.details,
+  });
+
   String? details;
 
-  Links({this.details});
-
   factory Links.fromJson(Map<String, dynamic> json) => Links(
-        details: json["details"] as String?,
+        details: json["details"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -314,119 +319,42 @@ class Links {
       };
 }
 
-class PaginationLinks {
-  String? first;
-  String? last;
-  String? prev;
-  String? next;
-
-  PaginationLinks({
-    this.first,
-    this.last,
-    this.prev,
-    this.next,
-  });
-
-  factory PaginationLinks.fromJson(Map<String, dynamic> json) => PaginationLinks(
-        first: json["first"] as String?,
-        last: json["last"] as String?,
-        prev: json["prev"] as String?,
-        next: json["next"] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        "first": first,
-        "last": last,
-        "prev": prev,
-        "next": next,
-      };
-  
-  bool get hasNextPage => next != null && next!.isNotEmpty;
-  
-  bool get hasPreviousPage => prev != null && prev!.isNotEmpty;
-}
-
 class Meta {
-  int? currentPage;
-  int? from;
-  int? lastPage;
-  List<MetaLink>? links;
-  String? path;
-  int? perPage;
-  int? to;
-  int? total;
-
   Meta({
     this.currentPage,
     this.from,
     this.lastPage,
-    this.links,
     this.path,
     this.perPage,
     this.to,
     this.total,
   });
 
+  int? currentPage;
+  int? from;
+  int? lastPage;
+  String? path;
+  int? perPage;
+  int? to;
+  int? total;
+
   factory Meta.fromJson(Map<String, dynamic> json) => Meta(
-        currentPage: json["current_page"] as int?,
-        from: json["from"] as int?,
-        lastPage: json["last_page"] as int?,
-        links: json["links"] != null
-            ? List<MetaLink>.from(json["links"].map((x) => MetaLink.fromJson(x)))
-            : [],
-        path: json["path"] as String?,
-        perPage: json["per_page"] as int?,
-        to: json["to"] as int?,
-        total: json["total"] as int?,
+        currentPage: json["current_page"],
+        from: json["from"],
+        lastPage: json["last_page"],
+        path: json["path"],
+        perPage: json["per_page"],
+        to: json["to"],
+        total: json["total"],
       );
 
   Map<String, dynamic> toJson() => {
         "current_page": currentPage,
         "from": from,
         "last_page": lastPage,
-        "links": links != null ? List<dynamic>.from(links!.map((x) => x.toJson())) : [],
         "path": path,
         "per_page": perPage,
         "to": to,
         "total": total,
-      };
-  
-  bool get hasNextPage => (currentPage ?? 0) < (lastPage ?? 0);
-  
-  bool get hasPreviousPage => (currentPage ?? 1) > 1;
-  
-  int get nextPage => (currentPage ?? 0) + 1;
-  
-  int get previousPage => (currentPage ?? 1) - 1;
-  
-  String get rangeText {
-    if (from != null && to != null && total != null) {
-      return 'Showing $from to $to of $total results';
-    }
-    return '';
-  }
-}
-
-class MetaLink {
-  String? url;
-  String? label;
-  bool? active;
-
-  MetaLink({
-    this.url,
-    this.label,
-    this.active,
-  });
-
-  factory MetaLink.fromJson(Map<String, dynamic> json) => MetaLink(
-        url: json["url"] as String?,
-        label: json["label"] as String?,
-        active: json["active"] as bool?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        "url": url,
-        "label": label,
-        "active": active,
       };
 }
