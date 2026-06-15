@@ -91,20 +91,6 @@ class ProfileRepository {
     return phoneEmailAvailabilityResponseFromJson(response.body);
   }
 
-  // // Get user info response
-  // Future<UserInfoResponse> getUserInfoResponse() async {
-  //   String url = "${AppConfig.BASE_URL}/customer/info";
-  //   final response = await ApiRequest.get(
-  //     url: url,
-  //     headers: {
-  //       "Authorization": "Bearer ${access_token.$}",
-  //       "App-Language": app_language.$!,
-  //     },
-  //   );
-  //   return userInfoResponseFromJson(response.body);
-  // }
-
-
   Future<dynamic> getUserInfoResponse({BuildContext? context}) async {
     String url = "${AppConfig.BASE_URL}/customer/info";
     
@@ -141,37 +127,37 @@ class ProfileRepository {
     }
   }
 
-// Update notification settings
-Future<Map<String, dynamic>> updateNotificationSettings(Map<String, bool> settings) async {
-  String url = "${AppConfig.BASE_URL}/notification-settings/update";
-  
-  final response = await ApiRequest.post(
-    url: url,
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${access_token.$}",
-      "App-Language": app_language.$!,
-    },
-    body: jsonEncode({
-      "settings": settings,
-    })
-  );
-  
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    final Map<String, dynamic> responseData = jsonDecode(response.body);
-    return {
-      'success': responseData['success'] ?? true,
-      'message': responseData['message'] ?? 'Notification settings saved successfully',
-      'data': responseData['data'],
-    };
-  } else {
-    return {
-      'success': false,
-      'message': 'Failed to save notification settings',
-      'status': response.statusCode,
-    };
+  // Update notification settings
+  Future<Map<String, dynamic>> updateNotificationSettings(Map<String, bool> settings) async {
+    String url = "${AppConfig.BASE_URL}/notification-settings/update";
+    
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${access_token.$}",
+        "App-Language": app_language.$!,
+      },
+      body: jsonEncode({
+        "settings": settings,
+      })
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return {
+        'success': responseData['success'] ?? true,
+        'message': responseData['message'] ?? 'Notification settings saved successfully',
+        'data': responseData['data'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Failed to save notification settings',
+        'status': response.statusCode,
+      };
+    }
   }
-}
 
   // Get notification settings
   Future<Map<String, dynamic>> getNotificationSettings() async {
@@ -202,33 +188,33 @@ Future<Map<String, dynamic>> updateNotificationSettings(Map<String, bool> settin
     }
   }
 
-// Send email verification code
-Future<Map<String, dynamic>> sendEmailVerificationCode(String email) async {
-  String url = "${AppConfig.BASE_URL}/user/email/verify/send";
-  
-  final response = await ApiRequest.post(
-    url: url,
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${access_token.$}",
-      "App-Language": app_language.$!,
-    },
-    body: jsonEncode({"email": email})
-  );
-  
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    final Map<String, dynamic> responseData = jsonDecode(response.body);
-    return {
-      'success': responseData['success'] ?? true,
-      'message': responseData['message'] ?? "Verification code sent",
-    };
-  } else {
-    return {
-      'success': false,
-      'message': "Failed to send verification code",
-    };
+  // Send email verification code
+  Future<Map<String, dynamic>> sendEmailVerificationCode(String email) async {
+    String url = "${AppConfig.BASE_URL}/user/email/verify/send";
+    
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${access_token.$}",
+        "App-Language": app_language.$!,
+      },
+      body: jsonEncode({"email": email})
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return {
+        'success': responseData['success'] ?? true,
+        'message': responseData['message'] ?? "Verification code sent",
+      };
+    } else {
+      return {
+        'success': false,
+        'message': "Failed to send verification code",
+      };
+    }
   }
-}
 
   // Verify and update email
   Future<Map<String, dynamic>> verifyAndUpdateEmail(String email, String code) async {
@@ -278,13 +264,13 @@ Future<Map<String, dynamic>> sendEmailVerificationCode(String email) async {
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       return {
         'success': responseData['success'] ?? true,
-        'message': responseData['message'] ?? AppLocalizations.of(context)!.withdrawal_request_submitted,
+        'message': responseData['message'] ?? "Withdrawal request submitted successfully",
         'data': responseData['data'],
       };
     } else {
       return {
         'success': false,
-        'message': AppLocalizations.of(context)!.withdrawal_request_failed,
+        'message': "Failed to submit withdrawal request",
         'status': response.statusCode,
       };
     }

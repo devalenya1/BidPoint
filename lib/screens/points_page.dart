@@ -174,14 +174,27 @@ class _PointsPageState extends State<PointsPage> {
     if (package.price == null) return 0.0;
     if (package.price is double) return package.price;
     if (package.price is int) return (package.price as int).toDouble();
-    if (package.price is String) return double.tryParse(package.price) ?? 0.0;
+    if (package.price is String) {
+      return double.tryParse(package.price) ?? 0.0;
+    }
     return 0.0;
   }
   
   int _getPackagePoints(Package package) {
     if (package.amount == null) return 0;
-    if (package.amount is int) return package.amount;
-    if (package.amount is String) return int.tryParse(package.amount) ?? 0;
+    
+    dynamic amountValue = package.amount;
+    
+    if (amountValue is int) {
+      return amountValue;
+    } else if (amountValue is double) {
+      return amountValue.toInt();
+    } else if (amountValue is String) {
+      return int.tryParse(amountValue) ?? 0;
+    } else if (amountValue is num) {
+      return amountValue.toInt();
+    }
+    
     return 0;
   }
   
@@ -471,48 +484,42 @@ class _PointsPageState extends State<PointsPage> {
                         ),
                         // Buy Button
                         Container(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                          child: GestureDetector(
-                            onTap: _isPurchasing ? null : _submitPurchase,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                color: MyTheme.accent_color,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: _isPurchasing
-                                  ? const Center(
-                                      child: SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    )
-                                  : Text(
-                                      AppLocalizations.of(context)!.buy_now_ucf,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: GestureDetector(
+            onTap: _isPurchasing ? null : _submitPurchase,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: MyTheme.accent_color,
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: _isPurchasing
+                  ? const Center(
+                      child: SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      AppLocalizations.of(context)!.buy_now_ucf,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
+        ),
       ],
-    );
+    ),
+  );
   }
   
   Widget _buildUserPointsCard() {
@@ -740,7 +747,7 @@ class _PointsPageState extends State<PointsPage> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          item.paymentMethod ?? AppLocalizations.of(context)!.unknown_ucf,
+                          item.paymentMethod ?? AppLocalizations.of(context)!.unknown,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,

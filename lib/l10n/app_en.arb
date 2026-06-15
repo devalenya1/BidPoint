@@ -421,7 +421,7 @@
   "any_ucf": "Any",
   "custom_range_ucf": "Custom Range",
   "sort_by_ucf": "Sort By",
-
+  "unknown": "Unknown",
 
 
   "@min_withdrawal_amount": {

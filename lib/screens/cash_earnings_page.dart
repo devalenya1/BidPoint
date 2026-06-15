@@ -423,7 +423,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             AppLocalizations.of(context)!.date_ucf,
             date != null 
                 ? '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}, ${_formatTime(date)}'
-                : AppLocalizations.of(context)!.unknown_ucf,
+                : AppLocalizations.of(context)!.unknown,
           ),
           _buildHistoryRow(
             AppLocalizations.of(context)!.description_ucf,

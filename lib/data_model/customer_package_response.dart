@@ -16,11 +16,13 @@ class CustomerPackageResponse {
   List<Package>? data;
 
   factory CustomerPackageResponse.fromJson(Map<String, dynamic> json) => CustomerPackageResponse(
-    data: List<Package>.from(json["data"].map((x) => Package.fromJson(x))),
+    data: json["data"] != null 
+        ? List<Package>.from(json["data"].map((x) => Package.fromJson(x)))
+        : [],
   );
 
   Map<String, dynamic> toJson() => {
-    "data": List<dynamic>.from(data!.map((x) => x.toJson())),
+    "data": data != null ? List<dynamic>.from(data!.map((x) => x.toJson())) : [],
   };
 }
 
@@ -32,16 +34,14 @@ class Package {
     this.productUploadLimit,
     this.amount,
     this.price,
-
   });
 
   int? id;
   String? name;
   String? logo;
   int? productUploadLimit;
-  String? amount;
-  var price;
-
+  dynamic amount;  // Changed from String? to dynamic to handle both int and String
+  dynamic price;   // Changed from var to dynamic for consistency
 
   factory Package.fromJson(Map<String, dynamic> json) => Package(
     id: json["id"],
@@ -50,7 +50,6 @@ class Package {
     productUploadLimit: json["product_upload_limit"],
     amount: json["amount"],
     price: json["price"],
-
   );
 
   Map<String, dynamic> toJson() => {

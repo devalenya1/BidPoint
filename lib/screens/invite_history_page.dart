@@ -473,7 +473,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           Expanded(
             flex: 1,
             child: Text(
-              item.createdAt != null ? _formatDate(item.createdAt!) : AppLocalizations.of(context)!.unknown_ucf,
+              item.createdAt != null ? _formatDate(item.createdAt!) : AppLocalizations.of(context)!.unknown,
               textAlign: TextAlign.right,
               style: const TextStyle(
                 fontSize: 12,

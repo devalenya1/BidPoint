@@ -179,9 +179,9 @@ class _ProfileEditState extends State<ProfileEdit> {
       _updateCountryControllers.add(TextEditingController(text: address.country_name ?? ""));
       _updateStateControllers.add(TextEditingController(text: address.state_name ?? ""));
       _updateCityControllers.add(TextEditingController(text: address.city_name ?? ""));
-      _updateSelectedCountries.add(Country(id: address.country_id, name: address.country_name));
-      _updateSelectedStates.add(MyState(id: address.state_id, name: address.state_name));
-      _updateSelectedCities.add(City(id: address.city_id, name: address.city_name));
+      _updateSelectedCountries.add(Country(id: address.country_id, name: address.country_name ?? ""));
+      _updateSelectedStates.add(MyState(id: address.state_id, name: address.state_name ?? ""));
+      _updateSelectedCities.add(City(id: address.city_id, name: address.city_name ?? ""));
     }
   }
 
@@ -298,7 +298,6 @@ class _ProfileEditState extends State<ProfileEdit> {
     setState(() => _isSaving = true);
     
     try {
-      // API call to send verification code
       var response = await ProfileRepository().sendEmailVerificationCode(email);
       if (response['success'] == true) {
         ToastComponent.showDialog(response['message'] ?? "Verification code sent",
@@ -464,7 +463,7 @@ class _ProfileEditState extends State<ProfileEdit> {
     _selectedState = null;
     _selectedCity = null;
     setModalState(() {
-      _countryController.text = country.name;
+      _countryController.text = country.name ?? "";
       _stateController.text = "";
       _cityController.text = "";
     });
@@ -474,7 +473,7 @@ class _ProfileEditState extends State<ProfileEdit> {
     _selectedState = state;
     _selectedCity = null;
     setModalState(() {
-      _stateController.text = state.name;
+      _stateController.text = state.name ?? "";
       _cityController.text = "";
     });
   }
@@ -482,7 +481,7 @@ class _ProfileEditState extends State<ProfileEdit> {
   void _onSelectCity(City city, StateSetter setModalState) {
     _selectedCity = city;
     setModalState(() {
-      _cityController.text = city.name;
+      _cityController.text = city.name ?? "";
     });
   }
 
@@ -559,6 +558,9 @@ class _ProfileEditState extends State<ProfileEdit> {
   }
 
   Widget _buildProfileImageSection() {
+    final avatarPath = avatar_original.$;
+    final hasAvatar = avatarPath != null && avatarPath.isNotEmpty;
+    
     return Center(
       child: Stack(
         children: [
@@ -570,9 +572,9 @@ class _ProfileEditState extends State<ProfileEdit> {
               border: Border.all(color: MyTheme.accent_color, width: 2),
             ),
             child: ClipOval(
-              child: avatar_original.$ != null && avatar_original.$.isNotEmpty
+              child: hasAvatar
                   ? Image.network(
-                      avatar_original.$!,
+                      avatarPath,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(Icons.person, size: 50, color: Colors.grey);
@@ -716,7 +718,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                 ),
                 const SizedBox(height: 16),
                 _buildPasswordField(
-                  label: AppLocalizations.of(context)!.confirm_password_ucf,
+                  label: AppLocalizations.of(context)!.retype_password_ucf,
                   controller: _passwordConfirmController,
                   showPassword: _showConfirmPassword,
                   onToggle: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
@@ -1163,7 +1165,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       _updateSelectedStates[index] = null;
                       _updateSelectedCities[index] = null;
                       setModalState(() {
-                        _updateCountryControllers[index].text = country.name;
+                        _updateCountryControllers[index].text = country.name ?? "";
                         _updateStateControllers[index].clear();
                         _updateCityControllers[index].clear();
                       });
@@ -1182,7 +1184,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       _updateSelectedStates[index] = state as MyState;
                       _updateSelectedCities[index] = null;
                       setModalState(() {
-                        _updateStateControllers[index].text = state.name;
+                        _updateStateControllers[index].text = state.name ?? "";
                         _updateCityControllers[index].clear();
                       });
                     },
@@ -1203,7 +1205,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                     onSuggestionSelected: (city) {
                       _updateSelectedCities[index] = city as City;
                       setModalState(() {
-                        _updateCityControllers[index].text = city.name;
+                        _updateCityControllers[index].text = city.name ?? "";
                       });
                     },
                     suggestionsCallback: (pattern) async {

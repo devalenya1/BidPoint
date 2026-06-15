@@ -22,12 +22,12 @@ class ActivityPage extends StatefulWidget {
 class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderStateMixin {
   int _selectedTab = 0; // 0: All, 1: Outbid, 2: Winning, 3: Recently Ended
   
-  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
-  UserInformation? _userInfo;  // Store the complete user info response
+  UserInformation? _userInfo;
   
-  // Processed activity data (derived from _userInfo)
+  // Processed activity data
   List<AuctionBid> _allActivities = [];
   List<AuctionBid> _outbidActivities = [];
   List<AuctionBid> _winningActivities = [];
@@ -41,7 +41,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _fetchActivityData();  // Fetch fresh data from API
+      _fetchActivityData();
     } else {
       setState(() {
         _isLoading = false;
@@ -57,7 +57,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     super.dispose();
   }
   
-  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  // ============ FETCH DATA FROM API ============
   Future<void> _fetchActivityData() async {
     try {
       setState(() {
@@ -68,19 +68,16 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userInfo = response.data![0];  // Store locally like _productDetails
+          _userInfo = response.data![0];
         });
         
-        // Process activity data from the stored user info
         _processActivityData();
         
-        // Optional: Update global SharedValues for counts
         auction_bids_count.$ = _userInfo?.auctionBidsCount ?? 0;
         auction_bids_count.save();
         distinct_auction_bids_count.$ = _userInfo?.distinctAuctionBidsCount ?? 0;
         distinct_auction_bids_count.save();
       } else {
-        // Handle empty response
         setState(() {
           _allActivities = [];
           _outbidActivities = [];
@@ -99,14 +96,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
   }
   
-  // ============ PROCESS ACTIVITY DATA (Extract from stored user info) ============
+  // ============ PROCESS ACTIVITY DATA ============
   void _processActivityData() {
     if (_userInfo == null) return;
     
     final auctionBids = _userInfo!.auctionBids ?? [];
     final distinctAuctionBids = _userInfo!.distinctAuctionBids ?? [];
     
-    // Create a map of product info from distinct auction bids
     final Map<int, DistinctAuctionBid> productInfoMap = {};
     for (var product in distinctAuctionBids) {
       if (product.productId != null) {
@@ -114,7 +110,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     }
     
-    // Group bids by product
     final Map<int, List<AuctionBid>> bidsByProduct = {};
     for (var bid in auctionBids) {
       if (bid.productId != null) {
@@ -122,7 +117,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     }
     
-    // Process each product the user has bid on
     List<AuctionBid> allActivities = [];
     List<AuctionBid> outbid = [];
     List<AuctionBid> winning = [];
@@ -135,14 +129,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       
       if (productInfo == null) continue;
       
-      // Get user's highest bid
       final userHighestBid = userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
-      
-      // Get highest bid overall for this product
       final productHighestBid = productInfo.amount ?? 0.0;
       
-      // Determine status (would need auction end date from API)
-      final isEnded = false; // TODO: Get from product API
+      final isEnded = false;
       String status;
       
       if (isEnded) {
@@ -155,8 +145,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         status = 'pending';
       }
       
-      // Create a wrapped activity object
-      // Since we don't have a direct model, we'll use the bid with additional info
       final latestBid = userBids.last;
       
       allActivities.add(latestBid);
@@ -168,11 +156,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       } else if (isEnded) {
         ended.add(latestBid);
       }
-      
-      // Start timer if needed (would need end date)
-      // if (productInfo.auctionEndDate != null && !isEnded) {
-      //   _startTimer(productId, productInfo.auctionEndDate!);
-      // }
     }
     
     setState(() {
@@ -183,7 +166,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     });
   }
   
-  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  // ============ PULL TO REFRESH ============
   Future<void> _onPageRefresh() async {
     setState(() {
       _isRefreshing = true;
@@ -241,7 +224,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return FormatHelper.formatPrice(price);
   }
   
-  // Helper to get product name for a bid
   String _getProductNameForBid(AuctionBid bid) {
     if (_userInfo?.distinctAuctionBids == null) return AppLocalizations.of(context)!.unknown_product;
     
@@ -252,7 +234,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return product.productName ?? AppLocalizations.of(context)!.unknown_product;
   }
   
-  // Helper to get product image for a bid
   String? _getProductImageForBid(AuctionBid bid) {
     if (_userInfo?.distinctAuctionBids == null) return null;
     
@@ -263,7 +244,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return product.productImage;
   }
   
-  // Helper to get current bid for a product
   double _getCurrentBidForProduct(int productId) {
     if (_userInfo?.distinctAuctionBids == null) return 0.0;
     
@@ -274,7 +254,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return product.amount ?? 0.0;
   }
   
-  // Helper to get user's highest bid for a product
   double _getUserHighestBidForProduct(int productId) {
     if (_userInfo?.auctionBids == null) return 0.0;
     
@@ -284,18 +263,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
   }
   
-  // Helper to get point per bid for a product
   int _getPointPerBidForProduct(int productId) {
     if (_userInfo?.auctionBids == null) return 10;
     
     final userBids = _userInfo!.auctionBids!.where((b) => b.productId == productId).toList();
     if (userBids.isEmpty) return 10;
     
-    // Return pointPerBid from the first bid (should be same for all bids of this product)
     return userBids.first.pointPerBid ?? 10;
   }
   
-  // Helper to get product slug for navigation
   String? _getProductSlugForBid(AuctionBid bid) {
     if (_userInfo?.distinctAuctionBids == null) return null;
     
@@ -303,7 +279,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       (p) => p.productId == bid.productId,
       orElse: () => DistinctAuctionBid(),
     );
-    return null; // Would need slug from API
+    return null;
   }
   
   List<AuctionBid> _getCurrentActivities() {
@@ -319,7 +295,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
   }
   
-  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
+  // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -343,17 +319,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         backgroundColor: Colors.white,
         onRefresh: _onPageRefresh,
         child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading
+            ? _buildShimmer()
             : _buildBody(),
       ),
     );
   }
   
-  // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return Column(
       children: [
-        // Tabs shimmer
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           margin: const EdgeInsets.only(bottom: 16),
@@ -372,7 +346,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             ),
           ),
         ),
-        // Cards shimmer
         Expanded(
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -391,7 +364,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  // ============ MAIN BODY ============
   Widget _buildBody() {
     final currentActivities = _getCurrentActivities();
     
@@ -535,10 +507,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final currentBid = _getCurrentBidForProduct(productId);
     final pointPerBid = _getPointPerBidForProduct(productId);
     
-    // Determine status
     final isOutbid = userHighestBid > 0 && userHighestBid < currentBid;
     final isWinning = userHighestBid >= currentBid && userHighestBid > 0;
-    final isEnded = false; // TODO: Get from API
+    final isEnded = false;
     
     String statusText;
     Color statusColor = MyTheme.dark_font_grey;
@@ -570,7 +541,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image
           Container(
             width: 120,
             height: 140,
@@ -579,45 +549,39 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: productImage != null && productImage.isNotEmpty
-                      ? Image.network(
-                          productImage,
-                          fit: BoxFit.cover,
-                          width: 120,
-                          height: 140,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: const Color(0xFFE2E8F0),
-                              child: const Icon(
-                                Icons.inventory_2,
-                                size: 50,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: productImage != null && productImage.isNotEmpty
+                  ? Image.network(
+                      productImage,
+                      fit: BoxFit.cover,
+                      width: 120,
+                      height: 140,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
                           color: const Color(0xFFE2E8F0),
                           child: const Icon(
                             Icons.inventory_2,
                             size: 50,
                             color: Color(0xFF94A3B8),
                           ),
-                        ),
-                ),
-              ],
+                        );
+                      },
+                    )
+                  : Container(
+                      color: const Color(0xFFE2E8F0),
+                      child: const Icon(
+                        Icons.inventory_2,
+                        size: 50,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
             ),
           ),
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status
                 Text(
                   statusText, 
                   style: TextStyle(
@@ -627,15 +591,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Product Title with product name
                 Text(
                   isOutbid && !isEnded
-                      ? AppLocalizations.of(context)!.someone_placed_higher_bid(productName)
+                      ? '$productName - ${AppLocalizations.of(context)!.you_were_outbid}'
                       : isWinning && !isEnded
-                          ? AppLocalizations.of(context)!.currently_winning_product(productName)
+                          ? '$productName - ${AppLocalizations.of(context)!.currently_winning}'
                           : isEnded && isWinning
-                              ? AppLocalizations.of(context)!.congratulations_won_product(productName)
-                              : AppLocalizations.of(context)!.auction_ended_for_product(productName),
+                              ? '$productName - ${AppLocalizations.of(context)!.you_won_auction}'
+                              : '$productName - ${AppLocalizations.of(context)!.auction_ended}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -645,7 +608,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                // Bid Label
                 Text(
                   isEnded 
                       ? AppLocalizations.of(context)!.final_bid
@@ -657,7 +619,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Bid Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -685,7 +646,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            AppLocalizations.of(context)!.bid_points(pointPerBid),
+                            '1 Bid = $pointPerBid',
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -698,7 +659,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Action Button
                 if (isOutbid && !isEnded)
                   _buildBidAgainButton(productSlug, productName)
                 else if (isWinning || (isEnded && isWinning))
@@ -706,7 +666,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
