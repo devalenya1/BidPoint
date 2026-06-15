@@ -23,6 +23,10 @@ class ProductDetailsResponse {
   bool? success;
   int? status;
 
+  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  List<DetailedProduct>? get detailed_products => detailedProducts;
+  // ============ END SNAKE_CASE GETTERS ============
+
   factory ProductDetailsResponse.fromJson(Map<String, dynamic> json) =>
       ProductDetailsResponse(
         detailedProducts: json["data"] != null
@@ -151,7 +155,7 @@ class DetailedProduct {
   bool? get has_discount => hasDiscount;
   String? get stroked_price => strokedPrice;
   String? get main_price => mainPrice;
-  var get calculable_price => calculablePrice;
+  dynamic get calculable_price => calculablePrice;  // FIXED: Changed from 'var' to 'dynamic'
   String? get currency_symbol => currencySymbol;
   int? get current_stock => currentStock;
   int? get rating_count => ratingCount;
