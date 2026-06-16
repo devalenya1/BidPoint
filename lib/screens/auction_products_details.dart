@@ -53,7 +53,7 @@ class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
 
   // Data
   bool _isLoading = true;
-  AuctionProductDetail? _product;
+  AuctionDetailProducts? _product;
   List<String> _productImages = [];
   List<Comment> _comments = [];
   List<Review> _reviews = [];
@@ -411,7 +411,7 @@ class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
       if (response.result == true) {
         _playBidSound();
         _bidController.clear();
-        if (response.timeExtended == true) {
+        if (response.time_extended == true) {
           _showToast(response.message ?? '⏰ Auction time extended!');
         } else {
           _showToast('Bid placed! Amount: ${_formatPrice(amount)}');

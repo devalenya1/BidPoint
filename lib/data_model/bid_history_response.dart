@@ -1,7 +1,7 @@
 // data_model/bid_history_response.dart
 import 'package:json_annotation/json_annotation.dart';
 
-// part 'bid_history_response.g.dart';
+part 'bid_history_response.g.dart';
 
 @JsonSerializable()
 class BidHistoryResponse {

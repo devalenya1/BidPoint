@@ -7,7 +7,6 @@ part 'poll_data_response.g.dart';
 class PollDataResponse {
   bool? success;
   
-  // Snake_case fields matching server response
   @JsonKey(name: 'auction_end_date')
   String? auctionEndDate;
   
@@ -69,6 +68,21 @@ class PollDataResponse {
   factory PollDataResponse.fromJson(Map<String, dynamic> json) =>
       _$PollDataResponseFromJson(json);
   Map<String, dynamic> toJson() => _$PollDataResponseToJson(this);
+  
+  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  String? get auction_end_date => auctionEndDate;
+  double? get point_per_bid => pointPerBid;
+  double? get point_per_bid_custom => pointPerBidCustom;
+  bool? get auction_ended => auctionEnded;
+  bool? get is_ending_soon => isEndingSoon;
+  int? get remaining_seconds => remainingSeconds;
+  int? get reviews_count => reviewsCount;
+  BidData? get bid_data => bidData;
+  bool? get is_in_wishlist => isInWishlist;
+  String? get comments_html => commentsHtml;
+  String? get reviews_html => reviewsHtml;
+  String? get bid_history_html => bidHistoryHtml;
+  // ============ END SNAKE_CASE GETTERS ============
 }
 
 @JsonSerializable()
@@ -95,4 +109,11 @@ class BidData {
   factory BidData.fromJson(Map<String, dynamic> json) =>
       _$BidDataFromJson(json);
   Map<String, dynamic> toJson() => _$BidDataToJson(this);
+  
+  // ============ SNAKE_CASE GETTERS ============
+  double? get highest_bid => highestBid;
+  int? get total_bids => totalBids;
+  String? get bidder_name => bidderName;
+  double? get bid_amount => bidAmount;
+  // ============ END SNAKE_CASE GETTERS ============
 }

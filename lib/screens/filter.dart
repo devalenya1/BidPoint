@@ -855,7 +855,7 @@ class _FilterState extends State<Filter> {
               image: _productList[index].thumbnail_image,
               name: _productList[index].name,
               // main_price: _productList[index].main_price,
-              stroked_price: _productList[index].stroked_price,
+              // stroked_price: _productList[index].stroked_price,
               has_discount: _productList[index].has_discount,
               discount: _productList[index].discount,
               is_wholesale: _productList[index].isWholesale,

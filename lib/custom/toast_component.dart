@@ -5,13 +5,13 @@ import 'package:one_context/one_context.dart';
 
 class ToastComponent {
   // Constants for compatibility
-  static const int LENGTH_SHORT = Toast.LENGTH_SHORT;
-  static const int LENGTH_LONG = Toast.LENGTH_LONG;
-  static const int CENTER = Toast.CENTER;
-  static const int BOTTOM = Toast.BOTTOM;
-  static const int TOP = Toast.TOP;
+  static const int LENGTH_SHORT = 2;
+  static const int LENGTH_LONG = 4;
+  static const int CENTER = 1;
+  static const int BOTTOM = 0;
+  static const int TOP = 2;
   
-  static showDialog(String msg, {int duration = Toast.LENGTH_SHORT, int gravity = Toast.BOTTOM}) {
+  static showDialog(String msg, {int duration = 2, int gravity = 0}) {
     ToastContext().init(OneContext().context!);
     Toast.show(
       msg,

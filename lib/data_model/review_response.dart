@@ -1,7 +1,7 @@
 // data_model/review_response.dart
 import 'package:json_annotation/json_annotation.dart';
 
-// part 'review_response.g.dart';
+part 'review_response.g.dart';
 
 @JsonSerializable()
 class ReviewResponse {

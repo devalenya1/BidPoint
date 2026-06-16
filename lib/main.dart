@@ -110,11 +110,11 @@ var routes = GoRouter(
               path: "customer-packages",
               pageBuilder: (BuildContext context, GoRouterState state) =>
                   MaterialPage(child: UpdatePackage())),
-          GoRoute(
-              path: "auction_product_bids",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: AuthMiddleware(AuctionBiddedProducts()).next())),
+          // GoRoute(
+          //     path: "auction_product_bids",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: AuthMiddleware(AuctionBiddedProducts()).next())),
           GoRoute(
               path: "users/login",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -128,10 +128,10 @@ var routes = GoRouter(
               name: "Profile",
               pageBuilder: (BuildContext context, GoRouterState state) =>
                   AIZRoute.rightTransition(Profile())),
-          GoRoute(
-              path: "auction-products",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: AuctionProducts())),
+          // GoRoute(
+          //     path: "auction-products",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: AuctionProducts())),
           GoRoute(
               path: "auction-product/:slug",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -139,11 +139,11 @@ var routes = GoRouter(
                       child: AuctionProductsDetails(
                     slug: getParameter(state, "slug"),
                   ))),
-          GoRoute(
-              path: "auction/purchase_history",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: AuthMiddleware(AuctionPurchaseHistory()).next())),
+          // GoRoute(
+          //     path: "auction/purchase_history",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: AuthMiddleware(AuctionPurchaseHistory()).next())),
           GoRoute(
               path: "brand/:slug",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -159,10 +159,10 @@ var routes = GoRouter(
                       child: Filter(
                     selected_filter: "brands",
                   ))),
-          GoRoute(
-              path: "cart",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: AuthMiddleware(Cart()).next())),
+          // GoRoute(
+          //     path: "cart",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: AuthMiddleware(Cart()).next())),
           GoRoute(
               path: "categories",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -177,54 +177,54 @@ var routes = GoRouter(
                       child: (CategoryProducts(
                     slug: getParameter(state, "slug"),
                   )))),
-          GoRoute(
-              path: "flash-deals",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: (FlashDealList()))),
-          GoRoute(
-              path: "flash-deal/:slug",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: (FlashDealProducts(
-                    slug: getParameter(state, "slug"),
-                  )))),
-          GoRoute(
-              path: "followed-seller",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: (FollowedSellers()))),
-          GoRoute(
-              path: "purchase_history",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: (OrderList()))),
-          GoRoute(
-              path: "purchase_history/details/:id",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: (OrderDetails(
-                    id: int.parse(getParameter(state, "id")),
-                  )))),
-          GoRoute(
-              path: "sellers",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: (Filter(
-                    selected_filter: "sellers",
-                  )))),
-          GoRoute(
-              path: "shop/:slug",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(
-                      child: (SellerDetails(
-                    slug: getParameter(state, "slug"),
-                  )))),
-          GoRoute(
-              path: "todays-deal",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: (TodaysDealProducts()))),
-          GoRoute(
-              path: "coupons",
-              pageBuilder: (BuildContext context, GoRouterState state) =>
-                  MaterialPage(child: (Coupons()))),
+          // GoRoute(
+          //     path: "flash-deals",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: (FlashDealList()))),
+          // GoRoute(
+          //     path: "flash-deal/:slug",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: (FlashDealProducts(
+          //           slug: getParameter(state, "slug"),
+          //         )))),
+          // GoRoute(
+          //     path: "followed-seller",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: (FollowedSellers()))),
+          // GoRoute(
+          //     path: "purchase_history",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: (OrderList()))),
+          // GoRoute(
+          //     path: "purchase_history/details/:id",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: (OrderDetails(
+          //           id: int.parse(getParameter(state, "id")),
+          //         )))),
+          // GoRoute(
+          //     path: "sellers",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: (Filter(
+          //           selected_filter: "sellers",
+          //         )))),
+          // GoRoute(
+          //     path: "shop/:slug",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(
+          //             child: (SellerDetails(
+          //           slug: getParameter(state, "slug"),
+          //         )))),
+          // GoRoute(
+          //     path: "todays-deal",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: (TodaysDealProducts()))),
+          // GoRoute(
+          //     path: "coupons",
+          //     pageBuilder: (BuildContext context, GoRouterState state) =>
+          //         MaterialPage(child: (Coupons()))),
         ])
   ],
 );
