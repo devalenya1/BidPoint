@@ -52,29 +52,7 @@ class AuctionProductsRepository {
     
     return BidResponse.fromJson(jsonDecode(response.body));
   }
-  
-  // Quick bid for swipe functionality
-  Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
-    String url = ("${AppConfig.BASE_URL}/auction/quick-bid");
-    
-    var postBody = jsonEncode({
-      "product_id": int.parse(productId),
-      "amount": double.parse(amount),
-      "type": type
-    });
-    
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "App-Language": app_language.$!,
-        "Authorization": "Bearer ${access_token.$}",
-        "Content-Type": "application/json",
-      },
-      body: postBody,
-    );
-    
-    return BidResponse.fromJson(jsonDecode(response.body));
-  }
+ 
   
   // Poll data for real-time updates
   Future<PollDataResponse> pollData(int productId) async {

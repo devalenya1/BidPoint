@@ -18,17 +18,17 @@ class BidHistoryResponse {
 @JsonSerializable()
 class BidHistory {
   int? id;
-  int? user_id;
-  String? user_name;
+  int? userId;
+  String? userName;
   double? amount;
-  String? created_at;
+  String? createdAt;
 
   BidHistory({
     this.id,
-    this.user_id,
-    this.user_name,
+    this.userId,
+    this.userName,
     this.amount,
-    this.created_at,
+    this.createdAt,
   });
 
   factory BidHistory.fromJson(Map<String, dynamic> json) =>

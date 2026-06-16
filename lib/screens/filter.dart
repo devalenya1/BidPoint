@@ -13,6 +13,7 @@ import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
+import 'package:active_ecommerce_flutter/ui_elements/auction_product_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';

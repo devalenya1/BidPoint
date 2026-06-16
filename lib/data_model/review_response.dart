@@ -18,19 +18,19 @@ class ReviewResponse {
 @JsonSerializable()
 class Review {
   int? id;
-  int? user_id;
-  String? user_name;
+  int? userId;
+  String? userName;
   int? rating;
   String? comment;
-  String? created_at;
+  String? createdAt;
 
   Review({
     this.id,
-    this.user_id,
-    this.user_name,
+    this.userId,
+    this.userName,
     this.rating,
     this.comment,
-    this.created_at,
+    this.createdAt,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) =>

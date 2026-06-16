@@ -18,21 +18,21 @@ class CommentResponse {
 @JsonSerializable()
 class Comment {
   int? id;
-  int? user_id;
-  String? user_name;
-  String? user_avatar;
+  int? userId;
+  String? userName;
+  String? userAvatar;
   String? comment;
   int? likes;
-  String? created_at;
+  String? createdAt;
 
   Comment({
     this.id,
-    this.user_id,
-    this.user_name,
-    this.user_avatar,
+    this.userId,
+    this.userName,
+    this.userAvatar,
     this.comment,
     this.likes,
-    this.created_at,
+    this.createdAt,
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) =>

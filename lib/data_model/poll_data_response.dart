@@ -6,37 +6,37 @@ part 'poll_data_response.g.dart';
 @JsonSerializable()
 class PollDataResponse {
   bool? success;
-  String? auction_end_date;
-  double? point_per_bid;
-  double? point_per_bid_custom;
-  bool? auction_ended;
+  String? auctionEndDate;
+  double? pointPerBid;
+  double? pointPerBidCustom;
+  bool? auctionEnded;
   Map<String, dynamic>? winner;
-  bool? is_ending_soon;
-  int? remaining_seconds;
+  bool? isEndingSoon;
+  int? remainingSeconds;
   double? rating;
-  int? reviews_count;
-  BidData? bid_data;
-  bool? is_in_wishlist;
-  String? comments_html;
-  String? reviews_html;
-  String? bid_history_html;
+  int? reviewsCount;
+  BidData? bidData;
+  bool? isInWishlist;
+  String? commentsHtml;
+  String? reviewsHtml;
+  String? bidHistoryHtml;
 
   PollDataResponse({
     this.success,
-    this.auction_end_date,
-    this.point_per_bid,
-    this.point_per_bid_custom,
-    this.auction_ended,
+    this.auctionEndDate,
+    this.pointPerBid,
+    this.pointPerBidCustom,
+    this.auctionEnded,
     this.winner,
-    this.is_ending_soon,
-    this.remaining_seconds,
+    this.isEndingSoon,
+    this.remainingSeconds,
     this.rating,
-    this.reviews_count,
-    this.bid_data,
-    this.is_in_wishlist,
-    this.comments_html,
-    this.reviews_html,
-    this.bid_history_html,
+    this.reviewsCount,
+    this.bidData,
+    this.isInWishlist,
+    this.commentsHtml,
+    this.reviewsHtml,
+    this.bidHistoryHtml,
   });
 
   factory PollDataResponse.fromJson(Map<String, dynamic> json) =>
@@ -46,16 +46,16 @@ class PollDataResponse {
 
 @JsonSerializable()
 class BidData {
-  double? highest_bid;
-  int? total_bids;
-  String? bidder_name;
-  double? bid_amount;
+  double? highestBid;
+  int? totalBids;
+  String? bidderName;
+  double? bidAmount;
 
   BidData({
-    this.highest_bid,
-    this.total_bids,
-    this.bidder_name,
-    this.bid_amount,
+    this.highestBid,
+    this.totalBids,
+    this.bidderName,
+    this.bidAmount,
   });
 
   factory BidData.fromJson(Map<String, dynamic> json) =>
