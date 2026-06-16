@@ -2,7 +2,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'comment_response.dart';
 
-part 'add_comment_response.g.dart';
+part 'add_comment_response.dart';
 
 @JsonSerializable()
 class AddCommentResponse {

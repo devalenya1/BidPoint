@@ -33,16 +33,16 @@ import '../data_model/review_response.dart';
 import '../data_model/bid_history_response.dart';
 import '../helpers/main_helpers.dart';
 
-class AuctionProductsDetails extends StatefulWidget {
+class ProductsDetails extends StatefulWidget {
   String slug;
 
-  AuctionProductsDetails({Key? key, required this.slug}) : super(key: key);
+  ProductsDetails({Key? key, required this.slug}) : super(key: key);
 
   @override
-  _AuctionProductsDetailsState createState() => _AuctionProductsDetailsState();
+  _ProductsDetailsState createState() => _ProductsDetailsState();
 }
 
-class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
+class _ProductsDetailsState extends State<ProductsDetails>
     with TickerProviderStateMixin {
   // Controllers
   late TabController _tabController;
@@ -53,7 +53,7 @@ class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
 
   // Data
   bool _isLoading = true;
-  AuctionProductDetail? _product;
+  ProductDetail? _product;
   List<String> _productImages = [];
   List<Comment> _comments = [];
   List<Review> _reviews = [];

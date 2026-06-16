@@ -4,6 +4,7 @@ import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/data_model/add_comment_response.dart';
 import 'package:active_ecommerce_flutter/data_model/add_review_response.dart';
 import 'package:active_ecommerce_flutter/data_model/auction_product_details_response.dart';
+import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
 import 'package:active_ecommerce_flutter/data_model/bid_history_response.dart';
 import 'package:active_ecommerce_flutter/data_model/bid_response.dart';
 import 'package:active_ecommerce_flutter/data_model/comment_response.dart';
@@ -17,7 +18,7 @@ class AuctionProductsRepository {
   
   // Get auction product details
   Future<AuctionProductDetailsResponse> getAuctionProductsDetails(String slug) async {
-    String url = ("${AppConfig.BASE_URL}/auction-product/$slug");
+    String url = ("${AppConfig.BASE_URL}/auction/products/$slug");
     
     final response = await ApiRequest.get(
       url: url,
@@ -27,7 +28,7 @@ class AuctionProductsRepository {
       },
     );
     
-    return auctionProductDetailsResponseFromJson(response.body);
+    return productDetailsResponseFromJson(response.body);
   }
   
   // Place a bid

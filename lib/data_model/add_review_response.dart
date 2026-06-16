@@ -1,7 +1,7 @@
 // data_model/add_review_response.dart
 import 'package:json_annotation/json_annotation.dart';
 
-part 'add_review_response.g.dart';
+part 'add_review_response.dart';
 
 @JsonSerializable()
 class AddReviewResponse {

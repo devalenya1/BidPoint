@@ -1,7 +1,7 @@
 // data_model/poll_data_response.dart
 import 'package:json_annotation/json_annotation.dart';
 
-part 'poll_data_response.g.dart';
+part 'poll_data_response.dart';
 
 @JsonSerializable()
 class PollDataResponse {
