@@ -362,7 +362,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
                   slug:_productList[index].slug,
                   image: _productList[index].thumbnail_image,
                   name: _productList[index].name,
-                  main_price: _productList[index].main_price,
+                  // main_price: _productList[index].main_price,
                   stroked_price: _productList[index].stroked_price,
                   discount: _productList[index].discount,
                   is_wholesale: _productList[index].isWholesale,

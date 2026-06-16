@@ -124,8 +124,9 @@ class AuctionProductsRepository {
   }
   
   // Get reviews
-  Future<ReviewResponse> getReviews(int productId) async {
-    String url = ("${AppConfig.BASE_URL}/auction/reviews/$productId");
+
+Future<ReviewResponse> getReviews(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/product-reviews/$productId");
     
     final response = await ApiRequest.get(
       url: url,
@@ -134,26 +135,39 @@ class AuctionProductsRepository {
       },
     );
     
-    final Map<String, dynamic> decoded = jsonDecode(response.body);
-    
-    if (decoded.containsKey('reviews') && decoded['reviews'] is List) {
-      return ReviewResponse(
-        success: true,
-        reviews: (decoded['reviews'] as List)
-            .map((r) => Review.fromJson(r as Map<String, dynamic>))
-            .toList(),
-      );
-    } else if (decoded is List) {
-      return ReviewResponse(
-        success: true,
-        reviews: (decoded as List)
-            .map((r) => Review.fromJson(r as Map<String, dynamic>))
-            .toList(),
-      );
-    }
-    
-    return ReviewResponse(success: false, reviews: []);
+    return ReviewResponse.fromJson(jsonDecode(response.body));
   }
+
+  // Future<ReviewResponse> getReviews(int productId) async {
+  //   String url = ("${AppConfig.BASE_URL}/auction/reviews/$productId");
+    
+  //   final response = await ApiRequest.get(
+  //     url: url,
+  //     headers: {
+  //       "App-Language": app_language.$!,
+  //     },
+  //   );
+    
+  //   final Map<String, dynamic> decoded = jsonDecode(response.body);
+    
+  //   if (decoded.containsKey('reviews') && decoded['reviews'] is List) {
+  //     return ReviewResponse(
+  //       success: true,
+  //       reviews: (decoded['reviews'] as List)
+  //           .map((r) => Review.fromJson(r as Map<String, dynamic>))
+  //           .toList(),
+  //     );
+  //   } else if (decoded is List) {
+  //     return ReviewResponse(
+  //       success: true,
+  //       reviews: (decoded as List)
+  //           .map((r) => Review.fromJson(r as Map<String, dynamic>))
+  //           .toList(),
+  //     );
+  //   }
+    
+  //   return ReviewResponse(success: false, reviews: []);
+  // }
   
   // Get bid history
   Future<BidHistoryResponse> getBidHistory(int productId) async {

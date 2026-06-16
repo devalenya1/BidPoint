@@ -1,11 +1,9 @@
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/products_details.dart';
 import 'package:active_ecommerce_flutter/screens/auction_products_details.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/repositories/auction_products_repository.dart';
-import 'package:active_ecommerce_flutter/repositories/products_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -149,24 +147,15 @@ class _ProductCardState extends State<ProductCard> {
       if (response.success == true) {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
         );
-        // Navigate to product details after successful bid
         GoRouter.of(context).go('/auction-product/${widget.slug}');
       } else {
         ToastComponent.showDialog(
           response.message ?? 'Failed to place bid',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
         );
       }
     } catch (e) {
-      ToastComponent.showDialog(
-        'Error placing bid',
-        gravity: Toast.center,
-        duration: Toast.lengthShort,
-      );
+      ToastComponent.showDialog('Error placing bid');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -211,7 +200,6 @@ class _ProductCardState extends State<ProductCard> {
     final deltaX = details.localPosition.dx - _startX;
     final deltaY = details.localPosition.dy - _startY;
     
-    // Only horizontal swipe right, ignore vertical and left swipes
     if (deltaX > 5 && deltaY.abs() < 30) {
       setState(() {
         _swipeAmount = deltaX.clamp(0.0, 60.0);
