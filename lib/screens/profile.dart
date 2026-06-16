@@ -16,7 +16,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/address.dart';
-import 'package:active_ecommerce_flutter/screens/auction_products.dart';
+// import 'package:active_ecommerce_flutter/screens/auction_products.dart';
 import 'package:active_ecommerce_flutter/screens/change_language.dart';
 import 'package:active_ecommerce_flutter/screens/classified_ads/classified_ads.dart';
 import 'package:active_ecommerce_flutter/screens/classified_ads/my_classified_ads.dart';
@@ -46,7 +46,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../repositories/auth_repository.dart';
 import '../data_model/user_info_response.dart';
-import 'auction_bidded_products.dart';
+// import 'auction_bidded_products.dart';
 import 'auction_purchase_history.dart';
 import 'coming_soon_page.dart';
 import 'invite_history_page.dart';

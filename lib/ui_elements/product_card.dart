@@ -1,15 +1,17 @@
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/screens/products_details.dart';
 import 'package:active_ecommerce_flutter/screens/auction_products_details.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/repositories/auction_products_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/products_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 
-class AuctionProductCard extends StatefulWidget {
+class ProductCard extends StatefulWidget {
   final int id;
   final String slug;
   final String? image;
@@ -21,7 +23,7 @@ class AuctionProductCard extends StatefulWidget {
   final double? startingBid;
   final bool isAuctionActive;
 
-  const AuctionProductCard({
+  const ProductCard({
     Key? key,
     required this.id,
     required this.slug,
@@ -36,10 +38,10 @@ class AuctionProductCard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AuctionProductCard> createState() => _AuctionProductCardState();
+  State<ProductCard> createState() => _ProductCardState();
 }
 
-class _AuctionProductCardState extends State<AuctionProductCard> {
+class _ProductCardState extends State<ProductCard> {
   Timer? _timer;
   String _timeLeft = "Loading...";
   bool _isSwiping = false;

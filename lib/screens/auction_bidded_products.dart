@@ -7,7 +7,7 @@ import 'package:toast/toast.dart';
 import '../custom/my_widget.dart';
 import '../custom/toast_component.dart';
 import '../custom/useful_elements.dart';
-import '../data_model/auction_bidded_products.dart';
+// import '../data_model/auction_bidded_products.dart';
 import '../helpers/main_helpers.dart';
 import '../helpers/shared_value_helper.dart';
 import '../helpers/shimmer_helper.dart';
