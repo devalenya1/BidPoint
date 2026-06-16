@@ -2,14 +2,19 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'comment_response.dart';
 
-part 'add_comment_response.dart';
+// part 'add_comment_response.g.dart';
 
 @JsonSerializable()
 class AddCommentResponse {
   bool? success;
+  String? message; // Add message field
   Comment? comment;
 
-  AddCommentResponse({this.success, this.comment});
+  AddCommentResponse({
+    this.success,
+    this.message,
+    this.comment,
+  });
 
   factory AddCommentResponse.fromJson(Map<String, dynamic> json) =>
       _$AddCommentResponseFromJson(json);

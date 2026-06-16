@@ -1,11 +1,12 @@
 // data_model/bid_response.dart
 import 'package:json_annotation/json_annotation.dart';
 
-part 'bid_response.dart';
+// part 'bid_response.g.dart';
 
 @JsonSerializable()
 class BidResponse {
   bool? success;
+  bool? result; // Add this for backward compatibility
   String? message;
   dynamic bid;
   int? points_deducted;
@@ -18,6 +19,7 @@ class BidResponse {
 
   BidResponse({
     this.success,
+    this.result,
     this.message,
     this.bid,
     this.points_deducted,
@@ -29,7 +31,11 @@ class BidResponse {
     this.new_end_date,
   });
 
-  factory BidResponse.fromJson(Map<String, dynamic> json) =>
-      _$BidResponseFromJson(json);
+  factory BidResponse.fromJson(Map<String, dynamic> json) {
+    // Handle both 'success' and 'result' fields
+    final successValue = json['success'] ?? json['result'];
+    return _$BidResponseFromJson(json)..success = successValue is bool ? successValue : null;
+  }
+  
   Map<String, dynamic> toJson() => _$BidResponseToJson(this);
 }

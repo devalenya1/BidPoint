@@ -4,7 +4,6 @@ import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/data_model/add_comment_response.dart';
 import 'package:active_ecommerce_flutter/data_model/add_review_response.dart';
 import 'package:active_ecommerce_flutter/data_model/auction_product_details_response.dart';
-import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
 import 'package:active_ecommerce_flutter/data_model/bid_history_response.dart';
 import 'package:active_ecommerce_flutter/data_model/bid_response.dart';
 import 'package:active_ecommerce_flutter/data_model/comment_response.dart';
@@ -16,7 +15,7 @@ import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 
 class AuctionProductsRepository {
   
-  // Get auction product details
+  // Get auction product details - FIXED return type
   Future<AuctionProductDetailsResponse> getAuctionProductsDetails(String slug) async {
     String url = ("${AppConfig.BASE_URL}/auction/products/$slug");
     
@@ -28,7 +27,7 @@ class AuctionProductsRepository {
       },
     );
     
-    return productDetailsResponseFromJson(response.body);
+    return auctionProductDetailsResponseFromJson(response.body);
   }
   
   // Place a bid
@@ -53,7 +52,29 @@ class AuctionProductsRepository {
     
     return BidResponse.fromJson(jsonDecode(response.body));
   }
- 
+  
+  // Quick bid
+  Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
+    String url = ("${AppConfig.BASE_URL}/auction/quick-bid");
+    
+    var postBody = jsonEncode({
+      "product_id": int.parse(productId),
+      "amount": double.parse(amount),
+      "type": type
+    });
+    
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    
+    return BidResponse.fromJson(jsonDecode(response.body));
+  }
   
   // Poll data for real-time updates
   Future<PollDataResponse> pollData(int productId) async {
@@ -83,7 +104,6 @@ class AuctionProductsRepository {
     
     final Map<String, dynamic> decoded = jsonDecode(response.body);
     
-    // Handle both formats: direct list or wrapped in 'comments' key
     if (decoded.containsKey('comments') && decoded['comments'] is List) {
       return CommentResponse(
         success: true,
@@ -295,28 +315,4 @@ class AuctionProductsRepository {
     
     return jsonDecode(response.body);
   }
-
-
-  Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
-    String url = ("${AppConfig.BASE_URL}/auction/quick-bid");
-    
-    var postBody = jsonEncode({
-      "product_id": int.parse(productId),
-      "amount": double.parse(amount),
-      "type": type
-    });
-    
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "App-Language": app_language.$!,
-        "Authorization": "Bearer ${access_token.$}",
-        "Content-Type": "application/json",
-      },
-      body: postBody,
-    );
-    
-    return BidResponse.fromJson(jsonDecode(response.body));
-  }
-
 }

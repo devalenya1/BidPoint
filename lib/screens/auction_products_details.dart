@@ -33,16 +33,16 @@ import '../data_model/review_response.dart';
 import '../data_model/bid_history_response.dart';
 import '../helpers/main_helpers.dart';
 
-class ProductsDetails extends StatefulWidget {
+class AuctionProductsDetails extends StatefulWidget {
   String slug;
 
-  ProductsDetails({Key? key, required this.slug}) : super(key: key);
+  AuctionProductsDetails({Key? key, required this.slug}) : super(key: key);
 
   @override
-  _ProductsDetailsState createState() => _ProductsDetailsState();
+  _AuctionProductsDetailsState createState() => _AuctionProductsDetailsState();
 }
 
-class _ProductsDetailsState extends State<ProductsDetails>
+class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
     with TickerProviderStateMixin {
   // Controllers
   late TabController _tabController;
@@ -53,7 +53,7 @@ class _ProductsDetailsState extends State<ProductsDetails>
 
   // Data
   bool _isLoading = true;
-  ProductDetail? _product;
+  AuctionProductDetail? _product;
   List<String> _productImages = [];
   List<Comment> _comments = [];
   List<Review> _reviews = [];
@@ -172,7 +172,7 @@ class _ProductsDetailsState extends State<ProductsDetails>
   Future<void> _fetchComments() async {
     try {
       final response = await AuctionProductsRepository().getComments(_product?.id ?? 0);
-      if (response.success && response.comments != null) {
+      if (response.success == true && response.comments != null) {
         setState(() => _comments = response.comments!);
       }
     } catch (e) {
@@ -183,7 +183,7 @@ class _ProductsDetailsState extends State<ProductsDetails>
   Future<void> _fetchReviews() async {
     try {
       final response = await AuctionProductsRepository().getReviews(_product?.id ?? 0);
-      if (response.success && response.reviews != null) {
+      if (response.success == true && response.reviews != null) {
         setState(() => _reviews = response.reviews!);
       }
     } catch (e) {
@@ -194,7 +194,7 @@ class _ProductsDetailsState extends State<ProductsDetails>
   Future<void> _fetchBidHistory() async {
     try {
       final response = await AuctionProductsRepository().getBidHistory(_product?.id ?? 0);
-      if (response.success && response.bids != null) {
+      if (response.success == true && response.bids != null) {
         setState(() => _bidHistory = response.bids!);
       }
     } catch (e) {

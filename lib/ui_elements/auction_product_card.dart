@@ -147,23 +147,23 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
       if (response.success == true) {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
-          gravity: Toast.center,
-          duration: Toast.lengthLong,
+          gravity: ToastComponent.CENTER,
+          duration: ToastComponent.LENGTH_LONG,
         );
         // Navigate to product details after successful bid
         GoRouter.of(context).go('/auction-product/${widget.slug}');
       } else {
         ToastComponent.showDialog(
           response.message ?? 'Failed to place bid',
-          gravity: Toast.center,
-          duration: Toast.lengthLong,,
+          gravity: ToastComponent.CENTER,
+          duration: ToastComponent.LENGTH_LONG,
         );
       }
     } catch (e) {
       ToastComponent.showDialog(
         'Error placing bid',
-        gravity: Toast.center,
-        duration: Toast.lengthLong,,
+        gravity: ToastComponent.CENTER,
+        duration: ToastComponent.LENGTH_LONG,
       );
     } finally {
       _isProcessing = false;

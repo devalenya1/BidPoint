@@ -994,15 +994,15 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   int _getPackagePointsFromPayment(CustomerPackagePayment item) {
     // Try to get points from the actual package
-    if (item.customerPackage != null && item.customerPackage!.amount != null) {
-      if (item.customerPackage!.amount is int) {
-        return item.customerPackage!.amount;
-      } else if (item.customerPackage!.amount is double) {
-        return (item.customerPackage!.amount as double).toInt();
-      } else if (item.customerPackage!.amount is String) {
-        return int.tryParse(item.customerPackage!.amount) ?? 0;
-      }
-    }
+    // if (item.customerPackage != null && item.customerPackage!.amount != null) {
+    //   if (item.customerPackage!.amount is int) {
+    //     return item.customerPackage!.amount;
+    //   } else if (item.customerPackage!.amount is double) {
+    //     return (item.customerPackage!.amount as double).toInt();
+    //   } else if (item.customerPackage!.amount is String) {
+    //     return int.tryParse(item.customerPackage!.amount) ?? 0;
+    //   }
+    // }
     
     // Fallback: estimate points from amount
     return (item.amount ?? 0).toInt();
@@ -1044,4 +1044,4 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       ),
     );
   }
-}
+} 
