@@ -11,6 +11,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 
 class CategoryProducts extends StatefulWidget {
   CategoryProducts({Key? key, required this.slug}) : super(key: key);
@@ -184,7 +185,23 @@ class _CategoryProductsState extends State<CategoryProducts> {
         children: [
           Container(
             width: 20,
-            child: UsefulElements.backButton(context, color: "white"),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.of(context).pop();
+                } else {
+                  // Navigate to Main screen (home) with bottom navigation
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Main(initialIndex: 0),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
           Container(
             padding: EdgeInsets.only(left: 10),
@@ -193,7 +210,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
               categoryInfo?.name ?? "",
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
           Spacer(),
@@ -208,6 +225,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
               icon: Icon(
                 Icons.search,
                 size: 25,
+                color: Colors.white,
               ),
             ),
           ),
@@ -235,6 +253,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
           fetchData();
         },
         autofocus: false,
+        style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
           suffixIcon: IconButton(
             onPressed: () {
@@ -243,19 +262,19 @@ class _CategoryProductsState extends State<CategoryProducts> {
             },
             icon: Icon(
               Icons.clear,
-              color: MyTheme.grey_153,
+              color: Colors.white,
             ),
           ),
           filled: true,
-          fillColor: MyTheme.white.withOpacity(0.6),
+          fillColor: Colors.white.withOpacity(0.2),
           hintText: "${AppLocalizations.of(context)!.search_products_from} : ",
-          hintStyle: TextStyle(fontSize: 14.0, color: MyTheme.font_grey),
+          hintStyle: TextStyle(fontSize: 14.0, color: Colors.white70),
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: MyTheme.noColor, width: 0.0),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.5), width: 1.0),
             borderRadius: BorderRadius.circular(6),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: MyTheme.noColor, width: 0.0),
+            borderSide: BorderSide(color: Colors.white, width: 1.0),
             borderRadius: BorderRadius.circular(6),
           ),
           contentPadding: EdgeInsets.all(8.0),
@@ -287,13 +306,16 @@ class _CategoryProductsState extends State<CategoryProducts> {
             width: _subCategoryList.isEmpty ? 0 : 96,
             alignment: Alignment.center,
             padding: EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecorations.buildBoxDecoration_1(),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Text(
               _subCategoryList[index].name!,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
-                color: MyTheme.font_grey,
+                color: MyTheme.accent_color,
               ),
               textAlign: TextAlign.center,
             ),

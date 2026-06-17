@@ -203,7 +203,7 @@ class _WishlistState extends State<Wishlist> {
   // ============ NAVIGATION HELPERS ============
   void _navigateToProductDetails(String slug) {
     if (slug.isNotEmpty) {
-      // Navigate to ProductDetails screen
+      // Navigate to ProductDetails screen using /product/:slug
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -660,7 +660,7 @@ class _WishlistState extends State<Wishlist> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Action Button
+                // Action Button - All navigate to /product/:slug
                 GestureDetector(
                   onTap: () {
                     if (productSlug.isNotEmpty) {

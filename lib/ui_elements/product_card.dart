@@ -17,8 +17,8 @@ class ProductCard extends StatefulWidget {
   final String? description;
   final int? pointPerBid;
   final dynamic auctionEndDate;
-  final dynamic currentBid;      // Changed to dynamic
-  final dynamic startingBid;     // Changed to dynamic
+  final dynamic currentBid;
+  final dynamic startingBid;
   final bool isAuctionActive;
   // Add these for compatibility with calls from other files
   final String? main_price;
@@ -79,7 +79,14 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _updateTimer() {
-    if (widget.auctionEndDate == null) return;
+    if (widget.auctionEndDate == null) {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "No Timer";
+        });
+      }
+      return;
+    }
 
     // Handle "Ended" string case
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
@@ -185,13 +192,18 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _navigateToProduct() {
-    GoRouter.of(context).go('/product/${widget.slug}');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetails(slug: widget.slug),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = widget.isAuctionActive && _timeLeft != "Ended";
+    final showTimer = widget.isAuctionActive && _timeLeft != "Ended" && _timeLeft != "No Timer";
 
     return Container(
       decoration: BoxDecoration(
@@ -236,6 +248,7 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                 ),
               ),
+              // Timer - Green at top right
               if (showTimer)
                 Positioned(
                   top: 6,
@@ -275,18 +288,18 @@ class _ProductCardState extends State<ProductCard> {
           
           // Product Details
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name
+                // Product Name - Larger
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Text(
                     widget.name ?? 'Product',
                     style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
                     maxLines: 1,
@@ -295,73 +308,83 @@ class _ProductCardState extends State<ProductCard> {
                 ),
                 const SizedBox(height: 2),
                 
-                // Description
+                // Description - Below title
                 Text(
                   widget.description ?? '',
                   style: const TextStyle(
-                    fontSize: 9,
+                    fontSize: 10,
                     color: Color(0xFF8F9AA7),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 
                 // Current Bid and Points Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Current Bid
+                    // Current Bid - Larger
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'current Bid',
                           style: TextStyle(
-                            fontSize: 8,
+                            fontSize: 9,
                             color: Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
                         ),
                       ],
                     ),
-                    // Points Badge
+                    // Points Badge with USD icon
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Text(
-                        '1 Bid = ${widget.pointPerBid ?? 0}',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: MyTheme.accent_color,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.attach_money,
+                            size: 12,
+                            color: Color(0xFF0092AC),
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '1 Bid = ${widget.pointPerBid ?? 0}',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: MyTheme.accent_color,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 
-                // View Product Button (instead of Swipe to Bid)
+                // View Product Button - Rectangle with border-radius 7px
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Container(
                     width: double.infinity,
-                    height: 35,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
-                      border: Border.all(color: Colors.white, width: 1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(7),
                     ),
                     child: Center(
                       child: Row(
@@ -370,7 +393,7 @@ class _ProductCardState extends State<ProductCard> {
                           const Text(
                             'View Product',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
@@ -378,7 +401,7 @@ class _ProductCardState extends State<ProductCard> {
                           const SizedBox(width: 4),
                           const Icon(
                             Icons.arrow_forward,
-                            size: 10,
+                            size: 12,
                             color: Colors.white,
                           ),
                         ],

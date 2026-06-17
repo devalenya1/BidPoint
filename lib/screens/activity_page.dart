@@ -281,7 +281,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       orElse: () => DistinctAuctionBid(),
     );
     
-    // Check both productSlug and slug fields
+    // Return the product slug (both regular and auction products use the same slug)
     return product.productSlug;
   }
   
@@ -301,6 +301,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   // ============ NAVIGATION HELPERS ============
   void _navigateToProductDetails(String slug) {
     if (slug.isNotEmpty) {
+      // Navigate to ProductDetails screen using /product/:slug
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -334,8 +335,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              // Go to home if can't pop
-              context.go("/");
+              // Navigate to Main screen (home) with bottom navigation
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Main(initialIndex: 0),
+                ),
+              );
             }
           },
         ),
@@ -702,7 +708,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 12),
                 
-                // Action Button
+                // Action Button - Both use the same navigation
                 if (isOutbid && !isEnded)
                   _buildBidAgainButton(productSlug)
                 else
