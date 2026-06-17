@@ -1,9 +1,9 @@
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/auction_products_details.dart';
+import 'package:active_ecommerce_flutter/screens/products_details.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/repositories/auction_products_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/products_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -140,23 +140,23 @@ class _EndingSoonSectionState extends State<EndingSoonSection> {
       if (response.success == true) {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
+          // gravity: Toast.center,
+          // duration: Toast.lengthShort,
         );
         // Navigate to product details after successful bid
-        GoRouter.of(context).go('/auction-product/$slug');
+        GoRouter.of(context).go('/product/$slug');
       } else {
         ToastComponent.showDialog(
           response.message ?? 'Failed to place bid',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
+          // gravity: Toast.center,
+          // duration: Toast.lengthShort,
         );
       }
     } catch (e) {
       ToastComponent.showDialog(
         'Error placing bid',
-        gravity: Toast.center,
-        duration: Toast.lengthShort,
+        // gravity: Toast.center,
+        // duration: Toast.lengthShort,
       );
     } finally {
       _isProcessing[productId] = false;

@@ -79,4 +79,40 @@ class WishListRepository {
 
     return wishListChekResponseFromJson(response.body);
   }
+
+  // Add this method for adding to wishlist with POST
+  Future<dynamic> addToWishlist(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/wishlist/add");
+    var postBody = jsonEncode({
+      "product_id": productId,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return wishlistResponseFromJson(response.body);
+  }
+
+  // Add this method for removing from wishlist with POST
+  Future<dynamic> removeFromWishlist(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/wishlist/remove");
+    var postBody = jsonEncode({
+      "product_id": productId,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return wishlistResponseFromJson(response.body);
+  }
 }

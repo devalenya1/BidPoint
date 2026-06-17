@@ -1425,7 +1425,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     itemCount: _comments.length,
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
-                      final isOwn = comment.userId == int.tryParse(user_id.$ ?? '0');
+                      final userIdStr = user_id.$?.toString() ?? '0';
+                      final isOwn = comment.userId == int.tryParse(userIdStr);
                       
                       return Padding(
                         padding: EdgeInsets.only(bottom: 16),
@@ -1942,7 +1943,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   Row(
                                     children: List.generate(5, (starIndex) {
                                       return Icon(
-                                        starIndex < review.rating ? Icons.star : Icons.star_border,
+                                        starIndex < (review.rating ?? 0) ? Icons.star : Icons.star_border,
                                         size: 14,
                                         color: Colors.amber,
                                       );
@@ -2060,7 +2061,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       _showLoadingDialog();
                       
                       try {
-                        final response = await AuctionProductsRepository().addReview(
+                        final response = await _productRepository.addProductReview(
                           _product!.id,
                           tempRating.toInt(),
                           tempController.text,

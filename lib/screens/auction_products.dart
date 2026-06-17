@@ -156,7 +156,7 @@ class _AuctionProductsState extends State<AuctionProducts> {
           itemBuilder: (context, index) {
             // 3
             return ProductCard(
-                identifier: 'auction',
+                // identifier: 'auction',
                 id: _auctionlProductItems[index].id,
                 slug: _auctionlProductItems[index].slug,
                 image: _auctionlProductItems[index].thumbnail_image,
