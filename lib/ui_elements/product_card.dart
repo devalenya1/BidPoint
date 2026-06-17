@@ -1,9 +1,9 @@
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/auction_products_details.dart';
+import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/repositories/auction_products_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -47,6 +47,8 @@ class _ProductCardState extends State<ProductCard> {
   double _startX = 0;
   double _startY = 0;
   bool _isProcessing = false;
+  
+  final ProductRepository _productRepository = ProductRepository();
 
   @override
   void initState() {
@@ -138,7 +140,7 @@ class _ProductCardState extends State<ProductCard> {
       final currentBid = widget.currentBid ?? widget.startingBid ?? 0;
       final minBid = currentBid + 0.01;
       
-      final response = await AuctionProductsRepository().quickBid(
+      final response = await _productRepository.quickBid(
         widget.id.toString(),
         minBid.toString(),
         type: 'quick',
@@ -148,7 +150,7 @@ class _ProductCardState extends State<ProductCard> {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
         );
-        GoRouter.of(context).go('/auction-product/${widget.slug}');
+        GoRouter.of(context).go('/product/${widget.slug}');
       } else {
         ToastComponent.showDialog(
           response.message ?? 'Failed to place bid',
@@ -256,7 +258,7 @@ class _ProductCardState extends State<ProductCard> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    GoRouter.of(context).go('/auction-product/${widget.slug}');
+                    GoRouter.of(context).go('/product/${widget.slug}');
                   },
                   child: AspectRatio(
                     aspectRatio: 1,
@@ -326,7 +328,7 @@ class _ProductCardState extends State<ProductCard> {
                   // Product Name
                   GestureDetector(
                     onTap: () {
-                      GoRouter.of(context).go('/auction-product/${widget.slug}');
+                      GoRouter.of(context).go('/product/${widget.slug}');
                     },
                     child: Text(
                       widget.name ?? 'Product',

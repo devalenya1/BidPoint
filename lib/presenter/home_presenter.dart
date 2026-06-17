@@ -16,7 +16,7 @@ class HomePresenter extends ChangeNotifier {
   ScrollController? featuredCategoryScrollController;
   ScrollController? endingSoonScrollController;
   ScrollController? upcomingScrollController;
-  ScrollController? hotAuctionScrollController;  // Added for Hot Auctions
+  ScrollController? hotAuctionScrollController;
   ScrollController mainScrollController = ScrollController();
 
   late AnimationController pirated_logo_controller;
@@ -69,6 +69,8 @@ class HomePresenter extends ChangeNotifier {
   int allProductPage = 1;
   bool showAllLoadingContainer = false;
   int cartCount = 0;
+  
+  final ProductRepository _productRepository = ProductRepository();
 
   fetchAll() {
     fetchCarouselImages();
@@ -77,7 +79,7 @@ class HomePresenter extends ChangeNotifier {
     fetchFeaturedCategories();
     fetchFeaturedProducts();
     fetchAllProducts();
-    fetchHotAuctionProducts();    // Added
+    fetchHotAuctionProducts();
     fetchEndingSoonProducts();
     fetchUpcomingProducts();
     fetchTodayDealData();
@@ -85,7 +87,7 @@ class HomePresenter extends ChangeNotifier {
   }
 
   fetchTodayDealData() async {
-    var deal = await ProductRepository().getTodaysDealProducts();
+    var deal = await _productRepository.getTodaysDealProducts();
     print(deal.products!.length);
     if (deal.success! && deal.products!.isNotEmpty) {
       isTodayDeal = true;
@@ -137,7 +139,7 @@ class HomePresenter extends ChangeNotifier {
   }
 
   fetchFeaturedProducts() async {
-    var productResponse = await ProductRepository().getFeaturedProducts(
+    var productResponse = await _productRepository.getFeaturedProducts(
       page: featuredProductPage,
     );
     featuredProductPage++;
@@ -151,7 +153,7 @@ class HomePresenter extends ChangeNotifier {
   // Fetch Hot Auction Products
   fetchHotAuctionProducts() async {
     try {
-      var productResponse = await ProductRepository().getHotAuctions(
+      var productResponse = await _productRepository.getHotAuctions(
         page: hotAuctionPage,
       );
       hotAuctionPage++;
@@ -171,7 +173,7 @@ class HomePresenter extends ChangeNotifier {
   // Fetch Ending Soon Products
   fetchEndingSoonProducts() async {
     try {
-      var productResponse = await ProductRepository().getEndingSoonProducts(
+      var productResponse = await _productRepository.getEndingSoonProducts(
         page: endingSoonPage,
       );
       endingSoonPage++;
@@ -191,7 +193,7 @@ class HomePresenter extends ChangeNotifier {
   // Fetch Upcoming Products
   fetchUpcomingProducts() async {
     try {
-      var productResponse = await ProductRepository().getUpcomingProducts(
+      var productResponse = await _productRepository.getUpcomingProducts(
         page: upcomingPage,
       );
       upcomingPage++;
@@ -209,8 +211,7 @@ class HomePresenter extends ChangeNotifier {
   }
 
   fetchAllProducts() async {
-    var productResponse =
-        await ProductRepository().getFilteredProducts(page: allProductPage);
+    var productResponse = await _productRepository.getFilteredProducts(page: allProductPage);
     
     allProductList.addAll(productResponse.products!);
     isAllProductInitial = false;
@@ -233,7 +234,7 @@ class HomePresenter extends ChangeNotifier {
 
     resetFeaturedProductList();
     resetAllProductList();
-    resetHotAuctionProductList();     // Added
+    resetHotAuctionProductList();
     resetEndingSoonProductList();
     resetUpcomingProductList();
   }
@@ -261,7 +262,6 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Reset Hot Auction Product List
   resetHotAuctionProductList() {
     hotAuctionProductList.clear();
     isHotAuctionInitial = true;
@@ -271,7 +271,6 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Reset Ending Soon Product List
   resetEndingSoonProductList() {
     endingSoonProductList.clear();
     isEndingSoonInitial = true;
@@ -281,7 +280,6 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Reset Upcoming Product List
   resetUpcomingProductList() {
     upcomingProductList.clear();
     isUpcomingInitial = true;
@@ -302,7 +300,6 @@ class HomePresenter extends ChangeNotifier {
     });
   }
 
-  // Scroll listener for Hot Auction products
   hotAuctionScrollListener() {
     if (hotAuctionScrollController != null) {
       hotAuctionScrollController!.addListener(() {
@@ -318,7 +315,6 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-  // Scroll listener for ending soon products
   endingSoonScrollListener() {
     if (endingSoonScrollController != null) {
       endingSoonScrollController!.addListener(() {
@@ -334,7 +330,6 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-  // Scroll listener for upcoming products
   upcomingScrollListener() {
     if (upcomingScrollController != null) {
       upcomingScrollController!.addListener(() {
@@ -350,7 +345,6 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-  // Initialize scroll controllers (ONLY ONE COPY - KEEP THIS ONE)
   void initScrollControllers() {
     hotAuctionScrollController = ScrollController();
     endingSoonScrollController = ScrollController();

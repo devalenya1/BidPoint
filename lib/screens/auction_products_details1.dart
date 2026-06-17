@@ -10,7 +10,7 @@
 // import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 // import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 // import 'package:active_ecommerce_flutter/my_theme.dart';
-// import 'package:active_ecommerce_flutter/repositories/auction_products_repository.dart';
+// import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 // import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
 // import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 // import 'package:active_ecommerce_flutter/screens/login.dart';
@@ -33,16 +33,16 @@
 // import '../data_model/bid_history_response.dart';
 // import '../helpers/main_helpers.dart';
 
-// class AuctionProductsDetails extends StatefulWidget {
+// class ProductDetails extends StatefulWidget {
 //   String slug;
 
-//   AuctionProductsDetails({Key? key, required this.slug}) : super(key: key);
+//   ProductDetails({Key? key, required this.slug}) : super(key: key);
 
 //   @override
-//   _AuctionProductsDetailsState createState() => _AuctionProductsDetailsState();
+//   _ProductDetailsState createState() => _ProductDetailsState();
 // }
 
-// class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
+// class _ProductDetailsState extends State<ProductDetails>
 //     with TickerProviderStateMixin {
 //   // Controllers
 //   late TabController _tabController;
@@ -53,7 +53,7 @@
 
 //   // Data
 //   bool _isLoading = true;
-//   AuctionDetailProducts? _product;
+//   DetailedProduct? _product;
 //   List<String> _productImages = [];
 //   List<Comment> _comments = [];
 //   List<Review> _reviews = [];
@@ -97,6 +97,9 @@
   
 //   // Sound
 //   bool _soundEnabled = true;
+  
+//   // Repository
+//   final ProductRepository _productRepository = ProductRepository();
 
 //   @override
 //   void initState() {
@@ -127,30 +130,30 @@
 //     setState(() => _isLoading = true);
     
 //     try {
-//       final productData = await AuctionProductsRepository().getAuctionProductsDetails(widget.slug);
+//       final productData = await _productRepository.getProductDetails(slug: widget.slug);
       
-//       if (productData.auction_product != null && productData.auction_product!.isNotEmpty) {
-//         _product = productData.auction_product![0];
-//         _productImages = _product!.photos.map((p) => p.path!).toList();
+//       if (productData.detailedProducts != null && productData.detailedProducts!.isNotEmpty) {
+//         _product = productData.detailedProducts![0];
+//         _productImages = _product!.getAllImageUrls();
         
-//         _startingBid = double.tryParse(_product!.startingBid ?? '0') ?? 0;
-//         _currentHighestBid = double.tryParse(_product!.highestBid ?? '0') ?? _startingBid;
-//         _totalBids = int.tryParse(_product!.totalBids ?? '0') ?? 0;
-//         _highestBidder = _product!.highestBidder ?? '';
-//         _pointPerBid = double.tryParse(_product!.pointPerBid ?? '0') ?? 0;
-//         _pointPerBidCustom = double.tryParse(_product!.pointPerBidCustom ?? '0') ?? 0;
-//         _reviewsCount = _product!.reviewsCount ?? 0;
-//         _rating = _product!.rating ?? 0;
-//         _isWishlisted = _product!.isInWishlist ?? false;
-//         _isInWishlist = _product!.isInWishlist ?? false;
-//         _endingSeconds = _product!.swipeLeft ?? 10;
+//         _startingBid = _product!.getStartingBidAsDouble();
+//         _currentHighestBid = _product!.getCurrentBidAsDouble();
+//         _totalBids = _product!.getTotalBidCount();
+//         _highestBidder = _product!.getHighestBidderName();
+//         _pointPerBid = (_product!.point_per_bid ?? 0).toDouble();
+//         _pointPerBidCustom = (_product!.point_per_bid_custom ?? 0).toDouble();
+//         _reviewsCount = _product!.getReviewCount();
+//         _rating = _product!.getRatingValue();
+//         _isWishlisted = _product!.getIsInWishlist();
+//         _isInWishlist = _product!.getIsInWishlist();
+//         _endingSeconds = _product!.getSwipeLeft();
         
 //         _minNextBidNow = _currentHighestBid + 0.01;
 //         _minNextBid = _currentHighestBid + 1;
         
 //         // Parse time left
-//         if (_product!.auctionEndDate != null) {
-//           final endTime = DateTime.parse(_product!.auctionEndDate!);
+//         if (_product!.getAuctionEndDateTime() != null) {
+//           final endTime = _product!.getAuctionEndDateTime()!;
 //           final now = DateTime.now();
 //           _timeLeft = endTime.difference(now);
 //           if (_timeLeft.isNegative) _timeLeft = Duration.zero;
@@ -171,7 +174,7 @@
   
 //   Future<void> _fetchComments() async {
 //     try {
-//       final response = await AuctionProductsRepository().getComments(_product?.id ?? 0);
+//       final response = await _productRepository.getProductComments(_product?.id ?? 0);
 //       if (response.success == true && response.comments != null) {
 //         setState(() => _comments = response.comments!);
 //       }
@@ -182,7 +185,7 @@
   
 //   Future<void> _fetchReviews() async {
 //     try {
-//       final response = await AuctionProductsRepository().getReviews(_product?.id ?? 0);
+//       final response = await _productRepository.getProductReviews(_product?.id ?? 0);
 //       if (response.success == true && response.reviews != null) {
 //         setState(() => _reviews = response.reviews!);
 //       }
@@ -193,7 +196,7 @@
   
 //   Future<void> _fetchBidHistory() async {
 //     try {
-//       final response = await AuctionProductsRepository().getBidHistory(_product?.id ?? 0);
+//       final response = await _productRepository.getProductBidHistory(_product?.id ?? 0);
 //       if (response.success == true && response.bids != null) {
 //         setState(() => _bidHistory = response.bids!);
 //       }
@@ -209,22 +212,25 @@
 //     });
 //   }
   
-//   // In your _pollData method, update to use the correct field names from server
 //   Future<void> _pollData() async {
 //     if (_product == null) return;
     
 //     try {
-//       final response = await AuctionProductsRepository().pollData(_product!.id);
+//       final response = await _productRepository.pollProductData(_product!.id);
       
 //       if (response.success == true) {
-//         // Update auction end date - using snake_case from server
+//         // Update auction end date
 //         if (response.auction_end_date != null) {
-//           final newEndTime = DateTime.parse(response.auction_end_date!);
-//           final now = DateTime.now();
-//           final newTimeLeft = newEndTime.difference(now);
-//           if (_timeLeft != newTimeLeft && !newTimeLeft.isNegative) {
-//             setState(() => _timeLeft = newTimeLeft);
-//             _startCountdown(newEndTime);
+//           try {
+//             final newEndTime = DateTime.parse(response.auction_end_date!);
+//             final now = DateTime.now();
+//             final newTimeLeft = newEndTime.difference(now);
+//             if (_timeLeft != newTimeLeft && !newTimeLeft.isNegative) {
+//               setState(() => _timeLeft = newTimeLeft);
+//               _startCountdown(newEndTime);
+//             }
+//           } catch (e) {
+//             print('Error parsing auction end date: $e');
 //           }
 //         }
         
@@ -266,7 +272,7 @@
 //           setState(() => _reviewsCount = response.reviews_count!);
 //         }
         
-//         // Update bid data - using snake_case field names
+//         // Update bid data
 //         if (response.bid_data != null) {
 //           final oldHighestBid = _currentHighestBid;
 //           final newHighestBid = response.bid_data!.highest_bid ?? _currentHighestBid;
@@ -348,7 +354,7 @@
 //     _showLoadingDialog();
     
 //     try {
-//       final response = await AuctionProductsRepository().placeBidResponse(
+//       final response = await _productRepository.placeBid(
 //         _product!.id.toString(),
 //         amount.toString(),
 //       );
@@ -360,16 +366,15 @@
 //         if (response.time_extended == true) {
 //           _showToast(response.message ?? '⏰ Auction time extended!');
 //           if (response.new_end_date != null) {
-//             final newEndTime = DateTime.parse(response.new_end_date!);
-//             _startCountdown(newEndTime);
+//             try {
+//               final newEndTime = DateTime.parse(response.new_end_date!);
+//               _startCountdown(newEndTime);
+//             } catch (e) {
+//               print('Error parsing new end date: $e');
+//             }
 //           }
 //         } else {
 //           _showToast(response.message ?? 'Bid placed! Amount: ${_formatPrice(amount)}');
-//         }
-        
-//         // Update local values from response
-//         if (response.remaining_balance != null) {
-//           // Update user balance if needed
 //         }
         
 //         await _pollData();
@@ -401,14 +406,14 @@
 //     _showLoadingDialog();
     
 //     try {
-//       final response = await AuctionProductsRepository().placeBidResponse(
+//       final response = await _productRepository.placeBid(
 //         _product!.id.toString(),
 //         amount.toString(),
 //       );
       
 //       Navigator.pop(context);
       
-//       if (response.result == true) {
+//       if (response.success == true) {
 //         _playBidSound();
 //         _bidController.clear();
 //         if (response.time_extended == true) {
@@ -445,14 +450,14 @@
 //     _showLoadingDialog();
     
 //     try {
-//       final response = await AuctionProductsRepository().addComment(
+//       final response = await _productRepository.addProductComment(
 //         _product!.id,
 //         comment,
 //       );
       
 //       Navigator.pop(context);
       
-//       if (response.success) {
+//       if (response.success == true) {
 //         _playCommentSound();
 //         _commentController.clear();
 //         await _fetchComments();
@@ -490,7 +495,7 @@
 //     _showLoadingDialog();
     
 //     try {
-//       final response = await AuctionProductsRepository().addReview(
+//       final response = await _productRepository.addProductReview(
 //         _product!.id,
 //         _selectedRating.toInt(),
 //         comment,
@@ -498,7 +503,7 @@
       
 //       Navigator.pop(context);
       
-//       if (response.success) {
+//       if (response.success == true) {
 //         _showToast('Review submitted!');
 //         _showAddReviewModal = false;
 //         _selectedRating = 0;
@@ -527,14 +532,14 @@
     
 //     try {
 //       if (_isInWishlist) {
-//         final response = await AuctionProductsRepository().removeFromWishlist(_product!.id);
-//         if (response.success) {
+//         final response = await _productRepository.removeFromWishlist(_product!.id);
+//         if (response.success == true) {
 //           setState(() => _isInWishlist = false);
 //           _showToast('Removed from wishlist');
 //         }
 //       } else {
-//         final response = await AuctionProductsRepository().addToWishlist(_product!.id);
-//         if (response.success) {
+//         final response = await _productRepository.addToWishlist(_product!.id);
+//         if (response.success == true) {
 //           setState(() => _isInWishlist = true);
 //           _showToast('Added to wishlist');
 //         }
@@ -602,7 +607,7 @@
 //   }
   
 //   void _showToast(String message) {
-//     ToastComponent.showDialog(message, gravity: Toast.center, duration: Toast.lengthShort);
+//     ToastComponent.showDialog(message);
 //   }
   
 //   void _showLoginRequired() {
@@ -681,7 +686,7 @@
 //   }
   
 //   // ============================================
-//   // MODAL CONTROLS
+//   // MODAL CONTROLS - keep same as before
 //   // ============================================
   
 //   void _openTitleModal() {
@@ -723,7 +728,7 @@
 //   }
   
 //   // ============================================
-//   // BUILD METHODS
+//   // BUILD METHODS - keep same as before
 //   // ============================================
   
 //   @override

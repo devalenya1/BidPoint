@@ -7,8 +7,15 @@ import 'package:active_ecommerce_flutter/data_model/variant_response.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
-
 import '../data_model/variant_price_response.dart';
+import '../data_model/poll_data_response.dart';
+import '../data_model/bid_response.dart';
+import '../data_model/comment_response.dart';
+import '../data_model/review_response.dart';
+import '../data_model/bid_history_response.dart';
+import '../data_model/add_comment_response.dart';
+import '../data_model/add_review_response.dart';
+import '../data_model/wishlist_response.dart';
 
 class ProductRepository {
   Future<CatResponse> getCategoryRes() async {
@@ -116,12 +123,14 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
+  // Get product details - returns DetailedProduct
   Future<ProductDetailsResponse> getProductDetails({String? slug = ""}) async {
     String url = ("${AppConfig.BASE_URL}/products/" + slug.toString());
-    print("Product Url");
+    print("Product Url: $url");
 
     final response = await ApiRequest.get(url: url, headers: {
       "App-Language": app_language.$!,
+      "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
     });
     print(response.body);
 
@@ -209,6 +218,8 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
+  // ============ AUCTION METHODS ============
+  
   Future<ProductMiniResponse> getHotAuctions({int page = 1}) async {
     String url = "${AppConfig.BASE_URL}/products/hot-auctions?page=${page}";
     final response = await ApiRequest.get(
@@ -242,7 +253,189 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
-  // Notify Me for Auction
+  // ============ AUCTION BIDDING METHODS ============
+  
+  Future<PollDataResponse> pollProductData(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/auction/product-poll/$productId");
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
+      },
+    );
+    return PollDataResponse.fromJson(jsonDecode(response.body));
+  }
+
+  Future<BidResponse> placeBid(String productId, String amount, {String type = "custom"}) async {
+    String url = ("${AppConfig.BASE_URL}/auction_product_bids/store");
+    var postBody = jsonEncode({
+      "product_id": int.parse(productId),
+      "amount": double.parse(amount),
+      "type": type
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return BidResponse.fromJson(jsonDecode(response.body));
+  }
+
+  Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
+    String url = ("${AppConfig.BASE_URL}/auction/quick-bid");
+    var postBody = jsonEncode({
+      "product_id": int.parse(productId),
+      "amount": double.parse(amount),
+      "type": type
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return BidResponse.fromJson(jsonDecode(response.body));
+  }
+
+  // ============ COMMENTS ============
+  
+  Future<CommentResponse> getProductComments(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/auction/comments/$productId");
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+      },
+    );
+    return CommentResponse.fromJson(jsonDecode(response.body));
+  }
+
+  Future<AddCommentResponse> addProductComment(int productId, String comment) async {
+    String url = ("${AppConfig.BASE_URL}/auction/add-comment");
+    var postBody = jsonEncode({
+      "product_id": productId,
+      "comment": comment,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return AddCommentResponse.fromJson(jsonDecode(response.body));
+  }
+
+  Future<Map<String, dynamic>> likeProductComment(int commentId) async {
+    String url = ("${AppConfig.BASE_URL}/auction/like-comment");
+    var postBody = jsonEncode({
+      "comment_id": commentId,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return jsonDecode(response.body);
+  }
+
+  // ============ REVIEWS ============
+  
+  Future<ReviewResponse> getProductReviews(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/auction/reviews/$productId");
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+      },
+    );
+    return ReviewResponse.fromJson(jsonDecode(response.body));
+  }
+
+  Future<AddReviewResponse> addProductReview(int productId, int rating, String comment) async {
+    String url = ("${AppConfig.BASE_URL}/auction/add-review");
+    var postBody = jsonEncode({
+      "product_id": productId,
+      "rating": rating,
+      "comment": comment,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return AddReviewResponse.fromJson(jsonDecode(response.body));
+  }
+
+  // ============ BID HISTORY ============
+  
+  Future<BidHistoryResponse> getProductBidHistory(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/auction/bid-history/$productId");
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+      },
+    );
+    return BidHistoryResponse.fromJson(jsonDecode(response.body));
+  }
+
+  // ============ WISHLIST ============
+  
+  Future<WishlistResponse> addToWishlist(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/wishlist/add");
+    var postBody = jsonEncode({
+      "product_id": productId,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return WishlistResponse.fromJson(jsonDecode(response.body));
+  }
+
+  Future<WishlistResponse> removeFromWishlist(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/wishlist/remove");
+    var postBody = jsonEncode({
+      "product_id": productId,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return WishlistResponse.fromJson(jsonDecode(response.body));
+  }
+
+  // ============ NOTIFY ME ============
+  
   Future<Map<String, dynamic>> notifyMeForAuction(int productId) async {
     String url = "${AppConfig.BASE_URL}/auction/notify-me";
     
@@ -282,6 +475,4 @@ class ProductRepository {
       };
     }
   }
-
-  
 }
