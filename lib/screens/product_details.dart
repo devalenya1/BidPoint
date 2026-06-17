@@ -355,7 +355,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       final response = await _productRepository.placeBid(
-        _product!.id ?? 0.toString(),
+        (_product!.id ?? 0).toString(),
         amount.toString(),
       );
       
@@ -407,7 +407,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       final response = await _productRepository.placeBid(
-        _product!.id ?? 0.toString(),
+        (_product!.id ?? 0).toString(),
         amount.toString(),
       );
       

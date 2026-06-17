@@ -1,4 +1,4 @@
-import 'dart:convert';  // Add this import
+import 'dart:convert';
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/data_model/wishlist_check_response.dart';
 import 'package:active_ecommerce_flutter/data_model/wishlist_delete_response.dart';
@@ -10,8 +10,9 @@ import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import '../helpers/main_helpers.dart';
 
 class WishListRepository {
-  // Add this method to parse wishlist response
-  WishlistResponse wishlistResponseFromJson(Map<String, dynamic> json) {
+  // Parse wishlist response from JSON string
+  WishlistResponse wishlistResponseFromJson(String jsonString) {
+    final Map<String, dynamic> json = jsonDecode(jsonString);
     return WishlistResponse.fromJson(json);
   }
 
@@ -25,10 +26,8 @@ class WishListRepository {
     final response = await ApiRequest.get(
         url: url, headers: header, middleware: BannedUser());
 
-    return wishlistResponseFromJson(jsonDecode(response.body));
+    return wishlistResponseFromJson(response.body);
   }
-
-
 
   Future<dynamic> delete({
     int? wishlist_id = 0,
