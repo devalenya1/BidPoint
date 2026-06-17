@@ -203,21 +203,13 @@ class _WishlistState extends State<Wishlist> {
   // ============ NAVIGATION HELPERS ============
   void _navigateToProductDetails(String slug) {
     if (slug.isNotEmpty) {
-      // Using GoRouter for proper navigation
-      context.go('/product/$slug');
-    } else {
-      ToastComponent.showDialog(
-        AppLocalizations.of(context)!.product_details_not_available,
-        gravity: Toast.center,
-        duration: Toast.lengthShort,
+      // Navigate to ProductDetails screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProductDetails(slug: slug),
+        ),
       );
-    }
-  }
-  
-  void _navigateToAuctionProductDetails(String slug) {
-    if (slug.isNotEmpty) {
-      // Using GoRouter for proper navigation to auction product
-      context.go('/auction-product/$slug');
     } else {
       ToastComponent.showDialog(
         AppLocalizations.of(context)!.product_details_not_available,
@@ -499,11 +491,7 @@ class _WishlistState extends State<Wishlist> {
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
-                if (isAuctionProduct) {
-                  _navigateToAuctionProductDetails(productSlug);
-                } else {
-                  _navigateToProductDetails(productSlug);
-                }
+                _navigateToProductDetails(productSlug);
               } else {
                 ToastComponent.showDialog(
                   AppLocalizations.of(context)!.product_details_not_available,
@@ -606,11 +594,7 @@ class _WishlistState extends State<Wishlist> {
                 GestureDetector(
                   onTap: () {
                     if (productSlug.isNotEmpty) {
-                      if (isAuctionProduct) {
-                        _navigateToAuctionProductDetails(productSlug);
-                      } else {
-                        _navigateToProductDetails(productSlug);
-                      }
+                      _navigateToProductDetails(productSlug);
                     }
                   },
                   child: Text(
@@ -680,11 +664,7 @@ class _WishlistState extends State<Wishlist> {
                 GestureDetector(
                   onTap: () {
                     if (productSlug.isNotEmpty) {
-                      if (isAuctionProduct) {
-                        _navigateToAuctionProductDetails(productSlug);
-                      } else {
-                        _navigateToProductDetails(productSlug);
-                      }
+                      _navigateToProductDetails(productSlug);
                     } else {
                       ToastComponent.showDialog(
                         AppLocalizations.of(context)!.product_details_not_available,

@@ -101,10 +101,26 @@ class _UpcomingSectionState extends State<UpcomingSection> {
     }
   }
 
-  String _formatPrice(double? price) {
-    if (price == null) return '\$0.00';
+  // ============ PRICE HELPERS (Same pattern as Product model) ============
+  
+  /// Parse a price string to double (handles both "10.24" and "$10.24")
+  double _parsePrice(dynamic price) {
+    if (price == null) return 0.0;
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      // Remove any currency symbols or non-numeric characters except dot
+      final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
+  }
+  
+  /// Format price with currency symbol
+  String _formatPrice(dynamic price) {
+    final doubleValue = _parsePrice(price);
     final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
-    return '$symbol${price.toStringAsFixed(2)}';
+    return '$symbol${doubleValue.toStringAsFixed(2)}';
   }
 
   String _getProductName(String? name) {
@@ -122,6 +138,21 @@ class _UpcomingSectionState extends State<UpcomingSection> {
       return '${stripped.substring(0, 32)}...';
     }
     return stripped;
+  }
+
+  /// Get the display bid value as double from product
+  double _getDisplayBid(dynamic product) {
+    // Try highest bid first
+    if (product.highestBid != null) {
+      final parsed = _parsePrice(product.highestBid);
+      if (parsed > 0) return parsed;
+    }
+    // Then try starting bid
+    if (product.startingBid != null) {
+      final parsed = _parsePrice(product.startingBid);
+      if (parsed > 0) return parsed;
+    }
+    return 0.0;
   }
 
   Future<void> _notifyMe(int productId, String slug) async {
@@ -281,9 +312,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
         product.auctionEndDate is int && 
         product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
     
-    final currentBid = (product.highestBid != null && product.highestBid > 0)
-        ? (product.highestBid is double ? product.highestBid : double.tryParse(product.highestBid.toString()) ?? 0)
-        : (product.startingBid is double ? product.startingBid : double.tryParse(product.startingBid.toString()) ?? 0);
+    final currentBid = _getDisplayBid(product);
     
     final timeLeft = _timeLeft[product.id] ?? "Loading...";
     final showTimer = isActive && timeLeft != "Ended";

@@ -17,8 +17,8 @@ class ProductCard extends StatefulWidget {
   final String? description;
   final int? pointPerBid;
   final dynamic auctionEndDate;
-  final double? currentBid;
-  final double? startingBid;
+  final dynamic currentBid;      // Changed to dynamic
+  final dynamic startingBid;     // Changed to dynamic
   final bool isAuctionActive;
   // Add these for compatibility with calls from other files
   final String? main_price;
@@ -81,12 +81,34 @@ class _ProductCardState extends State<ProductCard> {
   void _updateTimer() {
     if (widget.auctionEndDate == null) return;
 
+    // Handle "Ended" string case
+    if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Ended";
+        });
+      }
+      _timer?.cancel();
+      return;
+    }
+
     int endDate;
     if (widget.auctionEndDate is int) {
       endDate = widget.auctionEndDate;
     } else if (widget.auctionEndDate is String) {
       endDate = int.tryParse(widget.auctionEndDate) ?? 0;
     } else {
+      return;
+    }
+
+    // Check if endDate is valid (greater than 0)
+    if (endDate <= 0) {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Ended";
+        });
+      }
+      _timer?.cancel();
       return;
     }
 
@@ -126,11 +148,40 @@ class _ProductCardState extends State<ProductCard> {
     }
   }
 
+  // ============ PRICE HELPERS (Same pattern as Product model) ============
+  
+  /// Parse a price string to double (handles both "10.24" and "$10.24")
+  double _parsePrice(dynamic price) {
+    if (price == null) return 0.0;
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      // Remove any currency symbols or non-numeric characters except dot
+      final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
+  }
+  
+  /// Format price with currency symbol
   String _formatPrice(dynamic price) {
-    if (price == null) return '\$0.00';
-    double priceDouble = price is double ? price : double.tryParse(price.toString()) ?? 0;
+    final doubleValue = _parsePrice(price);
     final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
-    return '$symbol${priceDouble.toStringAsFixed(2)}';
+    return '$symbol${doubleValue.toStringAsFixed(2)}';
+  }
+
+  /// Get the display bid value as double
+  double _getDisplayBid() {
+    // Try highest bid first, then starting bid
+    if (widget.currentBid != null) {
+      final parsed = _parsePrice(widget.currentBid);
+      if (parsed > 0) return parsed;
+    }
+    if (widget.startingBid != null) {
+      final parsed = _parsePrice(widget.startingBid);
+      if (parsed > 0) return parsed;
+    }
+    return 0.0;
   }
 
   void _navigateToProduct() {
@@ -139,7 +190,7 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final displayBid = widget.currentBid ?? widget.startingBid ?? 0;
+    final displayBid = _getDisplayBid();
     final showTimer = widget.isAuctionActive && _timeLeft != "Ended";
 
     return Container(

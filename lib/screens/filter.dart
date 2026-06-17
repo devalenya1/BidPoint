@@ -627,32 +627,11 @@ class _FilterState extends State<Filter> {
             ),
           ),
           const SizedBox(height: 12),
-          // Sort and Filter buttons row - Moved to right side
+          // Sort and Filter buttons row - Sort first, then Filter
           Row(
-            mainAxisAlignment: MainAxisAlignment.end, // Moved to right
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Filter Button - 10% width (now on the left of the pair)
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.1,
-                child: GestureDetector(
-                  onTap: _openFilterDrawer,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.filter_alt, size: 20, color: Colors.white),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Sort Button - 30% width (now on the right)
+              // Sort Button - 30% width (now on the left)
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.3,
                 child: GestureDetector(
@@ -680,6 +659,27 @@ class _FilterState extends State<Filter> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Filter Button - 10% width (now on the right)
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.1,
+                child: GestureDetector(
+                  onTap: _openFilterDrawer,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: MyTheme.accent_color,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.filter_alt, size: 20, color: Colors.white),
                       ],
                     ),
                   ),
@@ -976,21 +976,25 @@ class _FilterState extends State<Filter> {
             crossAxisSpacing: 12,
             padding: const EdgeInsets.all(12),
             itemCount: _productList.length,
-            itemBuilder: (context, index) => ProductCard(
-              id: _productList[index].id,
-              slug: _productList[index].slug,
-              image: _productList[index].thumbnail_image,
-              name: _productList[index].name,
-              pointPerBid: _productList[index].pointPerBid,
-              auctionEndDate: _productList[index].auctionEndDate,
-              currentBid: _productList[index].highestBid,
-              startingBid: _productList[index].startingBid,
-              main_price: _productList[index].main_price,
-              stroked_price: _productList[index].stroked_price,
-              isAuctionActive: _productList[index].auctionEndDate != null && 
-                  _productList[index].auctionEndDate is int && 
-                  _productList[index].auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            ),
+            itemBuilder: (context, index) {
+              final product = _productList[index];
+              return ProductCard(
+                id: product.id ?? 0,
+                slug: product.slug ?? '',
+                image: product.thumbnail_image,
+                name: product.name,
+                description: product.name,
+                pointPerBid: product.pointPerBid,
+                auctionEndDate: product.auctionEndDate,
+                currentBid: product.highestBid,
+                startingBid: product.startingBid,
+                main_price: product.main_price,
+                stroked_price: product.stroked_price,
+                isAuctionActive: product.auctionEndDate != null && 
+                    product.auctionEndDate is int && 
+                    product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              );
+            },
           ),
         ),
       );

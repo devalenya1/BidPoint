@@ -91,9 +91,9 @@ class Product {
   // Auction related fields
   dynamic auctionEndDate; // Can be "Ended" (String) or timestamp (int)
   dynamic auctionStartDate; // Can be "Upcoming" (String) or timestamp (int)
-  String? startingBid;
-  String? minBidPrice;
-  String? highestBid; // Can be empty string or price string
+  String? startingBid;     // Now returns plain string like "10.00"
+  String? minBidPrice;     // Now returns plain string like "11.24"
+  String? highestBid;      // Now returns plain string like "10.24"
   
   // Swipe and points fields
   int? swipeRight;
@@ -179,9 +179,13 @@ class Product {
   
   bool get isAuctionActive {
     if (!isAuctionProduct) return false;
-    if (auctionEndDate is int && auctionEndDate > 0) {
-      final now = DateTime.now().millisecondsSinceEpoch / 1000;
-      return auctionEndDate > now && !isAuctionEnded;
+    // Check if auctionEndDate is a valid timestamp
+    if (auctionEndDate is int) {
+      final endTimestamp = auctionEndDate as int;
+      // If endTimestamp is 0 or negative, auction has ended
+      if (endTimestamp <= 0) return false;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return endTimestamp > now && !isAuctionEnded;
     }
     return false;
   }
@@ -189,9 +193,11 @@ class Product {
   bool get isAuctionUpcoming {
     if (!isAuctionProduct) return false;
     if (auctionStartDate is String && auctionStartDate == 'Upcoming') return true;
-    if (auctionStartDate is int && auctionStartDate > 0) {
-      final now = DateTime.now().millisecondsSinceEpoch / 1000;
-      return auctionStartDate > now;
+    if (auctionStartDate is int) {
+      final startTimestamp = auctionStartDate as int;
+      if (startTimestamp <= 0) return false;
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return startTimestamp > now;
     }
     return false;
   }
@@ -212,21 +218,43 @@ class Product {
     return Colors.grey;
   }
   
+  // ============ PRICE HELPERS (NOW HANDLE PLAIN STRINGS) ============
+  
+  /// Parse a price string to double (handles both "10.24" and "$10.24")
+  double parsePrice(dynamic price) {
+    if (price == null) return 0.0;
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      // Remove any currency symbols or non-numeric characters except dot
+      final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
+  }
+  
+  /// Format price with currency symbol
+  String formatPrice(dynamic price) {
+    final doubleValue = parsePrice(price);
+    final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
+    return '$symbol${doubleValue.toStringAsFixed(2)}';
+  }
+  
   String getDisplayPrice() {
     if (isAuctionProduct) {
-      if (highestBid != null && highestBid!.isNotEmpty) {
-        return highestBid!;
+      if (highestBid != null && highestBid!.isNotEmpty && parsePrice(highestBid) > 0) {
+        return formatPrice(highestBid);
       }
-      return startingBid ?? '0.00';
+      return formatPrice(startingBid);
     }
-    return mainPrice ?? '0.00';
+    return formatPrice(mainPrice);
   }
   
   String getOriginalPrice() {
     if (isAuctionProduct) {
-      return startingBid ?? '';
+      return formatPrice(startingBid);
     }
-    return strokedPrice ?? '';
+    return formatPrice(strokedPrice);
   }
   
   String getDiscountText() {
@@ -240,19 +268,40 @@ class Product {
   
   String getHighestBidText() {
     if (isAuctionProduct && highestBid != null && highestBid!.isNotEmpty) {
-      return highestBid!;
+      return formatPrice(highestBid);
     }
     return 'No bids yet';
   }
   
   String getMinBidText() {
     if (isAuctionProduct && minBidPrice != null && minBidPrice!.isNotEmpty) {
-      return minBidPrice!;
+      return formatPrice(minBidPrice);
     }
-    return startingBid ?? '0.00';
+    return formatPrice(startingBid);
   }
   
-  bool get hasHighestBid => highestBid != null && highestBid!.isNotEmpty;
+  double getHighestBidValue() {
+    if (isAuctionProduct && highestBid != null && highestBid!.isNotEmpty) {
+      return parsePrice(highestBid);
+    }
+    return 0.0;
+  }
+  
+  double getStartingBidValue() {
+    if (isAuctionProduct && startingBid != null && startingBid!.isNotEmpty) {
+      return parsePrice(startingBid);
+    }
+    return 0.0;
+  }
+  
+  double getMinBidValue() {
+    if (isAuctionProduct && minBidPrice != null && minBidPrice!.isNotEmpty) {
+      return parsePrice(minBidPrice);
+    }
+    return 0.0;
+  }
+  
+  bool get hasHighestBid => highestBid != null && highestBid!.isNotEmpty && parsePrice(highestBid) > 0;
   
   int get totalSwipes => (swipeRight ?? 0) + (swipeLeft ?? 0);
   
@@ -280,15 +329,21 @@ class Product {
   }
   
   DateTime? getAuctionEndDateTime() {
-    if (auctionEndDate is int && (auctionEndDate as int) > 0) {
-      return DateTime.fromMillisecondsSinceEpoch((auctionEndDate as int) * 1000);
+    if (auctionEndDate is int) {
+      final timestamp = auctionEndDate as int;
+      if (timestamp > 0) {
+        return DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+      }
     }
     return null;
   }
   
   DateTime? getAuctionStartDateTime() {
-    if (auctionStartDate is int && (auctionStartDate as int) > 0) {
-      return DateTime.fromMillisecondsSinceEpoch((auctionStartDate as int) * 1000);
+    if (auctionStartDate is int) {
+      final timestamp = auctionStartDate as int;
+      if (timestamp > 0) {
+        return DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+      }
     }
     return null;
   }
@@ -308,6 +363,24 @@ class Product {
     }
     return auctionStartDate?.toString() ?? 'N/A';
   }
+  
+  // ============ GETTERS FOR DISPLAY ============
+  
+  String get displayName => name ?? 'Unknown Product';
+  
+  String get displayImage => thumbnailImage ?? '';
+  
+  bool get hasImage => thumbnailImage != null && thumbnailImage!.isNotEmpty;
+  
+  bool get isEnded => isAuctionEnded;
+  
+  bool get isLive => isAuctionActive;
+  
+  bool get isUpcoming => isAuctionUpcoming;
+  
+  String get statusText => getAuctionStatus();
+  
+  Color get statusColor => getAuctionStatusColor();
 }
 
 class Links {

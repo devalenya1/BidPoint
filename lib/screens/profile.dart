@@ -166,7 +166,14 @@ class _ProfileState extends State<Profile> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
+      // Go to home if can't pop
       context.go("/");
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => Main(),
+      //   ),
+      // );
     }
   }
 
@@ -655,7 +662,13 @@ Raw Response: ${response.body}
               Navigator.of(context).pop();
             } else {
               // Go to home if can't pop
-              context.go("/");
+              // context.go("/");
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Main(),
+                ),
+              );
             }
           },
         ),

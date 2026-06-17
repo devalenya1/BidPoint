@@ -250,6 +250,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               cardWidth = (constraints.maxWidth - 16 * 3) / 2;
             }
             
+            // Ensure minimum width
+            cardWidth = cardWidth.clamp(120.0, double.infinity);
+            
             return SizedBox(
               height: 350,
               child: ListView.builder(
@@ -389,7 +392,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   auctionEndDate: product.auctionEndDate,
                   currentBid: product.highestBid,
                   startingBid: product.startingBid,
-                  isAuctionActive: true,
+                  isAuctionActive: product.auctionEndDate != null && 
+                      product.auctionEndDate is int && 
+                      product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
                   cardType: 'ending_left',
                 ),
               );
@@ -411,7 +416,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               auctionEndDate: rightProduct.auctionEndDate,
               currentBid: rightProduct.highestBid,
               startingBid: rightProduct.startingBid,
-              isAuctionActive: true,
+              isAuctionActive: rightProduct.auctionEndDate != null && 
+                  rightProduct.auctionEndDate is int && 
+                  rightProduct.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
               cardType: 'ending_right',
             ),
           ),
@@ -462,6 +469,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               cardWidth = (constraints.maxWidth - 16 * 3) / 2;
             }
             
+            // Ensure minimum width
+            cardWidth = cardWidth.clamp(120.0, double.infinity);
+            
             return SizedBox(
               height: 350,
               child: ListView.builder(
@@ -470,6 +480,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 itemCount: homeData.upcomingProductList.length,
                 itemBuilder: (context, index) {
                   final product = homeData.upcomingProductList[index];
+                  
+                  // Handle auction start date - it can be int timestamp or string
+                  int? auctionStartTimestamp;
+                  if (product.auctionStartDate != null) {
+                    if (product.auctionStartDate is int) {
+                      auctionStartTimestamp = product.auctionStartDate;
+                    } else if (product.auctionStartDate is String) {
+                      auctionStartTimestamp = int.tryParse(product.auctionStartDate) ?? 0;
+                    }
+                  }
+                  
                   return Container(
                     width: cardWidth,
                     margin: const EdgeInsets.only(right: 12),
@@ -480,9 +501,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       name: product.name,
                       description: product.name,
                       pointPerBid: product.pointPerBid ?? 0,
-                      auctionEndDate: product.auctionStartDate != null 
-                          ? (product.auctionStartDate as DateTime).millisecondsSinceEpoch ~/ 1000
-                          : null,
+                      auctionEndDate: auctionStartTimestamp ?? product.auctionStartDate,
                       currentBid: product.startingBid,
                       startingBid: product.startingBid,
                       isAuctionActive: false,

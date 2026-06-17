@@ -179,6 +179,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
             } else {
               // Go to home if can't pop
               context.go("/");
+              
             }
           },
         ),

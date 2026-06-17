@@ -280,6 +280,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       (p) => p.productId == bid.productId,
       orElse: () => DistinctAuctionBid(),
     );
+    
+    // Check both productSlug and slug fields
     return product.productSlug;
   }
   
@@ -299,19 +301,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   // ============ NAVIGATION HELPERS ============
   void _navigateToProductDetails(String slug) {
     if (slug.isNotEmpty) {
-      // Using GoRouter for proper navigation
-      context.go('/product/$slug');
-    } else {
-      ToastComponent.showDialog(
-        AppLocalizations.of(context)!.product_details_not_available
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProductDetails(slug: slug),
+        ),
       );
-    }
-  }
-  
-  void _navigateToAuctionProductDetails(String slug) {
-    if (slug.isNotEmpty) {
-      // Using GoRouter for proper navigation to auction product
-      context.go('/auction-product/$slug');
     } else {
       ToastComponent.showDialog(
         AppLocalizations.of(context)!.product_details_not_available
@@ -576,7 +571,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           GestureDetector(
             onTap: () {
               if (productSlug != null && productSlug.isNotEmpty) {
-                _navigateToAuctionProductDetails(productSlug);
+                _navigateToProductDetails(productSlug);
               }
             },
             child: Container(
@@ -636,7 +631,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 GestureDetector(
                   onTap: () {
                     if (productSlug != null && productSlug.isNotEmpty) {
-                      _navigateToAuctionProductDetails(productSlug);
+                      _navigateToProductDetails(productSlug);
                     }
                   },
                   child: Text(
@@ -710,8 +705,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 // Action Button
                 if (isOutbid && !isEnded)
                   _buildBidAgainButton(productSlug)
-                else if (isWinning || (isEnded && isWinning))
-                  _buildViewDetailsButton(productSlug)
                 else
                   _buildViewDetailsButton(productSlug),
               ],
@@ -726,8 +719,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return GestureDetector(
       onTap: () {
         if (productSlug != null && productSlug.isNotEmpty) {
-          // Navigate to auction product details for bidding
-          _navigateToAuctionProductDetails(productSlug);
+          _navigateToProductDetails(productSlug);
         } else {
           ToastComponent.showDialog(
             AppLocalizations.of(context)!.product_details_not_available
@@ -758,8 +750,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return GestureDetector(
       onTap: () {
         if (productSlug != null && productSlug.isNotEmpty) {
-          // Navigate to auction product details
-          _navigateToAuctionProductDetails(productSlug);
+          _navigateToProductDetails(productSlug);
         } else {
           ToastComponent.showDialog(
             AppLocalizations.of(context)!.product_details_not_available

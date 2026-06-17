@@ -116,7 +116,13 @@ class _CategoryListState extends State<CategoryList> {
                 Navigator.of(context).pop();
               } else {
                 // Go to home if can't pop
-                context.go("/");
+                // context.go("/");
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Main(),
+                  ),
+                );
               }
             },
           ),
