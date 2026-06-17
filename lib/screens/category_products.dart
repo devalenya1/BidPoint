@@ -13,8 +13,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class CategoryProducts extends StatefulWidget {
-  CategoryProducts({Key? key,required this.slug})
-      : super(key: key);
+  CategoryProducts({Key? key, required this.slug}) : super(key: key);
   final String slug;
 
   @override
@@ -37,16 +36,15 @@ class _CategoryProductsState extends State<CategoryProducts> {
   Category? categoryInfo;
 
   getSubCategory() async {
-    var res =
-        await CategoryRepository().getCategories(parent_id: widget.slug);
+    var res = await CategoryRepository().getCategories(parent_id: widget.slug);
     _subCategoryList.addAll(res.categories!);
     setState(() {});
   }
+  
   getCategoryInfo() async {
-    var res =
-        await CategoryRepository().getCategoryInfo(widget.slug);
+    var res = await CategoryRepository().getCategoryInfo(widget.slug);
     print(res.categories.toString());
-    if(res.categories?.isNotEmpty??false) {
+    if (res.categories?.isNotEmpty ?? false) {
       categoryInfo = res.categories?.first ?? null;
     }
     setState(() {});
@@ -54,15 +52,11 @@ class _CategoryProductsState extends State<CategoryProducts> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getCategoryInfo();
     fetchAllDate();
 
     _xcrollController.addListener(() {
-      //print("position: " + _xcrollController.position.pixels.toString());
-      //print("max: " + _xcrollController.position.maxScrollExtent.toString());
-
       if (_xcrollController.position.pixels ==
           _xcrollController.position.maxScrollExtent) {
         setState(() {
@@ -76,7 +70,6 @@ class _CategoryProductsState extends State<CategoryProducts> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     _scrollController.dispose();
     _xcrollController.dispose();
     super.dispose();
@@ -115,16 +108,18 @@ class _CategoryProductsState extends State<CategoryProducts> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: buildAppBar(context),
-        body: Stack(
-          children: [
-            buildProductList(),
-            Align(
-                alignment: Alignment.bottomCenter,
-                child: buildLoadingContainer())
-          ],
-        ));
+      backgroundColor: Colors.white,
+      appBar: buildAppBar(context),
+      body: Stack(
+        children: [
+          buildProductList(),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: buildLoadingContainer(),
+          ),
+        ],
+      ),
+    );
   }
 
   Container buildLoadingContainer() {
@@ -156,48 +151,30 @@ class _CategoryProductsState extends State<CategoryProducts> {
         ),
       ),
       bottom: PreferredSize(
-          child: AnimatedContainer(
-            //color: MyTheme.textfield_grey,
-            height: _subCategoryList.isEmpty ? 0 : 60,
-            duration: Duration(milliseconds: 500),
-            child: !_isInitial ? buildSubCategory() : buildSubCategory(),
-          ),
-          preferredSize: Size.fromHeight(0.0)),
-      /*leading: Builder(
-        builder: (context) => IconButton(
-          icon: Icon(CupertinoIcons.arrow_left, color: MyTheme.dark_grey),
-          onPressed: () => Navigator.of(context).pop(),
+        child: AnimatedContainer(
+          height: _subCategoryList.isEmpty ? 0 : 60,
+          duration: Duration(milliseconds: 500),
+          child: !_isInitial ? buildSubCategory() : buildSubCategory(),
         ),
-      ),*/
+        preferredSize: Size.fromHeight(0.0),
+      ),
       title: buildAppBarTitle(context),
       elevation: 0.0,
       titleSpacing: 0,
-      /*actions: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
-          child: IconButton(
-            icon: Icon(Icons.search, color: MyTheme.dark_grey),
-            onPressed: () {
-              _searchKey = _searchController.text.toString();
-              reset();
-              fetchData();
-            },
-          ),
-        ),
-      ],*/
     );
   }
 
   Widget buildAppBarTitle(BuildContext context) {
     return AnimatedCrossFade(
-        firstChild: buildAppBarTitleOption(context),
-        secondChild: buildAppBarSearchOption(context),
-        firstCurve: Curves.fastOutSlowIn,
-        secondCurve: Curves.fastOutSlowIn,
-        crossFadeState: _showSearchBar
-            ? CrossFadeState.showSecond
-            : CrossFadeState.showFirst,
-        duration: Duration(milliseconds: 500));
+      firstChild: buildAppBarTitleOption(context),
+      secondChild: buildAppBarSearchOption(context),
+      firstCurve: Curves.fastOutSlowIn,
+      secondCurve: Curves.fastOutSlowIn,
+      crossFadeState: _showSearchBar
+          ? CrossFadeState.showSecond
+          : CrossFadeState.showFirst,
+      duration: Duration(milliseconds: 500),
+    );
   }
 
   Container buildAppBarTitleOption(BuildContext context) {
@@ -213,7 +190,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
             padding: EdgeInsets.only(left: 10),
             width: DeviceInfo(context).width! / 2,
             child: Text(
-              categoryInfo?.name??"",
+              categoryInfo?.name ?? "",
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -223,15 +200,16 @@ class _CategoryProductsState extends State<CategoryProducts> {
           SizedBox(
             width: 20,
             child: IconButton(
-                onPressed: () {
-                  _showSearchBar = true;
-                  setState(() {});
-                },
-                padding: EdgeInsets.zero,
-                icon: Icon(
-                  Icons.search,
-                  size: 25,
-                )),
+              onPressed: () {
+                _showSearchBar = true;
+                setState(() {});
+              },
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                Icons.search,
+                size: 25,
+              ),
+            ),
           ),
         ],
       ),
@@ -270,16 +248,16 @@ class _CategoryProductsState extends State<CategoryProducts> {
           ),
           filled: true,
           fillColor: MyTheme.white.withOpacity(0.6),
-          hintText: "${AppLocalizations.of(context)!.search_products_from} : " +
-              ""//widget.category_name!
-          ,
+          hintText: "${AppLocalizations.of(context)!.search_products_from} : ",
           hintStyle: TextStyle(fontSize: 14.0, color: MyTheme.font_grey),
           enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: MyTheme.noColor, width: 0.0),
-              borderRadius: BorderRadius.circular(6)),
+            borderSide: BorderSide(color: MyTheme.noColor, width: 0.0),
+            borderRadius: BorderRadius.circular(6),
+          ),
           focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: MyTheme.noColor, width: 0.0),
-              borderRadius: BorderRadius.circular(6)),
+            borderSide: BorderSide(color: MyTheme.noColor, width: 0.0),
+            borderRadius: BorderRadius.circular(6),
+          ),
           contentPadding: EdgeInsets.all(8.0),
         ),
       ),
@@ -288,54 +266,55 @@ class _CategoryProductsState extends State<CategoryProducts> {
 
   ListView buildSubCategory() {
     return ListView.separated(
-        padding: EdgeInsets.only(left: 18, right: 18, bottom: 10),
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (context, index) {
-          return InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return CategoryProducts(
-                      slug: widget.slug,
-                      // category_id: _subCategoryList[index].id,
-                      // category_name: _subCategoryList[index].name,
-                    );
-                  },
-                ),
-              );
-            },
-            child: Container(
-              height: _subCategoryList.isEmpty ? 0 : 46,
-              width: _subCategoryList.isEmpty ? 0 : 96,
-              alignment: Alignment.center,
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecorations.buildBoxDecoration_1(),
-              child: Text(
-                _subCategoryList[index].name!,
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: MyTheme.font_grey),
-                textAlign: TextAlign.center,
+      padding: EdgeInsets.only(left: 18, right: 18, bottom: 10),
+      scrollDirection: Axis.horizontal,
+      itemBuilder: (context, index) {
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) {
+                  return CategoryProducts(
+                    slug: widget.slug,
+                  );
+                },
               ),
+            );
+          },
+          child: Container(
+            height: _subCategoryList.isEmpty ? 0 : 46,
+            width: _subCategoryList.isEmpty ? 0 : 96,
+            alignment: Alignment.center,
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecorations.buildBoxDecoration_1(),
+            child: Text(
+              _subCategoryList[index].name!,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: MyTheme.font_grey,
+              ),
+              textAlign: TextAlign.center,
             ),
-          );
-        },
-        separatorBuilder: (context, index) {
-          return SizedBox(
-            width: 10,
-          );
-        },
-        itemCount: _subCategoryList.length);
+          ),
+        );
+      },
+      separatorBuilder: (context, index) {
+        return SizedBox(
+          width: 10,
+        );
+      },
+      itemCount: _subCategoryList.length,
+    );
   }
 
   buildProductList() {
     if (_isInitial && _productList.length == 0) {
       return SingleChildScrollView(
-          child: ShimmerHelper()
-              .buildProductGridShimmer(scontroller: _scrollController));
+        child: ShimmerHelper()
+            .buildProductGridShimmer(scontroller: _scrollController),
+      );
     } else if (_productList.length > 0) {
       return RefreshIndicator(
         color: MyTheme.accent_color,
@@ -352,32 +331,33 @@ class _CategoryProductsState extends State<CategoryProducts> {
             crossAxisSpacing: 14,
             itemCount: _productList.length,
             shrinkWrap: true,
-            padding:
-                EdgeInsets.only(top: 10.0, bottom: 10, left: 18, right: 18),
+            padding: EdgeInsets.only(top: 10.0, bottom: 10, left: 18, right: 18),
             physics: NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
-              // 3
+              final product = _productList[index];
               return ProductCard(
-                  id: _productList[index].id,
-                  slug: _productList[index].slug,
-                  image: _productList[index].thumbnail_image,
-                  name: _productList[index].name,
-                  pointPerBid: _productList[index].pointPerBid,
-                  auctionEndDate: _productList[index].auctionEndDate,
-                  currentBid: _productList[index].highestBid,
-                  startingBid: _productList[index].startingBid,
-                  main_price: _productList[index].main_price,
-                  stroked_price: _productList[index].stroked_price,
-                  isAuctionActive: _productList[index].auctionEndDate != null && 
-                      _productList[index].auctionEndDate is int && 
-                      _productList[index].auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                id: product.id ?? 0,
+                slug: product.slug ?? '',
+                image: product.thumbnail_image,
+                name: product.name,
+                pointPerBid: product.pointPerBid,
+                auctionEndDate: product.auctionEndDate,
+                currentBid: product.highestBid,
+                startingBid: product.startingBid,
+                main_price: product.main_price,
+                stroked_price: product.stroked_price,
+                isAuctionActive: product.auctionEndDate != null &&
+                    product.auctionEndDate is int &&
+                    product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              );
             },
           ),
         ),
       );
     } else if (_totalData == 0) {
       return Center(
-          child: Text(AppLocalizations.of(context)!.no_data_is_available));
+        child: Text(AppLocalizations.of(context)!.no_data_is_available),
+      );
     } else {
       return Container(); // should never be happening
     }

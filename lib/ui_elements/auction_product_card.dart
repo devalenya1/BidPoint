@@ -1,9 +1,9 @@
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/auction_products_details.dart';
+import 'package:active_ecommerce_flutter/screens/products_details.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/repositories/auction_products_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/products_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -138,7 +138,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
       final currentBid = widget.currentBid ?? widget.startingBid ?? 0;
       final minBid = currentBid + 0.01;
       
-      final response = await AuctionProductsRepository().quickBid(
+      final response = await ProductsRepository().quickBid(
         widget.id.toString(),
         minBid.toString(),
         type: 'quick',
@@ -147,23 +147,25 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
       if (response.success == true) {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
-          gravity: ToastComponent.CENTER,
-          duration: ToastComponent.LENGTH_LONG,
+          // gravity: ToastComponent.CENTER,
+          // duration: ToastComponent.LENGTH_LONG,
+          gravity: Toast.center,
+          duration: Toast.lengthLong
         );
         // Navigate to product details after successful bid
         GoRouter.of(context).go('/auction-product/${widget.slug}');
       } else {
         ToastComponent.showDialog(
           response.message ?? 'Failed to place bid',
-          gravity: ToastComponent.CENTER,
-          duration: ToastComponent.LENGTH_LONG,
+          gravity: Toast.center,
+          duration: Toast.lengthLong
         );
       }
     } catch (e) {
       ToastComponent.showDialog(
         'Error placing bid',
-        gravity: ToastComponent.CENTER,
-        duration: ToastComponent.LENGTH_LONG,
+        gravity: Toast.center,
+        duration: Toast.lengthLong
       );
     } finally {
       _isProcessing = false;

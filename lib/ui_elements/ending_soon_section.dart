@@ -131,7 +131,7 @@ class _EndingSoonSectionState extends State<EndingSoonSection> {
     try {
       final minBid = currentBid + 0.01;
       
-      final response = await AuctionProductsRepository().quickBid(
+      final response = await ProductRepository().quickBid(
         productId.toString(),
         minBid.toString(),
         type: 'quick',

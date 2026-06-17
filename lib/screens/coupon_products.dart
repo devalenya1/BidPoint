@@ -110,13 +110,16 @@ class _CouponProductsState extends State<CouponProducts> {
                 itemBuilder: (context, index) {
                   // 3
                   return ProductCard(
-                    id: productResponse.products![index].id,
-                    slug: productResponse.products![index].slug!,
+                    id: productResponse.products![index].id ?? 0,
+                    slug: productResponse.products![index].slug ?? '',
                     image: productResponse.products![index].thumbnail_image,
                     name: productResponse.products![index].name,
+                    pointPerBid: productResponse.products![index].pointPerBid,
+                    auctionEndDate: productResponse.products![index].auctionEndDate,
+                    currentBid: productResponse.products![index].highestBid,
+                    startingBid: productResponse.products![index].startingBid,
                     main_price: productResponse.products![index].main_price,
-                    stroked_price:
-                        productResponse.products![index].stroked_price,
+                    stroked_price: productResponse.products![index].stroked_price,
                     has_discount: productResponse.products![index].has_discount,
                     discount: productResponse.products![index].discount,
                     is_wholesale: productResponse.products![index].isWholesale,

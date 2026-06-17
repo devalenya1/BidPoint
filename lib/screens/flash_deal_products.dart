@@ -242,15 +242,22 @@ class _FlashDealProductsState extends State<FlashDealProducts> {
                     itemBuilder: (context, index) {
                       // 3
                       return ProductCard(
-                          id: _searchList[index].id,
-                          slug: _searchList[index].slug!,
-                          image: _searchList[index].thumbnail_image,
-                          name: _searchList[index].name,
-                          main_price: _searchList[index].main_price,
-                          stroked_price: _searchList[index].stroked_price,
-                          has_discount: _searchList[index].has_discount,
-                          discount: _searchList[index].discount,
-                        is_wholesale:_searchList[index].isWholesale ,
+                        id: _searchList[index].id ?? 0,
+                        slug: _searchList[index].slug ?? '',
+                        image: _searchList[index].thumbnail_image,
+                        name: _searchList[index].name,
+                        pointPerBid: _searchList[index].pointPerBid,
+                        auctionEndDate: _searchList[index].auctionEndDate,
+                        currentBid: _searchList[index].highestBid,
+                        startingBid: _searchList[index].startingBid,
+                        main_price: _searchList[index].main_price,
+                        stroked_price: _searchList[index].stroked_price,
+                        has_discount: _searchList[index].has_discount,
+                        discount: _searchList[index].discount,
+                        is_wholesale: _searchList[index].isWholesale,
+                        isAuctionActive: _searchList[index].auctionEndDate != null &&
+                            _searchList[index].auctionEndDate is int &&
+                            _searchList[index].auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
                       );
                     },
                   ),
