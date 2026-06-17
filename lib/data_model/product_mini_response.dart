@@ -5,6 +5,7 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 
 ProductMiniResponse productMiniResponseFromJson(String str) =>
     ProductMiniResponse.fromJson(json.decode(str));

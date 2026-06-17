@@ -387,13 +387,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               Navigator.of(context).pop();
             } else {
               // Go to home if can't pop
-              // context.go("/");
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Main(),
-                ),
-              );
+              context.go("/");
+              // Navigator.pushReplacement(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => Main(),
+              //   ),
+              // );
             }
           },
         ),
