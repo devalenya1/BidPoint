@@ -20,6 +20,12 @@ class ProductCard extends StatefulWidget {
   final double? currentBid;
   final double? startingBid;
   final bool isAuctionActive;
+  // Add these for compatibility with calls from other files
+  final String? main_price;
+  final String? stroked_price;
+  final bool? has_discount;
+  final dynamic discount;
+  final bool? is_wholesale;
 
   const ProductCard({
     Key? key,
@@ -33,6 +39,11 @@ class ProductCard extends StatefulWidget {
     this.currentBid,
     this.startingBid,
     this.isAuctionActive = true,
+    this.main_price,
+    this.stroked_price,
+    this.has_discount,
+    this.discount,
+    this.is_wholesale,
   }) : super(key: key);
 
   @override
@@ -468,7 +479,7 @@ class _ProductCardState extends State<ProductCard> {
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
