@@ -435,44 +435,67 @@ class ProductRepository {
   }
 
   // ============ NOTIFY ME ============
-  
   Future<Map<String, dynamic>> notifyMeForAuction(int productId) async {
-    String url = "${AppConfig.BASE_URL}/auction/notify-me";
-    
     try {
-      final response = await ApiRequest.post(
-        url: url,
+      final response = await http.post(
+        Uri.parse('${AppConfig.BASE_URL}/auction/notify-me'),
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer ${access_token.$}",
-          "App-Language": app_language.$!,
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${access_token.$}',
         },
         body: jsonEncode({
-          "product_id": productId,
-        })
+          'product_id': productId,
+        }),
       );
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        return {
-          'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? "You will be notified when this auction starts",
-          'status': response.statusCode,
-        };
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {'success': true, 'message': data['message'] ?? 'You will be notified'};
       } else {
-        return {
-          'success': false,
-          'message': "Failed to set notification",
-          'status': response.statusCode,
-        };
+        final data = jsonDecode(response.body);
+        return {'success': false, 'message': data['message'] ?? 'Failed to set notification'};
       }
     } catch (e) {
-      print("Error in notifyMeForAuction: $e");
-      return {
-        'success': false,
-        'message': "Network error. Please try again.",
-        'status': 500,
-      };
+      return {'success': false, 'message': 'Network error'};
     }
-  }
+  } 
+  // Future<Map<String, dynamic>> notifyMeForAuction(int productId) async {
+  //   String url = "${AppConfig.BASE_URL}/auction/notify-me";
+    
+  //   try {
+  //     final response = await ApiRequest.post(
+  //       url: url,
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": "Bearer ${access_token.$}",
+  //         "App-Language": app_language.$!,
+  //       },
+  //       body: jsonEncode({
+  //         "product_id": productId,
+  //       })
+  //     );
+      
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       final Map<String, dynamic> responseData = jsonDecode(response.body);
+  //       return {
+  //         'success': responseData['success'] ?? true,
+  //         'message': responseData['message'] ?? "You will be notified when this auction starts",
+  //         'status': response.statusCode,
+  //       };
+  //     } else {
+  //       return {
+  //         'success': false,
+  //         'message': "Failed to set notification",
+  //         'status': response.statusCode,
+  //       };
+  //     }
+  //   } catch (e) {
+  //     print("Error in notifyMeForAuction: $e");
+  //     return {
+  //       'success': false,
+  //       'message': "Network error. Please try again.",
+  //       'status': 500,
+  //     };
+  //   }
+  // }
 }

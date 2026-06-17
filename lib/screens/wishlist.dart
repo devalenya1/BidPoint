@@ -11,6 +11,7 @@ import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/services.dart';
 import 'package:toast/toast.dart';
+import 'package:go_router/go_router.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -197,6 +198,33 @@ class _WishlistState extends State<Wishlist> {
     if (price is double) return FormatHelper.formatPrice(price);
     if (price is int) return FormatHelper.formatPrice(price.toDouble());
     return FormatHelper.formatPrice(double.tryParse(price.toString()) ?? 0);
+  }
+  
+  // ============ NAVIGATION HELPERS ============
+  void _navigateToProductDetails(String slug) {
+    if (slug.isNotEmpty) {
+      // Using GoRouter for proper navigation
+      context.go('/product/$slug');
+    } else {
+      ToastComponent.showDialog(
+        AppLocalizations.of(context)!.product_details_not_available,
+        gravity: Toast.center,
+        duration: Toast.lengthShort,
+      );
+    }
+  }
+  
+  void _navigateToAuctionProductDetails(String slug) {
+    if (slug.isNotEmpty) {
+      // Using GoRouter for proper navigation to auction product
+      context.go('/auction-product/$slug');
+    } else {
+      ToastComponent.showDialog(
+        AppLocalizations.of(context)!.product_details_not_available,
+        gravity: Toast.center,
+        duration: Toast.lengthShort,
+      );
+    }
   }
   
   // ============ REMOVE FROM WISHLIST ============
@@ -452,6 +480,10 @@ class _WishlistState extends State<Wishlist> {
       statusColor = const Color(0xFFF59E0B);
     }
     
+    // Determine if this is an auction product
+    final bool isAuctionProduct = item.isAuction ?? false;
+    final String productSlug = item.slug ?? '';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -463,68 +495,106 @@ class _WishlistState extends State<Wishlist> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image
-          Stack(
-            children: [
-              Container(
-                width: 120,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: item.productImage != null && item.productImage!.isNotEmpty
-                      ? Image.network(
-                          item.productImage!,
-                          fit: BoxFit.cover,
-                          width: 120,
-                          height: 140,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: const Color(0xFFE2E8F0),
-                              child: const Icon(
-                                Icons.inventory_2,
-                                size: 50,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
-                          color: const Color(0xFFE2E8F0),
-                          child: const Icon(
-                            Icons.inventory_2,
-                            size: 50,
-                            color: Color(0xFF94A3B8),
+          // Product Image - Clickable
+          GestureDetector(
+            onTap: () {
+              if (productSlug.isNotEmpty) {
+                if (isAuctionProduct) {
+                  _navigateToAuctionProductDetails(productSlug);
+                } else {
+                  _navigateToProductDetails(productSlug);
+                }
+              } else {
+                ToastComponent.showDialog(
+                  AppLocalizations.of(context)!.product_details_not_available,
+                  gravity: Toast.center,
+                  duration: Toast.lengthShort,
+                );
+              }
+            },
+            child: Stack(
+              children: [
+                Container(
+                  width: 120,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: item.productImage != null && item.productImage!.isNotEmpty
+                        ? Image.network(
+                            item.productImage!,
+                            fit: BoxFit.cover,
+                            width: 120,
+                            height: 140,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: const Color(0xFFE2E8F0),
+                                child: const Icon(
+                                  Icons.inventory_2,
+                                  size: 50,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: const Color(0xFFE2E8F0),
+                            child: const Icon(
+                              Icons.inventory_2,
+                              size: 50,
+                              color: Color(0xFF94A3B8),
+                            ),
                           ),
-                        ),
+                  ),
                 ),
-              ),
-              // Remove from wishlist button
-              Positioned(
-                top: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () => _removeFromWishlist(item.id!),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    margin: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFB5E7F5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.black,
+                // Remove from wishlist button
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: () => _removeFromWishlist(item.id!),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      margin: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFB5E7F5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                // Auction badge
+                if (isAuctionProduct)
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: MyTheme.accent_color.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.auction_ucf,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           const SizedBox(width: 12),
           // Content
@@ -532,15 +602,26 @@ class _WishlistState extends State<Wishlist> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name
-                Text(
-                  item.productName ?? AppLocalizations.of(context)!.unknown_product,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
+                // Product Name - Clickable
+                GestureDetector(
+                  onTap: () {
+                    if (productSlug.isNotEmpty) {
+                      if (isAuctionProduct) {
+                        _navigateToAuctionProductDetails(productSlug);
+                      } else {
+                        _navigateToProductDetails(productSlug);
+                      }
+                    }
+                  },
+                  child: Text(
+                    item.productName ?? AppLocalizations.of(context)!.unknown_product,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -598,16 +679,13 @@ class _WishlistState extends State<Wishlist> {
                 // Action Button
                 GestureDetector(
                   onTap: () {
-                    if (item.slug != null && item.slug!.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductDetails(
-                            slug: item.slug!,
-                          ),
-                        ),
-                      );
-                    } else if (item.productId != null) {
+                    if (productSlug.isNotEmpty) {
+                      if (isAuctionProduct) {
+                        _navigateToAuctionProductDetails(productSlug);
+                      } else {
+                        _navigateToProductDetails(productSlug);
+                      }
+                    } else {
                       ToastComponent.showDialog(
                         AppLocalizations.of(context)!.product_details_not_available,
                         gravity: Toast.center,
@@ -619,17 +697,19 @@ class _WishlistState extends State<Wishlist> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isAuctionProduct ? MyTheme.accent_color : Colors.white,
                       border: Border.all(color: MyTheme.accent_color, width: 1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isEnded ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.bid_now,
+                      isAuctionProduct 
+                          ? (isEnded ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.bid_now)
+                          : AppLocalizations.of(context)!.view_details,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: MyTheme.accent_color,
+                        color: isAuctionProduct ? Colors.white : MyTheme.accent_color,
                       ),
                     ),
                   ),

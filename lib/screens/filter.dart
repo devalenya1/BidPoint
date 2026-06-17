@@ -22,6 +22,8 @@ import 'package:go_router/go_router.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
+import '../presenter/bottom_appbar_index.dart';
+import '../presenter/cart_counter.dart';
 
 class Filter extends StatefulWidget {
   Filter({
@@ -95,6 +97,10 @@ class _FilterState extends State<Filter> {
   bool get _showNotificationBadge => is_logged_in.$ && _unreadNotificationCount > 0;
   bool get _showMessageBadge => is_logged_in.$ && _unreadMessageCount > 0;
 
+  // Bottom navigation
+  int _currentIndex = 0;
+  BottomAppbarIndex bottomAppbarIndex = BottomAppbarIndex();
+
   @override
   void initState() {
     super.initState();
@@ -126,7 +132,7 @@ class _FilterState extends State<Filter> {
         _selectedSortLabel = AppLocalizations.of(context)!.top_rated_ucf;
         break;
       default:
-        _selectedSortLabel = AppLocalizations.of(context)!.default_ucf;
+        _selectedSortLabel = AppLocalizations.of(context)!.sort_by_ucf;
     }
   }
 
@@ -361,6 +367,127 @@ class _FilterState extends State<Filter> {
               _buildFilterBottomSheet(),
           ],
         ),
+        // Bottom Navigation Bar
+        bottomNavigationBar: _buildBottomNavigationBar(),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return SizedBox(
+      height: 70,
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          // Navigate to corresponding page
+          switch (index) {
+            case 0:
+              GoRouter.of(context).go('/');
+              break;
+            case 1:
+              GoRouter.of(context).go('/category');
+              break;
+            case 2:
+              GoRouter.of(context).go('/points');
+              break;
+            case 3:
+              if (is_logged_in.$) {
+                GoRouter.of(context).go('/activity');
+              } else {
+                _redirectToLogin();
+              }
+              break;
+            case 4:
+              if (is_logged_in.$) {
+                GoRouter.of(context).go('/profile');
+              } else {
+                _redirectToLogin();
+              }
+              break;
+          }
+        },
+        currentIndex: _currentIndex,
+        backgroundColor: Colors.white.withOpacity(0.95),
+        unselectedItemColor: const Color.fromRGBO(168, 175, 179, 1),
+        selectedItemColor: MyTheme.accent_color,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w400,
+          fontSize: 12,
+        ),
+        items: [
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/home.png",
+                color: _currentIndex == 0
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: AppLocalizations.of(context)!.home_ucf,
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/categories.png",
+                color: _currentIndex == 1
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: AppLocalizations.of(context)!.categories_ucf,
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/crown.png",
+                color: _currentIndex == 2
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: AppLocalizations.of(context)!.points_ucf,
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/task-square.png",
+                color: _currentIndex == 3
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: AppLocalizations.of(context)!.activity_ucf,
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.asset(
+                "assets/profile.png",
+                color: _currentIndex == 4
+                    ? MyTheme.accent_color
+                    : const Color.fromRGBO(153, 153, 153, 1),
+                height: 16,
+              ),
+            ),
+            label: AppLocalizations.of(context)!.profile_ucf,
+          ),
+        ],
       ),
     );
   }
@@ -500,11 +627,32 @@ class _FilterState extends State<Filter> {
             ),
           ),
           const SizedBox(height: 12),
-          // Sort and Filter buttons row - Sort 30%, Filter 10% of parent width
+          // Sort and Filter buttons row - Moved to right side
           Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end, // Moved to right
             children: [
-              // Sort Button - 30% width
+              // Filter Button - 10% width (now on the left of the pair)
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.1,
+                child: GestureDetector(
+                  onTap: _openFilterDrawer,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: MyTheme.accent_color,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.filter_alt, size: 20, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Sort Button - 30% width (now on the right)
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.3,
                 child: GestureDetector(
@@ -532,27 +680,6 @@ class _FilterState extends State<Filter> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Filter Button - 10% width
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.1,
-                child: GestureDetector(
-                  onTap: _openFilterDrawer,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.filter_alt, size: 20, color: Colors.white),
                       ],
                     ),
                   ),

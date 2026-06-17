@@ -276,7 +276,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
               MaterialPageRoute(
                 builder: (context) {
                   return CategoryProducts(
-                    slug: widget.slug,
+                    slug: _subCategoryList[index].slug!,
                   );
                 },
               ),
@@ -325,32 +325,55 @@ class _CategoryProductsState extends State<CategoryProducts> {
           controller: _xcrollController,
           physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics()),
-          child: MasonryGridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            itemCount: _productList.length,
-            shrinkWrap: true,
-            padding: EdgeInsets.only(top: 10.0, bottom: 10, left: 18, right: 18),
-            physics: NeverScrollableScrollPhysics(),
-            itemBuilder: (context, index) {
-              final product = _productList[index];
-              return ProductCard(
-                id: product.id ?? 0,
-                slug: product.slug ?? '',
-                image: product.thumbnail_image,
-                name: product.name,
-                pointPerBid: product.pointPerBid,
-                auctionEndDate: product.auctionEndDate,
-                currentBid: product.highestBid,
-                startingBid: product.startingBid,
-                main_price: product.main_price,
-                stroked_price: product.stroked_price,
-                isAuctionActive: product.auctionEndDate != null &&
-                    product.auctionEndDate is int &&
-                    product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              );
-            },
+          child: Padding(
+            padding: const EdgeInsets.only(top: 10.0, bottom: 10, left: 16, right: 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Calculate responsive column count
+                int crossAxisCount = 2; // Default for mobile
+                if (constraints.maxWidth >= 1024) {
+                  crossAxisCount = 4; // Web: 4 columns
+                } else if (constraints.maxWidth >= 768) {
+                  crossAxisCount = 3; // Tablet: 3 columns
+                }
+                
+                // Calculate spacing
+                double spacing = 14;
+                double cardWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+                double cardHeight = cardWidth + 140; // Image + content height
+                
+                return MasonryGridView.count(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: spacing,
+                  crossAxisSpacing: spacing,
+                  itemCount: _productList.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final product = _productList[index];
+                    return SizedBox(
+                      height: cardHeight,
+                      child: ProductCard(
+                        id: product.id ?? 0,
+                        slug: product.slug ?? '',
+                        image: product.thumbnail_image,
+                        name: product.name,
+                        description: product.name,
+                        pointPerBid: product.pointPerBid,
+                        auctionEndDate: product.auctionEndDate,
+                        currentBid: product.highestBid,
+                        startingBid: product.startingBid,
+                        main_price: product.main_price,
+                        stroked_price: product.stroked_price,
+                        isAuctionActive: product.auctionEndDate != null &&
+                            product.auctionEndDate is int &&
+                            product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       );

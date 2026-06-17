@@ -601,6 +601,7 @@ class WishlistItem {
     this.highestBid,
     this.pointPerBid,
     this.slug,
+    this.isAuction,
     this.createdAt,
     this.updatedAt,
   });
@@ -613,6 +614,7 @@ class WishlistItem {
   double? highestBid;
   int? pointPerBid;
   String? slug;
+  bool? isAuction;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -625,6 +627,7 @@ class WishlistItem {
     highestBid: json["highest_bid"]?.toDouble(),
     pointPerBid: json["point_per_bid"],
     slug: json["slug"],
+    isAuction: json["is_auction"] ?? false,
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -638,6 +641,7 @@ class WishlistItem {
     "highest_bid": highestBid,
     "point_per_bid": pointPerBid,
     "slug": slug,
+    "is_auction": isAuction,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };
@@ -701,6 +705,7 @@ class DistinctAuctionBid {
     this.productId,
     this.productName,
     this.productImage,
+    this.productSlug,
     this.amount,
     this.formattedAmount,
     this.dayOfBid,
@@ -712,6 +717,7 @@ class DistinctAuctionBid {
   int? productId;
   String? productName;
   String? productImage;
+  String? productSlug;
   double? amount;
   double? formattedAmount;
   String? dayOfBid;
@@ -723,6 +729,7 @@ class DistinctAuctionBid {
     productId: json["product_id"],
     productName: json["product_name"],
     productImage: json["product_image"],
+    productSlug: json["product_slug"],
     amount: json["amount"]?.toDouble(),
     formattedAmount: json["formatted_amount"]?.toDouble(),
     dayOfBid: json["day_of_bid"],
@@ -735,6 +742,7 @@ class DistinctAuctionBid {
     "product_id": productId,
     "product_name": productName,
     "product_image": productImage,
+    "product_slug": productSlug,
     "amount": amount,
     "formatted_amount": formattedAmount,
     "day_of_bid": dayOfBid,

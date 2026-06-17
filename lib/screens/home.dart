@@ -66,9 +66,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     super.initState();
     _fetchCounts();
     
-    // Initialize scroll controllers in homeData
-    homeData.initScrollControllers();
-    
     Future.delayed(Duration.zero).then((value) {
       change();
     });
@@ -105,8 +102,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   change() {
     homeData.onRefresh();
-    homeData.mainScrollListener();
-    homeData.initPiratedAnimation(this);
   }
 
   @override
@@ -122,7 +117,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => widget.go_back,
+      onWillPop: () async => true,
       child: Directionality(
         textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
         child: SafeArea(
@@ -225,7 +220,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               ),
               GestureDetector(
                 onTap: () {
-                  // Navigate to hot auctions view all
                   GoRouter.of(context).go('/hot-auctions');
                 },
                 child: Container(
@@ -241,34 +235,52 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 320,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: homeData.hotAuctionProductList.length,
-            itemBuilder: (context, index) {
-              final product = homeData.hotAuctionProductList[index];
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                margin: const EdgeInsets.only(right: 12),
-                child: AuctionProductCard(
-                  id: product.id ?? 0,
-                  slug: product.slug ?? '',
-                  image: product.thumbnailImage,
-                  name: product.name,
-                  description: product.name,
-                  pointPerBid: product.pointPerBid ?? 0,
-                  auctionEndDate: product.auctionEndDate,
-                  currentBid: product.highestBid,
-                  startingBid: product.startingBid,
-                  isAuctionActive: product.auctionEndDate != null && 
-                      product.auctionEndDate is int && 
-                      product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                ),
-              );
-            },
-          ),
+        // Hot Auctions - Horizontal scroll with 2 on mobile, 4 on tablet, 6 on web
+        LayoutBuilder(
+          builder: (context, constraints) {
+            double cardWidth;
+            if (constraints.maxWidth >= 1024) {
+              // Web: 6 products
+              cardWidth = (constraints.maxWidth - 16 * 7) / 6;
+            } else if (constraints.maxWidth >= 768) {
+              // Tablet: 4 products
+              cardWidth = (constraints.maxWidth - 16 * 5) / 4;
+            } else {
+              // Mobile: 2 products
+              cardWidth = (constraints.maxWidth - 16 * 3) / 2;
+            }
+            
+            return SizedBox(
+              height: 350,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: homeData.hotAuctionProductList.length,
+                itemBuilder: (context, index) {
+                  final product = homeData.hotAuctionProductList[index];
+                  return Container(
+                    width: cardWidth,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: AuctionProductCard(
+                      id: product.id ?? 0,
+                      slug: product.slug ?? '',
+                      image: product.thumbnailImage,
+                      name: product.name,
+                      description: product.name,
+                      pointPerBid: product.pointPerBid ?? 0,
+                      auctionEndDate: product.auctionEndDate,
+                      currentBid: product.highestBid,
+                      startingBid: product.startingBid,
+                      isAuctionActive: product.auctionEndDate != null && 
+                          product.auctionEndDate is int && 
+                          product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                      cardType: 'hot',
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         ),
         const SizedBox(height: 20),
       ],
@@ -291,7 +303,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               ),
               GestureDetector(
                 onTap: () {
-                  // Navigate to ending soon view all
                   GoRouter.of(context).go('/ending-soon');
                 },
                 child: Container(
@@ -307,17 +318,67 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 320,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
+        // Ending Soon - Grid layout: 2 left, 1 right
+        _buildEndingSoonGrid(),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildEndingSoonGrid() {
+    final products = homeData.endingSoonProductList;
+    if (products.isEmpty) return const SizedBox.shrink();
+
+    // Split into grids of 3
+    List<List<dynamic>> grids = [];
+    for (int i = 0; i < products.length; i += 3) {
+      int end = (i + 3 < products.length) ? i + 3 : products.length;
+      grids.add(products.sublist(i, end));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 768) {
+          // Web: Show 2 grids (6 products total - 2 left, 1 right each)
+          int gridsToShow = grids.length > 2 ? 2 : grids.length;
+          return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: homeData.endingSoonProductList.length,
-            itemBuilder: (context, index) {
-              final product = homeData.endingSoonProductList[index];
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                margin: const EdgeInsets.only(right: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.generate(gridsToShow, (gridIndex) {
+                final grid = grids[gridIndex];
+                return Expanded(
+                  child: _buildEndingSoonGridItem(grid),
+                );
+              }),
+            ),
+          );
+        } else {
+          // Mobile: Show 1 grid (3 products - 2 left, 1 right)
+          final grid = grids.isNotEmpty ? grids[0] : [];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildEndingSoonGridItem(grid),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildEndingSoonGridItem(List<dynamic> grid) {
+    final leftProducts = grid.length >= 2 ? grid.sublist(0, 2) : grid;
+    final rightProduct = grid.length >= 3 ? grid[2] : null;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left column - 2 products stacked
+        Expanded(
+          flex: 2,
+          child: Column(
+            children: leftProducts.map((product) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: AuctionProductCard(
                   id: product.id ?? 0,
                   slug: product.slug ?? '',
@@ -329,12 +390,31 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   currentBid: product.highestBid,
                   startingBid: product.startingBid,
                   isAuctionActive: true,
+                  cardType: 'ending_left',
                 ),
               );
-            },
+            }).toList(),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(width: 4),
+        // Right column - 1 product
+        if (rightProduct != null)
+          Expanded(
+            flex: 1,
+            child: AuctionProductCard(
+              id: rightProduct.id ?? 0,
+              slug: rightProduct.slug ?? '',
+              image: rightProduct.thumbnailImage,
+              name: rightProduct.name,
+              description: rightProduct.name,
+              pointPerBid: rightProduct.pointPerBid ?? 0,
+              auctionEndDate: rightProduct.auctionEndDate,
+              currentBid: rightProduct.highestBid,
+              startingBid: rightProduct.startingBid,
+              isAuctionActive: true,
+              cardType: 'ending_right',
+            ),
+          ),
       ],
     );
   }
@@ -355,7 +435,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               ),
               GestureDetector(
                 onTap: () {
-                  // Navigate to upcoming view all
                   GoRouter.of(context).go('/upcoming-auctions');
                 },
                 child: Container(
@@ -371,34 +450,49 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 320,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: homeData.upcomingProductList.length,
-            itemBuilder: (context, index) {
-              final product = homeData.upcomingProductList[index];
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                margin: const EdgeInsets.only(right: 12),
-                child: AuctionProductCard(
-                  id: product.id ?? 0,
-                  slug: product.slug ?? '',
-                  image: product.thumbnailImage,
-                  name: product.name,
-                  description: product.name,
-                  pointPerBid: product.pointPerBid ?? 0,
-                  auctionEndDate: product.auctionStartDate != null 
-                      ? (product.auctionStartDate as DateTime).millisecondsSinceEpoch ~/ 1000
-                      : null,
-                  currentBid: product.startingBid,
-                  startingBid: product.startingBid,
-                  isAuctionActive: false,
-                ),
-              );
-            },
-          ),
+        // Upcoming - Horizontal scroll with 2 on mobile, 4 on tablet, 6 on web
+        LayoutBuilder(
+          builder: (context, constraints) {
+            double cardWidth;
+            if (constraints.maxWidth >= 1024) {
+              cardWidth = (constraints.maxWidth - 16 * 7) / 6;
+            } else if (constraints.maxWidth >= 768) {
+              cardWidth = (constraints.maxWidth - 16 * 5) / 4;
+            } else {
+              cardWidth = (constraints.maxWidth - 16 * 3) / 2;
+            }
+            
+            return SizedBox(
+              height: 350,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: homeData.upcomingProductList.length,
+                itemBuilder: (context, index) {
+                  final product = homeData.upcomingProductList[index];
+                  return Container(
+                    width: cardWidth,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: AuctionProductCard(
+                      id: product.id ?? 0,
+                      slug: product.slug ?? '',
+                      image: product.thumbnailImage,
+                      name: product.name,
+                      description: product.name,
+                      pointPerBid: product.pointPerBid ?? 0,
+                      auctionEndDate: product.auctionStartDate != null 
+                          ? (product.auctionStartDate as DateTime).millisecondsSinceEpoch ~/ 1000
+                          : null,
+                      currentBid: product.startingBid,
+                      startingBid: product.startingBid,
+                      isAuctionActive: false,
+                      cardType: 'upcoming',
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         ),
         const SizedBox(height: 20),
       ],

@@ -280,7 +280,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       (p) => p.productId == bid.productId,
       orElse: () => DistinctAuctionBid(),
     );
-    return null;
+    return product.productSlug;
   }
   
   List<AuctionBid> _getCurrentActivities() {
@@ -293,6 +293,29 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         return _endedActivities;
       default:
         return _allActivities;
+    }
+  }
+  
+  // ============ NAVIGATION HELPERS ============
+  void _navigateToProductDetails(String slug) {
+    if (slug.isNotEmpty) {
+      // Using GoRouter for proper navigation
+      context.go('/product/$slug');
+    } else {
+      ToastComponent.showDialog(
+        AppLocalizations.of(context)!.product_details_not_available
+      );
+    }
+  }
+  
+  void _navigateToAuctionProductDetails(String slug) {
+    if (slug.isNotEmpty) {
+      // Using GoRouter for proper navigation to auction product
+      context.go('/auction-product/$slug');
+    } else {
+      ToastComponent.showDialog(
+        AppLocalizations.of(context)!.product_details_not_available
+      );
     }
   }
   
@@ -549,47 +572,56 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 120,
-            height: 140,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: productImage != null && productImage.isNotEmpty
-                  ? Image.network(
-                      productImage,
-                      fit: BoxFit.cover,
-                      width: 120,
-                      height: 140,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: const Color(0xFFE2E8F0),
-                          child: const Icon(
-                            Icons.inventory_2,
-                            size: 50,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      color: const Color(0xFFE2E8F0),
-                      child: const Icon(
-                        Icons.inventory_2,
-                        size: 50,
-                        color: Color(0xFF94A3B8),
+          // Product Image - Clickable
+          GestureDetector(
+            onTap: () {
+              if (productSlug != null && productSlug.isNotEmpty) {
+                _navigateToAuctionProductDetails(productSlug);
+              }
+            },
+            child: Container(
+              width: 120,
+              height: 140,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: productImage != null && productImage.isNotEmpty
+                    ? Image.network(
+                        productImage,
+                        fit: BoxFit.cover,
+                        width: 120,
+                        height: 140,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: const Color(0xFFE2E8F0),
+                            child: const Icon(
+                              Icons.inventory_2,
+                              size: 50,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: const Color(0xFFE2E8F0),
+                        child: const Icon(
+                          Icons.inventory_2,
+                          size: 50,
+                          color: Color(0xFF94A3B8),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Status Text
                 Text(
                   statusText, 
                   style: TextStyle(
@@ -599,23 +631,28 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  isOutbid && !isEnded
-                      ? '$productName - ${AppLocalizations.of(context)!.you_were_outbid}'
-                      : isWinning && !isEnded
-                          ? '$productName - ${AppLocalizations.of(context)!.currently_winning}'
-                          : isEnded && isWinning
-                              ? '$productName - ${AppLocalizations.of(context)!.you_won_auction}'
-                              : '$productName - ${AppLocalizations.of(context)!.auction_ended}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF80818B),
+                
+                // Product Name - Clickable
+                GestureDetector(
+                  onTap: () {
+                    if (productSlug != null && productSlug.isNotEmpty) {
+                      _navigateToAuctionProductDetails(productSlug);
+                    }
+                  },
+                  child: Text(
+                    productName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1A202C),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
+                
+                // Current Bid Label
                 Text(
                   isEnded 
                       ? AppLocalizations.of(context)!.final_bid
@@ -627,6 +664,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 4),
+                
+                // Bid Amount and Points
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -667,9 +706,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ],
                 ),
                 const SizedBox(height: 12),
+                
+                // Action Button
                 if (isOutbid && !isEnded)
-                  _buildBidAgainButton(productSlug, productName)
+                  _buildBidAgainButton(productSlug)
                 else if (isWinning || (isEnded && isWinning))
+                  _buildViewDetailsButton(productSlug)
+                else
                   _buildViewDetailsButton(productSlug),
               ],
             ),
@@ -679,18 +722,48 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildBidAgainButton(String? productSlug, String productName) {
+  Widget _buildBidAgainButton(String? productSlug) {
     return GestureDetector(
       onTap: () {
         if (productSlug != null && productSlug.isNotEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetails(slug: productSlug),
-            ),
-          );
+          // Navigate to auction product details for bidding
+          _navigateToAuctionProductDetails(productSlug);
         } else {
-          ToastComponent.showDialog(AppLocalizations.of(context)!.product_details_not_available);
+          ToastComponent.showDialog(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: MyTheme.accent_color,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.bid_again,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildViewDetailsButton(String? productSlug) {
+    return GestureDetector(
+      onTap: () {
+        if (productSlug != null && productSlug.isNotEmpty) {
+          // Navigate to auction product details
+          _navigateToAuctionProductDetails(productSlug);
+        } else {
+          ToastComponent.showDialog(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
         }
       },
       child: Container(
@@ -702,46 +775,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           borderRadius: BorderRadius.circular(7),
         ),
         child: Text(
-          AppLocalizations.of(context)!.bid_again,
+          AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: MyTheme.accent_color,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildViewDetailsButton(String? productSlug) {
-    return GestureDetector(
-      onTap: () {
-        if (productSlug != null && productSlug.isNotEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetails(slug: productSlug),
-            ),
-          );
-        } else {
-          ToastComponent.showDialog(AppLocalizations.of(context)!.product_details_not_available);
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: MyTheme.accent_color,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.view_details,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
           ),
         ),
       ),
