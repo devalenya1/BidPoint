@@ -235,7 +235,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
     } else if (isEndingRight) {
       return _buildEndingRightCard(displayBid, showTimer);
     } else {
-      return _buildStandardCard(displayBid, showTimer, isUpcoming);
+      return _buildStandardCard(displayBid, showTimer);
     }
   }
 
