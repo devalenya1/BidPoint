@@ -138,7 +138,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
       final currentBid = widget.currentBid ?? widget.startingBid ?? 0;
       final minBid = currentBid + 0.01;
       
-      final response = await ProductsRepository().quickBid(
+      final response = await ProductRepository().quickBid(
         widget.id.toString(),
         minBid.toString(),
         type: 'quick',

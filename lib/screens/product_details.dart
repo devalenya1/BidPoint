@@ -136,17 +136,17 @@ class _ProductDetailsState extends State<ProductDetails>
         _product = productData.detailedProducts![0];
         _productImages = _product!.getAllImageUrls();
         
-        _startingBid = _product!.getStartingBidAsDouble();
-        _currentHighestBid = _product!.getCurrentBidAsDouble();
-        _totalBids = _product!.getTotalBidCount();
-        _highestBidder = _product!.getHighestBidderName();
-        _pointPerBid = (_product!.point_per_bid ?? 0).toDouble();
-        _pointPerBidCustom = (_product!.point_per_bid_custom ?? 0).toDouble();
-        _reviewsCount = _product!.getReviewCount();
-        _rating = _product!.getRatingValue();
-        _isWishlisted = _product!.getIsInWishlist();
-        _isInWishlist = _product!.getIsInWishlist();
-        _endingSeconds = _product!.getSwipeLeft();
+        _startingBid = _product!.startingBid != null ? double.tryParse(_product!.startingBid!) ?? 0 : 0;
+        _currentHighestBid = _product!.highestBid != null ? double.tryParse(_product!.highestBid!) ?? 0 : 0;
+        _totalBids = 0;
+        _highestBidder = '';
+        _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
+        _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
+        _reviewsCount = _product!.ratingCount ?? 0;
+        _rating = (_product!.rating ?? 0).toDouble();
+        _isWishlisted = false;
+        _isInWishlist = false;
+        _endingSeconds = _product!.swipeLeft ?? 10;
         
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
@@ -216,7 +216,7 @@ class _ProductDetailsState extends State<ProductDetails>
     if (_product == null) return;
     
     try {
-      final response = await _productRepository.pollProductData(_product!.id);
+      final response = await _productRepository.pollProductData(_product!.id ?? 0);
       
       if (response.success == true) {
         // Update auction end date
@@ -355,7 +355,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       final response = await _productRepository.placeBid(
-        _product!.id.toString(),
+        _product!.id ?? 0.toString(),
         amount.toString(),
       );
       
@@ -407,7 +407,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       final response = await _productRepository.placeBid(
-        _product!.id.toString(),
+        _product!.id ?? 0.toString(),
         amount.toString(),
       );
       
@@ -451,7 +451,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       final response = await _productRepository.addProductComment(
-        _product!.id,
+        _product!.id ?? 0,
         comment,
       );
       
@@ -496,7 +496,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       final response = await _productRepository.addProductReview(
-        _product!.id,
+        _product!.id ?? 0,
         _selectedRating.toInt(),
         comment,
       );
@@ -532,13 +532,13 @@ class _ProductDetailsState extends State<ProductDetails>
     
     try {
       if (_isInWishlist) {
-        final response = await _productRepository.removeFromWishlist(_product!.id);
+        final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
         if (response.success == true) {
           setState(() => _isInWishlist = false);
           _showToast('Removed from wishlist');
         }
       } else {
-        final response = await _productRepository.addToWishlist(_product!.id);
+        final response = await _productRepository.addToWishlist(_product!.id ?? 0);
         if (response.success == true) {
           setState(() => _isInWishlist = true);
           _showToast('Added to wishlist');
@@ -2062,13 +2062,13 @@ class _ProductDetailsState extends State<ProductDetails>
                       
                       try {
                         final response = await _productRepository.addProductReview(
-                          _product!.id,
+                          _product!.id ?? 0,
                           tempRating.toInt(),
                           tempController.text,
                         );
                         Navigator.pop(context);
                         
-                        if (response.success) {
+                        if (response.success == true) {
                           _showToast('Review submitted!');
                           await _fetchReviews();
                           await _pollData();

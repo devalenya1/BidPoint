@@ -512,6 +512,63 @@ class DetailedProduct {
     return urls;
   }
   
+  // ============ ADD THESE HELPER METHODS ============
+  
+  double getStartingBidAsDouble() {
+    if (startingBid != null && startingBid!.isNotEmpty) {
+      return double.tryParse(startingBid!) ?? 0.0;
+    }
+    return 0.0;
+  }
+  
+  double getCurrentBidAsDouble() {
+    if (highestBid != null && highestBid!.isNotEmpty) {
+      return double.tryParse(highestBid!) ?? 0.0;
+    }
+    return getStartingBidAsDouble();
+  }
+  
+  int getTotalBidCount() {
+    // This would need to come from the API response
+    // For now, return 0 or you can add a field
+    return 0;
+  }
+  
+  String getHighestBidderName() {
+    // This would need to come from the API response
+    return '';
+  }
+  
+  int getReviewCount() {
+    return ratingCount ?? 0;
+  }
+  
+  double getRatingValue() {
+    return (rating ?? 0).toDouble();
+  }
+  
+  bool getIsInWishlist() {
+    // This would need to come from the API response
+    return false;
+  }
+  
+  int getSwipeLeft() {
+    return swipeLeft ?? 10;
+  }
+  
+  double getPointPerBidAsDouble() {
+    return (pointPerBid ?? 0).toDouble();
+  }
+  
+  double getPointPerBidCustomAsDouble() {
+    return (pointPerBidCustom ?? 0).toDouble();
+  }
+  
+  int getTotalBids() {
+    // This would need to come from the API response
+    return 0;
+  }
+  
   String getMainImageUrl() {
     if (photos != null && photos!.isNotEmpty && photos![0].path != null) {
       return photos![0].path!;

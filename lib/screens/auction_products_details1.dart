@@ -216,7 +216,7 @@
 //     if (_product == null) return;
     
 //     try {
-//       final response = await _productRepository.pollProductData(_product!.id);
+//       final response = await _productRepository.pollProductData(_product!.id ?? 0);
       
 //       if (response.success == true) {
 //         // Update auction end date
@@ -355,7 +355,7 @@
     
 //     try {
 //       final response = await _productRepository.placeBid(
-//         _product!.id.toString(),
+//         _product!.id ?? 0.toString(),
 //         amount.toString(),
 //       );
       
@@ -407,7 +407,7 @@
     
 //     try {
 //       final response = await _productRepository.placeBid(
-//         _product!.id.toString(),
+//         _product!.id ?? 0.toString(),
 //         amount.toString(),
 //       );
       
@@ -451,7 +451,7 @@
     
 //     try {
 //       final response = await _productRepository.addProductComment(
-//         _product!.id,
+//         _product!.id ?? 0,
 //         comment,
 //       );
       
@@ -496,7 +496,7 @@
     
 //     try {
 //       final response = await _productRepository.addProductReview(
-//         _product!.id,
+//         _product!.id ?? 0,
 //         _selectedRating.toInt(),
 //         comment,
 //       );
@@ -532,13 +532,13 @@
     
 //     try {
 //       if (_isInWishlist) {
-//         final response = await _productRepository.removeFromWishlist(_product!.id);
+//         final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
 //         if (response.success == true) {
 //           setState(() => _isInWishlist = false);
 //           _showToast('Removed from wishlist');
 //         }
 //       } else {
-//         final response = await _productRepository.addToWishlist(_product!.id);
+//         final response = await _productRepository.addToWishlist(_product!.id ?? 0);
 //         if (response.success == true) {
 //           setState(() => _isInWishlist = true);
 //           _showToast('Added to wishlist');
@@ -2061,7 +2061,7 @@
                       
 //                       try {
 //                         final response = await AuctionProductsRepository().addReview(
-//                           _product!.id,
+//                           _product!.id ?? 0,
 //                           tempRating.toInt(),
 //                           tempController.text,
 //                         );
