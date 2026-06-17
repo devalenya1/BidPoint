@@ -17,8 +17,8 @@ class AuctionProductCard extends StatefulWidget {
   final String? description;
   final int? pointPerBid;
   final dynamic auctionEndDate;
-  final dynamic currentBid;      // Changed to dynamic
-  final dynamic startingBid;     // Changed to dynamic
+  final dynamic currentBid;
+  final dynamic startingBid;
   final bool isAuctionActive;
   final String? cardType; // 'hot', 'ending_left', 'ending_right', 'upcoming'
 
@@ -45,13 +45,15 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
   Timer? _timer;
   String _timeLeft = "Loading...";
   bool _isProcessing = false;
+  double _swipeAmount = 0.0;
+  bool _isSwiping = false;
+  double _startX = 0;
+  double _startY = 0;
 
   @override
   void initState() {
     super.initState();
-    if (widget.isAuctionActive && widget.auctionEndDate != null) {
-      _startTimer();
-    }
+    _startTimer();
   }
 
   @override
@@ -68,7 +70,16 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
   }
 
   void _updateTimer() {
-    if (widget.auctionEndDate == null) return;
+    if (widget.auctionEndDate == null) {
+      if (widget.cardType == 'upcoming') {
+        if (mounted) {
+          setState(() {
+            _timeLeft = "Coming Soon";
+          });
+        }
+      }
+      return;
+    }
 
     // Handle "Ended" string case
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
@@ -90,7 +101,6 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
       return;
     }
 
-    // Check if endDate is valid (greater than 0)
     if (endDate <= 0) {
       if (mounted) {
         setState(() {
@@ -137,31 +147,25 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
     }
   }
 
-  // ============ PRICE HELPERS (Same pattern as Product model) ============
-  
-  /// Parse a price string to double (handles both "10.24" and "$10.24")
+  // ============ PRICE HELPERS ============
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
     if (price is int) return price.toDouble();
     if (price is String) {
-      // Remove any currency symbols or non-numeric characters except dot
       final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
       return double.tryParse(cleaned) ?? 0.0;
     }
     return 0.0;
   }
-  
-  /// Format price with currency symbol
+
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
     final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
     return '$symbol${doubleValue.toStringAsFixed(2)}';
   }
-  
-  /// Get the display bid value as double
+
   double _getDisplayBid() {
-    // Try highest bid first, then starting bid
     if (widget.currentBid != null) {
       final parsed = _parsePrice(widget.currentBid);
       if (parsed > 0) return parsed;
@@ -171,6 +175,45 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
       if (parsed > 0) return parsed;
     }
     return 0.0;
+  }
+
+  // ============ SWIPE TO BID ============
+  void _onPanStart(DragStartDetails details) {
+    _startX = details.localPosition.dx;
+    _startY = details.localPosition.dy;
+    _isSwiping = true;
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (!_isSwiping) return;
+    
+    final deltaX = details.localPosition.dx - _startX;
+    final deltaY = details.localPosition.dy - _startY;
+    
+    if (deltaX > 5 && deltaY.abs() < 30) {
+      setState(() {
+        _swipeAmount = deltaX.clamp(0.0, 60.0);
+      });
+    } else if (deltaX < -5) {
+      setState(() {
+        _swipeAmount = 0;
+      });
+    }
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (!_isSwiping) return;
+    
+    final wasSwiped = _swipeAmount >= 40;
+    
+    setState(() {
+      _isSwiping = false;
+      _swipeAmount = 0;
+    });
+    
+    if (wasSwiped) {
+      _quickBid();
+    }
   }
 
   Future<void> _quickBid() async {
@@ -205,15 +248,13 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
         );
       }
     } catch (e) {
-      ToastComponent.showDialog(
-        'Error placing bid',
-      );
+      ToastComponent.showDialog('Error placing bid');
     } finally {
       _isProcessing = false;
       setState(() {});
     }
   }
-  
+
   void _showLoginDialog() {
     showDialog(
       context: context,
@@ -264,9 +305,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
         );
       }
     } catch (e) {
-      ToastComponent.showDialog(
-        'Error setting notification',
-      );
+      ToastComponent.showDialog('Error setting notification');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -276,68 +315,72 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = widget.isAuctionActive && _timeLeft != "Ended";
+    final showTimer = _timeLeft != "Ended" && _timeLeft != "Coming Soon";
     final isEndingLeft = widget.cardType == 'ending_left';
     final isEndingRight = widget.cardType == 'ending_right';
     final isUpcoming = widget.cardType == 'upcoming';
+    final isHot = widget.cardType == 'hot' || widget.cardType == null;
 
-    // Different layouts based on card type
     if (isEndingLeft) {
       return _buildEndingLeftCard(displayBid, showTimer);
     } else if (isEndingRight) {
       return _buildEndingRightCard(displayBid, showTimer);
     } else {
-      return _buildStandardCard(displayBid, showTimer);
+      return _buildStandardCard(displayBid, showTimer, isUpcoming, isHot);
     }
   }
 
-  Widget _buildStandardCard(double displayBid, bool showTimer) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Product Image with Timer
-          Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  GoRouter.of(context).go('/auction-product/${widget.slug}');
-                },
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                    child: widget.image != null && widget.image!.isNotEmpty
-                        ? Image.network(
-                            widget.image!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.image, size: 40, color: Colors.grey),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.image, size: 40, color: Colors.grey),
-                          ),
+  Widget _buildStandardCard(double displayBid, bool showTimer, bool isUpcoming, bool isHot) {
+    return GestureDetector(
+      onPanStart: isHot ? _onPanStart : null,
+      onPanUpdate: isHot ? _onPanUpdate : null,
+      onPanEnd: isHot ? _onPanEnd : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F2F3),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFEDF2F7)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image with Timer
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    GoRouter.of(context).go('/product/${widget.slug}');
+                  },
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                      child: widget.image != null && widget.image!.isNotEmpty
+                          ? Image.network(
+                              widget.image!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                                );
+                              },
+                            )
+                          : Container(
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                            ),
+                    ),
                   ),
                 ),
-              ),
-              if (showTimer)
+                // Timer - Green at top right for all cards
                 Positioned(
                   top: 6,
                   right: 6,
@@ -371,98 +414,256 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                     ),
                   ),
                 ),
-            ],
-          ),
-          
-          // Product Details
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Name
-                GestureDetector(
-                  onTap: () {
-                    GoRouter.of(context).go('/auction-product/${widget.slug}');
-                  },
-                  child: Text(
-                    widget.name ?? 'Product',
+              ],
+            ),
+            
+            // Product Details
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product Name - Larger
+                  GestureDetector(
+                    onTap: () {
+                      GoRouter.of(context).go('/product/${widget.slug}');
+                    },
+                    child: Text(
+                      widget.name ?? 'Product',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  
+                  // Description - Below title
+                  Text(
+                    widget.description ?? '',
                     style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      fontSize: 10,
+                      color: Color(0xFF8F9AA7),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 2),
-                
-                // Description
-                Text(
-                  widget.description ?? '',
-                  style: const TextStyle(
-                    fontSize: 9,
-                    color: Color(0xFF8F9AA7),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                
-                // Current Bid and Points Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Current Bid
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'current Bid',
-                          style: TextStyle(
-                            fontSize: 8,
-                            color: Color(0xFF80818B),
+                  const SizedBox(height: 10),
+                  
+                  // Current Bid and Points Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Current Bid - Larger
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Current Bid',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Color(0xFF80818B),
+                            ),
                           ),
-                        ),
-                        Text(
-                          _formatPrice(displayBid),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
+                          Text(
+                            _formatPrice(displayBid),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    // Points Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(30),
+                        ],
                       ),
-                      child: Text(
-                        '1 Bid = ${widget.pointPerBid ?? 0}',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: MyTheme.accent_color,
+                      // Points Badge with USD icon
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB5E7F5),
+                          borderRadius: BorderRadius.circular(30),
                         ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.attach_money,
+                              size: 12,
+                              color: Color(0xFF0092AC),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '1 Bid = ${widget.pointPerBid ?? 0}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: MyTheme.accent_color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Action Button
+                  if (isUpcoming)
+                    _buildNotifyMeButton()
+                  else
+                    _buildBidButton(isHot),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBidButton(bool isHot) {
+    if (isHot) {
+      // Hot Auction: Primary color with "Swipe to Bid" and > icon
+      return Container(
+        width: double.infinity,
+        height: 40,
+        decoration: BoxDecoration(
+          color: MyTheme.accent_color,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Stack(
+          children: [
+            // Swipe indicator (white box with >)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              width: 28 + (_swipeAmount),
+              height: 40,
+              decoration: BoxDecoration(
+                color: _swipeAmount > 20 ? Colors.green : Colors.white,
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
+                ),
+              ),
+            ),
+            // Center text
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_swipeAmount < 20) ...[
+                    const SizedBox(width: 30),
+                    Text(
+                      'Swipe to Bid',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ] else ...[
+                    const Text(
+                      'Quick Bid',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                
-                // Action Button
-                widget.cardType == 'upcoming'
-                    ? _buildNotifyMeButton()
-                    : _buildBidButton(),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      );
+    } else {
+      // Ending Soon: White background with accent border
+      return Container(
+        width: double.infinity,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: MyTheme.accent_color, width: 1),
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Center(
+          child: _isProcessing
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: MyTheme.accent_color,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Bid Now',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward,
+                      size: 12,
+                      color: MyTheme.accent_color,
+                    ),
+                  ],
+                ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildNotifyMeButton() {
+    return Container(
+      width: double.infinity,
+      height: 40,
+      decoration: BoxDecoration(
+        color: MyTheme.accent_color,
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Center(
+        child: _isProcessing
+            ? const SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Notify Me',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -481,7 +682,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
             children: [
               GestureDetector(
                 onTap: () {
-                  GoRouter.of(context).go('/auction-product/${widget.slug}');
+                  GoRouter.of(context).go('/product/${widget.slug}');
                 },
                 child: SizedBox(
                   width: 100,
@@ -506,65 +707,77 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                   ),
                 ),
               ),
-              if (showTimer)
-                Positioned(
-                  top: 4,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              // Timer - Green at top right
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF009572),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time, size: 10, color: Colors.white),
+                      const SizedBox(width: 3),
+                      Text(
+                        _timeLeft,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
-                        const SizedBox(width: 3),
-                        Text(
-                          _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
           
           // Product Info
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product Name
+                  // Product Name - Larger
                   GestureDetector(
                     onTap: () {
-                      GoRouter.of(context).go('/auction-product/${widget.slug}');
+                      GoRouter.of(context).go('/product/${widget.slug}');
                     },
                     child: Text(
                       widget.name ?? 'Product',
                       style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                         color: Colors.black,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  
+                  // Description
+                  Text(
+                    widget.description ?? '',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: Color(0xFF8F9AA7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const Spacer(),
                   
@@ -577,7 +790,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'current Bid',
+                            'Current Bid',
                             style: TextStyle(
                               fontSize: 8,
                               color: Color(0xFF80818B),
@@ -586,35 +799,84 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                           Text(
                             _formatPrice(displayBid),
                             style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),
                           ),
                         ],
                       ),
-                      // Points Badge
+                      // Points Badge with USD icon
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: const Color(0xFFB5E7F5),
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        child: Text(
-                          '1 Bid = ${widget.pointPerBid ?? 0}',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w600,
-                            color: MyTheme.accent_color,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.attach_money,
+                              size: 10,
+                              color: Color(0xFF0092AC),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '1 Bid = ${widget.pointPerBid ?? 0}',
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w600,
+                                color: MyTheme.accent_color,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   
-                  // Bid Button
-                  _buildBidButton(compact: true),
+                  // Bid Button (white with accent border)
+                  Container(
+                    width: double.infinity,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: MyTheme.accent_color, width: 1),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Center(
+                      child: _isProcessing
+                          ? const SizedBox(
+                              height: 14,
+                              width: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: MyTheme.accent_color,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Bid Now',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: MyTheme.accent_color,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_forward,
+                                  size: 10,
+                                  color: MyTheme.accent_color,
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -638,7 +900,7 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
             children: [
               GestureDetector(
                 onTap: () {
-                  GoRouter.of(context).go('/auction-product/${widget.slug}');
+                  GoRouter.of(context).go('/product/${widget.slug}');
                 },
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
@@ -662,75 +924,97 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                   ),
                 ),
               ),
-              if (showTimer)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              // Timer - Green at top right
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF009572),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time, size: 10, color: Colors.white),
+                      const SizedBox(width: 3),
+                      Text(
+                        _timeLeft,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
-                        const SizedBox(width: 3),
-                        Text(
-                          _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
           
           // Product Info
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name
+                // Product Name - Larger
                 GestureDetector(
                   onTap: () {
-                    GoRouter.of(context).go('/auction-product/${widget.slug}');
+                    GoRouter.of(context).go('/product/${widget.slug}');
                   },
                   child: Text(
                     widget.name ?? 'Product',
                     style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 
-                // Points text
+                // Description
                 Text(
-                  '1 Bid = ${widget.pointPerBid ?? 0}',
+                  widget.description ?? '',
                   style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF718096),
+                    fontSize: 10,
+                    color: Color(0xFF8F9AA7),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                
+                // Points text with USD icon
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.attach_money,
+                      size: 12,
+                      color: Color(0xFF718096),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '1 Bid = ${widget.pointPerBid ?? 0}',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF718096),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 
@@ -739,17 +1023,17 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'current Bid',
+                      'Current Bid',
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 9,
                         color: Color(0xFF80818B),
                       ),
                     ),
                     Text(
                       _formatPrice(displayBid),
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
                         color: Colors.black,
                       ),
                     ),
@@ -757,102 +1041,50 @@ class _AuctionProductCardState extends State<AuctionProductCard> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Bid Button
-                _buildBidButton(compact: true),
+                // Bid Button (white with accent border)
+                Container(
+                  width: double.infinity,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: MyTheme.accent_color, width: 1),
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Center(
+                    child: _isProcessing
+                        ? const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: MyTheme.accent_color,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Bid Now',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: MyTheme.accent_color,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward,
+                                size: 10,
+                                color: MyTheme.accent_color,
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBidButton({bool compact = false}) {
-    return GestureDetector(
-      onTap: _quickBid,
-      child: Container(
-        width: double.infinity,
-        height: compact ? 32 : 35,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          border: Border.all(color: MyTheme.accent_color, width: 1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Center(
-          child: _isProcessing
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: MyTheme.accent_color,
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Bid Now',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF009572),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward,
-                      size: 10,
-                      color: Color(0xFF009572),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotifyMeButton() {
-    return GestureDetector(
-      onTap: _notifyMe,
-      child: Container(
-        width: double.infinity,
-        height: 35,
-        decoration: BoxDecoration(
-          color: MyTheme.accent_color,
-          border: Border.all(color: Colors.white, width: 1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Center(
-          child: _isProcessing
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Notify Me',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward,
-                      size: 10,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-        ),
       ),
     );
   }

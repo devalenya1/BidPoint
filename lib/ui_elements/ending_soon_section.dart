@@ -437,7 +437,7 @@ class _EndingSoonSectionState extends State<EndingSoonSection> {
                   height: 100,
                   child: GestureDetector(
                     onTap: () {
-                      GoRouter.of(context).go('/auction-product/${product.slug}');
+                      GoRouter.of(context).go('/product/${product.slug}');
                     },
                     child: ClipRRect(
                       borderRadius: const BorderRadius.horizontal(
@@ -507,7 +507,7 @@ class _EndingSoonSectionState extends State<EndingSoonSection> {
                     // Product Name
                     GestureDetector(
                       onTap: () {
-                        GoRouter.of(context).go('/auction-product/${product.slug}');
+                        GoRouter.of(context).go('/product/${product.slug}');
                       },
                       child: Text(
                         _getProductName(product.name),
@@ -679,7 +679,7 @@ class _EndingSoonSectionState extends State<EndingSoonSection> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    GoRouter.of(context).go('/auction-product/${product.slug}');
+                    GoRouter.of(context).go('/product/${product.slug}');
                   },
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
@@ -748,7 +748,7 @@ class _EndingSoonSectionState extends State<EndingSoonSection> {
                   // Product Name
                   GestureDetector(
                     onTap: () {
-                      GoRouter.of(context).go('/auction-product/${product.slug}');
+                      GoRouter.of(context).go('/product/${product.slug}');
                     },
                     child: Text(
                       _getProductName(product.name),

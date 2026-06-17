@@ -340,7 +340,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
             children: [
               GestureDetector(
                 onTap: () {
-                  GoRouter.of(context).go('/auction-product/${product.slug}');
+                  GoRouter.of(context).go('/product/${product.slug}');
                 },
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
@@ -410,7 +410,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                 // Product Name
                 GestureDetector(
                   onTap: () {
-                    GoRouter.of(context).go('/auction-product/${product.slug}');
+                    GoRouter.of(context).go('/product/${product.slug}');
                   },
                   child: Text(
                     _getProductName(product.name),
