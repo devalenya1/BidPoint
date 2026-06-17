@@ -19,6 +19,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
+import '../screens/category_list.dart';
+import '../screens/points_page.dart';
+import '../screens/activity_page.dart';
+import '../screens/profile.dart';
+import '../screens/main.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -385,24 +390,54 @@ class _FilterState extends State<Filter> {
           // Navigate to corresponding page
           switch (index) {
             case 0:
-              GoRouter.of(context).go('/');
+              // Go back to Main with home tab selected
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Main(initialIndex: 0),
+                ),
+              );
               break;
             case 1:
-              GoRouter.of(context).go('/category');
+              // Go to Category page
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CategoryList(
+                    slug: "",
+                    is_base_category: true,
+                  ),
+                ),
+              );
               break;
             case 2:
-              GoRouter.of(context).go('/points');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PointsPage(),
+                ),
+              );
               break;
             case 3:
               if (is_logged_in.$) {
-                GoRouter.of(context).go('/activity');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ActivityPage(),
+                  ),
+                );
               } else {
                 _redirectToLogin();
               }
               break;
             case 4:
               if (is_logged_in.$) {
-                GoRouter.of(context).go('/profile');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Profile(),
+                  ),
+                );
               } else {
                 _redirectToLogin();
               }
