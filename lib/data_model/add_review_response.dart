@@ -1,9 +1,6 @@
 // data_model/add_review_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
-// part 'add_review_response.g.dart';
-
-@JsonSerializable()
 class AddReviewResponse {
   bool? success;
   String? message;
@@ -13,7 +10,15 @@ class AddReviewResponse {
     this.message,
   });
 
-  factory AddReviewResponse.fromJson(Map<String, dynamic> json) =>
-      _$AddReviewResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$AddReviewResponseToJson(this);
+  factory AddReviewResponse.fromJson(Map<String, dynamic> json) {
+    return AddReviewResponse(
+      success: json['success'],
+      message: json['message'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'message': message,
+  };
 }

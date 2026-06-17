@@ -1,13 +1,10 @@
 // data_model/add_comment_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 import 'comment_response.dart';
 
-// part 'add_comment_response.g.dart';
-
-@JsonSerializable()
 class AddCommentResponse {
   bool? success;
-  String? message; // Add message field
+  String? message;
   Comment? comment;
 
   AddCommentResponse({
@@ -16,7 +13,17 @@ class AddCommentResponse {
     this.comment,
   });
 
-  factory AddCommentResponse.fromJson(Map<String, dynamic> json) =>
-      _$AddCommentResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$AddCommentResponseToJson(this);
+  factory AddCommentResponse.fromJson(Map<String, dynamic> json) {
+    return AddCommentResponse(
+      success: json['success'],
+      message: json['message'],
+      comment: json['comment'] != null ? Comment.fromJson(json['comment']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'message': message,
+    'comment': comment?.toJson(),
+  };
 }

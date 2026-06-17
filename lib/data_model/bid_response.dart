@@ -1,12 +1,9 @@
 // data_model/bid_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
-// part 'bid_response.g.dart';
-
-@JsonSerializable()
 class BidResponse {
   bool? success;
-  bool? result; // Add this for backward compatibility
+  bool? result;
   String? message;
   dynamic bid;
   int? points_deducted;
@@ -32,10 +29,33 @@ class BidResponse {
   });
 
   factory BidResponse.fromJson(Map<String, dynamic> json) {
-    // Handle both 'success' and 'result' fields
     final successValue = json['success'] ?? json['result'];
-    return _$BidResponseFromJson(json)..success = successValue is bool ? successValue : null;
+    return BidResponse(
+      success: successValue is bool ? successValue : null,
+      result: json['result'],
+      message: json['message'],
+      bid: json['bid'],
+      points_deducted: json['points_deducted'],
+      remaining_balance: json['remaining_balance']?.toDouble(),
+      next_min_bid: json['next_min_bid']?.toDouble(),
+      current_highest: json['current_highest']?.toDouble(),
+      time_extended: json['time_extended'],
+      extended_by: json['extended_by'],
+      new_end_date: json['new_end_date'],
+    );
   }
-  
-  Map<String, dynamic> toJson() => _$BidResponseToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'result': result,
+    'message': message,
+    'bid': bid,
+    'points_deducted': points_deducted,
+    'remaining_balance': remaining_balance,
+    'next_min_bid': next_min_bid,
+    'current_highest': current_highest,
+    'time_extended': time_extended,
+    'extended_by': extended_by,
+    'new_end_date': new_end_date,
+  };
 }

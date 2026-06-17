@@ -1,50 +1,21 @@
 // data_model/poll_data_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
-part 'poll_data_response.g.dart';
-
-@JsonSerializable()
 class PollDataResponse {
   bool? success;
-  
-  @JsonKey(name: 'auction_end_date')
   String? auctionEndDate;
-  
-  @JsonKey(name: 'point_per_bid')
   double? pointPerBid;
-  
-  @JsonKey(name: 'point_per_bid_custom')
   double? pointPerBidCustom;
-  
-  @JsonKey(name: 'auction_ended')
   bool? auctionEnded;
-  
   Map<String, dynamic>? winner;
-  
-  @JsonKey(name: 'is_ending_soon')
   bool? isEndingSoon;
-  
-  @JsonKey(name: 'remaining_seconds')
   int? remainingSeconds;
-  
   double? rating;
-  
-  @JsonKey(name: 'reviews_count')
   int? reviewsCount;
-  
-  @JsonKey(name: 'bid_data')
   BidData? bidData;
-  
-  @JsonKey(name: 'is_in_wishlist')
   bool? isInWishlist;
-  
-  @JsonKey(name: 'comments_html')
   String? commentsHtml;
-  
-  @JsonKey(name: 'reviews_html')
   String? reviewsHtml;
-  
-  @JsonKey(name: 'bid_history_html')
   String? bidHistoryHtml;
 
   PollDataResponse({
@@ -65,11 +36,46 @@ class PollDataResponse {
     this.bidHistoryHtml,
   });
 
-  factory PollDataResponse.fromJson(Map<String, dynamic> json) =>
-      _$PollDataResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$PollDataResponseToJson(this);
-  
-  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  factory PollDataResponse.fromJson(Map<String, dynamic> json) {
+    return PollDataResponse(
+      success: json['success'],
+      auctionEndDate: json['auction_end_date'] ?? json['auctionEndDate'],
+      pointPerBid: (json['point_per_bid'] ?? json['pointPerBid'])?.toDouble(),
+      pointPerBidCustom: (json['point_per_bid_custom'] ?? json['pointPerBidCustom'])?.toDouble(),
+      auctionEnded: json['auction_ended'] ?? json['auctionEnded'],
+      winner: json['winner'],
+      isEndingSoon: json['is_ending_soon'] ?? json['isEndingSoon'],
+      remainingSeconds: json['remaining_seconds'] ?? json['remainingSeconds'],
+      rating: json['rating']?.toDouble(),
+      reviewsCount: json['reviews_count'] ?? json['reviewsCount'],
+      bidData: json['bid_data'] != null ? BidData.fromJson(json['bid_data']) : 
+                (json['bidData'] != null ? BidData.fromJson(json['bidData']) : null),
+      isInWishlist: json['is_in_wishlist'] ?? json['isInWishlist'],
+      commentsHtml: json['comments_html'] ?? json['commentsHtml'],
+      reviewsHtml: json['reviews_html'] ?? json['reviewsHtml'],
+      bidHistoryHtml: json['bid_history_html'] ?? json['bidHistoryHtml'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'auction_end_date': auctionEndDate,
+    'point_per_bid': pointPerBid,
+    'point_per_bid_custom': pointPerBidCustom,
+    'auction_ended': auctionEnded,
+    'winner': winner,
+    'is_ending_soon': isEndingSoon,
+    'remaining_seconds': remainingSeconds,
+    'rating': rating,
+    'reviews_count': reviewsCount,
+    'bid_data': bidData?.toJson(),
+    'is_in_wishlist': isInWishlist,
+    'comments_html': commentsHtml,
+    'reviews_html': reviewsHtml,
+    'bid_history_html': bidHistoryHtml,
+  };
+
+  // Snake case getters for backward compatibility
   String? get auction_end_date => auctionEndDate;
   double? get point_per_bid => pointPerBid;
   double? get point_per_bid_custom => pointPerBidCustom;
@@ -82,21 +88,12 @@ class PollDataResponse {
   String? get comments_html => commentsHtml;
   String? get reviews_html => reviewsHtml;
   String? get bid_history_html => bidHistoryHtml;
-  // ============ END SNAKE_CASE GETTERS ============
 }
 
-@JsonSerializable()
 class BidData {
-  @JsonKey(name: 'highest_bid')
   double? highestBid;
-  
-  @JsonKey(name: 'total_bids')
   int? totalBids;
-  
-  @JsonKey(name: 'bidder_name')
   String? bidderName;
-  
-  @JsonKey(name: 'bid_amount')
   double? bidAmount;
 
   BidData({
@@ -106,14 +103,25 @@ class BidData {
     this.bidAmount,
   });
 
-  factory BidData.fromJson(Map<String, dynamic> json) =>
-      _$BidDataFromJson(json);
-  Map<String, dynamic> toJson() => _$BidDataToJson(this);
-  
-  // ============ SNAKE_CASE GETTERS ============
+  factory BidData.fromJson(Map<String, dynamic> json) {
+    return BidData(
+      highestBid: (json['highest_bid'] ?? json['highestBid'])?.toDouble(),
+      totalBids: json['total_bids'] ?? json['totalBids'],
+      bidderName: json['bidder_name'] ?? json['bidderName'],
+      bidAmount: (json['bid_amount'] ?? json['bidAmount'])?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'highest_bid': highestBid,
+    'total_bids': totalBids,
+    'bidder_name': bidderName,
+    'bid_amount': bidAmount,
+  };
+
+  // Snake case getters
   double? get highest_bid => highestBid;
   int? get total_bids => totalBids;
   String? get bidder_name => bidderName;
   double? get bid_amount => bidAmount;
-  // ============ END SNAKE_CASE GETTERS ============
 }

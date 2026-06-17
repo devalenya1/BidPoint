@@ -1,9 +1,6 @@
 // data_model/review_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
-part 'review_response.g.dart';
-
-@JsonSerializable()
 class ReviewResponse {
   bool? success;
   List<Review>? reviews;
@@ -22,13 +19,22 @@ class ReviewResponse {
             .toList(),
       );
     }
-    return _$ReviewResponseFromJson(json);
+    return ReviewResponse(
+      success: json['success'],
+      reviews: json['reviews'] != null
+          ? (json['reviews'] as List)
+              .map((r) => Review.fromJson(r as Map<String, dynamic>))
+              .toList()
+          : [],
+    );
   }
-  
-  Map<String, dynamic> toJson() => _$ReviewResponseToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'reviews': reviews?.map((r) => r.toJson()).toList(),
+  };
 }
 
-@JsonSerializable()
 class Review {
   int? id;
   int? userId;
@@ -56,6 +62,13 @@ class Review {
       createdAt: json['createdAt'] ?? json['created_at'],
     );
   }
-  
-  Map<String, dynamic> toJson() => _$ReviewToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'userName': userName,
+    'rating': rating,
+    'comment': comment,
+    'createdAt': createdAt,
+  };
 }

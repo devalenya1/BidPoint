@@ -1,9 +1,6 @@
 // data_model/bid_history_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
-part 'bid_history_response.g.dart';
-
-@JsonSerializable()
 class BidHistoryResponse {
   bool? success;
   List<BidHistory>? bids;
@@ -22,13 +19,22 @@ class BidHistoryResponse {
             .toList(),
       );
     }
-    return _$BidHistoryResponseFromJson(json);
+    return BidHistoryResponse(
+      success: json['success'],
+      bids: json['bids'] != null
+          ? (json['bids'] as List)
+              .map((b) => BidHistory.fromJson(b as Map<String, dynamic>))
+              .toList()
+          : [],
+    );
   }
-  
-  Map<String, dynamic> toJson() => _$BidHistoryResponseToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'bids': bids?.map((b) => b.toJson()).toList(),
+  };
 }
 
-@JsonSerializable()
 class BidHistory {
   int? id;
   int? userId;
@@ -53,6 +59,12 @@ class BidHistory {
       createdAt: json['createdAt'] ?? json['created_at'],
     );
   }
-  
-  Map<String, dynamic> toJson() => _$BidHistoryToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'userName': userName,
+    'amount': amount,
+    'createdAt': createdAt,
+  };
 }

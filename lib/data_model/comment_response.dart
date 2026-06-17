@@ -1,9 +1,6 @@
 // data_model/comment_response.dart
-import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
 
-part 'comment_response.g.dart';
-
-@JsonSerializable()
 class CommentResponse {
   bool? success;
   List<Comment>? comments;
@@ -15,7 +12,6 @@ class CommentResponse {
 
   factory CommentResponse.fromJson(Map<String, dynamic> json) {
     if (json['success'] == null && json['comments'] != null) {
-      // If there's no success field but comments exist, assume success
       return CommentResponse(
         success: true,
         comments: (json['comments'] as List)
@@ -23,13 +19,22 @@ class CommentResponse {
             .toList(),
       );
     }
-    return _$CommentResponseFromJson(json);
+    return CommentResponse(
+      success: json['success'],
+      comments: json['comments'] != null
+          ? (json['comments'] as List)
+              .map((c) => Comment.fromJson(c as Map<String, dynamic>))
+              .toList()
+          : [],
+    );
   }
-  
-  Map<String, dynamic> toJson() => _$CommentResponseToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'comments': comments?.map((c) => c.toJson()).toList(),
+  };
 }
 
-@JsonSerializable()
 class Comment {
   int? id;
   int? userId;
@@ -50,7 +55,6 @@ class Comment {
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
-    // Handle different field name variations from server
     return Comment(
       id: json['id'],
       userId: json['userId'] ?? json['user_id'],
@@ -61,6 +65,14 @@ class Comment {
       createdAt: json['createdAt'] ?? json['created_at'],
     );
   }
-  
-  Map<String, dynamic> toJson() => _$CommentToJson(this);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'userName': userName,
+    'userAvatar': userAvatar,
+    'comment': comment,
+    'likes': likes,
+    'createdAt': createdAt,
+  };
 }
