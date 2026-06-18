@@ -21,7 +21,13 @@ import 'package:one_context/one_context.dart';
 import 'package:provider/provider.dart';
 
 class Main extends StatefulWidget {
-  Main({Key? key, go_back = true}) : super(key: key);
+  final int initialIndex; // Add this
+
+  const Main({
+    Key? key,
+    this.initialIndex = 0, // Default to 0 (Home)
+    go_back = true,
+  }) : super(key: key);
 
   late bool go_back;
 
@@ -31,7 +37,7 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> {
   int _currentIndex = 0;
-  int? _pendingIndex; // Store the index that was trying to be accessed
+  int? _pendingIndex;
 
   BottomAppbarIndex bottomAppbarIndex = BottomAppbarIndex();
   CartCounter counter = CartCounter();
@@ -41,11 +47,9 @@ class _MainState extends State<Main> {
     getCartCount();
   }
 
-  // In your Main screen's onTapped method, update to:
   void onTapped(int i) {
     fetchAll();
     
-    // Check login for protected routes (index 2,3,4)
     if (!is_logged_in.$ && (i == 2 || i == 3 || i == 4)) {
       _pendingIndex = i;
       
@@ -54,7 +58,6 @@ class _MainState extends State<Main> {
         MaterialPageRoute(
           builder: (context) => Login(
             onLoginSuccess: () {
-              // After successful login, navigate to intended page
               if (mounted && _pendingIndex != null) {
                 setState(() {
                   _currentIndex = _pendingIndex!;
@@ -87,7 +90,6 @@ class _MainState extends State<Main> {
   }
 
   void initState() {
-    // Initialize children with all 5 pages
     _children = [
       Home(),
       CategoryList(
@@ -99,9 +101,11 @@ class _MainState extends State<Main> {
       Profile(),
     ];
     
+    // Set initial index from widget
+    _currentIndex = widget.initialIndex;
+    
     fetchAll();
     
-    // Re-appear statusbar in case it was not there in the previous page
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
       overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],

@@ -394,7 +394,7 @@ class _FilterState extends State<Filter> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Main(initialIndex: 0),
+                  builder: (context) => const Main(initialIndex: 0),
                 ),
               );
               break;

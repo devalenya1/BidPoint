@@ -196,7 +196,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => Main(initialIndex: 0),
+                      builder: (context) => const Main(initialIndex: 0),
                     ),
                   );
                 }

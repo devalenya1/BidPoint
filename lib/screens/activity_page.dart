@@ -339,7 +339,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Main(initialIndex: 0),
+                  builder: (context) => const Main(initialIndex: 0),
                 ),
               );
             }
