@@ -21,15 +21,13 @@ import 'package:one_context/one_context.dart';
 import 'package:provider/provider.dart';
 
 class Main extends StatefulWidget {
-  final int initialIndex; // Add this
+  final int initialIndex;
 
   const Main({
     Key? key,
-    this.initialIndex = 0, // Default to 0 (Home)
-    go_back = true,
+    this.initialIndex = 0,
+    bool go_back = true,
   }) : super(key: key);
-
-  late bool go_back;
 
   @override
   _MainState createState() => _MainState();

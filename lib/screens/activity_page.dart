@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 
