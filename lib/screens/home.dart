@@ -178,22 +178,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       ),
                       
                       // Hot Auctions Section
-                      if (!homeData.isHotAuctionInitial && homeData.hotAuctionProductList.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: _buildHotAuctionSection(),
-                        ),
-                      
+                      SliverToBoxAdapter(
+                        child: _buildHotAuctionSection(),
+                      ),
+
                       // Ending Soon Section
-                      if (!homeData.isEndingSoonInitial && homeData.endingSoonProductList.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: _buildEndingSoonSection(),
-                        ),
-                      
+                      SliverToBoxAdapter(
+                        child: _buildEndingSoonSection(),
+                      ),
+
                       // Upcoming Section
-                      if (!homeData.isUpcomingInitial && homeData.upcomingProductList.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: _buildUpcomingSection(),
-                        ),
+                      SliverToBoxAdapter(
+                        child: _buildUpcomingSection(),
+                      ),
                       
                       const SliverToBoxAdapter(child: SizedBox(height: 30)),
                     ],
@@ -207,8 +204,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
+
   // ============ HOT AUCTION SECTION ============
   Widget _buildHotAuctionSection() {
+    print('Hot Auctions count: ${homeData.hotAuctionProductList.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,6 +250,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             
             cardWidth = cardWidth.clamp(120.0, double.infinity);
             
+            if (homeData.hotAuctionProductList.isEmpty) {
+              return Container(
+                height: 50,
+                child: Center(
+                  child: Text('No hot auctions available'),
+                ),
+              );
+            }
+            
             return SizedBox(
               height: 350,
               child: ListView.builder(
@@ -259,6 +267,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 itemCount: homeData.hotAuctionProductList.length,
                 itemBuilder: (context, index) {
                   final product = homeData.hotAuctionProductList[index];
+                  bool isActive = false;
+                  if (product.auctionEndDate != null && product.auctionEndDate is int) {
+                    isActive = product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
+                  }
                   return Container(
                     width: cardWidth,
                     margin: const EdgeInsets.only(right: 12),
@@ -272,9 +284,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       auctionEndDate: product.auctionEndDate,
                       currentBid: product.highestBid,
                       startingBid: product.startingBid,
-                      isAuctionActive: product.auctionEndDate != null && 
-                          product.auctionEndDate is int && 
-                          product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                      isAuctionActive: isActive,
                     ),
                   );
                 },
@@ -289,6 +299,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   // ============ ENDING SOON SECTION ============
   Widget _buildEndingSoonSection() {
+    print('Ending Soon count: ${homeData.endingSoonProductList.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -318,11 +329,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        _buildEndingSoonGrid(),
+        if (homeData.endingSoonProductList.isEmpty)
+          Container(
+            height: 50,
+            child: Center(
+              child: Text('No ending soon auctions'),
+            ),
+          )
+        else
+          _buildEndingSoonGrid(),
         const SizedBox(height: 20),
       ],
     );
   }
+
 
   Widget _buildEndingSoonGrid() {
     final products = homeData.endingSoonProductList;
@@ -417,8 +437,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
+
   // ============ UPCOMING SECTION ============
   Widget _buildUpcomingSection() {
+    print('Upcoming count: ${homeData.upcomingProductList.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -460,6 +482,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             }
             
             cardWidth = cardWidth.clamp(120.0, double.infinity);
+            
+            if (homeData.upcomingProductList.isEmpty) {
+              return Container(
+                height: 50,
+                child: Center(
+                  child: Text('No upcoming auctions'),
+                ),
+              );
+            }
             
             return SizedBox(
               height: 350,
@@ -504,6 +535,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ],
     );
   }
+
+
+
 
   Widget buildHomeFeaturedCategories() {
     if (homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
