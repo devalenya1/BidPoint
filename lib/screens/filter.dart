@@ -1013,21 +1013,26 @@ class _FilterState extends State<Filter> {
             itemCount: _productList.length,
             itemBuilder: (context, index) {
               final product = _productList[index];
+              
+              // Parse auction end date to determine if auction is active
+              bool isActive = false;
+              if (product.auctionEndDate != null && product.auctionEndDate is int) {
+                isActive = product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
+              }
+              
               return ProductCard(
                 id: product.id ?? 0,
                 slug: product.slug ?? '',
                 image: product.thumbnail_image,
                 name: product.name,
-                description: product.name,
+                description: product.name ?? '',
                 pointPerBid: product.pointPerBid,
                 auctionEndDate: product.auctionEndDate,
                 currentBid: product.highestBid,
                 startingBid: product.startingBid,
                 main_price: product.main_price,
                 stroked_price: product.stroked_price,
-                isAuctionActive: product.auctionEndDate != null && 
-                    product.auctionEndDate is int && 
-                    product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                isAuctionActive: isActive,
               );
             },
           ),

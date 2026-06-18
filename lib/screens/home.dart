@@ -11,7 +11,10 @@ import 'package:active_ecommerce_flutter/screens/filter.dart';
 import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
-import 'package:active_ecommerce_flutter/ui_elements/auction_product_card.dart';
+// import 'package:active_ecommerce_flutter/ui_elements/auction_product_card.dart';
+import 'package:active_ecommerce_flutter/ui_elements/hot_auction_card.dart';
+import 'package:active_ecommerce_flutter/ui_elements/ending_soon_card.dart';
+import 'package:active_ecommerce_flutter/ui_elements/upcoming_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -235,22 +238,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        // Hot Auctions - Horizontal scroll with 2 on mobile, 4 on tablet, 6 on web
         LayoutBuilder(
           builder: (context, constraints) {
             double cardWidth;
             if (constraints.maxWidth >= 1024) {
-              // Web: 6 products
               cardWidth = (constraints.maxWidth - 16 * 7) / 6;
             } else if (constraints.maxWidth >= 768) {
-              // Tablet: 4 products
               cardWidth = (constraints.maxWidth - 16 * 5) / 4;
             } else {
-              // Mobile: 2 products
               cardWidth = (constraints.maxWidth - 16 * 3) / 2;
             }
             
-            // Ensure minimum width
             cardWidth = cardWidth.clamp(120.0, double.infinity);
             
             return SizedBox(
@@ -264,7 +262,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   return Container(
                     width: cardWidth,
                     margin: const EdgeInsets.only(right: 12),
-                    child: AuctionProductCard(
+                    child: HotAuctionCard(
                       id: product.id ?? 0,
                       slug: product.slug ?? '',
                       image: product.thumbnailImage,
@@ -277,7 +275,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       isAuctionActive: product.auctionEndDate != null && 
                           product.auctionEndDate is int && 
                           product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                      cardType: 'hot',
                     ),
                   );
                 },
@@ -321,7 +318,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        // Ending Soon - Grid layout: 2 left, 1 right
         _buildEndingSoonGrid(),
         const SizedBox(height: 20),
       ],
@@ -332,7 +328,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final products = homeData.endingSoonProductList;
     if (products.isEmpty) return const SizedBox.shrink();
 
-    // Split into grids of 3
     List<List<dynamic>> grids = [];
     for (int i = 0; i < products.length; i += 3) {
       int end = (i + 3 < products.length) ? i + 3 : products.length;
@@ -342,7 +337,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 768) {
-          // Web: Show 2 grids (6 products total - 2 left, 1 right each)
           int gridsToShow = grids.length > 2 ? 2 : grids.length;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -357,7 +351,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
           );
         } else {
-          // Mobile: Show 1 grid (3 products - 2 left, 1 right)
           final grid = grids.isNotEmpty ? grids[0] : [];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -375,14 +368,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left column - 2 products stacked
         Expanded(
           flex: 2,
           child: Column(
             children: leftProducts.map((product) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: AuctionProductCard(
+                child: EndingSoonCard(
                   id: product.id ?? 0,
                   slug: product.slug ?? '',
                   image: product.thumbnailImage,
@@ -395,18 +387,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   isAuctionActive: product.auctionEndDate != null && 
                       product.auctionEndDate is int && 
                       product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                  cardType: 'ending_left',
+                  cardType: 'left',
                 ),
               );
             }).toList(),
           ),
         ),
         const SizedBox(width: 4),
-        // Right column - 1 product
         if (rightProduct != null)
           Expanded(
             flex: 1,
-            child: AuctionProductCard(
+            child: EndingSoonCard(
               id: rightProduct.id ?? 0,
               slug: rightProduct.slug ?? '',
               image: rightProduct.thumbnailImage,
@@ -419,7 +410,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               isAuctionActive: rightProduct.auctionEndDate != null && 
                   rightProduct.auctionEndDate is int && 
                   rightProduct.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              cardType: 'ending_right',
+              cardType: 'right',
             ),
           ),
       ],
@@ -457,7 +448,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        // Upcoming - Horizontal scroll with 2 on mobile, 4 on tablet, 6 on web
         LayoutBuilder(
           builder: (context, constraints) {
             double cardWidth;
@@ -469,7 +459,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               cardWidth = (constraints.maxWidth - 16 * 3) / 2;
             }
             
-            // Ensure minimum width
             cardWidth = cardWidth.clamp(120.0, double.infinity);
             
             return SizedBox(
@@ -481,7 +470,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 itemBuilder: (context, index) {
                   final product = homeData.upcomingProductList[index];
                   
-                  // Handle auction start date - it can be int timestamp or string
                   int? auctionStartTimestamp;
                   if (product.auctionStartDate != null) {
                     if (product.auctionStartDate is int) {
@@ -494,7 +482,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   return Container(
                     width: cardWidth,
                     margin: const EdgeInsets.only(right: 12),
-                    child: AuctionProductCard(
+                    child: UpcomingCard(
                       id: product.id ?? 0,
                       slug: product.slug ?? '',
                       image: product.thumbnailImage,
@@ -505,7 +493,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       currentBid: product.startingBid,
                       startingBid: product.startingBid,
                       isAuctionActive: false,
-                      cardType: 'upcoming',
                     ),
                   );
                 },

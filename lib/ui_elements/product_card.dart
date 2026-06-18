@@ -329,7 +329,7 @@ class _ProductCardState extends State<ProductCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'current Bid',
+                          'Current Bid',
                           style: TextStyle(
                             fontSize: 9,
                             color: Color(0xFF80818B),

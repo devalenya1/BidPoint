@@ -1,7 +1,6 @@
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/auction_products_details.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
@@ -9,72 +8,109 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 
-class UpcomingSection extends StatefulWidget {
-  final List<dynamic> products;
-  final String title;
-  final String viewAllRoute;
+class UpcomingCard extends StatefulWidget {
+  final int id;
+  final String slug;
+  final String? image;
+  final String? name;
+  final String? description;
+  final int? pointPerBid;
+  final dynamic auctionEndDate;
+  final dynamic currentBid;
+  final dynamic startingBid;
+  final bool isAuctionActive;
 
-  const UpcomingSection({
+  const UpcomingCard({
     Key? key,
-    required this.products,
-    required this.title,
-    required this.viewAllRoute,
+    required this.id,
+    required this.slug,
+    this.image,
+    this.name,
+    this.description,
+    this.pointPerBid,
+    this.auctionEndDate,
+    this.currentBid,
+    this.startingBid,
+    this.isAuctionActive = false,
   }) : super(key: key);
 
   @override
-  State<UpcomingSection> createState() => _UpcomingSectionState();
+  State<UpcomingCard> createState() => _UpcomingCardState();
 }
 
-class _UpcomingSectionState extends State<UpcomingSection> {
-  final Map<int, Timer> _timers = {};
-  final Map<int, String> _timeLeft = {};
-  final Map<int, bool> _notifying = {};
-  final Map<int, bool> _notified = {};
+class _UpcomingCardState extends State<UpcomingCard> {
+  Timer? _timer;
+  String _timeLeft = "Loading...";
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeTimers();
+    _startTimer();
   }
 
   @override
   void dispose() {
-    for (var timer in _timers.values) {
-      timer.cancel();
-    }
+    _timer?.cancel();
     super.dispose();
   }
 
-  void _initializeTimers() {
-    for (var product in widget.products) {
-      final endDate = product.auctionEndDate;
-      if (endDate != null && endDate is int && endDate > 0) {
-        _startTimer(product.id, endDate);
-      }
-      _notifying[product.id] = false;
-      _notified[product.id] = false;
-    }
-  }
-
-  void _startTimer(int id, int endDate) {
-    _updateTimeLeft(id, endDate);
-    final timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updateTimeLeft(id, endDate);
+  void _startTimer() {
+    _updateTimer();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateTimer();
     });
-    _timers[id] = timer;
   }
 
-  void _updateTimeLeft(int id, int endDate) {
+  void _updateTimer() {
+    if (widget.auctionEndDate == null) {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Coming Soon";
+        });
+      }
+      return;
+    }
+
+    if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Ended";
+        });
+      }
+      _timer?.cancel();
+      return;
+    }
+
+    int endDate;
+    if (widget.auctionEndDate is int) {
+      endDate = widget.auctionEndDate;
+    } else if (widget.auctionEndDate is String) {
+      endDate = int.tryParse(widget.auctionEndDate) ?? 0;
+    } else {
+      return;
+    }
+
+    if (endDate <= 0) {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Ended";
+        });
+      }
+      _timer?.cancel();
+      return;
+    }
+
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final distance = endDate - now;
 
     if (distance < 0) {
       if (mounted) {
         setState(() {
-          _timeLeft[id] = "Ended";
+          _timeLeft = "Ended";
         });
       }
-      _timers[id]?.cancel();
+      _timer?.cancel();
       return;
     }
 
@@ -96,121 +132,71 @@ class _UpcomingSectionState extends State<UpcomingSection> {
 
     if (mounted) {
       setState(() {
-        _timeLeft[id] = timeString;
+        _timeLeft = timeString;
       });
     }
   }
 
-  // ============ PRICE HELPERS (Same pattern as Product model) ============
-  
-  /// Parse a price string to double (handles both "10.24" and "$10.24")
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
     if (price is int) return price.toDouble();
     if (price is String) {
-      // Remove any currency symbols or non-numeric characters except dot
       final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
       return double.tryParse(cleaned) ?? 0.0;
     }
     return 0.0;
   }
-  
-  /// Format price with currency symbol
+
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
     final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
     return '$symbol${doubleValue.toStringAsFixed(2)}';
   }
 
-  String _getProductName(String? name) {
-    if (name == null) return '';
-    if (name.length > 20) {
-      return '${name.substring(0, 17)}...';
-    }
-    return name;
-  }
-
-  String _getProductDescription(String? description) {
-    if (description == null) return '';
-    final stripped = description.replaceAll(RegExp(r'<[^>]*>'), '');
-    if (stripped.length > 35) {
-      return '${stripped.substring(0, 32)}...';
-    }
-    return stripped;
-  }
-
-  /// Get the display bid value as double from product
-  double _getDisplayBid(dynamic product) {
-    // Try highest bid first
-    if (product.highestBid != null) {
-      final parsed = _parsePrice(product.highestBid);
+  double _getDisplayBid() {
+    if (widget.currentBid != null) {
+      final parsed = _parsePrice(widget.currentBid);
       if (parsed > 0) return parsed;
     }
-    // Then try starting bid
-    if (product.startingBid != null) {
-      final parsed = _parsePrice(product.startingBid);
+    if (widget.startingBid != null) {
+      final parsed = _parsePrice(widget.startingBid);
       if (parsed > 0) return parsed;
     }
     return 0.0;
   }
 
-  Future<void> _notifyMe(int productId, String slug) async {
-    if (_notifying[productId] == true) return;
+  Future<void> _notifyMe() async {
+    if (_isProcessing) return;
     
     if (!is_logged_in.$) {
       _showLoginDialog();
       return;
     }
     
-    if (_notified[productId] == true) {
-      ToastComponent.showDialog(
-        'You will be notified when this auction starts!',
-        gravity: Toast.center,
-        duration: Toast.lengthShort,
-      );
-      return;
-    }
-
-    setState(() {
-      _notifying[productId] = true;
-    });
-
+    _isProcessing = true;
+    setState(() {});
+    
     try {
-      final response = await ProductRepository().notifyMeForAuction(productId);
+      final response = await ProductRepository().notifyMeForAuction(widget.id);
       
       if (response['success'] == true) {
-        setState(() {
-          _notified[productId] = true;
-        });
         ToastComponent.showDialog(
           response['message'] ?? 'You will be notified when this auction starts!',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
         );
       } else {
         ToastComponent.showDialog(
-          response['message'] ?? 'Failed to set notification. Please try again.',
-          gravity: Toast.center,
-          duration: Toast.lengthShort,
+          response['message'] ?? 'Failed to set notification',
         );
       }
     } catch (e) {
-      print("Error notifying for auction: $e");
-      ToastComponent.showDialog(
-        'Network error. Please check your connection and try again.',
-        gravity: Toast.center,
-        duration: Toast.lengthShort,
-      );
+      ToastComponent.showDialog('Error setting notification');
     } finally {
-      if (mounted) {
-        setState(() {
-          _notifying[productId] = false;
-        });
-      }
+      _isProcessing = false;
+      setState(() {});
     }
   }
-  
+
   void _showLoginDialog() {
     showDialog(
       context: context,
@@ -239,85 +225,8 @@ class _UpcomingSectionState extends State<UpcomingSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.products.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  GoRouter.of(context).go(widget.viewAllRoute);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'View All',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF80818B),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        // Horizontal Scrollable Carousel
-        SizedBox(
-          height: 320,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: widget.products.length,
-            itemBuilder: (context, index) {
-              final product = widget.products[index];
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.7,
-                margin: const EdgeInsets.only(right: 12),
-                child: _buildUpcomingCard(product),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget _buildUpcomingCard(dynamic product) {
-    final isActive = product.auctionEndDate != null && 
-        product.auctionEndDate is int && 
-        product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    
-    final currentBid = _getDisplayBid(product);
-    
-    final timeLeft = _timeLeft[product.id] ?? "Loading...";
-    final showTimer = isActive && timeLeft != "Ended";
-    final isNotifying = _notifying[product.id] == true;
-    final isNotified = _notified[product.id] == true;
+    final displayBid = _getDisplayBid();
+    final showTimer = _timeLeft != "Ended" && _timeLeft != "Coming Soon";
 
     return Container(
       decoration: BoxDecoration(
@@ -340,15 +249,20 @@ class _UpcomingSectionState extends State<UpcomingSection> {
             children: [
               GestureDetector(
                 onTap: () {
-                  GoRouter.of(context).go('/product/${product.slug}');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetails(slug: widget.slug),
+                    ),
+                  );
                 },
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: product.thumbnailImage != null && product.thumbnailImage!.isNotEmpty
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    child: widget.image != null && widget.image!.isNotEmpty
                         ? Image.network(
-                            product.thumbnailImage!,
+                            widget.image!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
@@ -387,7 +301,7 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                         const Icon(Icons.access_time, size: 10, color: Colors.white),
                         const SizedBox(width: 3),
                         Text(
-                          timeLeft,
+                          _timeLeft,
                           style: const TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
@@ -403,20 +317,25 @@ class _UpcomingSectionState extends State<UpcomingSection> {
           
           // Product Details
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Product Name
                 GestureDetector(
                   onTap: () {
-                    GoRouter.of(context).go('/product/${product.slug}');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductDetails(slug: widget.slug),
+                      ),
+                    );
                   },
                   child: Text(
-                    _getProductName(product.name),
+                    widget.name ?? 'Product',
                     style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
                     maxLines: 1,
@@ -427,55 +346,64 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                 
                 // Description
                 Text(
-                  _getProductDescription(product.name),
+                  widget.description ?? '',
                   style: const TextStyle(
-                    fontSize: 9,
+                    fontSize: 10,
                     color: Color(0xFF8F9AA7),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 
                 // Current Bid and Points Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Current Bid
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'current Bid',
+                          'Current Bid',
                           style: TextStyle(
-                            fontSize: 8,
+                            fontSize: 9,
                             color: Color(0xFF80818B),
                           ),
                         ),
                         Text(
-                          _formatPrice(currentBid),
+                          _formatPrice(displayBid),
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
                         ),
                       ],
                     ),
-                    // Points Badge
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Text(
-                        '1 Bid = ${product.pointPerBid ?? 0}',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: MyTheme.accent_color,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.attach_money,
+                            size: 12,
+                            color: Color(0xFF0092AC),
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '1 Bid = ${widget.pointPerBid ?? 0}',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: MyTheme.accent_color,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -484,17 +412,16 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                 
                 // Notify Me Button
                 GestureDetector(
-                  onTap: isNotified ? null : () => _notifyMe(product.id, product.slug),
+                  onTap: _notifyMe,
                   child: Container(
                     width: double.infinity,
-                    height: 35,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: isNotified ? Colors.grey : MyTheme.accent_color,
-                      border: Border.all(color: Colors.white, width: 1),
-                      borderRadius: BorderRadius.circular(20),
+                      color: MyTheme.accent_color,
+                      borderRadius: BorderRadius.circular(7),
                     ),
                     child: Center(
-                      child: isNotifying
+                      child: _isProcessing
                           ? const SizedBox(
                               height: 16,
                               width: 16,
@@ -506,22 +433,20 @@ class _UpcomingSectionState extends State<UpcomingSection> {
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  isNotified ? 'Notified' : 'Notify Me',
-                                  style: const TextStyle(
-                                    fontSize: 10,
+                                const Text(
+                                  'Notify Me',
+                                  style: TextStyle(
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
                                   ),
                                 ),
-                                if (!isNotified) ...[
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.arrow_forward,
-                                    size: 10,
-                                    color: Colors.white,
-                                  ),
-                                ],
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
                               ],
                             ),
                     ),
