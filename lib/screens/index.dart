@@ -12,19 +12,16 @@ import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:provider/provider.dart';
 
-
 class Index extends StatefulWidget {
-   Index({super.key,this.goBack = true});
-  bool? goBack ;
+  const Index({super.key, this.goBack = true});
+  final bool goBack; // Make it non-nullable with a default value
 
   @override
   State<Index> createState() => _IndexState();
 }
 
 class _IndexState extends State<Index> {
-
-
-  Future<String?>  getSharedValueHelperData()async{
+  Future<String?> getSharedValueHelperData() async {
     access_token.load().whenComplete(() {
       AuthHelper().fetch_and_set();
     });
@@ -36,50 +33,28 @@ class _IndexState extends State<Index> {
     await system_currency.load();
     Provider.of<CurrencyPresenter>(context, listen: false).fetchListData();
 
-    // print("new splash screen ${app_mobile_language.$}");
-    // print("new splash screen app_language_rtl ${app_language_rtl.$}");
-
     return app_mobile_language.$;
-
   }
 
   @override
   void initState() {
-    // TODO: implement initState
-    getSharedValueHelperData().then((value){
-      Future.delayed(Duration(seconds: 3)).then((value) {
-        SystemConfig.isShownSplashScreed = true;
-        Provider.of<LocaleProvider>(context,listen: false).setLocale(app_mobile_language.$!);
-        // GoRouter.of(context).
-        // Navigator.of(context,rootNavigator: true).pushAndRemoveUntil(
-        //   MaterialPageRoute(builder: (context) {
-        //     return Main(go_back: false,);
-        //   },
-        //
-        //   ),(route)=>false,);
-        // context.push("/");
-        //
-        // context.go("/");
-        // routes.go(location);
-
-
-        setState(() {
-
-        });
-        // Navigator.pu
-      }
-      );
-    });
     super.initState();
+    getSharedValueHelperData().then((value) {
+      Future.delayed(const Duration(seconds: 3)).then((value) {
+        SystemConfig.isShownSplashScreed = true;
+        Provider.of<LocaleProvider>(context, listen: false).setLocale(app_mobile_language.$!);
+        setState(() {});
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    SystemConfig.context??=context;
+    SystemConfig.context ??= context;
     return Scaffold(
-      body: SystemConfig.isShownSplashScreed?Main(go_back: widget.goBack,):SplashScreen(),
-    )
-
-      ;
+      body: SystemConfig.isShownSplashScreed == true
+          ? Main(go_back: widget.goBack) // widget.goBack is now non-nullable
+          : const SplashScreen(),
+    );
   }
 }
