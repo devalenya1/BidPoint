@@ -1,6 +1,10 @@
 // data_model/review_response.dart
 import 'dart:convert';
 
+ReviewResponse reviewResponseFromJson(String str) => ReviewResponse.fromJson(json.decode(str));
+
+String reviewResponseToJson(ReviewResponse data) => json.encode(data.toJson());
+
 class ReviewResponse {
   bool? success;
   List<Review>? reviews;

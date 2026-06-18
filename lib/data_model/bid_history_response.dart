@@ -35,7 +35,7 @@ class BidHistoryResponse {
     }
     // Check if the entire response is a list
     else if (json is List) {
-      bidList = json
+      bidList = (json as List)
           .map((b) => BidHistory.fromJson(b as Map<String, dynamic>))
           .toList();
     }

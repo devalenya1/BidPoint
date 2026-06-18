@@ -1,6 +1,9 @@
 // data_model/add_comment_response.dart
 import 'dart:convert';
-import 'comment_response.dart';
+
+AddCommentResponse addCommentResponseFromJson(String str) => AddCommentResponse.fromJson(json.decode(str));
+
+String addCommentResponseToJson(AddCommentResponse data) => json.encode(data.toJson());
 
 class AddCommentResponse {
   bool? success;

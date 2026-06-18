@@ -1,6 +1,10 @@
 // data_model/add_review_response.dart
 import 'dart:convert';
 
+AddReviewResponse addReviewResponseFromJson(String str) => AddReviewResponse.fromJson(json.decode(str));
+
+String addReviewResponseToJson(AddReviewResponse data) => json.encode(data.toJson());
+
 class AddReviewResponse {
   bool? success;
   String? message;

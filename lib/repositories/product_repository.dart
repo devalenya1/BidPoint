@@ -17,6 +17,7 @@ import '../data_model/add_comment_response.dart';
 import '../data_model/add_review_response.dart';
 import '../data_model/wishlist_response.dart';
 
+
 class ProductRepository {
   Future<CatResponse> getCategoryRes() async {
     String url = ("${AppConfig.BASE_URL}/seller/products/categories");

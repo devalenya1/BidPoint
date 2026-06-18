@@ -95,6 +95,10 @@
 // data_model/wishlist_response.dart
 import 'dart:convert';
 
+WishlistResponse wishlistResponseFromJson(String str) => WishlistResponse.fromJson(json.decode(str));
+
+String wishlistResponseToJson(WishlistResponse data) => json.encode(data.toJson());
+
 class WishlistResponse {
   bool? success;
   String? message;

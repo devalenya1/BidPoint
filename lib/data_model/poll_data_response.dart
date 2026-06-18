@@ -122,6 +122,21 @@ class PollDataResponse {
   bool get hasReviews => (reviews?.length ?? 0) > 0;
   
   bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
+
+  // Add these snake_case getters for backward compatibility
+  String? get auction_end_date => auctionEndDate;
+  double? get point_per_bid => pointPerBid;
+  double? get point_per_bid_custom => pointPerBidCustom;
+  bool? get auction_ended => auctionEnded;
+  bool? get is_ending_soon => isEndingSoon;
+  int? get remaining_seconds => remainingSeconds;
+  int? get reviews_count => reviewsCount;
+  bool? get is_in_wishlist => isInWishlist;
+  // These are not used anymore - return null or empty string
+  String? get comments_html => null;
+  String? get reviews_html => null;
+  String? get bid_history_html => null;
+  
 }
 
 // ============ SUPPORTING MODELS ============

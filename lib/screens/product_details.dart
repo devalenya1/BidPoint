@@ -93,7 +93,7 @@ class _ProductDetailsState extends State<ProductDetails>
   double _rating = 0;
   
   // Winner Data
-  Map<String, dynamic>? _winnerData;
+  Winner? _winnerData;
   
   // Sound
   bool _soundEnabled = true;
@@ -274,20 +274,21 @@ class _ProductDetailsState extends State<ProductDetails>
         
         // Update bid data
         if (response.bid_data != null) {
+          // Instead of response.bid_data, use direct fields:
           final oldHighestBid = _currentHighestBid;
-          final newHighestBid = response.bid_data!.highest_bid ?? _currentHighestBid;
-          final newTotalBids = response.bid_data!.total_bids ?? _totalBids;
-          final newHighestBidder = response.bid_data!.bidder_name ?? _highestBidder;
-          
+          final newHighestBid = response.highestBid ?? _currentHighestBid;
+          final newTotalBids = response.totalBids ?? _totalBids;
+          final newHighestBidder = response.lastBidderName ?? _highestBidder;
+
           setState(() {
             _currentHighestBid = newHighestBid;
             _totalBids = newTotalBids;
             _highestBidder = newHighestBidder;
           });
-          
+
           if (_currentHighestBid > oldHighestBid) {
             _playBidSound();
-            _showToast('${response.bid_data!.bidder_name} placed a bid of ${_formatPrice(_currentHighestBid)}');
+            _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
           }
           
           _minNextBidNow = _currentHighestBid + 0.01;
@@ -2188,13 +2189,13 @@ class _ProductDetailsState extends State<ProductDetails>
               SizedBox(height: 16),
               CircleAvatar(
                 radius: 50,
-                backgroundImage: NetworkImage(_winnerData!['avatar'] ?? ''),
-                child: _winnerData!['avatar'] == null ? Icon(Icons.person, size: 40) : null,
+                backgroundImage: NetworkImage(_winnerData!.avatar ?? ''),
+                child: _winnerData!.avatar == null ? Icon(Icons.person, size: 40) : null,
               ),
               SizedBox(height: 12),
-              Text(_winnerData!['name'] ?? 'Winner', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(_winnerData!.userName ?? 'Winner', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
               SizedBox(height: 4),
-              Text(_formatPrice(_winnerData!['amount'] ?? 0), style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.amber)),
+              Text(_formatPrice(_winnerData!.amount ?? 0), style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.amber)),
               SizedBox(height: 12),
               Text('Congratulations to the winner!', style: TextStyle(color: Colors.white70)),
               SizedBox(height: 20),

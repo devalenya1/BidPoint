@@ -34,7 +34,7 @@ class CommentResponse {
     }
     // Check if the entire response is a list
     else if (json is List) {
-      commentList = json
+      commentList = (json as List)
           .map((c) => Comment.fromJson(c as Map<String, dynamic>))
           .toList();
     }

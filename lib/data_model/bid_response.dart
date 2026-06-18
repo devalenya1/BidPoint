@@ -1,6 +1,10 @@
 // data_model/bid_response.dart
 import 'dart:convert';
 
+BidResponse bidResponseFromJson(String str) => BidResponse.fromJson(json.decode(str));
+
+String bidResponseToJson(BidResponse data) => json.encode(data.toJson());
+
 class BidResponse {
   bool? success;
   bool? result;
