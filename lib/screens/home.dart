@@ -181,11 +181,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverToBoxAdapter(
                         child: _buildHotAuctionSection(),
                       ),
-
+                      
                       // Ending Soon Section
                       SliverToBoxAdapter(
                         child: _buildEndingSoonSection(),
                       ),
+
 
                       // Upcoming Section
                       SliverToBoxAdapter(
@@ -437,7 +438,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-
   // ============ UPCOMING SECTION ============
   Widget _buildUpcomingSection() {
     print('Upcoming count: ${homeData.upcomingProductList.length}');
@@ -535,9 +535,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ],
     );
   }
-
-
-
 
   Widget buildHomeFeaturedCategories() {
     if (homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {

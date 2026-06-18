@@ -264,7 +264,7 @@ class ProductRepository {
         "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
       },
     );
-    return PollDataResponse.fromJson(jsonDecode(response.body));
+    return PollDataResponse.fromJson(jsonDecode(response.body)['data']);
   }
 
   Future<BidResponse> placeBid(String productId, String amount, {String type = "custom"}) async {
@@ -283,7 +283,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return BidResponse.fromJson(jsonDecode(response.body));
+    return BidResponseFromJson(response.body);
   }
 
   Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
@@ -302,7 +302,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return BidResponse.fromJson(jsonDecode(response.body));
+    return BidResponseFromJson(response.body);
   }
 
   // ============ COMMENTS ============
@@ -315,7 +315,7 @@ class ProductRepository {
         "App-Language": app_language.$!,
       },
     );
-    return CommentResponse.fromJson(jsonDecode(response.body));
+    return CommentResponseFromJson(response.body);
   }
 
   Future<AddCommentResponse> addProductComment(int productId, String comment) async {
@@ -333,7 +333,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return AddCommentResponse.fromJson(jsonDecode(response.body));
+    return AddCommentResponseFromJson(response.body);
   }
 
   Future<Map<String, dynamic>> likeProductComment(int commentId) async {
@@ -363,7 +363,7 @@ class ProductRepository {
         "App-Language": app_language.$!,
       },
     );
-    return ReviewResponse.fromJson(jsonDecode(response.body));
+    return ReviewResponseFromJson(response.body);
   }
 
   Future<AddReviewResponse> addProductReview(int productId, int rating, String comment) async {
@@ -382,7 +382,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return AddReviewResponse.fromJson(jsonDecode(response.body));
+    return AddReviewResponseFromJson(response.body);
   }
 
   // ============ BID HISTORY ============
@@ -395,7 +395,7 @@ class ProductRepository {
         "App-Language": app_language.$!,
       },
     );
-    return BidHistoryResponse.fromJson(jsonDecode(response.body));
+    return BidHistoryResponseFromJson(response.body);
   }
 
   // ============ WISHLIST ============
@@ -414,7 +414,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return WishlistResponse.fromJson(jsonDecode(response.body));
+    return WishlistResponseFromJson(response.body);
   }
 
   Future<WishlistResponse> removeFromWishlist(int productId) async {
@@ -431,7 +431,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return WishlistResponse.fromJson(jsonDecode(response.body));
+    return WishlistResponseFromJson(response.body);
   }
 
   // ============ NOTIFY ME ============
