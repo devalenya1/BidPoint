@@ -4,6 +4,7 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
