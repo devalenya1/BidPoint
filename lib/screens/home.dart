@@ -280,7 +280,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       slug: product.slug ?? '',
                       image: product.thumbnailImage,
                       name: product.name,
-                      description: product.name,
+                      description: product.description,
                       pointPerBid: product.pointPerBid ?? 0,
                       auctionEndDate: product.auctionEndDate,
                       currentBid: product.highestBid,

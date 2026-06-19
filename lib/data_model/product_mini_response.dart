@@ -51,6 +51,7 @@ class Product {
     this.id,
     this.slug,
     this.name,
+    this.description,
     this.thumbnailImage,
     this.mainPrice,
     this.strokedPrice,
@@ -79,6 +80,7 @@ class Product {
   int? id;
   String? slug;
   String? name;
+  String? description;
   String? thumbnailImage;
   String? mainPrice;
   String? strokedPrice;
@@ -117,6 +119,7 @@ class Product {
         id: json["id"],
         slug: json["slug"],
         name: json["name"],
+        name: json["description"],
         thumbnailImage: json["thumbnail_image"],
         mainPrice: json["main_price"],
         strokedPrice: json["stroked_price"],
@@ -146,6 +149,7 @@ class Product {
         "id": id,
         "slug": slug,
         "name": name,
+        "name": description,
         "thumbnail_image": thumbnailImage,
         "main_price": mainPrice,
         "stroked_price": strokedPrice,
