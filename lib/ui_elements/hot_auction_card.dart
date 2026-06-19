@@ -418,14 +418,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         const Text(
                           'Current Bid',
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: 10,
                             color: Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
@@ -442,7 +442,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.attach_money,
+                            Icons.access_time,,
                             size: 12,
                             color: Color(0xFF0092AC),
                           ),

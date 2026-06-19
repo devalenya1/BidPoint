@@ -399,7 +399,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.attach_money,
+                              Icons.access_time,,
                               size: 10,
                               color: Color(0xFF0092AC),
                             ),
@@ -590,7 +590,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 Row(
                   children: [
                     const Icon(
-                      Icons.attach_money,
+                      Icons.access_time,,
                       size: 12,
                       color: Color(0xFF718096),
                     ),

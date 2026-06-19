@@ -489,7 +489,7 @@
 //                           mainAxisSize: MainAxisSize.min,
 //                           children: [
 //                             const Icon(
-//                               Icons.attach_money,
+//                               Icons.access_time,,
 //                               size: 12,
 //                               color: Color(0xFF0092AC),
 //                             ),
@@ -817,7 +817,7 @@
 //                           mainAxisSize: MainAxisSize.min,
 //                           children: [
 //                             const Icon(
-//                               Icons.attach_money,
+//                               Icons.access_time,,
 //                               size: 10,
 //                               color: Color(0xFF0092AC),
 //                             ),
@@ -1001,7 +1001,7 @@
 //                 Row(
 //                   children: [
 //                     const Icon(
-//                       Icons.attach_money,
+//                       Icons.access_time,,
 //                       size: 12,
 //                       color: Color(0xFF718096),
 //                     ),
