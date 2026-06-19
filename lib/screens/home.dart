@@ -222,8 +222,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
+                // onTap: () {
+                //   GoRouter.of(context).go('/hot-auctions');
+                // },
                 onTap: () {
-                  GoRouter.of(context).go('/hot-auctions');
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CategoryProducts(slug: 'hot-auctions');
+                  }));
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -314,8 +319,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
+                // onTap: () {
+                //   GoRouter.of(context).go('/ending-soon');
+                // },
                 onTap: () {
-                  GoRouter.of(context).go('/ending-soon');
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CategoryProducts(slug: 'ending-soon');
+                  }));
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -454,8 +464,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
+                // onTap: () {
+                //   GoRouter.of(context).go('/upcoming-auctions');
+                // },
                 onTap: () {
-                  GoRouter.of(context).go('/upcoming-auctions');
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CategoryProducts(slug: 'upcoming-auctions');
+                  }));
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
