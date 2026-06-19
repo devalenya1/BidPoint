@@ -611,7 +611,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   child: const Icon(
-                                    Icons.access_time,,
+                                    Icons.attach_money,
                                     size: 28,
                                     color: Colors.white,
                                   ),
