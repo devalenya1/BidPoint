@@ -287,7 +287,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return BidResponseFromJson(response.body);
+    return bidResponseFromJson(response.body);
   }
 
   Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
@@ -306,7 +306,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return BidResponseFromJson(response.body);
+    return bidResponseFromJson(response.body);
   }
 
   // ============ COMMENTS ============
@@ -319,7 +319,7 @@ class ProductRepository {
         "App-Language": app_language.$!,
       },
     );
-    return CommentResponseFromJson(response.body);
+    return commentResponseFromJson(response.body);
   }
 
   Future<AddCommentResponse> addProductComment(int productId, String comment) async {
@@ -337,7 +337,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return AddCommentResponseFromJson(response.body);
+    return addCommentResponseFromJson(response.body);
   }
 
   Future<Map<String, dynamic>> likeProductComment(int commentId) async {
@@ -367,7 +367,7 @@ class ProductRepository {
         "App-Language": app_language.$!,
       },
     );
-    return ReviewResponseFromJson(response.body);
+    return reviewResponseFromJson(response.body);
   }
 
   Future<AddReviewResponse> addProductReview(int productId, int rating, String comment) async {
@@ -386,7 +386,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return AddReviewResponseFromJson(response.body);
+    return addReviewResponseFromJson(response.body);
   }
 
   // ============ BID HISTORY ============
@@ -399,7 +399,7 @@ class ProductRepository {
         "App-Language": app_language.$!,
       },
     );
-    return BidHistoryResponseFromJson(response.body);
+    return bidHistoryResponseFromJson(response.body);
   }
 
   // ============ WISHLIST ============
@@ -418,7 +418,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return WishlistResponseFromJson(response.body);
+    return wishlistResponseFromJson(response.body);
   }
 
   Future<WishlistResponse> removeFromWishlist(int productId) async {
@@ -435,7 +435,7 @@ class ProductRepository {
       },
       body: postBody,
     );
-    return WishlistResponseFromJson(response.body);
+    return wishlistResponseFromJson(response.body);
   }
 
   // ============ NOTIFY ME ============
