@@ -1,5 +1,6 @@
 // data_model/review_response.dart
 import 'dart:convert';
+import 'poll_data_response.dart'; // Use Review from here
 
 ReviewResponse reviewResponseFromJson(String str) => ReviewResponse.fromJson(json.decode(str));
 
@@ -7,7 +8,7 @@ String reviewResponseToJson(ReviewResponse data) => json.encode(data.toJson());
 
 class ReviewResponse {
   bool? success;
-  List<Review>? reviews;
+  List<Review>? reviews; // Uses Review from poll_data_response.dart
 
   ReviewResponse({
     this.success,
@@ -36,43 +37,5 @@ class ReviewResponse {
   Map<String, dynamic> toJson() => {
     'success': success,
     'reviews': reviews?.map((r) => r.toJson()).toList(),
-  };
-}
-
-class Review {
-  int? id;
-  int? userId;
-  String? userName;
-  int? rating;
-  String? comment;
-  String? createdAt;
-
-  Review({
-    this.id,
-    this.userId,
-    this.userName,
-    this.rating,
-    this.comment,
-    this.createdAt,
-  });
-
-  factory Review.fromJson(Map<String, dynamic> json) {
-    return Review(
-      id: json['id'],
-      userId: json['userId'] ?? json['user_id'],
-      userName: json['userName'] ?? json['user_name'] ?? json['name'],
-      rating: json['rating'] is int ? json['rating'] : (json['rating'] as double?)?.toInt(),
-      comment: json['comment'],
-      createdAt: json['createdAt'] ?? json['created_at'],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'userId': userId,
-    'userName': userName,
-    'rating': rating,
-    'comment': comment,
-    'createdAt': createdAt,
   };
 }
