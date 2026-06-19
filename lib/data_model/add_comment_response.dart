@@ -1,6 +1,6 @@
 // data_model/add_comment_response.dart
 import 'dart:convert';
-import 'comment_response.dart';
+import 'poll_data_response.dart'; // Use Comment from here
 
 AddCommentResponse addCommentResponseFromJson(String str) => AddCommentResponse.fromJson(json.decode(str));
 
@@ -21,7 +21,7 @@ class AddCommentResponse {
     return AddCommentResponse(
       success: json['success'],
       message: json['message'],
-      comment: json['comment'] != null ? Comment.fromJson(json['comment']) : null,
+      comment: json['data'] != null ? Comment.fromJson(json['data']) : null,
     );
   }
 
