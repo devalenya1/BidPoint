@@ -8,14 +8,15 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import '../data_model/variant_price_response.dart';
-import '../data_model/poll_data_response.dart';
-import '../data_model/bid_response.dart';
-import '../data_model/comment_response.dart';
-import '../data_model/review_response.dart';
-import '../data_model/bid_history_response.dart';
-import '../data_model/add_comment_response.dart';
-import '../data_model/add_review_response.dart';
-import '../data_model/wishlist_response.dart';
+import '../data_model/auction_models.dart';
+// import '../data_model/poll_data_response.dart';
+// import '../data_model/bid_response.dart';
+// import '../data_model/comment_response.dart';
+// import '../data_model/review_response.dart';
+// import '../data_model/bid_history_response.dart';
+// import '../data_model/add_comment_response.dart';
+// import '../data_model/add_review_response.dart';
+// import '../data_model/wishlist_response.dart';
 
 
 class ProductRepository {

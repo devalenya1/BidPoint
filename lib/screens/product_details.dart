@@ -28,7 +28,7 @@ import 'package:http/http.dart' as http;
 import '../data_model/auction_models.dart';
 
 import 'package:active_ecommerce_flutter/app_config.dart';
-import 'package:active_ecommerce_flutter/data_model/poll_data_response.dart';
+// import 'package:active_ecommerce_flutter/data_model/poll_data_response.dart';
 import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
 // // import 'package:active_ecommerce_flutter/data_model/comment_response.dart';
 // // import 'package:active_ecommerce_flutter/data_model/review_response.dart';

@@ -354,137 +354,138 @@ class WishlistResponse {
 }
 
 
-// // ============================================
-// // 8. POLL DATA RESPONSE (MAIN AUCTION DATA)
-// // ============================================
+// ============================================
+// 8. POLL DATA RESPONSE (MAIN AUCTION DATA)
+// ============================================
 
-// PollDataResponse pollDataResponseFromJson(String str) => PollDataResponse.fromJson(json.decode(str));
+PollDataResponse pollDataResponseFromJson(String str) => PollDataResponse.fromJson(json.decode(str));
 
-// String pollDataResponseToJson(PollDataResponse data) => json.encode(data.toJson());
+String pollDataResponseToJson(PollDataResponse data) => json.encode(data.toJson());
 
-// class PollDataResponse {
-//   bool? success;
-//   String? auctionEndDate;
-//   double? pointPerBid;
-//   double? pointPerBidCustom;
-//   bool? auctionEnded;
-//   bool? isEndingSoon;
-//   int? remainingSeconds;
-//   double? rating;
-//   int? reviewsCount;
-//   bool? isInWishlist;
-//   double? highestBid;
-//   String? highestBidFormatted;
-//   int? totalBids;
-//   String? lastBidderName;
-//   double? lastBidAmount;
-//   Winner? winner;
-//   List<Comment>? comments;
-//   List<Review>? reviews;
-//   List<BidHistoryItem>? bidHistory;
+class PollDataResponse {
+  bool? success;
+  String? auctionEndDate;
+  double? pointPerBid;
+  double? pointPerBidCustom;
+  bool? auctionEnded;
+  bool? isEndingSoon;
+  int? remainingSeconds;
+  double? rating;
+  int? reviewsCount;
+  bool? isInWishlist;
+  double? highestBid;
+  String? highestBidFormatted;
+  int? totalBids;
+  String? lastBidderName;
+  double? lastBidAmount;
+  Winner? winner;
+  List<Comment>? comments;
+  List<Review>? reviews;
+  List<BidHistoryItem>? bidHistory;
 
-//   PollDataResponse({
-//     this.success,
-//     this.auctionEndDate,
-//     this.pointPerBid,
-//     this.pointPerBidCustom,
-//     this.auctionEnded,
-//     this.isEndingSoon,
-//     this.remainingSeconds,
-//     this.rating,
-//     this.reviewsCount,
-//     this.isInWishlist,
-//     this.highestBid,
-//     this.highestBidFormatted,
-//     this.totalBids,
-//     this.lastBidderName,
-//     this.lastBidAmount,
-//     this.winner,
-//     this.comments,
-//     this.reviews,
-//     this.bidHistory,
-//   });
+  PollDataResponse({
+    this.success,
+    this.auctionEndDate,
+    this.pointPerBid,
+    this.pointPerBidCustom,
+    this.auctionEnded,
+    this.isEndingSoon,
+    this.remainingSeconds,
+    this.rating,
+    this.reviewsCount,
+    this.isInWishlist,
+    this.highestBid,
+    this.highestBidFormatted,
+    this.totalBids,
+    this.lastBidderName,
+    this.lastBidAmount,
+    this.winner,
+    this.comments,
+    this.reviews,
+    this.bidHistory,
+  });
 
-//   factory PollDataResponse.fromJson(Map<String, dynamic> json) {
-//     return PollDataResponse(
-//       success: json['success'],
-//       auctionEndDate: json['auction_end_date'],
-//       pointPerBid: (json['point_per_bid'] ?? json['pointPerBid'])?.toDouble(),
-//       pointPerBidCustom: (json['point_per_bid_custom'] ?? json['pointPerBidCustom'])?.toDouble(),
-//       auctionEnded: json['auction_ended'],
-//       isEndingSoon: json['is_ending_soon'],
-//       remainingSeconds: json['remaining_seconds'],
-//       rating: json['rating']?.toDouble(),
-//       reviewsCount: json['reviews_count'],
-//       isInWishlist: json['is_in_wishlist'],
-//       highestBid: (json['highest_bid'] ?? json['highestBid'])?.toDouble(),
-//       highestBidFormatted: json['highest_bid_formatted'],
-//       totalBids: json['total_bids'],
-//       lastBidderName: json['last_bidder_name'],
-//       lastBidAmount: (json['last_bid_amount'] ?? json['lastBidAmount'])?.toDouble(),
-//       winner: json['winner'] != null ? Winner.fromJson(json['winner']) : null,
-//       comments: json['comments'] != null 
-//           ? List<Comment>.from(json['comments'].map((x) => Comment.fromJson(x)))
-//           : [],
-//       reviews: json['reviews'] != null 
-//           ? List<Review>.from(json['reviews'].map((x) => Review.fromJson(x)))
-//           : [],
-//       bidHistory: json['bid_history'] != null 
-//           ? List<BidHistoryItem>.from(json['bid_history'].map((x) => BidHistoryItem.fromJson(x)))
-//           : [],
-//     );
-//   }
+  factory PollDataResponse.fromJson(Map<String, dynamic> json) {
+    return PollDataResponse(
+      success: json['success'],
+      auctionEndDate: json['auction_end_date'],
+      pointPerBid: (json['point_per_bid'] ?? json['pointPerBid'])?.toDouble(),
+      pointPerBidCustom: (json['point_per_bid_custom'] ?? json['pointPerBidCustom'])?.toDouble(),
+      auctionEnded: json['auction_ended'],
+      isEndingSoon: json['is_ending_soon'],
+      remainingSeconds: json['remaining_seconds'],
+      rating: json['rating']?.toDouble(),
+      reviewsCount: json['reviews_count'],
+      isInWishlist: json['is_in_wishlist'],
+      highestBid: (json['highest_bid'] ?? json['highestBid'])?.toDouble(),
+      highestBidFormatted: json['highest_bid_formatted'],
+      totalBids: json['total_bids'],
+      lastBidderName: json['last_bidder_name'],
+      lastBidAmount: (json['last_bid_amount'] ?? json['lastBidAmount'])?.toDouble(),
+      winner: json['winner'] != null ? Winner.fromJson(json['winner']) : null,
+      comments: json['comments'] != null 
+          ? List<Comment>.from(json['comments'].map((x) => Comment.fromJson(x)))
+          : [],
+      reviews: json['reviews'] != null 
+          ? List<Review>.from(json['reviews'].map((x) => Review.fromJson(x)))
+          : [],
+      bidHistory: json['bid_history'] != null 
+          ? List<BidHistoryItem>.from(json['bid_history'].map((x) => BidHistoryItem.fromJson(x)))
+          : [],
+    );
+  }
 
-//   Map<String, dynamic> toJson() => {
-//     'success': success,
-//     'auction_end_date': auctionEndDate,
-//     'point_per_bid': pointPerBid,
-//     'point_per_bid_custom': pointPerBidCustom,
-//     'auction_ended': auctionEnded,
-//     'is_ending_soon': isEndingSoon,
-//     'remaining_seconds': remainingSeconds,
-//     'rating': rating,
-//     'reviews_count': reviewsCount,
-//     'is_in_wishlist': isInWishlist,
-//     'highest_bid': highestBid,
-//     'highest_bid_formatted': highestBidFormatted,
-//     'total_bids': totalBids,
-//     'last_bidder_name': lastBidderName,
-//     'last_bid_amount': lastBidAmount,
-//     'winner': winner?.toJson(),
-//     'comments': comments?.map((x) => x.toJson()).toList(),
-//     'reviews': reviews?.map((x) => x.toJson()).toList(),
-//     'bid_history': bidHistory?.map((x) => x.toJson()).toList(),
-//   };
+  Map<String, dynamic> toJson() => {
+    'success': success,
+    'auction_end_date': auctionEndDate,
+    'point_per_bid': pointPerBid,
+    'point_per_bid_custom': pointPerBidCustom,
+    'auction_ended': auctionEnded,
+    'is_ending_soon': isEndingSoon,
+    'remaining_seconds': remainingSeconds,
+    'rating': rating,
+    'reviews_count': reviewsCount,
+    'is_in_wishlist': isInWishlist,
+    'highest_bid': highestBid,
+    'highest_bid_formatted': highestBidFormatted,
+    'total_bids': totalBids,
+    'last_bidder_name': lastBidderName,
+    'last_bid_amount': lastBidAmount,
+    'winner': winner?.toJson(),
+    'comments': comments?.map((x) => x.toJson()).toList(),
+    'reviews': reviews?.map((x) => x.toJson()).toList(),
+    'bid_history': bidHistory?.map((x) => x.toJson()).toList(),
+  };
 
-//   // Snake case getters for backward compatibility
-//   String? get auction_end_date => auctionEndDate;
-//   double? get point_per_bid => pointPerBid;
-//   double? get point_per_bid_custom => pointPerBidCustom;
-//   bool? get auction_ended => auctionEnded;
-//   bool? get is_ending_soon => isEndingSoon;
-//   int? get remaining_seconds => remainingSeconds;
-//   int? get reviews_count => reviewsCount;
-//   bool? get is_in_wishlist => isInWishlist;
-//   String? get comments_html => null;
-//   String? get reviews_html => null;
-//   String? get bid_history_html => null;
-
-//   bool get isAuctionEnded => auctionEnded ?? false;
-//   bool get isEndingSoonValue => isEndingSoon ?? false;
-//   double get highestBidValue => highestBid ?? 0.0;
-//   String get highestBidDisplay => highestBidFormatted ?? '\$0.00';
-//   int get totalBidsCount => totalBids ?? 0;
-//   bool get hasBids => (totalBids ?? 0) > 0;
-//   bool get hasWinner => winner != null;
-//   bool get hasComments => (comments?.length ?? 0) > 0;
-//   bool get hasReviews => (reviews?.length ?? 0) > 0;
-//   bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
-// }
+  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  String? get auction_end_date => auctionEndDate;
+  double? get point_per_bid => pointPerBid;
+  double? get point_per_bid_custom => pointPerBidCustom;
+  bool? get auction_ended => auctionEnded;
+  bool? get is_ending_soon => isEndingSoon;
+  int? get remaining_seconds => remainingSeconds;
+  int? get reviews_count => reviewsCount;
+  bool? get is_in_wishlist => isInWishlist;
+  String? get comments_html => null;
+  String? get reviews_html => null;
+  String? get bid_history_html => null;
+  
+  // ============ HELPER METHODS ============
+  bool get isAuctionEnded => auctionEnded ?? false;
+  bool get isEndingSoonValue => isEndingSoon ?? false;
+  double get highestBidValue => highestBid ?? 0.0;
+  String get highestBidDisplay => highestBidFormatted ?? '\$0.00';
+  int get totalBidsCount => totalBids ?? 0;
+  bool get hasBids => (totalBids ?? 0) > 0;
+  bool get hasWinner => winner != null;
+  bool get hasComments => (comments?.length ?? 0) > 0;
+  bool get hasReviews => (reviews?.length ?? 0) > 0;
+  bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
+}
 
 
 // ============================================
-// 9. SUPPORTING MODELS (Comment, Review, Winner, BidHistoryItem, Pagination)
+// 9. SUPPORTING MODELS (Comment, Review, Winner, BidHistoryItem, BidHistory, Pagination)
 // ============================================
 
 class Comment {
@@ -528,10 +529,12 @@ class Comment {
     'created_at': createdAt,
   };
 
+  // Snake case getters
   int? get user_id => userId;
   String? get user_name => userName;
   String? get user_avatar => userAvatar;
   String? get created_at => createdAt;
+  
   int get likesCount => int.tryParse(likes ?? '0') ?? 0;
 }
 
@@ -581,6 +584,7 @@ class Review {
     'photos': photos,
   };
 
+  // Snake case getters
   int? get user_id => userId;
   String? get user_name => userName;
   String? get user_avatar => userAvatar;
@@ -617,6 +621,7 @@ class Winner {
     'avatar': avatar,
   };
 
+  // Snake case getters
   int? get user_id => userId;
   String? get user_name => userName;
 }
@@ -651,9 +656,11 @@ class BidHistoryItem {
     'created_at': createdAt,
   };
 
+  // Snake case getters
   int? get user_id => userId;
   String? get user_name => userName;
   String? get created_at => createdAt;
+  
   String get formattedAmount => '\$${amount?.toStringAsFixed(2) ?? '0.00'}';
 }
 
@@ -706,6 +713,7 @@ class BidHistory {
     'created_at': createdAt,
   };
 
+  // Snake case getters
   int? get user_id => userId;
   String? get user_name => userName;
   String? get amount_formatted => amountFormatted;
@@ -745,10 +753,12 @@ class Pagination {
     'last_page': lastPage,
   };
 
+  // Snake case getters
   int? get per_page => perPage;
   int? get current_page => currentPage;
   int? get last_page => lastPage;
   
+  // Helper methods
   bool get hasMorePages => (currentPage ?? 1) < (lastPage ?? 1);
   int get totalPages => lastPage ?? 1;
   int get nextPage => hasMorePages ? (currentPage ?? 1) + 1 : (currentPage ?? 1);
