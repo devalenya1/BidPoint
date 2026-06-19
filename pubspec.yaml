@@ -88,6 +88,7 @@ dependencies:
   go_router: ^12.1.1
   file_picker: ^5.2.4
   fluttertoast: ^8.2.4
+  audioplayers: ^5.2.0
 
 dev_dependencies:
   flutter_test:
