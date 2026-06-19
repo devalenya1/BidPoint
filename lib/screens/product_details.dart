@@ -27,6 +27,7 @@ import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 
 import '../app_config.dart';
+import '../data_model/poll_data_response.dart';
 import '../data_model/product_details_response.dart';
 import '../data_model/comment_response.dart';
 import '../data_model/review_response.dart';
@@ -272,8 +273,8 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _reviewsCount = response.reviews_count!);
         }
         
-        // Update bid data
-        if (response.bid_data != null) {
+        // if (response.bid_data != null) {
+          // Update bid data - use direct fields from response
           final oldHighestBid = _currentHighestBid;
           final newHighestBid = response.highestBid ?? _currentHighestBid;
           final newTotalBids = response.totalBids ?? _totalBids;
@@ -293,7 +294,7 @@ class _ProductDetailsState extends State<ProductDetails>
           _minNextBidNow = _currentHighestBid + 0.01;
           _minNextBid = _currentHighestBid + 1;
           setState(() {});
-        }
+        // }
         
         // Update wishlist status
         if (response.is_in_wishlist != null) {
