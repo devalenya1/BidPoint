@@ -182,10 +182,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         child: _buildHotAuctionSection(),
                       ),
                       
-                      // Ending Soon Section
-                      SliverToBoxAdapter(
-                        child: _buildEndingSoonSection(),
-                      ),
+                      // // Ending Soon Section
+                      // SliverToBoxAdapter(
+                      //   child: _buildEndingSoonSection(),
+                      // ),
 
 
                       // Upcoming Section
