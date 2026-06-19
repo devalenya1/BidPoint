@@ -442,7 +442,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.access_time,,
+                            Icons.access_time,
                             size: 12,
                             color: Color(0xFF0092AC),
                           ),
