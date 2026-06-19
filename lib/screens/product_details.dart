@@ -599,7 +599,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _playTickSound() async {
     if (!_soundEnabled) return;
     try {
-      await _audioPlayer.play(AssetSource('sounds/tick_clock.wav'));
+      await _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'));
     } catch (e) {
       print('Error playing tick sound: $e');
     }
