@@ -274,7 +274,6 @@ class _ProductDetailsState extends State<ProductDetails>
         
         // Update bid data
         if (response.bid_data != null) {
-          // Instead of response.bid_data, use direct fields:
           final oldHighestBid = _currentHighestBid;
           final newHighestBid = response.highestBid ?? _currentHighestBid;
           final newTotalBids = response.totalBids ?? _totalBids;
@@ -290,7 +289,7 @@ class _ProductDetailsState extends State<ProductDetails>
             _playBidSound();
             _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
           }
-          
+
           _minNextBidNow = _currentHighestBid + 0.01;
           _minNextBid = _currentHighestBid + 1;
           setState(() {});

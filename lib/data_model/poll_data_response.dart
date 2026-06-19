@@ -102,28 +102,7 @@ class PollDataResponse {
     'bid_history': bidHistory?.map((x) => x.toJson()).toList(),
   };
 
-  // ============ HELPER METHODS ============
-  
-  bool get isAuctionEnded => auctionEnded ?? false;
-  bool get isEndingSoonValue => isEndingSoon ?? false;
-  
-  double get highestBidValue => highestBid ?? 0.0;
-  
-  String get highestBidDisplay => highestBidFormatted ?? '\$0.00';
-  
-  int get totalBidsCount => totalBids ?? 0;
-  
-  bool get hasBids => (totalBids ?? 0) > 0;
-  
-  bool get hasWinner => winner != null;
-  
-  bool get hasComments => (comments?.length ?? 0) > 0;
-  
-  bool get hasReviews => (reviews?.length ?? 0) > 0;
-  
-  bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
-
-  // Add these snake_case getters for backward compatibility
+  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
   String? get auction_end_date => auctionEndDate;
   double? get point_per_bid => pointPerBid;
   double? get point_per_bid_custom => pointPerBidCustom;
@@ -132,11 +111,21 @@ class PollDataResponse {
   int? get remaining_seconds => remainingSeconds;
   int? get reviews_count => reviewsCount;
   bool? get is_in_wishlist => isInWishlist;
-  // These are not used anymore - return null or empty string
   String? get comments_html => null;
   String? get reviews_html => null;
   String? get bid_history_html => null;
   
+  // ============ HELPER METHODS ============
+  bool get isAuctionEnded => auctionEnded ?? false;
+  bool get isEndingSoonValue => isEndingSoon ?? false;
+  double get highestBidValue => highestBid ?? 0.0;
+  String get highestBidDisplay => highestBidFormatted ?? '\$0.00';
+  int get totalBidsCount => totalBids ?? 0;
+  bool get hasBids => (totalBids ?? 0) > 0;
+  bool get hasWinner => winner != null;
+  bool get hasComments => (comments?.length ?? 0) > 0;
+  bool get hasReviews => (reviews?.length ?? 0) > 0;
+  bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
 }
 
 // ============ SUPPORTING MODELS ============
