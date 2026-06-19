@@ -263,7 +263,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             return SizedBox(
               height: 350,
               child: ListView.builder(
-                scrollDirection: Axis.horizontal,
+                // scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: homeData.hotAuctionProductList.length,
                 itemBuilder: (context, index) {
@@ -400,7 +400,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   slug: product.slug ?? '',
                   image: product.thumbnailImage,
                   name: product.name,
-                  description: product.name,
+                  description: product.description,
                   pointPerBid: product.pointPerBid ?? 0,
                   auctionEndDate: product.auctionEndDate,
                   currentBid: product.highestBid,
@@ -423,7 +423,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               slug: rightProduct.slug ?? '',
               image: rightProduct.thumbnailImage,
               name: rightProduct.name,
-              description: rightProduct.name,
+              description: rightProduct.description,
               pointPerBid: rightProduct.pointPerBid ?? 0,
               auctionEndDate: rightProduct.auctionEndDate,
               currentBid: rightProduct.highestBid,
@@ -495,7 +495,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             return SizedBox(
               height: 350,
               child: ListView.builder(
-                scrollDirection: Axis.horizontal,
+                // scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: homeData.upcomingProductList.length,
                 itemBuilder: (context, index) {
@@ -518,7 +518,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       slug: product.slug ?? '',
                       image: product.thumbnailImage,
                       name: product.name,
-                      description: product.name,
+                      description: product.description,
                       pointPerBid: product.pointPerBid ?? 0,
                       auctionEndDate: auctionStartTimestamp ?? product.auctionStartDate,
                       currentBid: product.startingBid,
