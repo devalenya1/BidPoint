@@ -9,6 +9,8 @@ import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import '../data_model/variant_price_response.dart';
 import '../data_model/auction_models.dart';
+import '../helpers/main_helpers.dart';
+import 'package:active_ecommerce_flutter/middlewares/banned_user.dart';
 // import '../data_model/poll_data_response.dart';
 // import '../data_model/bid_response.dart';
 // import '../data_model/comment_response.dart';
