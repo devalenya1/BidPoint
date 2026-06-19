@@ -116,6 +116,7 @@ flutter:
     - assets/htmls/
     - assets/fonts/
     - dummy_assets/
+    - assets/sounds/
   fonts:
     - family: PublicSansSerif
       fonts:

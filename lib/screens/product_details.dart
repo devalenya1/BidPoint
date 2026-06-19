@@ -26,6 +26,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
+import 'package:audioplayers/audioplayers.dart';
 import '../data_model/auction_models.dart';
 
 import 'package:active_ecommerce_flutter/app_config.dart';
@@ -96,6 +97,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Sound
   bool _soundEnabled = true;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Repository
   final ProductRepository _productRepository = ProductRepository();
@@ -122,6 +124,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _reviewController.dispose();
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -572,22 +575,34 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND EFFECTS (Placeholders - implement with audioplayers)
+  // SOUND EFFECTS
   // ============================================
 
-  void _playBidSound() {
+  void _playBidSound() async {
     if (!_soundEnabled) return;
-    // TODO: Implement with audioplayers package
+    try {
+      await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
+    } catch (e) {
+      print('Error playing bid sound: $e');
+    }
   }
 
-  void _playCommentSound() {
+  void _playCommentSound() async {
     if (!_soundEnabled) return;
-    // TODO: Implement with audioplayers package
+    try {
+      await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
+    } catch (e) {
+      print('Error playing comment sound: $e');
+    }
   }
 
-  void _playTickSound() {
+  void _playTickSound() async {
     if (!_soundEnabled) return;
-    // TODO: Implement with audioplayers package
+    try {
+      await _audioPlayer.play(AssetSource('sounds/tick_clock.wav'));
+    } catch (e) {
+      print('Error playing tick sound: $e');
+    }
   }
 
   // ============================================
@@ -918,7 +933,8 @@ class _ProductDetailsState extends State<ProductDetails>
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: MediaQuery.of(context).size.height * 0.8,
               padding: EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1025,8 +1041,8 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.5,
-          height: MediaQuery.of(context).size.height * 0.7,
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.8,
           child: Column(
             children: [
               Container(
@@ -1336,6 +1352,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildMobileLayout() {
     final timeComponents = _getTimeComponents();
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageHeight = screenHeight * 0.65; // 65% of screen height
 
     return Stack(
       children: [
@@ -1343,9 +1361,9 @@ class _ProductDetailsState extends State<ProductDetails>
           controller: _mainScrollController,
           physics: BouncingScrollPhysics(),
           slivers: [
-            // Image Sliver
+            // Image Sliver - 65% of screen height
             SliverAppBar(
-              expandedHeight: 450,
+              expandedHeight: imageHeight,
               pinned: true,
               backgroundColor: Colors.black,
               flexibleSpace: FlexibleSpaceBar(
@@ -1353,7 +1371,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   children: [
                     CarouselSlider(
                       options: CarouselOptions(
-                        height: 450,
+                        height: imageHeight,
                         viewportFraction: 1,
                         autoPlay: true,
                         onPageChanged: (index, reason) {
@@ -1408,6 +1426,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             onTap: () => setState(() => _showMoreMenu = !_showMoreMenu),
                           ),
                           SizedBox(height: 12),
+                          // Fix 7: Wishlist button - full when added, empty when not
                           _buildIconCircle(
                             icon: _isInWishlist ? Icons.favorite : Icons.favorite_border,
                             isActive: _isInWishlist,
@@ -1491,7 +1510,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                    // Bottom Content Overlay
+                    // Bottom Content Overlay - Partially overlaying the image
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -1501,7 +1520,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments Section - width 80%
+                            // Fix 6: Comments Section - height grows with image
                             Container(
                               width: MediaQuery.of(context).size.width * 0.8,
                               decoration: BoxDecoration(
@@ -1530,8 +1549,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ],
                                   ),
                                   SizedBox(height: 8),
+                                  // Fix 6: Comment height grows with image height
                                   Container(
-                                    height: 80,
+                                    height: imageHeight * 0.08, // Dynamic height
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text('No comments yet',
@@ -1654,7 +1674,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             SizedBox(height: 12),
-                            // Title
+                            // Fix 5: Product name and description - bigger
                             GestureDetector(
                               onTap: _openTitleModal,
                               child: Column(
@@ -1663,7 +1683,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   Text(_product?.name ?? '',
                                       style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 20,
+                                          fontSize: 22,
                                           fontWeight: FontWeight.bold)),
                                   SizedBox(height: 4),
                                   Text(
@@ -1672,7 +1692,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                   '') ??
                                           '',
                                       style: TextStyle(
-                                          color: Colors.white70, fontSize: 12),
+                                          color: Colors.white70, fontSize: 14),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis),
                                 ],
@@ -1683,31 +1703,33 @@ class _ProductDetailsState extends State<ProductDetails>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
+                                // Fix 4: Countdown - bigger
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text('TIME LEFT',
                                         style: TextStyle(
                                             color: Colors.white70,
-                                            fontSize: 10)),
+                                            fontSize: 12)),
                                     SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        _buildTimerUnit(
+                                        _buildTimerUnitBig(
                                             timeComponents['days']!, 'd'),
-                                        _buildTimerUnit(
+                                        _buildTimerUnitBig(
                                             timeComponents['hours']!, 'h'),
-                                        _buildTimerUnit(
+                                        _buildTimerUnitBig(
                                             timeComponents['minutes']!, 'm'),
-                                        _buildTimerUnit(
+                                        _buildTimerUnitBig(
                                             timeComponents['seconds']!, 's'),
                                       ],
                                     ),
                                   ],
                                 ),
+                                // Fix 3: Current bid box - bigger
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
+                                      horizontal: 16, vertical: 12),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.6),
                                     borderRadius: BorderRadius.circular(16),
@@ -1720,11 +1742,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                       Text('Current Bid',
                                           style: TextStyle(
                                               color: Colors.white70,
-                                              fontSize: 10)),
+                                              fontSize: 12)),
                                       Text(_formatPrice(_currentHighestBid),
                                           style: TextStyle(
                                               color: Colors.white,
-                                              fontSize: 20,
+                                              fontSize: 24,
                                               fontWeight: FontWeight.bold)),
                                     ],
                                   ),
@@ -1739,10 +1761,10 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Bid Info Section
+            // Bid Info Section - Now overlays partially on the image
             SliverToBoxAdapter(
               child: Container(
-                margin: EdgeInsets.all(16),
+                margin: EdgeInsets.fromLTRB(16, -20, 16, 16), // Negative margin to overlay
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -1750,9 +1772,9 @@ class _ProductDetailsState extends State<ProductDetails>
                   border: Border.all(color: Colors.grey.shade200),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: Offset(0, 2)),
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: Offset(0, -2)),
                   ],
                 ),
                 child: Column(
@@ -1855,7 +1877,6 @@ class _ProductDetailsState extends State<ProductDetails>
                     return GestureDetector(
                       onTap: () {
                         setState(() => _currentImageIndex = index);
-                        // Scroll to image in carousel
                       },
                       child: Container(
                         width: 60,
@@ -1996,6 +2017,32 @@ class _ProductDetailsState extends State<ProductDetails>
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade800)),
           ],
         ),
+      ),
+    );
+  }
+
+  // Fix 4: Bigger timer unit for mobile
+  Widget _buildTimerUnitBig(String value, String label) {
+    return Container(
+      margin: EdgeInsets.only(right: 8),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(value,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+          ),
+          SizedBox(height: 2),
+          Text(label,
+              style: TextStyle(color: Colors.white70, fontSize: 11)),
+        ],
       ),
     );
   }
@@ -2377,6 +2424,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 label: 'Share',
                                 onTap: _shareProduct,
                               ),
+                              // Fix 7: Desktop wishlist - full when added, empty when not
                               _buildDesktopIconButton(
                                 icon: _isInWishlist
                                     ? Icons.favorite
