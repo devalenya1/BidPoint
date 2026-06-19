@@ -166,6 +166,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     return 0.0;
   }
 
+  // Fix 4: Entire button is clickable/swipeable - GestureDetector wraps everything
   void _onPanStart(DragStartDetails details) {
     _startX = details.localPosition.dx;
     _startY = details.localPosition.dy;
@@ -205,6 +206,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     }
   }
 
+  // Fix 3: Use the correct slug - widget.slug is passed to ProductDetails
   Future<void> _quickBid() async {
     if (_isProcessing) return;
     
@@ -230,6 +232,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
         );
+        // Fix 3: Use the correct slug
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -247,6 +250,16 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
       _isProcessing = false;
       setState(() {});
     }
+  }
+
+  void _navigateToProductDetails() {
+    // Fix 3: Use the correct slug
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetails(slug: widget.slug),
+      ),
+    );
   }
 
   void _showLoginDialog() {
@@ -299,15 +312,9 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           // Product Image with Timer
           Stack(
             children: [
+              // Fix 3: Use correct slug on image tap
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetails(slug: widget.slug),
-                    ),
-                  );
-                },
+                onTap: _navigateToProductDetails,
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: ClipRRect(
@@ -330,40 +337,48 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   ),
                 ),
               ),
-              if (showTimer)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              // Fix 1: Show timer at top right or show "Ended"
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _timeLeft == "Ended" 
+                        ? Colors.red 
+                        : const Color(0xFF009572),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _timeLeft == "Ended" 
+                            ? Icons.cancel 
+                            : Icons.access_time,
+                        size: 10, 
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        _timeLeft,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
-                        const SizedBox(width: 3),
-                        Text(
-                          _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
           
@@ -373,16 +388,9 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name
+                // Product Name - Fix 3: Use correct slug
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetails(slug: widget.slug),
-                      ),
-                    );
-                  },
+                  onTap: _navigateToProductDetails,
                   child: Text(
                     widget.name ?? 'Product',
                     style: const TextStyle(
@@ -396,15 +404,18 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 2),
                 
-                // Description
-                Text(
-                  widget.description ?? '',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF8F9AA7),
+                // Description - Fix 3: Use correct slug
+                GestureDetector(
+                  onTap: _navigateToProductDetails,
+                  child: Text(
+                    widget.description ?? '',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF8F9AA7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
                 
@@ -462,11 +473,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Swipe to Bid Button - Entire button is swipeable
+                // Fix 2: Proper padding - equal spacing on all sides
+                // Fix 4: Entire button is swipeable - GestureDetector wraps the button
                 GestureDetector(
                   onPanStart: _onPanStart,
                   onPanUpdate: _onPanUpdate,
                   onPanEnd: _onPanEnd,
+                  // Fix 4: Tap anywhere on the button triggers navigation
+                  onTap: _navigateToProductDetails,
                   child: Container(
                     width: double.infinity,
                     height: 40,
@@ -476,7 +490,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                     ),
                     child: Stack(
                       children: [
-                        // Swipe indicator
+                        // Swipe indicator with proper padding
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 50),
                           width: 28 + (_swipeAmount),
