@@ -1,5 +1,7 @@
 // data_model/bid_response.dart
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 
 BidResponse bidResponseFromJson(String str) => BidResponse.fromJson(json.decode(str));
 

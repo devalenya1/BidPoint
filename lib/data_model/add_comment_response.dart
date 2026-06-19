@@ -1,6 +1,8 @@
 // data_model/add_comment_response.dart
 import 'dart:convert';
-import 'poll_data_response.dart'; // Use Comment from here
+import 'package:flutter/material.dart';
+import 'package:active_ecommerce_flutter/helpers/system_config.dart';
+import 'poll_data_response.dart';
 
 AddCommentResponse addCommentResponseFromJson(String str) => AddCommentResponse.fromJson(json.decode(str));
 

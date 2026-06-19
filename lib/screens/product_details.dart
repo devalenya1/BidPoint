@@ -25,13 +25,14 @@ import 'package:photo_view/photo_view.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
+import '../data_model/auction_models.dart';
 
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/data_model/poll_data_response.dart';
 import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
-// import 'package:active_ecommerce_flutter/data_model/comment_response.dart';
-// import 'package:active_ecommerce_flutter/data_model/review_response.dart';
-import 'package:active_ecommerce_flutter/data_model/bid_history_response.dart';
+// // import 'package:active_ecommerce_flutter/data_model/comment_response.dart';
+// // import 'package:active_ecommerce_flutter/data_model/review_response.dart';
+// import 'package:active_ecommerce_flutter/data_model/bid_history_response.dart';
 import 'package:active_ecommerce_flutter/helpers/main_helpers.dart';
 
 class ProductDetails extends StatefulWidget {
