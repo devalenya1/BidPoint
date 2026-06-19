@@ -181,17 +181,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverToBoxAdapter(
                         child: _buildHotAuctionSection(),
                       ),
-                      
-                      // // Ending Soon Section
-                      // SliverToBoxAdapter(
-                      //   child: _buildEndingSoonSection(),
-                      // ),
-
 
                       // Upcoming Section
                       SliverToBoxAdapter(
                         child: _buildUpcomingSection(),
                       ),
+                      
+                      // Ending Soon Section
+                      SliverToBoxAdapter(
+                        child: _buildEndingSoonSection(),
+                      ),
+
                       
                       const SliverToBoxAdapter(child: SizedBox(height: 30)),
                     ],
@@ -222,9 +222,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
-                // onTap: () {
-                //   GoRouter.of(context).go('/hot-auctions');
-                // },
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
                     return CategoryProducts(slug: 'hot-auctions');
@@ -268,8 +265,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             return SizedBox(
               height: 350,
               child: ListView.builder(
-                // shrinkWrap: true,
-                // physics: const NeverScrollableScrollPhysics(), // ← Prevents scrolling
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: homeData.hotAuctionProductList.length,
@@ -321,9 +316,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
-                // onTap: () {
-                //   GoRouter.of(context).go('/ending-soon');
-                // },
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
                     return CategoryProducts(slug: 'ending-soon');
@@ -466,9 +458,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
-                // onTap: () {
-                //   GoRouter.of(context).go('/upcoming-auctions');
-                // },
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
                     return CategoryProducts(slug: 'upcoming-auctions');
@@ -512,8 +501,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             return SizedBox(
               height: 350,
               child: ListView.builder(
-                // shrinkWrap: true,
-                //physics: const NeverScrollableScrollPhysics(), // ← Prevents scrolling
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: homeData.upcomingProductList.length,

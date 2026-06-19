@@ -357,7 +357,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.description ?? '',
+                    widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: const TextStyle(
                       fontSize: 9,
                       color: Color(0xFF8F9AA7),
@@ -578,7 +578,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  widget.description ?? '',
+                  widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                   style: const TextStyle(
                     fontSize: 10,
                     color: Color(0xFF8F9AA7),

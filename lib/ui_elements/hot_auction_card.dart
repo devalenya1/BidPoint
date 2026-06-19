@@ -408,7 +408,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
-                    widget.description ?? '',
+                    
+                    widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: const TextStyle(
                       fontSize: 10,
                       color: Color(0xFF8F9AA7),
