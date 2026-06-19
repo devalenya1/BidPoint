@@ -268,6 +268,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             return SizedBox(
               height: 350,
               child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(), // ← Prevents scrolling
                 // scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: homeData.hotAuctionProductList.length,
@@ -510,6 +512,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             return SizedBox(
               height: 350,
               child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(), // ← Prevents scrolling
                 // scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: homeData.upcomingProductList.length,
