@@ -478,4 +478,47 @@ class ProductRepository {
       };
     }
   }
+
+  // Add this to ProductRepository class
+  Future<Map<String, dynamic>> contactSeller(int productId) async {
+    String url = "${AppConfig.BASE_URL}/product/contact-store";
+    
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({
+          "product_id": productId,
+        })
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? "Message sent to seller!",
+          'status': response.statusCode,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': "Failed to contact seller",
+          'status': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print("Error in contactSeller: $e");
+      return {
+        'success': false,
+        'message': "Network error. Please try again.",
+        'status': 500,
+      };
+    }
+  }
+
+
 }

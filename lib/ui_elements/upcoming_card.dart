@@ -7,7 +7,6 @@ import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:go_router/go_router.dart';
 
 class UpcomingCard extends StatefulWidget {
   final int id;
@@ -67,7 +66,16 @@ class _UpcomingCardState extends State<UpcomingCard> {
     if (widget.auctionEndDate == null) {
       if (mounted) {
         setState(() {
-          _timeLeft = "Coming Soon";
+          _timeLeft = "No Timer";
+        });
+      }
+      return;
+    }
+
+    if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Upcoming";
         });
       }
       return;
@@ -167,6 +175,15 @@ class _UpcomingCardState extends State<UpcomingCard> {
     return 0.0;
   }
 
+  void _navigateToProductDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetails(slug: widget.slug),
+      ),
+    );
+  }
+
   Future<void> _notifyMe() async {
     if (_isProcessing) return;
     
@@ -227,11 +244,12 @@ class _UpcomingCardState extends State<UpcomingCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = _timeLeft != "Ended" && _timeLeft != "Coming Soon";
+    // Fixed: Show timer for Upcoming status as well
+    final showTimer = _timeLeft != "Ended" && _timeLeft != "No Timer" && _timeLeft != "Upcoming";
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
+        color: Colors.white, // Changed to white like product_card
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF2F7)),
         boxShadow: [
@@ -249,14 +267,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
           Stack(
             children: [
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetails(slug: widget.slug),
-                    ),
-                  );
-                },
+                onTap: _navigateToProductDetails,
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: ClipRRect(
@@ -279,44 +290,56 @@ class _UpcomingCardState extends State<UpcomingCard> {
                   ),
                 ),
               ),
-              if (showTimer)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+              // Fixed: Show "Upcoming" or timer or "Ended"
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _timeLeft == "Ended" 
+                        ? Colors.red 
+                        : (_timeLeft == "Upcoming" 
+                            ? Colors.orange 
+                            : const Color(0xFF009572)),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _timeLeft == "Ended" 
+                            ? Icons.cancel 
+                            : (_timeLeft == "Upcoming"
+                                ? Icons.schedule
+                                : Icons.access_time),
+                        size: 10, 
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        _timeLeft,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
-                        const SizedBox(width: 3),
-                        Text(
-                          _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
           
-          // Product Details
+          // Product Details - Same as product_card
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -324,14 +347,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
               children: [
                 // Product Name
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetails(slug: widget.slug),
-                      ),
-                    );
-                  },
+                  onTap: _navigateToProductDetails,
                   child: Text(
                     widget.name ?? 'Product',
                     style: const TextStyle(
@@ -346,14 +362,17 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 const SizedBox(height: 2),
                 
                 // Description
-                Text(
-                  widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF8F9AA7),
+                GestureDetector(
+                  onTap: _navigateToProductDetails,
+                  child: Text(
+                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF8F9AA7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
                 
@@ -365,7 +384,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Current Bid',
+                          'Starting Bid',
                           style: TextStyle(
                             fontSize: 9,
                             color: Color(0xFF80818B),
@@ -411,12 +430,12 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Notify Me Button
+                // Notify Me Button - Same height as product_card (40)
                 GestureDetector(
                   onTap: _notifyMe,
                   child: Container(
                     width: double.infinity,
-                    height: 40,
+                    height: 40, // Fixed: Same height as product_card
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7),

@@ -7,7 +7,6 @@ import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:go_router/go_router.dart';
 
 class HotAuctionCard extends StatefulWidget {
   final int id;
@@ -70,7 +69,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   void _updateTimer() {
-    if (widget.auctionEndDate == null) return;
+    if (widget.auctionEndDate == null) {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "No Timer";
+        });
+      }
+      return;
+    }
 
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
@@ -166,7 +172,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     return 0.0;
   }
 
-  // Fix 4: Entire button is clickable/swipeable - GestureDetector wraps everything
   void _onPanStart(DragStartDetails details) {
     _startX = details.localPosition.dx;
     _startY = details.localPosition.dy;
@@ -179,7 +184,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     final deltaX = details.localPosition.dx - _startX;
     final deltaY = details.localPosition.dy - _startY;
     
-    // Allow swipe on any part of the button
     if (deltaX > 5 && deltaY.abs() < 50) {
       setState(() {
         _swipeAmount = deltaX.clamp(0.0, 60.0);
@@ -206,7 +210,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     }
   }
 
-  // Fix 3: Use the correct slug - widget.slug is passed to ProductDetails
   Future<void> _quickBid() async {
     if (_isProcessing) return;
     
@@ -232,7 +235,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
         );
-        // Fix 3: Use the correct slug
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -253,7 +255,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   void _navigateToProductDetails() {
-    // Fix 3: Use the correct slug
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -291,11 +292,11 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = widget.isAuctionActive && _timeLeft != "Ended";
+    final showTimer = widget.isAuctionActive && _timeLeft != "Ended" && _timeLeft != "No Timer";
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
+        color: Colors.white, // Changed to white like product_card
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF2F7)),
         boxShadow: [
@@ -312,7 +313,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           // Product Image with Timer
           Stack(
             children: [
-              // Fix 3: Use correct slug on image tap
               GestureDetector(
                 onTap: _navigateToProductDetails,
                 child: AspectRatio(
@@ -337,7 +337,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   ),
                 ),
               ),
-              // Fix 1: Show timer at top right or show "Ended"
+              // Timer - Fixed: Always shows timer, "Ended" in red, live in green
               Positioned(
                 top: 6,
                 right: 6,
@@ -382,13 +382,13 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             ],
           ),
           
-          // Product Details
+          // Product Details - Using same padding as product_card
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name - Fix 3: Use correct slug
+                // Product Name
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
@@ -404,12 +404,11 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 2),
                 
-                // Description - Fix 3: Use correct slug
+                // Description - Fixed to match product_card
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
-                    
-                    widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: const TextStyle(
                       fontSize: 10,
                       color: Color(0xFF8F9AA7),
@@ -420,7 +419,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 10),
                 
-                // Current Bid and Points Row
+                // Current Bid and Points Row - Fixed to match product_card
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -430,14 +429,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         const Text(
                           'Current Bid',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 9,
                             color: Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
                           style: const TextStyle(
-                            fontSize: 17,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
@@ -474,24 +473,23 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Fix 2: Proper padding - equal spacing on all sides
-                // Fix 4: Entire button is swipeable - GestureDetector wraps the button
+                // Fixed: Button with proper padding, same height as product_card (40)
+                // Fixed: Entire button is clickable and swipeable
                 GestureDetector(
                   onPanStart: _onPanStart,
                   onPanUpdate: _onPanUpdate,
                   onPanEnd: _onPanEnd,
-                  // Fix 4: Tap anywhere on the button triggers navigation
                   onTap: _navigateToProductDetails,
                   child: Container(
                     width: double.infinity,
-                    height: 40,
+                    height: 40, // Fixed: Same height as product_card
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7),
                     ),
                     child: Stack(
                       children: [
-                        // Swipe indicator with proper padding
+                        // Swipe indicator
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 50),
                           width: 28 + (_swipeAmount),

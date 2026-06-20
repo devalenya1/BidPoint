@@ -7,7 +7,6 @@ import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:go_router/go_router.dart';
 
 class EndingSoonCard extends StatefulWidget {
   final int id;
@@ -45,11 +44,16 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   Timer? _timer;
   String _timeLeft = "Loading...";
   bool _isProcessing = false;
+  double _swipeAmount = 0.0;
+  bool _isSwiping = false;
+  double _startX = 0;
+  double _startY = 0;
 
   @override
   void initState() {
     super.initState();
-    if (widget.isAuctionActive && widget.auctionEndDate != null) {
+    // Always start timer if auctionEndDate exists
+    if (widget.auctionEndDate != null) {
       _startTimer();
     }
   }
@@ -68,7 +72,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   }
 
   void _updateTimer() {
-    if (widget.auctionEndDate == null) return;
+    if (widget.auctionEndDate == null) {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "No Timer";
+        });
+      }
+      return;
+    }
 
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
@@ -77,6 +88,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
         });
       }
       _timer?.cancel();
+      return;
+    }
+
+    if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Upcoming";
+        });
+      }
       return;
     }
 
@@ -164,6 +184,44 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     return 0.0;
   }
 
+  void _onPanStart(DragStartDetails details) {
+    _startX = details.localPosition.dx;
+    _startY = details.localPosition.dy;
+    _isSwiping = true;
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (!_isSwiping) return;
+    
+    final deltaX = details.localPosition.dx - _startX;
+    final deltaY = details.localPosition.dy - _startY;
+    
+    if (deltaX > 5 && deltaY.abs() < 50) {
+      setState(() {
+        _swipeAmount = deltaX.clamp(0.0, 60.0);
+      });
+    } else if (deltaX < -5) {
+      setState(() {
+        _swipeAmount = 0;
+      });
+    }
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (!_isSwiping) return;
+    
+    final wasSwiped = _swipeAmount >= 40;
+    
+    setState(() {
+      _isSwiping = false;
+      _swipeAmount = 0;
+    });
+    
+    if (wasSwiped) {
+      _quickBid();
+    }
+  }
+
   Future<void> _quickBid() async {
     if (_isProcessing) return;
     
@@ -208,6 +266,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     }
   }
 
+  void _navigateToProductDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetails(slug: widget.slug),
+      ),
+    );
+  }
+
   void _showLoginDialog() {
     showDialog(
       context: context,
@@ -237,8 +304,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = widget.isAuctionActive && _timeLeft != "Ended";
     final isLeft = widget.cardType == 'left';
+    final showTimer = _timeLeft != "No Timer" && _timeLeft != "Upcoming";
 
     if (isLeft) {
       return _buildLeftCard(displayBid, showTimer);
@@ -250,9 +317,16 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   Widget _buildLeftCard(double displayBid, bool showTimer) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF2F7)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -260,14 +334,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           Stack(
             children: [
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetails(slug: widget.slug),
-                    ),
-                  );
-                },
+                onTap: _navigateToProductDetails,
                 child: SizedBox(
                   width: 100,
                   height: 100,
@@ -298,7 +365,9 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
+                      color: _timeLeft == "Ended" 
+                          ? Colors.red 
+                          : const Color(0xFF009572),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
@@ -311,7 +380,13 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
+                        Icon(
+                          _timeLeft == "Ended" 
+                              ? Icons.cancel 
+                              : Icons.access_time,
+                          size: 10, 
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           _timeLeft,
@@ -336,14 +411,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductDetails(slug: widget.slug),
-                        ),
-                      );
-                    },
+                    onTap: _navigateToProductDetails,
                     child: Text(
                       widget.name ?? 'Product',
                       style: const TextStyle(
@@ -357,7 +425,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: const TextStyle(
                       fontSize: 9,
                       color: Color(0xFF8F9AA7),
@@ -365,7 +433,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -418,46 +486,74 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Bid Now Button
+                  // Swipe to Bid Button
                   GestureDetector(
-                    onTap: _quickBid,
+                    onPanStart: _onPanStart,
+                    onPanUpdate: _onPanUpdate,
+                    onPanEnd: _onPanEnd,
+                    onTap: _navigateToProductDetails,
                     child: Container(
                       width: double.infinity,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: MyTheme.accent_color, width: 1),
+                        color: MyTheme.accent_color,
                         borderRadius: BorderRadius.circular(7),
                       ),
-                      child: Center(
-                        child: _isProcessing
-                            ? const SizedBox(
-                                height: 14,
-                                width: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: MyTheme.accent_color,
-                                ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Bid Now',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: MyTheme.accent_color,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.arrow_forward,
-                                    size: 10,
-                                    color: MyTheme.accent_color,
-                                  ),
-                                ],
+                      child: Stack(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 50),
+                            width: 20 + (_swipeAmount),
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: _swipeAmount > 20 ? Colors.green : Colors.white,
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                size: 12,
+                                color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
                               ),
+                            ),
+                          ),
+                          Center(
+                            child: _isProcessing
+                                ? const SizedBox(
+                                    height: 14,
+                                    width: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_swipeAmount < 20) ...[
+                                        const SizedBox(width: 20),
+                                        const Text(
+                                          'Swipe to Bid',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ] else ...[
+                                        const Text(
+                                          'Quick Bid',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -473,9 +569,16 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   Widget _buildRightCard(double displayBid, bool showTimer) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF2F7)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -483,14 +586,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           Stack(
             children: [
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetails(slug: widget.slug),
-                    ),
-                  );
-                },
+                onTap: _navigateToProductDetails,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   child: AspectRatio(
@@ -520,7 +616,9 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
+                      color: _timeLeft == "Ended" 
+                          ? Colors.red 
+                          : const Color(0xFF009572),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
@@ -533,7 +631,13 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
+                        Icon(
+                          _timeLeft == "Ended" 
+                              ? Icons.cancel 
+                              : Icons.access_time,
+                          size: 10, 
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           _timeLeft,
@@ -557,14 +661,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetails(slug: widget.slug),
-                      ),
-                    );
-                  },
+                  onTap: _navigateToProductDetails,
                   child: Text(
                     widget.name ?? 'Product',
                     style: const TextStyle(
@@ -578,7 +675,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+                  widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                   style: const TextStyle(
                     fontSize: 10,
                     color: Color(0xFF8F9AA7),
@@ -627,45 +724,74 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // Swipe to Bid Button
                 GestureDetector(
-                  onTap: _quickBid,
+                  onPanStart: _onPanStart,
+                  onPanUpdate: _onPanUpdate,
+                  onPanEnd: _onPanEnd,
+                  onTap: _navigateToProductDetails,
                   child: Container(
                     width: double.infinity,
                     height: 35,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: MyTheme.accent_color, width: 1),
+                      color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7),
                     ),
-                    child: Center(
-                      child: _isProcessing
-                          ? const SizedBox(
-                              height: 14,
-                              width: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: MyTheme.accent_color,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'Bid Now',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: MyTheme.accent_color,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  size: 10,
-                                  color: MyTheme.accent_color,
-                                ),
-                              ],
+                    child: Stack(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 50),
+                          width: 20 + (_swipeAmount),
+                          height: 35,
+                          decoration: BoxDecoration(
+                            color: _swipeAmount > 20 ? Colors.green : Colors.white,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                              color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
                             ),
+                          ),
+                        ),
+                        Center(
+                          child: _isProcessing
+                              ? const SizedBox(
+                                  height: 14,
+                                  width: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_swipeAmount < 20) ...[
+                                      const SizedBox(width: 20),
+                                      const Text(
+                                        'Swipe to Bid',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      const Text(
+                                        'Quick Bid',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

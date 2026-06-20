@@ -177,6 +177,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         ),
                       ),
                       
+                      // Extra space between Featured Categories and Hot Auction
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      
                       // Hot Auctions Section
                       SliverToBoxAdapter(
                         child: _buildHotAuctionSection(),
@@ -240,66 +243,165 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            double cardWidth;
-            if (constraints.maxWidth >= 1024) {
-              cardWidth = (constraints.maxWidth - 16 * 7) / 6;
-            } else if (constraints.maxWidth >= 768) {
-              cardWidth = (constraints.maxWidth - 16 * 5) / 4;
-            } else {
-              cardWidth = (constraints.maxWidth - 16 * 3) / 2;
-            }
-            
-            cardWidth = cardWidth.clamp(120.0, double.infinity);
-            
-            if (homeData.hotAuctionProductList.isEmpty) {
-              return Container(
-                height: 50,
-                child: Center(
-                  child: Text('No hot auctions available'),
-                ),
+        if (homeData.hotAuctionProductList.isEmpty)
+          Container(
+            height: 50,
+            child: Center(
+              child: Text('No hot auctions available'),
+            ),
+          )
+        else
+          _buildStaticHorizontalGrid(
+            products: homeData.hotAuctionProductList,
+            cardBuilder: (context, product) {
+              bool isActive = false;
+              if (product.auctionEndDate != null && product.auctionEndDate is int) {
+                isActive = product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
+              }
+              return HotAuctionCard(
+                id: product.id ?? 0,
+                slug: product.slug ?? '',
+                image: product.thumbnailImage,
+                name: product.name,
+                description: product.description,
+                pointPerBid: product.pointPerBid ?? 0,
+                auctionEndDate: product.auctionEndDate,
+                currentBid: product.highestBid,
+                startingBid: product.startingBid,
+                isAuctionActive: isActive,
               );
-            }
-            
-            return SizedBox(
-              height: 350,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: homeData.hotAuctionProductList.length,
-                itemBuilder: (context, index) {
-                  final product = homeData.hotAuctionProductList[index];
-                  bool isActive = false;
-                  if (product.auctionEndDate != null && product.auctionEndDate is int) {
-                    isActive = product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
-                  }
-                  return Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: HotAuctionCard(
-                      id: product.id ?? 0,
-                      slug: product.slug ?? '',
-                      image: product.thumbnailImage,
-                      name: product.name,
-                      description: product.description,
-                      pointPerBid: product.pointPerBid ?? 0,
-                      auctionEndDate: product.auctionEndDate,
-                      currentBid: product.highestBid,
-                      startingBid: product.startingBid,
-                      isAuctionActive: isActive,
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
+            },
+          ),
         const SizedBox(height: 20),
       ],
     );
   }
 
+  // ============ UPCOMING SECTION ============
+  Widget _buildUpcomingSection() {
+    print('Upcoming count: ${homeData.upcomingProductList.length}');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.upcoming_auctions_ucf,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CategoryProducts(slug: 'upcoming-auctions');
+                  }));
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (homeData.upcomingProductList.isEmpty)
+          Container(
+            height: 50,
+            child: Center(
+              child: Text('No upcoming auctions'),
+            ),
+          )
+        else
+          _buildStaticHorizontalGrid(
+            products: homeData.upcomingProductList,
+            cardBuilder: (context, product) {
+              int? auctionStartTimestamp;
+              if (product.auctionStartDate != null) {
+                if (product.auctionStartDate is int) {
+                  auctionStartTimestamp = product.auctionStartDate;
+                } else if (product.auctionStartDate is String) {
+                  auctionStartTimestamp = int.tryParse(product.auctionStartDate) ?? 0;
+                }
+              }
+              
+              return UpcomingCard(
+                id: product.id ?? 0,
+                slug: product.slug ?? '',
+                image: product.thumbnailImage,
+                name: product.name,
+                description: product.description,
+                pointPerBid: product.pointPerBid ?? 0,
+                auctionEndDate: auctionStartTimestamp ?? product.auctionStartDate,
+                currentBid: product.startingBid,
+                startingBid: product.startingBid,
+                isAuctionActive: false,
+              );
+            },
+          ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ============ REUSABLE STATIC HORIZONTAL GRID (NO SCROLL) ============
+  Widget _buildStaticHorizontalGrid({
+    required List products,
+    required Widget Function(BuildContext, dynamic) cardBuilder,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate how many items to show based on screen width
+        int itemsToShow;
+        double cardWidth;
+        
+        if (constraints.maxWidth >= 1024) {
+          // Desktop: Show 6 items
+          itemsToShow = 6;
+          cardWidth = (constraints.maxWidth - 16 * 7) / 6;
+        } else if (constraints.maxWidth >= 768) {
+          // Tablet: Show 4 items
+          itemsToShow = 4;
+          cardWidth = (constraints.maxWidth - 16 * 5) / 4;
+        } else {
+          // Mobile: Show 2 items
+          itemsToShow = 2;
+          cardWidth = (constraints.maxWidth - 16 * 3) / 2;
+        }
+        
+        cardWidth = cardWidth.clamp(120.0, double.infinity);
+        
+        // Show only up to itemsToShow products
+        final displayProducts = products.take(itemsToShow).toList();
+        
+        // Use Row with Expanded or flexible children - NO SCROLLING
+        return SizedBox(
+          height: 350,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: displayProducts.asMap().entries.map((entry) {
+                int index = entry.key;
+                var product = entry.value;
+                return Container(
+                  width: cardWidth,
+                  margin: EdgeInsets.only(right: index < displayProducts.length - 1 ? 12 : 0),
+                  child: cardBuilder(context, product),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
   // ============ ENDING SOON SECTION ============
   Widget _buildEndingSoonSection() {
     print('Ending Soon count: ${homeData.endingSoonProductList.length}');
@@ -348,11 +450,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-
   Widget _buildEndingSoonGrid() {
     final products = homeData.endingSoonProductList;
     if (products.isEmpty) return const SizedBox.shrink();
 
+    // Group products in sets of 3
     List<List<dynamic>> grids = [];
     for (int i = 0; i < products.length; i += 3) {
       int end = (i + 3 < products.length) ? i + 3 : products.length;
@@ -361,183 +463,113 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= 768) {
-          int gridsToShow = grids.length > 2 ? 2 : grids.length;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(gridsToShow, (gridIndex) {
-                final grid = grids[gridIndex];
-                return Expanded(
-                  child: _buildEndingSoonGridItem(grid),
-                );
-              }),
-            ),
-          );
+        int gridsToShow;
+        
+        // Mobile: Show 1 grid
+        // Tablet: Show 2 grids
+        // Desktop: Show 3 grids (or more if available)
+        if (constraints.maxWidth >= 1024) {
+          gridsToShow = grids.length > 3 ? 3 : grids.length;
+        } else if (constraints.maxWidth >= 768) {
+          gridsToShow = grids.length > 2 ? 2 : grids.length;
         } else {
-          final grid = grids.isNotEmpty ? grids[0] : [];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildEndingSoonGridItem(grid),
-          );
+          gridsToShow = 1;
         }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(gridsToShow, (gridIndex) {
+              final grid = grids[gridIndex];
+              return Expanded(
+                child: _buildEndingSoonGridItem(grid),
+              );
+            }),
+          ),
+        );
       },
     );
   }
 
   Widget _buildEndingSoonGridItem(List<dynamic> grid) {
-    final leftProducts = grid.length >= 2 ? grid.sublist(0, 2) : grid;
-    final rightProduct = grid.length >= 3 ? grid[2] : null;
+    // First product (left top)
+    final product1 = grid.length >= 1 ? grid[0] : null;
+    // Second product (left bottom)
+    final product2 = grid.length >= 2 ? grid[1] : null;
+    // Third product (right side)
+    final product3 = grid.length >= 3 ? grid[2] : null;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Left side - 2/3 width
         Expanded(
           flex: 2,
           child: Column(
-            children: leftProducts.map((product) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: EndingSoonCard(
-                  id: product.id ?? 0,
-                  slug: product.slug ?? '',
-                  image: product.thumbnailImage,
-                  name: product.name,
-                  description: product.description,
-                  pointPerBid: product.pointPerBid ?? 0,
-                  auctionEndDate: product.auctionEndDate,
-                  currentBid: product.highestBid,
-                  startingBid: product.startingBid,
-                  isAuctionActive: product.auctionEndDate != null && 
-                      product.auctionEndDate is int && 
-                      product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                  cardType: 'left',
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(width: 4),
-        if (rightProduct != null)
-          Expanded(
-            flex: 1,
-            child: EndingSoonCard(
-              id: rightProduct.id ?? 0,
-              slug: rightProduct.slug ?? '',
-              image: rightProduct.thumbnailImage,
-              name: rightProduct.name,
-              description: rightProduct.description,
-              pointPerBid: rightProduct.pointPerBid ?? 0,
-              auctionEndDate: rightProduct.auctionEndDate,
-              currentBid: rightProduct.highestBid,
-              startingBid: rightProduct.startingBid,
-              isAuctionActive: rightProduct.auctionEndDate != null && 
-                  rightProduct.auctionEndDate is int && 
-                  rightProduct.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              cardType: 'right',
-            ),
-          ),
-      ],
-    );
-  }
-
-  // ============ UPCOMING SECTION ============
-  Widget _buildUpcomingSection() {
-    print('Upcoming count: ${homeData.upcomingProductList.length}');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                AppLocalizations.of(context)!.upcoming_auctions_ucf,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(slug: 'upcoming-auctions');
-                  }));
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3)),
-                    borderRadius: BorderRadius.circular(8),
+              if (product1 != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: EndingSoonCard(
+                    id: product1.id ?? 0,
+                    slug: product1.slug ?? '',
+                    image: product1.thumbnailImage,
+                    name: product1.name,
+                    description: product1.description,
+                    pointPerBid: product1.pointPerBid ?? 0,
+                    auctionEndDate: product1.auctionEndDate,
+                    currentBid: product1.highestBid,
+                    startingBid: product1.startingBid,
+                    isAuctionActive: product1.auctionEndDate != null && 
+                        product1.auctionEndDate is int && 
+                        product1.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                    cardType: 'left',
                   ),
-                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
                 ),
-              ),
+              if (product2 != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 0),
+                  child: EndingSoonCard(
+                    id: product2.id ?? 0,
+                    slug: product2.slug ?? '',
+                    image: product2.thumbnailImage,
+                    name: product2.name,
+                    description: product2.description,
+                    pointPerBid: product2.pointPerBid ?? 0,
+                    auctionEndDate: product2.auctionEndDate,
+                    currentBid: product2.highestBid,
+                    startingBid: product2.startingBid,
+                    isAuctionActive: product2.auctionEndDate != null && 
+                        product2.auctionEndDate is int && 
+                        product2.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                    cardType: 'left',
+                  ),
+                ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            double cardWidth;
-            if (constraints.maxWidth >= 1024) {
-              cardWidth = (constraints.maxWidth - 16 * 7) / 6;
-            } else if (constraints.maxWidth >= 768) {
-              cardWidth = (constraints.maxWidth - 16 * 5) / 4;
-            } else {
-              cardWidth = (constraints.maxWidth - 16 * 3) / 2;
-            }
-            
-            cardWidth = cardWidth.clamp(120.0, double.infinity);
-            
-            if (homeData.upcomingProductList.isEmpty) {
-              return Container(
-                height: 50,
-                child: Center(
-                  child: Text('No upcoming auctions'),
-                ),
-              );
-            }
-            
-            return SizedBox(
-              height: 350,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: homeData.upcomingProductList.length,
-                itemBuilder: (context, index) {
-                  final product = homeData.upcomingProductList[index];
-                  
-                  int? auctionStartTimestamp;
-                  if (product.auctionStartDate != null) {
-                    if (product.auctionStartDate is int) {
-                      auctionStartTimestamp = product.auctionStartDate;
-                    } else if (product.auctionStartDate is String) {
-                      auctionStartTimestamp = int.tryParse(product.auctionStartDate) ?? 0;
-                    }
-                  }
-                  
-                  return Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: UpcomingCard(
-                      id: product.id ?? 0,
-                      slug: product.slug ?? '',
-                      image: product.thumbnailImage,
-                      name: product.name,
-                      description: product.description,
-                      pointPerBid: product.pointPerBid ?? 0,
-                      auctionEndDate: auctionStartTimestamp ?? product.auctionStartDate,
-                      currentBid: product.startingBid,
-                      startingBid: product.startingBid,
-                      isAuctionActive: false,
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(width: 8),
+        // Right side - 1/3 width
+        if (product3 != null)
+          Expanded(
+            flex: 1,
+            child: EndingSoonCard(
+              id: product3.id ?? 0,
+              slug: product3.slug ?? '',
+              image: product3.thumbnailImage,
+              name: product3.name,
+              description: product3.description,
+              pointPerBid: product3.pointPerBid ?? 0,
+              auctionEndDate: product3.auctionEndDate,
+              currentBid: product3.highestBid,
+              startingBid: product3.startingBid,
+              isAuctionActive: product3.auctionEndDate != null && 
+                  product3.auctionEndDate is int && 
+                  product3.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              cardType: 'right',
+            ),
+          ),
       ],
     );
   }
@@ -636,12 +668,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Padding(
         padding: const EdgeInsets.only(left: 18, right: 18, top: 0, bottom: 20),
-        child: ShimmerHelper().buildBasicShimmer(height: 120),
+        child: ShimmerHelper().buildBasicShimmer(height: 200), // Increased from 120 to 200
       );
     } else if (homeData.carouselImageList.isNotEmpty) {
       return CarouselSlider(
         options: CarouselOptions(
-          aspectRatio: 338 / 140,
+          aspectRatio: 338 / 200, // Changed from 338/140 to 338/200
           viewportFraction: 1,
           initialPage: 0,
           enableInfiniteScroll: true,
@@ -665,7 +697,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   children: <Widget>[
                     Container(
                       width: double.infinity,
-                      height: 140,
+                      height: 200, // Increased from 140 to 200
                       child: InkWell(
                         onTap: () {
                           if (i.url != null) {

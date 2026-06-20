@@ -7,7 +7,6 @@ import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:go_router/go_router.dart';
 
 class ProductCard extends StatefulWidget {
   final int id;
@@ -60,7 +59,8 @@ class _ProductCardState extends State<ProductCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.isAuctionActive && widget.auctionEndDate != null) {
+    // Fixed: Always start timer if auctionEndDate exists, regardless of isAuctionActive
+    if (widget.auctionEndDate != null) {
       _startTimer();
     }
   }
@@ -96,6 +96,16 @@ class _ProductCardState extends State<ProductCard> {
         });
       }
       _timer?.cancel();
+      return;
+    }
+
+    // Handle "Upcoming" string case
+    if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
+      if (mounted) {
+        setState(() {
+          _timeLeft = "Upcoming";
+        });
+      }
       return;
     }
 
@@ -203,11 +213,13 @@ class _ProductCardState extends State<ProductCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = widget.isAuctionActive && _timeLeft != "Ended" && _timeLeft != "No Timer";
+    // Fixed: Show timer for all statuses except "No Timer"
+    // Show "Upcoming" in orange, "Ended" in red, timer in green
+    final showTimer = _timeLeft != "No Timer";
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
+        color: Colors.white, // Fixed: Changed to white like other cards
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF2F7)),
         boxShadow: [
@@ -248,7 +260,7 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                 ),
               ),
-              // Timer - Green at top right
+              // Fixed: Timer shows for all statuses with appropriate colors
               if (showTimer)
                 Positioned(
                   top: 6,
@@ -256,7 +268,11 @@ class _ProductCardState extends State<ProductCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF009572),
+                      color: _timeLeft == "Ended" 
+                          ? Colors.red 
+                          : (_timeLeft == "Upcoming" 
+                              ? Colors.orange 
+                              : const Color(0xFF009572)),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
@@ -269,7 +285,15 @@ class _ProductCardState extends State<ProductCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.access_time, size: 10, color: Colors.white),
+                        Icon(
+                          _timeLeft == "Ended" 
+                              ? Icons.cancel 
+                              : (_timeLeft == "Upcoming"
+                                  ? Icons.schedule
+                                  : Icons.access_time),
+                          size: 10, 
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           _timeLeft,
@@ -309,14 +333,17 @@ class _ProductCardState extends State<ProductCard> {
                 const SizedBox(height: 2),
                 
                 // Description - Below title
-                Text(
-                  widget.description ?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF8F9AA7),
+                GestureDetector(
+                  onTap: _navigateToProduct,
+                  child: Text(
+                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF8F9AA7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
                 
@@ -328,9 +355,9 @@ class _ProductCardState extends State<ProductCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Current Bid',
-                          style: TextStyle(
+                        Text(
+                          _timeLeft == "Upcoming" ? 'Starting Bid' : 'Current Bid',
+                          style: const TextStyle(
                             fontSize: 9,
                             color: Color(0xFF80818B),
                           ),
@@ -390,9 +417,9 @@ class _ProductCardState extends State<ProductCard> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'View Product',
-                            style: TextStyle(
+                          Text(
+                            _timeLeft == "Upcoming" ? 'View Product' : 'View Product',
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

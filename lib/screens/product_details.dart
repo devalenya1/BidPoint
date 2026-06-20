@@ -106,6 +106,9 @@ class _ProductDetailsState extends State<ProductDetails>
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
+  // Loading state for dialogs
+  bool _isProcessing = false;
+
   @override
   void initState() {
     super.initState();
@@ -150,8 +153,8 @@ class _ProductDetailsState extends State<ProductDetails>
         _currentHighestBid = _product!.highestBid != null
             ? double.tryParse(_product!.highestBid!) ?? 0
             : 0;
-        _totalBids = 0;
-        _highestBidder = '';
+        _totalBids = _product!.bidCount ?? 0;
+        _highestBidder = _product!.highestBidder ?? '';
         _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
         _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
         _reviewsCount = _product!.ratingCount ?? 0;
@@ -202,6 +205,8 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.getProductReviews(_product?.id ?? 0);
       if (response.success == true && response.reviews != null) {
         setState(() => _reviews = response.reviews!);
+        // Update review count from fetched reviews
+        _reviewsCount = _reviews.length;
       }
     } catch (e) {
       print('Error fetching reviews: $e');
@@ -373,6 +378,9 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     final amount = _minNextBidNow;
+    
+    // Fix 1: Proper loading state
+    setState(() => _isProcessing = true);
     _showLoadingDialog();
 
     try {
@@ -381,7 +389,10 @@ class _ProductDetailsState extends State<ProductDetails>
         amount.toString(),
       );
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
 
       if (response.success == true) {
         _playBidSound();
@@ -405,7 +416,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _showToast(response.message ?? 'Something went wrong');
       }
     } catch (e) {
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
       _showToast('Error placing bid: $e');
     }
   }
@@ -426,6 +440,7 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    setState(() => _isProcessing = true);
     _showLoadingDialog();
 
     try {
@@ -434,7 +449,10 @@ class _ProductDetailsState extends State<ProductDetails>
         amount.toString(),
       );
 
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
 
       if (response.success == true) {
         _playBidSound();
@@ -449,7 +467,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _showToast(response.message ?? 'Error placing bid');
       }
     } catch (e) {
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
       _showToast('Error placing bid');
     }
   }
@@ -470,6 +491,7 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    setState(() => _isProcessing = true);
     _showLoadingDialog();
 
     try {
@@ -478,7 +500,10 @@ class _ProductDetailsState extends State<ProductDetails>
         comment,
       );
 
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
 
       if (response.success == true) {
         _playCommentSound();
@@ -489,7 +514,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _showToast(response.message ?? 'Error adding comment');
       }
     } catch (e) {
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
       _showToast('Error adding comment');
     }
   }
@@ -515,6 +543,7 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    setState(() => _isProcessing = true);
     _showLoadingDialog();
 
     try {
@@ -524,7 +553,10 @@ class _ProductDetailsState extends State<ProductDetails>
         comment,
       );
 
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
 
       if (response.success == true) {
         _showToast('Review submitted!');
@@ -538,7 +570,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _showToast(response.message ?? 'Error submitting review');
       }
     } catch (e) {
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
       _showToast('Error submitting review');
     }
   }
@@ -571,6 +606,43 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       _showToast('Error updating wishlist');
+    }
+  }
+
+  // ============================================
+  // CONTACT SELLER
+  // ============================================
+
+  Future<void> _contactSeller() async {
+    if (!is_logged_in.$) {
+      _showLoginRequired();
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+    _showLoadingDialog();
+
+    try {
+      final response = await _productRepository.contactSeller(
+        _product!.id ?? 0,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
+
+      if (response['success'] == true) {
+        _showToast(response['message'] ?? 'Message sent to seller!');
+      } else {
+        _showToast(response['message'] ?? 'Failed to contact seller');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isProcessing = false);
+      }
+      _showToast('Error contacting seller');
     }
   }
 
@@ -672,55 +744,72 @@ class _ProductDetailsState extends State<ProductDetails>
     Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
   }
 
+  // Fix 6: Custom popup with better design
   void _showBidInputDialog() {
     _bidController.clear();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bid for Product', style: TextStyle(fontSize: 16)),
+            Text('Bid for Product', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 4),
             Text('Min bid amount: ${_formatPrice(_minNextBidNow)}',
-                style: TextStyle(fontSize: 12, color: Colors.grey)),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            Text('1 Bid = $_pointPerBidCustom',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: _bidController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: 'Enter amount',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+                Expanded(
+                  child: TextField(
+                    controller: _bidController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Enter amount',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
                     _submitCustomBid();
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: MyTheme.accent_color),
+                    backgroundColor: MyTheme.accent_color,
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: Size(0, 48),
+                  ),
                   child: Text('Place Bid',
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+        ],
       ),
     );
   }
@@ -992,6 +1081,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         return;
                       }
                       Navigator.pop(context);
+                      setState(() => _isProcessing = true);
                       _showLoadingDialog();
 
                       try {
@@ -1001,7 +1091,11 @@ class _ProductDetailsState extends State<ProductDetails>
                           tempRating.toInt(),
                           tempController.text,
                         );
-                        Navigator.pop(context);
+                        
+                        if (mounted) {
+                          Navigator.pop(context);
+                          setState(() => _isProcessing = false);
+                        }
 
                         if (response.success == true) {
                           _showToast('Review submitted!');
@@ -1012,7 +1106,10 @@ class _ProductDetailsState extends State<ProductDetails>
                           _showToast(response.message ?? 'Error submitting review');
                         }
                       } catch (e) {
-                        Navigator.pop(context);
+                        if (mounted) {
+                          Navigator.pop(context);
+                          setState(() => _isProcessing = false);
+                        }
                         _showToast('Error submitting review');
                       }
                     },
@@ -1426,7 +1523,6 @@ class _ProductDetailsState extends State<ProductDetails>
                             onTap: () => setState(() => _showMoreMenu = !_showMoreMenu),
                           ),
                           SizedBox(height: 12),
-                          // Fix 7: Wishlist button - full when added, empty when not
                           _buildIconCircle(
                             icon: _isInWishlist ? Icons.favorite : Icons.favorite_border,
                             isActive: _isInWishlist,
@@ -1494,7 +1590,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   text: 'Contact Seller',
                                   onTap: () {
                                     setState(() => _showMoreMenu = false);
-                                    // Navigate to contact seller
+                                    _contactSeller();
                                   },
                                 ),
                                 _buildMoreMenuItem(
@@ -1520,7 +1616,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Fix 6: Comments Section - height grows with image
+                            // Fix 2: Comments Section - 60% of image height
                             Container(
                               width: MediaQuery.of(context).size.width * 0.8,
                               decoration: BoxDecoration(
@@ -1549,9 +1645,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ],
                                   ),
                                   SizedBox(height: 8),
-                                  // Fix 6: Comment height grows with image height
+                                  // Fix 2: Comment height - 60% of image height
                                   Container(
-                                    height: imageHeight * 0.08, // Dynamic height
+                                    height: imageHeight * 0.6, // 60% of image height
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text('No comments yet',
@@ -1674,7 +1770,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             SizedBox(height: 12),
-                            // Fix 5: Product name and description - bigger
+                            // Product name and description
                             GestureDetector(
                               onTap: _openTitleModal,
                               child: Column(
@@ -1703,7 +1799,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Fix 4: Countdown - bigger
+                                // Countdown - bigger
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1726,10 +1822,10 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ],
                                 ),
-                                // Fix 3: Current bid box - bigger
+                                // Fix 3: Current bid box - bigger container only
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
+                                      horizontal: 20, vertical: 16),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.6),
                                     borderRadius: BorderRadius.circular(16),
@@ -1761,10 +1857,10 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Bid Info Section - Now overlays partially on the image
+            // Fix 4 & 5: Bid Info Section - Only container overlays the image, no white background
             SliverToBoxAdapter(
               child: Container(
-                margin: EdgeInsets.fromLTRB(16, -20, 16, 16), // Negative margin to overlay
+                margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -2021,7 +2117,6 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // Fix 4: Bigger timer unit for mobile
   Widget _buildTimerUnitBig(String value, String label) {
     return Container(
       margin: EdgeInsets.only(right: 8),
@@ -2093,10 +2188,11 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // DESKTOP LAYOUT
+  // DESKTOP LAYOUT - Keep same as before
   // ============================================
 
   Widget _buildDesktopLayout() {
+    // ... (same as before, with contact seller updated)
     final timeComponents = _getTimeComponents();
 
     return SingleChildScrollView(
@@ -2424,7 +2520,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                 label: 'Share',
                                 onTap: _shareProduct,
                               ),
-                              // Fix 7: Desktop wishlist - full when added, empty when not
                               _buildDesktopIconButton(
                                 icon: _isInWishlist
                                     ? Icons.favorite
@@ -2483,7 +2578,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     onTap: () {
                                       setState(() => _showDesktopMoreMenu =
                                           false);
-                                      // Navigate to contact seller
+                                      _contactSeller();
                                     },
                                   ),
                                 ],
