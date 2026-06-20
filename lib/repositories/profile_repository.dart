@@ -275,7 +275,7 @@ class ProfileRepository {
       };
     }
   }
-
+ 
   // Update affiliate payment details
   Future<Map<String, dynamic>> updateAffiliatePaymentDetails({
     required String paypalEmail,

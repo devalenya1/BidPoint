@@ -199,9 +199,9 @@ class DetailedProduct {
   bool? get is_ending_soon => isEndingSoon;
   int? get remaining_seconds => remainingSeconds;
   bool? get auction_ended => auctionEnded;
-  Map<String, dynamic>? get winner => winner;
-  List<Map<String, dynamic>>? get comments => comments;
-  List<Map<String, dynamic>>? get reviews => reviews;
+  // Map<String, dynamic>? get winner => winner;
+  // List<Map<String, dynamic>>? get comments => comments;
+  // List<Map<String, dynamic>>? get reviews => reviews;
   List<Map<String, dynamic>>? get bid_history => bidHistory;
   // ============ END SNAKE_CASE GETTERS ============
 
