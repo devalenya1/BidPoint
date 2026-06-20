@@ -93,6 +93,20 @@ class DetailedProduct {
     this.pointMultiplierSystem,
     this.auctionProduct,
     this.videos,
+    // Additional fields from poll data
+    this.totalBids,
+    this.lastBidderName,
+    this.isInWishlist,
+    this.reviewsCount,
+    this.highestBidFormatted,
+    this.lastBidAmount,
+    this.isEndingSoon,
+    this.remainingSeconds,
+    this.auctionEnded,
+    this.winner,
+    this.comments,
+    this.reviews,
+    this.bidHistory,
   });
 
   int? id;
@@ -142,6 +156,21 @@ class DetailedProduct {
   int? auctionProduct;
   List<Video>? videos;
 
+  // Additional fields from poll data
+  int? totalBids;
+  String? lastBidderName;
+  bool? isInWishlist;
+  int? reviewsCount;
+  String? highestBidFormatted;
+  double? lastBidAmount;
+  bool? isEndingSoon;
+  int? remainingSeconds;
+  bool? auctionEnded;
+  Map<String, dynamic>? winner;
+  List<Map<String, dynamic>>? comments;
+  List<Map<String, dynamic>>? reviews;
+  List<Map<String, dynamic>>? bidHistory;
+
   // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
   String? get added_by => addedBy;
   int? get seller_id => sellerId;
@@ -155,12 +184,25 @@ class DetailedProduct {
   bool? get has_discount => hasDiscount;
   String? get stroked_price => strokedPrice;
   String? get main_price => mainPrice;
-  dynamic get calculable_price => calculablePrice;  // FIXED: Changed from 'var' to 'dynamic'
+  dynamic get calculable_price => calculablePrice;
   String? get currency_symbol => currencySymbol;
   int? get current_stock => currentStock;
   int? get rating_count => ratingCount;
   int? get earn_point => earnPoint;
   dynamic get video_link => videoLink;
+  int? get total_bids => totalBids;
+  String? get last_bidder_name => lastBidderName;
+  bool? get is_in_wishlist => isInWishlist;
+  int? get reviews_count => reviewsCount;
+  String? get highest_bid_formatted => highestBidFormatted;
+  double? get last_bid_amount => lastBidAmount;
+  bool? get is_ending_soon => isEndingSoon;
+  int? get remaining_seconds => remainingSeconds;
+  bool? get auction_ended => auctionEnded;
+  Map<String, dynamic>? get winner => winner;
+  List<Map<String, dynamic>>? get comments => comments;
+  List<Map<String, dynamic>>? get reviews => reviews;
+  List<Map<String, dynamic>>? get bid_history => bidHistory;
   // ============ END SNAKE_CASE GETTERS ============
 
   factory DetailedProduct.fromJson(Map<String, dynamic> json) => DetailedProduct(
@@ -225,6 +267,26 @@ class DetailedProduct {
         videos: json["videos"] != null
             ? List<Video>.from(json["videos"].map((x) => Video.fromJson(x)))
             : [],
+        // Additional fields from poll data
+        totalBids: json["total_bids"],
+        lastBidderName: json["last_bidder_name"],
+        isInWishlist: json["is_in_wishlist"],
+        reviewsCount: json["reviews_count"],
+        highestBidFormatted: json["highest_bid_formatted"],
+        lastBidAmount: json["last_bid_amount"]?.toDouble(),
+        isEndingSoon: json["is_ending_soon"],
+        remainingSeconds: json["remaining_seconds"],
+        auctionEnded: json["auction_ended"],
+        winner: json["winner"],
+        comments: json["comments"] != null
+            ? List<Map<String, dynamic>>.from(json["comments"])
+            : [],
+        reviews: json["reviews"] != null
+            ? List<Map<String, dynamic>>.from(json["reviews"])
+            : [],
+        bidHistory: json["bid_history"] != null
+            ? List<Map<String, dynamic>>.from(json["bid_history"])
+            : [],
       );
 
   Map<String, dynamic> toJson() => {
@@ -247,6 +309,7 @@ class DetailedProduct {
             ? List<dynamic>.from(choiceOptions!.map((x) => x.toJson()))
             : [],
         "colors": colors != null ? List<dynamic>.from(colors!.map((x) => x)) : [],
+        "has_discount": hasDiscount,
         "discount": discount,
         "stroked_price": strokedPrice,
         "main_price": mainPrice,
@@ -279,6 +342,20 @@ class DetailedProduct {
         "videos": videos != null
             ? List<dynamic>.from(videos!.map((x) => x.toJson()))
             : [],
+        // Additional fields from poll data
+        "total_bids": totalBids,
+        "last_bidder_name": lastBidderName,
+        "is_in_wishlist": isInWishlist,
+        "reviews_count": reviewsCount,
+        "highest_bid_formatted": highestBidFormatted,
+        "last_bid_amount": lastBidAmount,
+        "is_ending_soon": isEndingSoon,
+        "remaining_seconds": remainingSeconds,
+        "auction_ended": auctionEnded,
+        "winner": winner,
+        "comments": comments,
+        "reviews": reviews,
+        "bid_history": bidHistory,
       };
 
   // ============ HELPER METHODS ============
@@ -288,7 +365,12 @@ class DetailedProduct {
   
   bool get isAuctionEnded {
     if (!isAuctionProduct) return false;
-    return auctionEndDate is String && auctionEndDate == 'Ended';
+    if (auctionEndDate is String && auctionEndDate == 'Ended') return true;
+    if (auctionEndDate is int && (auctionEndDate as int) > 0) {
+      final now = DateTime.now().millisecondsSinceEpoch / 1000;
+      return (auctionEndDate as int) < now;
+    }
+    return false;
   }
   
   bool get isAuctionActive {
@@ -512,7 +594,7 @@ class DetailedProduct {
     return urls;
   }
   
-  // ============ ADD THESE HELPER METHODS ============
+  // ============ UPDATED HELPER METHODS (Now using poll data) ============
   
   double getStartingBidAsDouble() {
     if (startingBid != null && startingBid!.isNotEmpty) {
@@ -529,18 +611,15 @@ class DetailedProduct {
   }
   
   int getTotalBidCount() {
-    // This would need to come from the API response
-    // For now, return 0 or you can add a field
-    return 0;
+    return totalBids ?? 0;
   }
   
   String getHighestBidderName() {
-    // This would need to come from the API response
-    return '';
+    return lastBidderName ?? '';
   }
   
   int getReviewCount() {
-    return ratingCount ?? 0;
+    return reviewsCount ?? ratingCount ?? 0;
   }
   
   double getRatingValue() {
@@ -548,8 +627,7 @@ class DetailedProduct {
   }
   
   bool getIsInWishlist() {
-    // This would need to come from the API response
-    return false;
+    return isInWishlist ?? false;
   }
   
   int getSwipeLeft() {
@@ -565,8 +643,7 @@ class DetailedProduct {
   }
   
   int getTotalBids() {
-    // This would need to come from the API response
-    return 0;
+    return totalBids ?? 0;
   }
   
   String getMainImageUrl() {
@@ -574,6 +651,84 @@ class DetailedProduct {
       return photos![0].path!;
     }
     return thumbnailImage ?? '';
+  }
+  
+  // ============ NEW HELPER METHODS FOR POLL DATA ============
+  
+  String getHighestBidFormattedText() {
+    return highestBidFormatted ?? '';
+  }
+  
+  bool getIsEndingSoon() {
+    return isEndingSoon ?? false;
+  }
+  
+  int getRemainingSeconds() {
+    return remainingSeconds ?? 0;
+  }
+  
+  bool getAuctionEnded() {
+    return auctionEnded ?? false;
+  }
+  
+  Map<String, dynamic>? getWinner() {
+    return winner;
+  }
+  
+  String getWinnerName() {
+    if (winner != null && winner!['user_name'] != null) {
+      return winner!['user_name'].toString();
+    }
+    return '';
+  }
+  
+  String getWinnerAmount() {
+    if (winner != null && winner!['amount'] != null) {
+      return winner!['amount'].toString();
+    }
+    return '';
+  }
+  
+  String getWinnerAvatar() {
+    if (winner != null && winner!['avatar'] != null) {
+      return winner!['avatar'].toString();
+    }
+    return '';
+  }
+  
+  List<Map<String, dynamic>> getComments() {
+    return comments ?? [];
+  }
+  
+  List<Map<String, dynamic>> getReviews() {
+    return reviews ?? [];
+  }
+  
+  List<Map<String, dynamic>> getBidHistory() {
+    return bidHistory ?? [];
+  }
+  
+  double getLastBidAmount() {
+    return lastBidAmount ?? 0.0;
+  }
+  
+  bool hasBidHistory() {
+    return bidHistory != null && bidHistory!.isNotEmpty;
+  }
+  
+  bool hasComments() {
+    return comments != null && comments!.isNotEmpty;
+  }
+  
+  bool hasReviews() {
+    return reviews != null && reviews!.isNotEmpty;
+  }
+  
+  // Helper to get bid count text
+  String getBidCountText() {
+    final count = getTotalBidCount();
+    if (count == 0) return 'No bids yet';
+    return '$count bid${count > 1 ? 's' : ''}';
   }
 }
 

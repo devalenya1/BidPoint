@@ -153,8 +153,8 @@ class _ProductDetailsState extends State<ProductDetails>
         _currentHighestBid = _product!.highestBid != null
             ? double.tryParse(_product!.highestBid!) ?? 0
             : 0;
-        _totalBids = _product!.bidCount ?? 0;
-        _highestBidder = _product!.highestBidder ?? '';
+        _totalBids = _product!.bidsCount ?? 0;
+        _highestBidder = _product!.highestBidderName ?? '';
         _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
         _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
         _reviewsCount = _product!.ratingCount ?? 0;
