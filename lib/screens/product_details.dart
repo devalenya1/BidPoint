@@ -138,6 +138,8 @@ class _ProductDetailsState extends State<ProductDetails>
   // API CALLS
   // ============================================
 
+  // Fix 1: Update _fetchAllData() in product_detail_screen.dart
+
   Future<void> _fetchAllData() async {
     setState(() => _isLoading = true);
 
@@ -157,17 +159,10 @@ class _ProductDetailsState extends State<ProductDetails>
             ? double.tryParse(_product!.highestBid!) ?? 0
             : 0;
         
-        // Fix 2 & 3: Get total bids and highest bidder from bids list
-        if (_product!.bids != null && _product!.bids!.isNotEmpty) {
-          _totalBids = _product!.bids!.length;
-          // Find highest bidder from bids list
-          final highestBid = _product!.bids!.reduce((a, b) => 
-              (a.amount ?? 0) > (b.amount ?? 0) ? a : b);
-          _highestBidder = highestBid.userName ?? '';
-        } else {
-          _totalBids = 0;
-          _highestBidder = '';
-        }
+        // FIX 2 & 3: Get total bids and highest bidder from the product data
+        // Use totalBids and highestBidder from the product response
+        _totalBids = _product!.totalBids ?? 0;
+        _highestBidder = _product!.lastBidderName ?? '';
         
         _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
         _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
