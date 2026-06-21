@@ -454,11 +454,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final products = homeData.endingSoonProductList;
     if (products.isEmpty) return const SizedBox.shrink();
 
+    // Debug: Print products to verify data
+    print('Total Ending Soon products: ${products.length}');
+    for (int i = 0; i < products.length; i++) {
+      print('Product $i: ${products[i].name}');
+    }
+
     // Group products in sets of 3
     List<List<dynamic>> grids = [];
     for (int i = 0; i < products.length; i += 3) {
       int end = (i + 3 < products.length) ? i + 3 : products.length;
-      grids.add(products.sublist(i, end));
+      List<dynamic> grid = products.sublist(i, end);
+      grids.add(grid);
+      print('Grid ${grids.length - 1}: ${grid.length} products');
     }
 
     return LayoutBuilder(
@@ -467,7 +475,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         
         // Mobile: Show 1 grid
         // Tablet: Show 2 grids
-        // Desktop: Show 3 grids (or more if available)
+        // Desktop: Show 3 grids
         if (constraints.maxWidth >= 1024) {
           gridsToShow = grids.length > 3 ? 3 : grids.length;
         } else if (constraints.maxWidth >= 768) {
@@ -475,6 +483,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         } else {
           gridsToShow = 1;
         }
+
+        print('Screen width: ${constraints.maxWidth}, Grids to show: $gridsToShow');
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -493,12 +503,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildEndingSoonGridItem(List<dynamic> grid) {
+    // Ensure grid has at least 1 product
+    if (grid.isEmpty) return const SizedBox.shrink();
+
     // First product (left top)
     final product1 = grid.length >= 1 ? grid[0] : null;
     // Second product (left bottom)
     final product2 = grid.length >= 2 ? grid[1] : null;
     // Third product (right side)
     final product3 = grid.length >= 3 ? grid[2] : null;
+
+    // Debug: Print which products are in this grid
+    print('Building grid with:');
+    if (product1 != null) print('  Product 1: ${product1.name}');
+    if (product2 != null) print('  Product 2: ${product2.name}');
+    if (product3 != null) print('  Product 3: ${product3.name}');
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,25 +570,29 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         ),
         const SizedBox(width: 8),
         // Right side - 1/3 width
-        if (product3 != null)
-          Expanded(
-            flex: 1,
-            child: EndingSoonCard(
-              id: product3.id ?? 0,
-              slug: product3.slug ?? '',
-              image: product3.thumbnailImage,
-              name: product3.name,
-              description: product3.description,
-              pointPerBid: product3.pointPerBid ?? 0,
-              auctionEndDate: product3.auctionEndDate,
-              currentBid: product3.highestBid,
-              startingBid: product3.startingBid,
-              isAuctionActive: product3.auctionEndDate != null && 
-                  product3.auctionEndDate is int && 
-                  product3.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              cardType: 'right',
-            ),
+        Expanded(
+          flex: 1,
+          child: Column(
+            children: [
+              if (product3 != null)
+                EndingSoonCard(
+                  id: product3.id ?? 0,
+                  slug: product3.slug ?? '',
+                  image: product3.thumbnailImage,
+                  name: product3.name,
+                  description: product3.description,
+                  pointPerBid: product3.pointPerBid ?? 0,
+                  auctionEndDate: product3.auctionEndDate,
+                  currentBid: product3.highestBid,
+                  startingBid: product3.startingBid,
+                  isAuctionActive: product3.auctionEndDate != null && 
+                      product3.auctionEndDate is int && 
+                      product3.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  cardType: 'right',
+                ),
+            ],
           ),
+        ),
       ],
     );
   }

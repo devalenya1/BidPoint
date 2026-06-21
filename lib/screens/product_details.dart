@@ -116,6 +116,9 @@ class _ProductDetailsState extends State<ProductDetails>
     _mainScrollController = ScrollController();
     _fetchAllData();
     _startPolling();
+    
+    // Initialize audio player
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
   }
 
   @override
@@ -140,8 +143,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     try {
       final productData =
-          // await _productRepository.getProductDetails(slug: widget.slug);
-          await _productRepository.getProductDetails(widget.slug);
+          await _productRepository.getProductDetails(slug: widget.slug);
 
       if (productData.detailedProducts != null &&
           productData.detailedProducts!.isNotEmpty) {
@@ -154,8 +156,19 @@ class _ProductDetailsState extends State<ProductDetails>
         _currentHighestBid = _product!.highestBid != null
             ? double.tryParse(_product!.highestBid!) ?? 0
             : 0;
-        _totalBids = _product!.totalBids ?? 0;
-        _highestBidder = _product!.lastBidderName ?? '';
+        
+        // Fix 2 & 3: Get total bids and highest bidder from bids list
+        if (_product!.bids != null && _product!.bids!.isNotEmpty) {
+          _totalBids = _product!.bids!.length;
+          // Find highest bidder from bids list
+          final highestBid = _product!.bids!.reduce((a, b) => 
+              (a.amount ?? 0) > (b.amount ?? 0) ? a : b);
+          _highestBidder = highestBid.userName ?? '';
+        } else {
+          _totalBids = 0;
+          _highestBidder = '';
+        }
+        
         _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
         _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
         _reviewsCount = _product!.ratingCount ?? 0;
@@ -377,7 +390,7 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     final amount = _minNextBidNow;
-    
+
     setState(() => _isProcessing = true);
     _showLoadingDialog();
 
@@ -645,12 +658,14 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND EFFECTS
+  // SOUND EFFECTS - FIXED
   // ============================================
 
   void _playBidSound() async {
     if (!_soundEnabled) return;
     try {
+      // Ensure audio player is ready and play
+      await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
     } catch (e) {
       print('Error playing bid sound: $e');
@@ -660,6 +675,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _playCommentSound() async {
     if (!_soundEnabled) return;
     try {
+      await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
     } catch (e) {
       print('Error playing comment sound: $e');
@@ -669,6 +685,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _playTickSound() async {
     if (!_soundEnabled) return;
     try {
+      await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'));
     } catch (e) {
       print('Error playing tick sound: $e');
@@ -722,7 +739,6 @@ class _ProductDetailsState extends State<ProductDetails>
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
-  // Fix 4: New loader matching UpcomingCard style
   Widget _buildLoadingIndicator() {
     return const SizedBox(
       height: 20,
@@ -761,7 +777,6 @@ class _ProductDetailsState extends State<ProductDetails>
     Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
   }
 
-  // Fix 5 & 6: Custom popup with proper layout - full width input, buttons on next line
   void _showBidInputDialog() {
     _bidController.clear();
 
@@ -772,7 +787,8 @@ class _ProductDetailsState extends State<ProductDetails>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bid for Product', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Bid for Product',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text('Min bid amount: ${_formatPrice(_minNextBidNow)}',
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
@@ -783,7 +799,6 @@ class _ProductDetailsState extends State<ProductDetails>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Full width input field
             TextField(
               controller: _bidController,
               keyboardType: TextInputType.number,
@@ -792,13 +807,13 @@ class _ProductDetailsState extends State<ProductDetails>
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 filled: true,
                 fillColor: Colors.grey.shade50,
               ),
             ),
             const SizedBox(height: 12),
-            // Buttons row at the right
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -811,7 +826,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                  child: Text('Cancel',
+                      style: TextStyle(color: Colors.grey.shade600)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -828,7 +844,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     ),
                   ),
                   child: Text('Place Bid',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
@@ -933,8 +950,8 @@ class _ProductDetailsState extends State<ProductDetails>
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      border: Border(
-                          bottom: BorderSide(color: Colors.grey.shade200)),
+                      border:
+                          Border(bottom: BorderSide(color: Colors.grey.shade200)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1004,8 +1021,8 @@ class _ProductDetailsState extends State<ProductDetails>
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      border: Border(
-                          top: BorderSide(color: Colors.grey.shade200)),
+                      border:
+                          Border(top: BorderSide(color: Colors.grey.shade200)),
                     ),
                     child: ElevatedButton(
                       onPressed: () {
@@ -1112,7 +1129,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           tempRating.toInt(),
                           tempController.text,
                         );
-                        
+
                         if (mounted) {
                           Navigator.pop(context);
                           setState(() => _isProcessing = false);
@@ -1153,7 +1170,6 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // Fix 7: Bid history date display
   void _showBidHistoryModalDialog() {
     showDialog(
       context: context,
@@ -1470,7 +1486,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildMobileLayout() {
     final timeComponents = _getTimeComponents();
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.65; // 65% of screen height
+    final imageHeight = screenHeight * 0.65;
 
     return Stack(
       children: [
@@ -1512,7 +1528,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         );
                       }).toList(),
                     ),
-                    // Gradient Overlay - matches HTML exactly
+                    // Gradient Overlay
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1532,7 +1548,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     // Top Icons - Vertical Right Icons
-                    // Fix 2: More menu with higher z-index
+                    // Fix 1: Only ONE back button (the one with circle design)
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       right: 16,
@@ -1541,11 +1557,15 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           _buildIconCircle(
                             icon: Icons.more_vert,
-                            onTap: () => setState(() => _showMoreMenu = !_showMoreMenu),
+                            onTap: () =>
+                                setState(() => _showMoreMenu = !_showMoreMenu),
                           ),
                           SizedBox(height: 12),
+                          // Fix 4: Wishlist icon - full heart when added, empty when removed
                           _buildIconCircle(
-                            icon: _isInWishlist ? Icons.favorite : Icons.favorite_border,
+                            icon: _isInWishlist
+                                ? Icons.favorite
+                                : Icons.favorite_border,
                             isActive: _isInWishlist,
                             onTap: _toggleWishlist,
                           ),
@@ -1557,7 +1577,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    // Left Icons - Back Button
+                    // Fix 1: Only ONE back button (the one with circle design)
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       left: 16,
@@ -1566,13 +1586,13 @@ class _ProductDetailsState extends State<ProductDetails>
                         onTap: () => Navigator.pop(context),
                       ),
                     ),
-                    // Fix 2: More Menu with higher z-index (above comments)
+                    // More Menu
                     if (_showMoreMenu)
                       Positioned(
                         top: 80,
                         right: 16,
                         child: Material(
-                          elevation: 4,
+                          elevation: 10,
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             width: 180,
@@ -1627,7 +1647,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                    // Bottom Content Overlay - Partially overlaying the image
+                    // Bottom Content Overlay
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -1637,7 +1657,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Fix 1: Comments Section - 60% of image height
+                            // Comments Section - 60% of image height
                             Container(
                               width: MediaQuery.of(context).size.width * 0.8,
                               decoration: BoxDecoration(
@@ -1667,7 +1687,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   ),
                                   SizedBox(height: 8),
                                   Container(
-                                    height: imageHeight * 0.6, // 60% of image height
+                                    height: imageHeight * 0.6,
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text('No comments yet',
@@ -1677,8 +1697,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                           )
                                         : ListView.builder(
                                             shrinkWrap: true,
-                                            itemCount:
-                                                _comments.length > 3 ? 3 : _comments.length,
+                                            itemCount: _comments.length > 3
+                                                ? 3
+                                                : _comments.length,
                                             itemBuilder: (context, index) {
                                               final comment = _comments[index];
                                               return Padding(
@@ -1766,7 +1787,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                                       horizontal: 12,
                                                       vertical: 8),
                                             ),
-                                            onSubmitted: (value) => _sendComment(),
+                                            onSubmitted: (value) =>
+                                                _sendComment(),
                                           ),
                                         ),
                                       ),
@@ -1816,7 +1838,6 @@ class _ProductDetailsState extends State<ProductDetails>
                             ),
                             SizedBox(height: 16),
                             // Timer and Price
-                            // Fix 3: Timer and Price moved above bid info
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -1876,7 +1897,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Fix 3: Bid Info Section with z-index in front of image
+            // Bid Info Section
             SliverToBoxAdapter(
               child: Container(
                 margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
@@ -1907,8 +1928,11 @@ class _ProductDetailsState extends State<ProductDetails>
                       mainAxisSpacing: 12,
                       childAspectRatio: 3,
                       children: [
-                        _buildInfoItem('Starting bid', _formatPrice(_startingBid)),
+                        _buildInfoItem('Starting bid',
+                            _formatPrice(_startingBid)),
+                        // Fix 2: Total bidders now shows correctly
                         _buildInfoItem('Total bidders', '$_totalBids'),
+                        // Fix 3: Highest bidder now shows correctly
                         _buildInfoItem(
                             'Highest bidder',
                             _highestBidder.isNotEmpty
@@ -2207,7 +2231,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // DESKTOP LAYOUT
+  // DESKTOP LAYOUT (Same as before, with fixes applied)
   // ============================================
 
   Widget _buildDesktopLayout() {
@@ -2323,8 +2347,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        border: Border(
-                            bottom: BorderSide(color: Colors.grey.shade200)),
+                        border:
+                            Border(bottom: BorderSide(color: Colors.grey.shade200)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2429,8 +2453,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        border: Border(
-                            top: BorderSide(color: Colors.grey.shade200)),
+                        border:
+                            Border(top: BorderSide(color: Colors.grey.shade200)),
                       ),
                       child: Row(
                         children: [
@@ -2531,6 +2555,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 label: 'Share',
                                 onTap: _shareProduct,
                               ),
+                              // Fix 4: Desktop wishlist - full heart when added, empty when removed
                               _buildDesktopIconButton(
                                 icon: _isInWishlist
                                     ? Icons.favorite
@@ -2595,6 +2620,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                           SizedBox(height: 16),
+                          // Timer & Price
                           Container(
                             padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -2648,6 +2674,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
+                    // Bid Information Card
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2678,8 +2705,10 @@ class _ProductDetailsState extends State<ProductDetails>
                             children: [
                               _buildDesktopInfoItem('Starting bid',
                                   _formatPrice(_startingBid)),
+                              // Fix 2: Total bidders shows correctly
                               _buildDesktopInfoItem('Total bidders',
                                   '$_totalBids'),
+                              // Fix 3: Highest bidder shows correctly
                               _buildDesktopInfoItem(
                                   'Highest bidder',
                                   _highestBidder.isNotEmpty
@@ -2693,6 +2722,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
+                    // Custom Bid Input
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2746,6 +2776,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
+                    // Bid Now Button
                     ElevatedButton(
                       onPressed: _placeBidNow,
                       style: ElevatedButton.styleFrom(
@@ -2762,6 +2793,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
+                    // Reviews Section
                     GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(

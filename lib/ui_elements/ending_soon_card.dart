@@ -575,6 +575,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
 
   Widget _buildRightCard(double displayBid, bool showTimer) {
     return Container(
+      height: 208, // Fixed height to match two left cards (100 + 100 + 8 gap)
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -588,6 +589,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Product Image with Timer
           Stack(
@@ -596,8 +598,9 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 onTap: _navigateToProductDetails,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                  child: AspectRatio(
-                    aspectRatio: 1,
+                  child: Container(
+                    height: 100,
+                    width: double.infinity,
                     child: widget.image != null && widget.image!.isNotEmpty
                         ? Image.network(
                             widget.image!,
@@ -661,151 +664,158 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
             ],
           ),
           
-          // Product Info
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: _navigateToProductDetails,
-                  child: Text(
-                    widget.name ?? 'Product',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: _navigateToProductDetails,
-                  child: Text(
-                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF8F9AA7),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.access_time,
-                      size: 12,
-                      color: Color(0xFF718096),
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '1 Bid = ${widget.pointPerBid ?? 0}',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF718096),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Current Bid',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Color(0xFF80818B),
-                      ),
-                    ),
-                    Text(
-                      _formatPrice(displayBid),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Swipe to Bid Button
-                GestureDetector(
-                  onPanStart: _onPanStart,
-                  onPanUpdate: _onPanUpdate,
-                  onPanEnd: _onPanEnd,
-                  onTap: _navigateToProductDetails,
-                  child: Container(
-                    width: double.infinity,
-                    height: 35,
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: Stack(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 50),
-                          width: 20 + (_swipeAmount),
-                          height: 35,
-                          decoration: BoxDecoration(
-                            color: _swipeAmount > 20 ? Colors.green : Colors.white,
-                            borderRadius: BorderRadius.circular(7),
+          // Product Info - Remaining space
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: _navigateToProductDetails,
+                        child: Text(
+                          widget.name ?? 'Product',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
                           ),
-                          child: Center(
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              size: 12,
-                              color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      GestureDetector(
+                        onTap: _navigateToProductDetails,
+                        child: Text(
+                          widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFF8F9AA7),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 12,
+                            color: Color(0xFF718096),
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '1 Bid = ${widget.pointPerBid ?? 0}',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF718096),
                             ),
                           ),
-                        ),
-                        Center(
-                          child: _isProcessing
-                              ? const SizedBox(
-                                  height: 14,
-                                  width: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (_swipeAmount < 20) ...[
-                                      const SizedBox(width: 20),
-                                      const Text(
-                                        'Swipe to Bid',
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Current Bid',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Color(0xFF80818B),
+                            ),
+                          ),
+                          Text(
+                            _formatPrice(displayBid),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  // Swipe to Bid Button
+                  GestureDetector(
+                    onPanStart: _onPanStart,
+                    onPanUpdate: _onPanUpdate,
+                    onPanEnd: _onPanEnd,
+                    onTap: _navigateToProductDetails,
+                    child: Container(
+                      width: double.infinity,
+                      height: 35,
+                      decoration: BoxDecoration(
+                        color: MyTheme.accent_color,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Stack(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 50),
+                            width: 20 + (_swipeAmount),
+                            height: 35,
+                            decoration: BoxDecoration(
+                              color: _swipeAmount > 20 ? Colors.green : Colors.white,
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                size: 12,
+                                color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: _isProcessing
+                                ? const SizedBox(
+                                    height: 14,
+                                    width: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_swipeAmount < 20) ...[
+                                        const SizedBox(width: 20),
+                                        const Text(
+                                          'Swipe to Bid',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
                                         ),
-                                      ),
-                                    ] else ...[
-                                      const Text(
-                                        'Quick Bid',
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
+                                      ] else ...[
+                                        const Text(
+                                          'Quick Bid',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ],
-                                  ],
-                                ),
-                        ),
-                      ],
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
