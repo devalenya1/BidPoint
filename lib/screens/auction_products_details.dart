@@ -139,7 +139,7 @@ class _AuctionProductsDetailsState extends State<AuctionProductsDetails>
 
       fetchAll();
     }
-  }
+  } 
 
   fetchAll() {
     fetchAuctionProductDetails();

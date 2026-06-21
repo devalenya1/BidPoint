@@ -140,7 +140,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     try {
       final productData =
-          await _productRepository.getProductDetails(slug: widget.slug);
+          // await _productRepository.getProductDetails(slug: widget.slug);
+          await _productRepository.getProductDetails(widget.slug);
 
       if (productData.detailedProducts != null &&
           productData.detailedProducts!.isNotEmpty) {
@@ -205,7 +206,6 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.getProductReviews(_product?.id ?? 0);
       if (response.success == true && response.reviews != null) {
         setState(() => _reviews = response.reviews!);
-        // Update review count from fetched reviews
         _reviewsCount = _reviews.length;
       }
     } catch (e) {
@@ -353,7 +353,6 @@ class _ProductDetailsState extends State<ProductDetails>
         return;
       }
 
-      // Check for last seconds
       final totalSeconds = remaining.inSeconds;
       if (totalSeconds <= _endingSeconds && totalSeconds > 0 && !_isEndingSoon) {
         setState(() => _isEndingSoon = true);
@@ -379,7 +378,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
     final amount = _minNextBidNow;
     
-    // Fix 1: Proper loading state
     setState(() => _isProcessing = true);
     _showLoadingDialog();
 
@@ -724,6 +722,18 @@ class _ProductDetailsState extends State<ProductDetails>
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
+  // Fix 4: New loader matching UpcomingCard style
+  Widget _buildLoadingIndicator() {
+    return const SizedBox(
+      height: 20,
+      width: 20,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      ),
+    );
+  }
+
   void _showLoadingDialog() {
     showDialog(
       context: context,
@@ -731,9 +741,16 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Text('Processing...'),
+            const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(MyTheme.accent_color),
+              ),
+            ),
+            const SizedBox(width: 20),
+            const Text('Processing...'),
           ],
         ),
       ),
@@ -744,7 +761,7 @@ class _ProductDetailsState extends State<ProductDetails>
     Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
   }
 
-  // Fix 6: Custom popup with better design
+  // Fix 5 & 6: Custom popup with proper layout - full width input, buttons on next line
   void _showBidInputDialog() {
     _bidController.clear();
 
@@ -756,7 +773,7 @@ class _ProductDetailsState extends State<ProductDetails>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Bid for Product', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text('Min bid amount: ${_formatPrice(_minNextBidNow)}',
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
             Text('1 Bid = $_pointPerBidCustom',
@@ -766,24 +783,37 @@ class _ProductDetailsState extends State<ProductDetails>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Full width input field
+            TextField(
+              controller: _bidController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: 'Enter amount',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Buttons row at the right
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _bidController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Enter amount',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(80, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
@@ -791,11 +821,11 @@ class _ProductDetailsState extends State<ProductDetails>
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: MyTheme.accent_color,
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    minimumSize: const Size(80, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    minimumSize: Size(0, 48),
                   ),
                   child: Text('Place Bid',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -804,12 +834,6 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-        ],
       ),
     );
   }
@@ -906,7 +930,6 @@ class _ProductDetailsState extends State<ProductDetails>
               height: MediaQuery.of(context).size.height * 0.8,
               child: Column(
                 children: [
-                  // Header
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -926,7 +949,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ],
                     ),
                   ),
-                  // Reviews List
                   Expanded(
                     child: _reviews.isEmpty
                         ? Center(child: Text('No reviews yet'))
@@ -979,7 +1001,6 @@ class _ProductDetailsState extends State<ProductDetails>
                             },
                           ),
                   ),
-                  // Write Review Button
                   Container(
                     padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1132,6 +1153,7 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // Fix 7: Bid history date display
   void _showBidHistoryModalDialog() {
     showDialog(
       context: context,
@@ -1160,7 +1182,6 @@ class _ProductDetailsState extends State<ProductDetails>
                   ],
                 ),
               ),
-              // Header Row
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 color: Colors.grey.shade100,
@@ -1185,7 +1206,6 @@ class _ProductDetailsState extends State<ProductDetails>
                   ],
                 ),
               ),
-              // Bid List
               Expanded(
                 child: _bidHistory.isEmpty
                     ? Center(child: Text('No bids yet'))
@@ -1512,6 +1532,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     // Top Icons - Vertical Right Icons
+                    // Fix 2: More menu with higher z-index
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       right: 16,
@@ -1545,7 +1566,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         onTap: () => Navigator.pop(context),
                       ),
                     ),
-                    // More Menu
+                    // Fix 2: More Menu with higher z-index (above comments)
                     if (_showMoreMenu)
                       Positioned(
                         top: 80,
@@ -1616,7 +1637,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Fix 2: Comments Section - 60% of image height
+                            // Fix 1: Comments Section - 60% of image height
                             Container(
                               width: MediaQuery.of(context).size.width * 0.8,
                               decoration: BoxDecoration(
@@ -1645,7 +1666,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ],
                                   ),
                                   SizedBox(height: 8),
-                                  // Fix 2: Comment height - 60% of image height
                                   Container(
                                     height: imageHeight * 0.6, // 60% of image height
                                     child: _comments.isEmpty
@@ -1796,10 +1816,10 @@ class _ProductDetailsState extends State<ProductDetails>
                             ),
                             SizedBox(height: 16),
                             // Timer and Price
+                            // Fix 3: Timer and Price moved above bid info
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Countdown - bigger
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1822,7 +1842,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ],
                                 ),
-                                // Fix 3: Current bid box - bigger container only
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                       horizontal: 20, vertical: 16),
@@ -1857,7 +1876,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Fix 4 & 5: Bid Info Section - Only container overlays the image, no white background
+            // Fix 3: Bid Info Section with z-index in front of image
             SliverToBoxAdapter(
               child: Container(
                 margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
@@ -2188,11 +2207,10 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // DESKTOP LAYOUT - Keep same as before
+  // DESKTOP LAYOUT
   // ============================================
 
   Widget _buildDesktopLayout() {
-    // ... (same as before, with contact seller updated)
     final timeComponents = _getTimeComponents();
 
     return SingleChildScrollView(
@@ -2219,7 +2237,6 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
                 child: Column(
                   children: [
-                    // Main Image
                     Container(
                       height: 400,
                       decoration: BoxDecoration(
@@ -2243,7 +2260,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 16),
-                    // Thumbnails
                     SizedBox(
                       height: 80,
                       child: ListView.builder(
@@ -2304,7 +2320,6 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
                 child: Column(
                   children: [
-                    // Header
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2323,7 +2338,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    // Messages List
                     Expanded(
                       child: ListView.builder(
                         padding: EdgeInsets.all(16),
@@ -2412,7 +2426,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         },
                       ),
                     ),
-                    // Input Area
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2474,7 +2487,6 @@ class _ProductDetailsState extends State<ProductDetails>
                 width: 320,
                 child: Column(
                   children: [
-                    // Product Card
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2511,7 +2523,6 @@ class _ProductDetailsState extends State<ProductDetails>
                             ),
                           ),
                           SizedBox(height: 16),
-                          // Icons Row
                           Wrap(
                             spacing: 8,
                             children: [
@@ -2537,7 +2548,6 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ],
                           ),
-                          // Desktop More Menu
                           if (_showDesktopMoreMenu)
                             Container(
                               margin: EdgeInsets.only(top: 8),
@@ -2585,7 +2595,6 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                           SizedBox(height: 16),
-                          // Timer & Price
                           Container(
                             padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -2639,7 +2648,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
-                    // Bid Information Card
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2685,7 +2693,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
-                    // Custom Bid Input
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -2739,7 +2746,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
-                    // Bid Now Button
                     ElevatedButton(
                       onPressed: _placeBidNow,
                       style: ElevatedButton.styleFrom(
@@ -2756,7 +2762,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     SizedBox(height: 12),
-                    // Reviews Section
                     GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(

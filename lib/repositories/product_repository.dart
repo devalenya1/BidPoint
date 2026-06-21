@@ -127,19 +127,30 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
-  // Get product details - returns DetailedProduct
-  Future<ProductDetailsResponse> getProductDetails({String? slug = ""}) async {
-    String url = ("${AppConfig.BASE_URL}/products/" + slug.toString());
-    print("Product Url: $url");
-
+  
+  Future<ProductDetailsResponse> getProductDetails(
+      String slug) async {
+    String url = ("${AppConfig.BASE_URL}/products/$slug");
     final response = await ApiRequest.get(url: url, headers: {
       "App-Language": app_language.$!,
-      "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
+      "Authorization": "Bearer ${access_token.$}",
+            
     });
-    print(response.body);
-
     return productDetailsResponseFromJson(response.body);
   }
+
+  // Future<ProductDetailsResponse> getProductDetails({String? slug = ""}) async {
+  //   String url = ("${AppConfig.BASE_URL}/products/" + slug.toString());
+  //   print("Product Url: $url");
+
+  //   final response = await ApiRequest.get(url: url, headers: {
+  //     "App-Language": app_language.$!,
+  //     "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
+  //   });
+  //   print(response.body);
+
+  //   return productDetailsResponseFromJson(response.body);
+  // }
 
   Future<ProductDetailsResponse> getDigitalProductDetails({int id = 0}) async {
     String url = ("${AppConfig.BASE_URL}/products/" + id.toString());

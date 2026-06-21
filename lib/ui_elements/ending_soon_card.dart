@@ -338,7 +338,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           Stack(
             children: [
               GestureDetector(
-                onTap: _navigateToProductDetails, // ✅ Correct navigation
+                onTap: _navigateToProductDetails,
                 child: SizedBox(
                   width: 100,
                   height: 100,
@@ -362,7 +362,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ),
                 ),
               ),
-              // ✅ Timer badge
               if (showTimer)
                 Positioned(
                   top: 4,
@@ -416,7 +415,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
-                    onTap: _navigateToProductDetails, // ✅ Correct navigation
+                    onTap: _navigateToProductDetails,
                     child: Text(
                       widget.name ?? 'Product',
                       style: const TextStyle(
@@ -430,7 +429,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ),
                   const SizedBox(height: 2),
                   GestureDetector(
-                    onTap: _navigateToProductDetails, // ✅ Correct navigation
+                    onTap: _navigateToProductDetails,
                     child: Text(
                       widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                       style: const TextStyle(
@@ -494,12 +493,12 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // ✅ Swipe to Bid Button with correct navigation
+                  // Swipe to Bid Button
                   GestureDetector(
                     onPanStart: _onPanStart,
                     onPanUpdate: _onPanUpdate,
                     onPanEnd: _onPanEnd,
-                    onTap: _navigateToProductDetails, // ✅ Correct navigation
+                    onTap: _navigateToProductDetails,
                     child: Container(
                       width: double.infinity,
                       height: 32,
@@ -594,7 +593,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           Stack(
             children: [
               GestureDetector(
-                onTap: _navigateToProductDetails, // ✅ Correct navigation
+                onTap: _navigateToProductDetails,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   child: AspectRatio(
@@ -617,7 +616,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ),
                 ),
               ),
-              // ✅ Timer badge
               if (showTimer)
                 Positioned(
                   top: 6,
@@ -670,7 +668,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: _navigateToProductDetails, // ✅ Correct navigation
+                  onTap: _navigateToProductDetails,
                   child: Text(
                     widget.name ?? 'Product',
                     style: const TextStyle(
@@ -684,7 +682,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 ),
                 const SizedBox(height: 2),
                 GestureDetector(
-                  onTap: _navigateToProductDetails, // ✅ Correct navigation
+                  onTap: _navigateToProductDetails,
                   child: Text(
                     widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: const TextStyle(
@@ -736,12 +734,12 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // ✅ Swipe to Bid Button with correct navigation
+                // Swipe to Bid Button
                 GestureDetector(
                   onPanStart: _onPanStart,
                   onPanUpdate: _onPanUpdate,
                   onPanEnd: _onPanEnd,
-                  onTap: _navigateToProductDetails, // ✅ Correct navigation
+                  onTap: _navigateToProductDetails,
                   child: Container(
                     width: double.infinity,
                     height: 35,

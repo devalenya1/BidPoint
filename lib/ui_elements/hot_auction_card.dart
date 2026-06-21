@@ -50,9 +50,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.isAuctionActive && widget.auctionEndDate != null) {
-      _startTimer();
-    }
+    _startTimer();
   }
 
   @override
@@ -292,11 +290,12 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = widget.isAuctionActive && _timeLeft != "Ended" && _timeLeft != "No Timer";
+    // Fixed: Show timer for all states except "Ended" and "No Timer"
+    final showTimer = _timeLeft != "Ended" && _timeLeft != "No Timer";
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Changed to white like product_card
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFEDF2F7)),
         boxShadow: [
@@ -337,7 +336,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   ),
                 ),
               ),
-              // Timer - Fixed: Always shows timer, "Ended" in red, live in green
+              // Timer - Fixed: Matches UpcomingCard timer style
               Positioned(
                 top: 6,
                 right: 6,
@@ -382,7 +381,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             ],
           ),
           
-          // Product Details - Using same padding as product_card
+          // Product Details
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -404,7 +403,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 2),
                 
-                // Description - Fixed to match product_card
+                // Description
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
@@ -419,7 +418,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 10),
                 
-                // Current Bid and Points Row - Fixed to match product_card
+                // Current Bid and Points Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -473,8 +472,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Fixed: Button with proper padding, same height as product_card (40)
-                // Fixed: Entire button is clickable and swipeable
+                // Swipe to Bid Button - Fixed: Loader matches UpcomingCard
                 GestureDetector(
                   onPanStart: _onPanStart,
                   onPanUpdate: _onPanUpdate,
@@ -482,60 +480,71 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   onTap: _navigateToProductDetails,
                   child: Container(
                     width: double.infinity,
-                    height: 40, // Fixed: Same height as product_card
+                    height: 40,
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7),
                     ),
-                    child: Stack(
-                      children: [
-                        // Swipe indicator
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 50),
-                          width: 28 + (_swipeAmount),
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _swipeAmount > 20 ? Colors.green : Colors.white,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
-                              color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
+                    child: _isProcessing
+                        ? const Center(
+                            child: SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ),
-                        // Center text
-                        Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          )
+                        : Stack(
                             children: [
-                              if (_swipeAmount < 20) ...[
-                                const SizedBox(width: 30),
-                                Text(
-                                  'Swipe to Bid',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                              // Swipe indicator
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 50),
+                                width: 28 + (_swipeAmount),
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _swipeAmount > 20 ? Colors.green : Colors.white,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 14,
+                                    color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
                                   ),
                                 ),
-                              ] else ...[
-                                const Text(
-                                  'Quick Bid',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
+                              ),
+                              // Center text
+                              Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_swipeAmount < 20) ...[
+                                      const SizedBox(width: 30),
+                                      const Text(
+                                        'Swipe to Bid',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      const Text(
+                                        'Quick Bid',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                              ],
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ],
