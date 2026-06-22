@@ -538,7 +538,7 @@ class _WishlistState extends State<Wishlist> {
                           ),
                   ),
                 ),
-                // Remove from wishlist button
+                // Remove from wishlist - FILLED HEART ICON
                 Positioned(
                   top: 0,
                   right: 0,
@@ -553,9 +553,9 @@ class _WishlistState extends State<Wishlist> {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.close,
+                        Icons.favorite, // FILLED HEART
                         size: 16,
-                        color: Colors.black,
+                        color: Color(0xFFFF3B30), // Red color like original
                       ),
                     ),
                   ),
