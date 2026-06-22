@@ -25,30 +25,47 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   
   UserInformation? _userInfo;
   
-  // Notification settings
+  // Notification settings - matching backend field names
   Map<String, bool> _notificationSettings = {
     // Bid Notifications
-    'new_bid': true,
-    'outbid': true,
+    'new_bid_notification': true,
+    'outbid_notification': true,
     
     // Referral Notifications
-    'new_referral': true,
-    'earning': true,
-    'withdrawal': true,
+    'new_referral_notification': true,
+    'earning_notification': true,
+    'withdrawal_notification': true,
     
     // Point Notifications
-    'point_purchase': true,
-    'point_deduction': true,
+    'point_purchase_notification': true,
+    'point_deduction_notification': true,
     
     // Chat Notifications
-    'new_chat': true,
+    'new_chat_notification': true,
     
     // Product Notifications
-    'new_product': true,
-    'ending_soon': true,
-    'ended': true,
+    'new_product_notification': true,
+    'ending_soon_notification': true,
+    'ended_notification': true,
   };
   
+  // Display names mapping
+  final Map<String, String> _displayNames = {
+    'new_bid_notification': 'New Bid Notification',
+    'outbid_notification': 'Outbid Notification',
+    'new_referral_notification': 'New Referral Notification',
+    'earning_notification': 'Earning Notification',
+    'withdrawal_notification': 'Withdrawal Notification',
+    'point_purchase_notification': 'Point Purchase Notification',
+    'point_deduction_notification': 'Point Deduction Notification',
+    'new_chat_notification': 'New Chat Notification',
+    'new_product_notification': 'New Product Notification',
+    'ending_soon_notification': 'Ending Soon Notification',
+    'ended_notification': 'Ended Notification',
+  };
+  
+  final ProfileRepository _profileRepository = ProfileRepository();
+
   @override
   void initState() {
     super.initState();
@@ -68,14 +85,28 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         _isLoading = true;
       });
       
-      var response = await ProfileRepository().getUserInfoResponse();
+      final response = await _profileRepository.getNotificationSettings();
       
-      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
-        setState(() {
-          _userInfo = response.data![0];
-        });
+      if (response['success'] == true && response['settings'] != null) {
+        final settings = response['settings'] as Map<String, dynamic>;
         
-        _loadSettingsFromUserInfo();
+        // Update local settings with fetched values
+        setState(() {
+          for (var key in _notificationSettings.keys) {
+            if (settings.containsKey(key)) {
+              // Convert to bool (handle int values from database)
+              final value = settings[key];
+              if (value is bool) {
+                _notificationSettings[key] = value;
+              } else if (value is int) {
+                _notificationSettings[key] = value == 1;
+              } else if (value is String) {
+                _notificationSettings[key] = value == '1' || value == 'true';
+              }
+            }
+          }
+          _isLoading = false;
+        });
       } else {
         _useDefaultSettings();
       }
@@ -91,27 +122,22 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     }
   }
   
-  void _loadSettingsFromUserInfo() {
-    // Load from user preferences if available
-    // For now, use defaults
-    _useDefaultSettings();
-  }
-  
   void _useDefaultSettings() {
     setState(() {
       _notificationSettings = {
-        'new_bid': true,
-        'outbid': true,
-        'new_referral': true,
-        'earning': true,
-        'withdrawal': true,
-        'point_purchase': true,
-        'point_deduction': true,
-        'new_chat': true,
-        'new_product': true,
-        'ending_soon': true,
-        'ended': true,
+        'new_bid_notification': true,
+        'outbid_notification': true,
+        'new_referral_notification': true,
+        'earning_notification': true,
+        'withdrawal_notification': true,
+        'point_purchase_notification': true,
+        'point_deduction_notification': true,
+        'new_chat_notification': true,
+        'new_product_notification': true,
+        'ending_soon_notification': true,
+        'ended_notification': true,
       };
+      _isLoading = false;
     });
   }
   
@@ -125,12 +151,14 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   
   // ============ SAVE SETTINGS TO SERVER ============
   Future<void> _saveSettings() async {
+    if (_isSaving) return;
+    
     setState(() {
       _isSaving = true;
     });
     
     try {
-      final response = await ProfileRepository().updateNotificationSettings(_notificationSettings);
+      final response = await _profileRepository.updateNotificationSettings(_notificationSettings);
       
       if (response['success'] == true) {
         ToastComponent.showDialog(
@@ -138,7 +166,8 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         );
         
         if (mounted) {
-          Navigator.pop(context);
+          // Refresh settings after save
+          await _fetchNotificationSettings();
         }
       } else {
         ToastComponent.showDialog(
@@ -149,9 +178,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       print("Error saving notification settings: $e");
       ToastComponent.showDialog(AppLocalizations.of(context)!.notification_settings_save_failed);
     } finally {
-      setState(() {
-        _isSaving = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
   
@@ -159,6 +190,27 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     setState(() {
       _notificationSettings[key] = value;
     });
+  }
+  
+  // ============ HELPER METHOD FOR DISPLAY NAME ============
+  String _getDisplayName(String key) {
+    // Check if we have a localized version
+    final localKey = key.replaceAll('_notification', '');
+    final localizedMap = {
+      'new_bid': AppLocalizations.of(context)!.new_bid_notification,
+      'outbid': AppLocalizations.of(context)!.outbid_notification,
+      'new_referral': AppLocalizations.of(context)!.new_referral_notification,
+      'earning': AppLocalizations.of(context)!.earning_notification,
+      'withdrawal': AppLocalizations.of(context)!.withdrawal_notification,
+      'point_purchase': AppLocalizations.of(context)!.point_purchase_notification,
+      'point_deduction': AppLocalizations.of(context)!.point_deduction_notification,
+      'new_chat': AppLocalizations.of(context)!.new_chat_notification,
+      'new_product': AppLocalizations.of(context)!.new_product_notification,
+      'ending_soon': AppLocalizations.of(context)!.ending_soon_notification,
+      'ended': AppLocalizations.of(context)!.ended_notification,
+    };
+    
+    return localizedMap[localKey] ?? _displayNames[key] ?? key;
   }
   
   // ============ BUILD UI ============
@@ -195,109 +247,38 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     _buildNotificationCard(
                       title: AppLocalizations.of(context)!.bid_notifications,
                       icon: Icons.gavel,
-                      children: [
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.new_bid_notification,
-                          key: 'new_bid',
-                          value: _notificationSettings['new_bid'] ?? true,
-                          onChanged: (val) => _updateSetting('new_bid', val),
-                        ),
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.outbid_notification,
-                          key: 'outbid',
-                          value: _notificationSettings['outbid'] ?? true,
-                          onChanged: (val) => _updateSetting('outbid', val),
-                        ),
-                      ],
+                      keys: ['new_bid_notification', 'outbid_notification'],
                     ),
                     
                     // Referral Notifications Card
                     _buildNotificationCard(
                       title: AppLocalizations.of(context)!.referral_notifications,
                       icon: Icons.people,
-                      children: [
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.new_referral_notification,
-                          key: 'new_referral',
-                          value: _notificationSettings['new_referral'] ?? true,
-                          onChanged: (val) => _updateSetting('new_referral', val),
-                        ),
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.earning_notification,
-                          key: 'earning',
-                          value: _notificationSettings['earning'] ?? true,
-                          onChanged: (val) => _updateSetting('earning', val),
-                        ),
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.withdrawal_notification,
-                          key: 'withdrawal',
-                          value: _notificationSettings['withdrawal'] ?? true,
-                          onChanged: (val) => _updateSetting('withdrawal', val),
-                        ),
-                      ],
+                      keys: ['new_referral_notification', 'earning_notification', 'withdrawal_notification'],
                     ),
                     
                     // Point Notifications Card
                     _buildNotificationCard(
                       title: AppLocalizations.of(context)!.point_notifications,
                       icon: Icons.stars,
-                      children: [
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.point_purchase_notification,
-                          key: 'point_purchase',
-                          value: _notificationSettings['point_purchase'] ?? true,
-                          onChanged: (val) => _updateSetting('point_purchase', val),
-                        ),
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.point_deduction_notification,
-                          key: 'point_deduction',
-                          value: _notificationSettings['point_deduction'] ?? true,
-                          onChanged: (val) => _updateSetting('point_deduction', val),
-                        ),
-                      ],
+                      keys: ['point_purchase_notification', 'point_deduction_notification'],
                     ),
                     
                     // Chat Notifications Card
                     _buildNotificationCard(
                       title: AppLocalizations.of(context)!.chat_notifications,
                       icon: Icons.chat_bubble_outline,
-                      children: [
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.new_chat_notification,
-                          key: 'new_chat',
-                          value: _notificationSettings['new_chat'] ?? true,
-                          onChanged: (val) => _updateSetting('new_chat', val),
-                        ),
-                      ],
+                      keys: ['new_chat_notification'],
                     ),
                     
                     // Product Notifications Card
                     _buildNotificationCard(
                       title: AppLocalizations.of(context)!.product_notifications,
                       icon: Icons.shopping_bag,
-                      children: [
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.new_product_notification,
-                          key: 'new_product',
-                          value: _notificationSettings['new_product'] ?? true,
-                          onChanged: (val) => _updateSetting('new_product', val),
-                        ),
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.ending_soon_notification,
-                          key: 'ending_soon',
-                          value: _notificationSettings['ending_soon'] ?? true,
-                          onChanged: (val) => _updateSetting('ending_soon', val),
-                        ),
-                        _buildNotificationItem(
-                          label: AppLocalizations.of(context)!.ended_notification,
-                          key: 'ended',
-                          value: _notificationSettings['ended'] ?? true,
-                          onChanged: (val) => _updateSetting('ended', val),
-                        ),
-                      ],
+                      keys: ['new_product_notification', 'ending_soon_notification', 'ended_notification'],
                     ),
                     
-                    // Save Button
+                    // Save Button - Same loader as HotAuctionCard
                     _buildSaveButton(),
                   ],
                 ),
@@ -370,7 +351,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget _buildNotificationCard({
     required String title,
     required IconData icon,
-    required List<Widget> children,
+    required List<String> keys,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -417,7 +398,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               ],
             ),
           ),
-          ...children,
+          // Notification Items
+          ...keys.map((key) => _buildNotificationItem(
+            label: _getDisplayName(key),
+            key: key,
+            value: _notificationSettings[key] ?? true,
+            onChanged: (val) => _updateSetting(key, val),
+          )),
         ],
       ),
     );
@@ -480,6 +467,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     );
   }
   
+  // ============ SAVE BUTTON - SAME LOADER AS HOTAUCTIONCARD ============
   Widget _buildSaveButton() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 30),
@@ -487,29 +475,31 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         onTap: _isSaving ? null : _saveSettings,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: _isSaving ? MyTheme.medium_grey : MyTheme.accent_color,
             borderRadius: BorderRadius.circular(50),
           ),
-          child: _isSaving
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+          child: Center(
+            child: _isSaving
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    AppLocalizations.of(context)!.save_settings,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
-                )
-              : Text(
-                  AppLocalizations.of(context)!.save_settings,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
+          ),
         ),
       ),
     );

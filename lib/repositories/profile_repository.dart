@@ -131,30 +131,36 @@ class ProfileRepository {
   Future<Map<String, dynamic>> updateNotificationSettings(Map<String, bool> settings) async {
     String url = "${AppConfig.BASE_URL}/notification-settings/update";
     
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-      body: jsonEncode({
-        "settings": settings,
-      })
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return {
-        'success': responseData['success'] ?? true,
-        'message': responseData['message'] ?? 'Notification settings saved successfully',
-        'data': responseData['data'],
-      };
-    } else {
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode(settings),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? 'Notification settings saved successfully',
+          'data': responseData['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to save notification settings',
+          'status': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print("Error updating notification settings: $e");
       return {
         'success': false,
-        'message': 'Failed to save notification settings',
-        'status': response.statusCode,
+        'message': 'Network error. Please try again.',
       };
     }
   }
@@ -163,27 +169,36 @@ class ProfileRepository {
   Future<Map<String, dynamic>> getNotificationSettings() async {
     String url = "${AppConfig.BASE_URL}/notification-settings";
     
-    final response = await ApiRequest.get(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-    );
-    
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return {
-        'success': responseData['success'] ?? true,
-        'settings': responseData['settings'] ?? {},
-        'message': responseData['message'],
-      };
-    } else {
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'settings': responseData['settings'] ?? {},
+          'message': responseData['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'settings': {},
+          'message': 'Failed to get notification settings',
+        };
+      }
+    } catch (e) {
+      print("Error getting notification settings: $e");
       return {
         'success': false,
         'settings': {},
-        'message': 'Failed to get notification settings',
+        'message': 'Network error. Please try again.',
       };
     }
   }
