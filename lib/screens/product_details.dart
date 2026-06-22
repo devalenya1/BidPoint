@@ -106,7 +106,7 @@ class _ProductDetailsState extends State<ProductDetails>
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
-  // Loading state for dialogs
+  // Loading state for buttons
   bool _isProcessing = false;
 
   @override
@@ -138,8 +138,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // API CALLS
   // ============================================
 
-  // Fix 1: Update _fetchAllData() in product_detail_screen.dart
-
   Future<void> _fetchAllData() async {
     setState(() => _isLoading = true);
 
@@ -159,8 +157,6 @@ class _ProductDetailsState extends State<ProductDetails>
             ? double.tryParse(_product!.highestBid!) ?? 0
             : 0;
         
-        // FIX 2 & 3: Get total bids and highest bidder from the product data
-        // Use totalBids and highestBidder from the product response
         _totalBids = _product!.totalBids ?? 0;
         _highestBidder = _product!.lastBidderName ?? '';
         
@@ -384,10 +380,11 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    if (_isProcessing) return;
+
     final amount = _minNextBidNow;
 
     setState(() => _isProcessing = true);
-    _showLoadingDialog();
 
     try {
       final response = await _productRepository.placeBid(
@@ -396,7 +393,6 @@ class _ProductDetailsState extends State<ProductDetails>
       );
 
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
 
@@ -423,7 +419,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
       _showToast('Error placing bid: $e');
@@ -436,6 +431,8 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    if (_isProcessing) return;
+
     final amount = double.tryParse(_bidController.text);
     if (amount == null) {
       _showToast('Please enter a valid amount');
@@ -447,7 +444,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     setState(() => _isProcessing = true);
-    _showLoadingDialog();
 
     try {
       final response = await _productRepository.placeBid(
@@ -456,7 +452,6 @@ class _ProductDetailsState extends State<ProductDetails>
       );
 
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
 
@@ -474,7 +469,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
       _showToast('Error placing bid');
@@ -491,6 +485,8 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    if (_isProcessing) return;
+
     final comment = _commentController.text.trim();
     if (comment.isEmpty) {
       _showToast('Please enter a comment');
@@ -498,7 +494,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     setState(() => _isProcessing = true);
-    _showLoadingDialog();
 
     try {
       final response = await _productRepository.addProductComment(
@@ -507,7 +502,6 @@ class _ProductDetailsState extends State<ProductDetails>
       );
 
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
 
@@ -521,7 +515,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
       _showToast('Error adding comment');
@@ -538,6 +531,8 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    if (_isProcessing) return;
+
     if (_selectedRating == 0) {
       _showToast('Please select a rating');
       return;
@@ -550,7 +545,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     setState(() => _isProcessing = true);
-    _showLoadingDialog();
 
     try {
       final response = await _productRepository.addProductReview(
@@ -560,7 +554,6 @@ class _ProductDetailsState extends State<ProductDetails>
       );
 
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
 
@@ -577,7 +570,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
       _showToast('Error submitting review');
@@ -594,10 +586,17 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    if (_isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
     try {
       if (_isInWishlist) {
         final response =
             await _productRepository.removeFromWishlist(_product!.id ?? 0);
+        if (mounted) {
+          setState(() => _isProcessing = false);
+        }
         if (response.success == true) {
           setState(() => _isInWishlist = false);
           _showToast('Removed from wishlist');
@@ -605,12 +604,18 @@ class _ProductDetailsState extends State<ProductDetails>
       } else {
         final response =
             await _productRepository.addToWishlist(_product!.id ?? 0);
+        if (mounted) {
+          setState(() => _isProcessing = false);
+        }
         if (response.success == true) {
           setState(() => _isInWishlist = true);
           _showToast('Added to wishlist');
         }
       }
     } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
       _showToast('Error updating wishlist');
     }
   }
@@ -625,8 +630,9 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
 
+    if (_isProcessing) return;
+
     setState(() => _isProcessing = true);
-    _showLoadingDialog();
 
     try {
       final response = await _productRepository.contactSeller(
@@ -634,7 +640,6 @@ class _ProductDetailsState extends State<ProductDetails>
       );
 
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
 
@@ -645,7 +650,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
         setState(() => _isProcessing = false);
       }
       _showToast('Error contacting seller');
@@ -653,13 +657,12 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND EFFECTS - FIXED
+  // SOUND EFFECTS
   // ============================================
 
   void _playBidSound() async {
     if (!_soundEnabled) return;
     try {
-      // Ensure audio player is ready and play
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
     } catch (e) {
@@ -734,36 +737,14 @@ class _ProductDetailsState extends State<ProductDetails>
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
-  Widget _buildLoadingIndicator() {
+  // Button loader widget matching HotAuctionCard style
+  Widget _buildButtonLoader() {
     return const SizedBox(
-      height: 20,
-      width: 20,
+      height: 16,
+      width: 16,
       child: CircularProgressIndicator(
         strokeWidth: 2,
-        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-      ),
-    );
-  }
-
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        content: Row(
-          children: [
-            const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(MyTheme.accent_color),
-              ),
-            ),
-            const SizedBox(width: 20),
-            const Text('Processing...'),
-          ],
-        ),
+        color: Colors.white,
       ),
     );
   }
@@ -771,6 +752,10 @@ class _ProductDetailsState extends State<ProductDetails>
   void _shareProduct() {
     Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
   }
+
+  // ============================================
+  // CUSTOM BID POPUP
+  // ============================================
 
   void _showBidInputDialog() {
     _bidController.clear();
@@ -826,10 +811,12 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _submitCustomBid();
-                  },
+                  onPressed: _isProcessing
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          _submitCustomBid();
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: MyTheme.accent_color,
                     minimumSize: const Size(80, 40),
@@ -838,9 +825,13 @@ class _ProductDetailsState extends State<ProductDetails>
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text('Place Bid',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600)),
+                  child: _isProcessing
+                      ? _buildButtonLoader()
+                      : Text(
+                          'Place Bid',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w600),
+                        ),
                 ),
               ],
             ),
@@ -1020,10 +1011,12 @@ class _ProductDetailsState extends State<ProductDetails>
                           Border(top: BorderSide(color: Colors.grey.shade200)),
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showAddReviewModalDialog();
-                      },
+                      onPressed: _isProcessing
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              _showAddReviewModalDialog();
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
                         padding: EdgeInsets.symmetric(vertical: 14),
@@ -1031,8 +1024,12 @@ class _ProductDetailsState extends State<ProductDetails>
                             borderRadius: BorderRadius.circular(8)),
                         minimumSize: Size(double.infinity, 0),
                       ),
-                      child: Text('Write a Review',
-                          style: TextStyle(color: Colors.white)),
+                      child: _isProcessing
+                          ? _buildButtonLoader()
+                          : Text(
+                              'Write a Review',
+                              style: TextStyle(color: Colors.white),
+                            ),
                     ),
                   ),
                 ],
@@ -1104,48 +1101,47 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: () async {
-                      if (tempRating == 0) {
-                        _showToast('Please select a rating');
-                        return;
-                      }
-                      if (tempController.text.trim().isEmpty) {
-                        _showToast('Please write a review');
-                        return;
-                      }
-                      Navigator.pop(context);
-                      setState(() => _isProcessing = true);
-                      _showLoadingDialog();
+                    onPressed: _isProcessing
+                        ? null
+                        : () async {
+                            if (tempRating == 0) {
+                              _showToast('Please select a rating');
+                              return;
+                            }
+                            if (tempController.text.trim().isEmpty) {
+                              _showToast('Please write a review');
+                              return;
+                            }
+                            Navigator.pop(context);
+                            setState(() => _isProcessing = true);
 
-                      try {
-                        final response =
-                            await _productRepository.addProductReview(
-                          _product!.id ?? 0,
-                          tempRating.toInt(),
-                          tempController.text,
-                        );
+                            try {
+                              final response =
+                                  await _productRepository.addProductReview(
+                                _product!.id ?? 0,
+                                tempRating.toInt(),
+                                tempController.text,
+                              );
 
-                        if (mounted) {
-                          Navigator.pop(context);
-                          setState(() => _isProcessing = false);
-                        }
+                              if (mounted) {
+                                setState(() => _isProcessing = false);
+                              }
 
-                        if (response.success == true) {
-                          _showToast('Review submitted!');
-                          await _fetchReviews();
-                          await _pollData();
-                          setState(() {});
-                        } else {
-                          _showToast(response.message ?? 'Error submitting review');
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          Navigator.pop(context);
-                          setState(() => _isProcessing = false);
-                        }
-                        _showToast('Error submitting review');
-                      }
-                    },
+                              if (response.success == true) {
+                                _showToast('Review submitted!');
+                                await _fetchReviews();
+                                await _pollData();
+                                setState(() {});
+                              } else {
+                                _showToast(response.message ?? 'Error submitting review');
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                setState(() => _isProcessing = false);
+                              }
+                              _showToast('Error submitting review');
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
                       padding: EdgeInsets.symmetric(vertical: 14),
@@ -1153,8 +1149,12 @@ class _ProductDetailsState extends State<ProductDetails>
                           borderRadius: BorderRadius.circular(8)),
                       minimumSize: Size(double.infinity, 0),
                     ),
-                    child: Text('Submit Review',
-                        style: TextStyle(color: Colors.white)),
+                    child: _isProcessing
+                        ? _buildButtonLoader()
+                        : Text(
+                            'Submit Review',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ],
               ),
@@ -1543,7 +1543,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     // Top Icons - Vertical Right Icons
-                    // Fix 1: Only ONE back button (the one with circle design)
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       right: 16,
@@ -1554,31 +1553,34 @@ class _ProductDetailsState extends State<ProductDetails>
                             icon: Icons.more_vert,
                             onTap: () =>
                                 setState(() => _showMoreMenu = !_showMoreMenu),
+                            isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
-                          // Fix 4: Wishlist icon - full heart when added, empty when removed
                           _buildIconCircle(
                             icon: _isInWishlist
                                 ? Icons.favorite
                                 : Icons.favorite_border,
                             isActive: _isInWishlist,
                             onTap: _toggleWishlist,
+                            isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
                           _buildIconCircle(
                             icon: Icons.share,
                             onTap: _shareProduct,
+                            isLoading: false,
                           ),
                         ],
                       ),
                     ),
-                    // Fix 1: Only ONE back button (the one with circle design)
+                    // Left Icons - Back Button
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       left: 16,
                       child: _buildIconCircle(
                         icon: Icons.arrow_back,
                         onTap: () => Navigator.pop(context),
+                        isLoading: false,
                       ),
                     ),
                     // More Menu
@@ -1623,8 +1625,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                                 _buildMoreMenuItem(
                                   icon: Icons.contact_mail,
-                                  text: 'Contact Seller',
-                                  onTap: () {
+                                  text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+                                  onTap: _isProcessing ? null : () {
                                     setState(() => _showMoreMenu = false);
                                     _contactSeller();
                                   },
@@ -1665,21 +1667,6 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Row(
-                                  //   mainAxisAlignment:
-                                  //       MainAxisAlignment.spaceBetween,
-                                  //   children: [
-                                  //     Text('Comments (${_comments.length})',
-                                  //         style: TextStyle(
-                                  //             color: Colors.white,
-                                  //             fontSize: 12,
-                                  //             fontWeight: FontWeight.w600)),
-                                  //     Text('Recent',
-                                  //         style: TextStyle(
-                                  //             color: Colors.white70,
-                                  //             fontSize: 10)),
-                                  //   ],
-                                  // ),
                                   SizedBox(height: 8),
                                   Container(
                                     height: imageHeight * 0.6,
@@ -1789,7 +1776,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       ),
                                       SizedBox(width: 8),
                                       GestureDetector(
-                                        onTap: _sendComment,
+                                        onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
                                           width: 32,
                                           height: 32,
@@ -1797,8 +1784,17 @@ class _ProductDetailsState extends State<ProductDetails>
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
-                                          child: Icon(Icons.send,
-                                              size: 16, color: Colors.white),
+                                          child: _isProcessing
+                                              ? const SizedBox(
+                                                  height: 14,
+                                                  width: 14,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : Icon(Icons.send,
+                                                  size: 16, color: Colors.white),
                                         ),
                                       ),
                                     ],
@@ -1925,9 +1921,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       children: [
                         _buildInfoItem('Starting bid',
                             _formatPrice(_startingBid)),
-                        // Fix 2: Total bidders now shows correctly
                         _buildInfoItem('Total bidders', '$_totalBids'),
-                        // Fix 3: Highest bidder now shows correctly
                         _buildInfoItem(
                             'Highest bidder',
                             _highestBidder.isNotEmpty
@@ -2076,17 +2070,19 @@ class _ProductDetailsState extends State<ProductDetails>
                 Expanded(
                   flex: 2,
                   child: ElevatedButton(
-                    onPressed: _placeBidNow,
+                    onPressed: _isProcessing ? null : _placeBidNow,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
                       padding: EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
-                    child: Text(
-                      'Bid Now - ${_formatPrice(_minNextBidNow)}',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: _isProcessing
+                        ? _buildButtonLoader()
+                        : Text(
+                            'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
               ],
@@ -2105,9 +2101,10 @@ class _ProductDetailsState extends State<ProductDetails>
     required IconData icon,
     bool isActive = false,
     required VoidCallback onTap,
+    bool isLoading = false,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         width: 48,
         height: 48,
@@ -2122,11 +2119,20 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: isActive ? MyTheme.accent_color : Colors.black87,
-          size: 22,
-        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: MyTheme.accent_color,
+                ),
+              )
+            : Icon(
+                icon,
+                color: isActive ? MyTheme.accent_color : Colors.black87,
+                size: 22,
+              ),
       ),
     );
   }
@@ -2134,7 +2140,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildMoreMenuItem({
     required IconData icon,
     required String text,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -2226,7 +2232,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // DESKTOP LAYOUT (Same as before, with fixes applied)
+  // DESKTOP LAYOUT
   // ============================================
 
   Widget _buildDesktopLayout() {
@@ -2479,7 +2485,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                           SizedBox(width: 12),
                           GestureDetector(
-                            onTap: _sendComment,
+                            onTap: _isProcessing ? null : _sendComment,
                             child: Container(
                               width: 44,
                               height: 44,
@@ -2487,8 +2493,17 @@ class _ProductDetailsState extends State<ProductDetails>
                                 color: MyTheme.accent_color,
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.send,
-                                  color: Colors.white, size: 20),
+                              child: _isProcessing
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(Icons.send,
+                                      color: Colors.white, size: 20),
                             ),
                           ),
                         ],
@@ -2550,7 +2565,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                 label: 'Share',
                                 onTap: _shareProduct,
                               ),
-                              // Fix 4: Desktop wishlist - full heart when added, empty when removed
                               _buildDesktopIconButton(
                                 icon: _isInWishlist
                                     ? Icons.favorite
@@ -2604,8 +2618,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                   ),
                                   _buildDesktopMenuItem(
                                     icon: Icons.contact_mail,
-                                    text: 'Contact Seller',
-                                    onTap: () {
+                                    text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+                                    onTap: _isProcessing ? null : () {
                                       setState(() => _showDesktopMoreMenu =
                                           false);
                                       _contactSeller();
@@ -2700,10 +2714,8 @@ class _ProductDetailsState extends State<ProductDetails>
                             children: [
                               _buildDesktopInfoItem('Starting bid',
                                   _formatPrice(_startingBid)),
-                              // Fix 2: Total bidders shows correctly
                               _buildDesktopInfoItem('Total bidders',
                                   '$_totalBids'),
-                              // Fix 3: Highest bidder shows correctly
                               _buildDesktopInfoItem(
                                   'Highest bidder',
                                   _highestBidder.isNotEmpty
@@ -2756,14 +2768,16 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                               SizedBox(width: 8),
                               ElevatedButton(
-                                onPressed: _submitCustomBid,
+                                onPressed: _isProcessing ? null : _submitCustomBid,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: MyTheme.accent_color,
                                   padding: EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 12),
                                 ),
-                                child: Text('Place Bid',
-                                    style: TextStyle(color: Colors.white)),
+                                child: _isProcessing
+                                    ? _buildButtonLoader()
+                                    : Text('Place Bid',
+                                        style: TextStyle(color: Colors.white)),
                               ),
                             ],
                           ),
@@ -2773,7 +2787,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     SizedBox(height: 12),
                     // Bid Now Button
                     ElevatedButton(
-                      onPressed: _placeBidNow,
+                      onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
                         padding: EdgeInsets.symmetric(vertical: 14),
@@ -2781,11 +2795,13 @@ class _ProductDetailsState extends State<ProductDetails>
                             borderRadius: BorderRadius.circular(8)),
                         minimumSize: Size(double.infinity, 0),
                       ),
-                      child: Text(
-                        'Bid Now - ${_formatPrice(_minNextBidNow)}',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
+                      child: _isProcessing
+                          ? _buildButtonLoader()
+                          : Text(
+                              'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                              style: TextStyle(
+                                  color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                     ),
                     SizedBox(height: 12),
                     // Reviews Section
@@ -2886,7 +2902,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildDesktopMenuItem({
     required IconData icon,
     required String text,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
