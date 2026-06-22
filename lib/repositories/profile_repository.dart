@@ -259,38 +259,57 @@ class ProfileRepository {
     }
   }
 
+
   // Submit withdrawal request
   Future<Map<String, dynamic>> submitWithdrawalRequest(double amount) async {
     String url = "${AppConfig.BASE_URL}/affiliate/withdraw-request";
     
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-      body: jsonEncode({
-        "amount": amount,
-      })
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return {
-        'success': responseData['success'] ?? true,
-        'message': responseData['message'] ?? "Withdrawal request submitted successfully",
-        'data': responseData['data'],
-      };
-    } else {
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({
+          "amount": amount,
+        })
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? "Withdrawal request submitted successfully",
+          'data': responseData['data'],
+        };
+      } else {
+        // Try to parse error message from response
+        try {
+          final Map<String, dynamic> errorData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'message': errorData['message'] ?? "Failed to submit withdrawal request",
+            'status': response.statusCode,
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'message': "Failed to submit withdrawal request",
+            'status': response.statusCode,
+          };
+        }
+      }
+    } catch (e) {
+      print("Error submitting withdrawal: $e");
       return {
         'success': false,
-        'message': "Failed to submit withdrawal request",
-        'status': response.statusCode,
+        'message': "Network error. Please try again.",
       };
     }
   }
- 
+
   // Update affiliate payment details
   Future<Map<String, dynamic>> updateAffiliatePaymentDetails({
     required String paypalEmail,

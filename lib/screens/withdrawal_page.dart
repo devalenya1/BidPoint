@@ -33,6 +33,8 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   
   List<AffiliateWithdrawRequest> _withdrawalHistory = [];
   
+  final ProfileRepository _profileRepository = ProfileRepository();
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +64,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         _isLoading = true;
       });
       
-      var response = await ProfileRepository().getUserInfoResponse();
+      var response = await _profileRepository.getUserInfoResponse();
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
@@ -102,18 +104,21 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   
   // ============ SUBMIT WITHDRAWAL REQUEST TO SERVER ============
   Future<void> _submitWithdrawalRequest(double amount) async {
+    if (_isSubmitting) return;
+    
     setState(() {
       _isSubmitting = true;
     });
     
     try {
-      final response = await ProfileRepository().submitWithdrawalRequest(amount);
+      final response = await _profileRepository.submitWithdrawalRequest(amount);
       
       if (response['success'] == true) {
         ToastComponent.showDialog(
           response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_submitted,
         );
         
+        // Refresh data after successful submission
         await _fetchWithdrawalData();
       } else {
         ToastComponent.showDialog(
@@ -124,9 +129,11 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       print("Error submitting withdrawal: $e");
       ToastComponent.showDialog(AppLocalizations.of(context)!.withdrawal_request_failed);
     } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
   
