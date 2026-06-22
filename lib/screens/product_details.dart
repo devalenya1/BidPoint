@@ -330,7 +330,7 @@ class _ProductDetailsState extends State<ProductDetails>
           }
         }
 
-        // Refresh comments
+        // Refresh comments - SHOW ALL COMMENTS
         await _fetchComments();
 
         // Refresh reviews
@@ -338,6 +338,19 @@ class _ProductDetailsState extends State<ProductDetails>
 
         // Refresh bid history
         await _fetchBidHistory();
+        
+        // Update bid data from polling response
+        if (response.totalBids != null) {
+          setState(() => _totalBids = response.totalBids!);
+        }
+        if (response.lastBidderName != null) {
+          setState(() => _highestBidder = response.lastBidderName!);
+        }
+        if (response.highestBid != null) {
+          setState(() => _currentHighestBid = response.highestBid!);
+          _minNextBidNow = _currentHighestBid + 0.01;
+          _minNextBid = _currentHighestBid + 1;
+        }
       }
     } catch (e) {
       print('Polling error: $e');
@@ -577,7 +590,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // WISHLIST ACTIONS
+  // WISHLIST ACTIONS - WITH SOUND
   // ============================================
 
   Future<void> _toggleWishlist() async {
@@ -599,6 +612,7 @@ class _ProductDetailsState extends State<ProductDetails>
         }
         if (response.success == true) {
           setState(() => _isInWishlist = false);
+          _playCommentSound(); // Play sound when removed
           _showToast('Removed from wishlist');
         }
       } else {
@@ -609,6 +623,7 @@ class _ProductDetailsState extends State<ProductDetails>
         }
         if (response.success == true) {
           setState(() => _isInWishlist = true);
+          _playBidSound(); // Play sound when added
           _showToast('Added to wishlist');
         }
       }
@@ -1475,7 +1490,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT
+  // MOBILE LAYOUT - UPDATED WITH ALL FIXES
   // ============================================
 
   Widget _buildMobileLayout() {
@@ -1485,6 +1500,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     return Stack(
       children: [
+        // Main content - Scrollable
         CustomScrollView(
           controller: _mainScrollController,
           physics: BouncingScrollPhysics(),
@@ -1556,6 +1572,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
+                          // Fix 4 & 5: Wishlist icon - full heart when added, empty when removed
                           _buildIconCircle(
                             icon: _isInWishlist
                                 ? Icons.favorite
@@ -1573,7 +1590,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    // Left Icons - Back Button
+                    // Left Icons - Back Button (only one, with circle design)
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       left: 16,
@@ -1583,13 +1600,13 @@ class _ProductDetailsState extends State<ProductDetails>
                         isLoading: false,
                       ),
                     ),
-                    // More Menu
+                    // More Menu - Overlays everything
                     if (_showMoreMenu)
                       Positioned(
                         top: 80,
                         right: 16,
                         child: Material(
-                          elevation: 10,
+                          elevation: 20,
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             width: 180,
@@ -1598,8 +1615,8 @@ class _ProductDetailsState extends State<ProductDetails>
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 15,
                                   offset: Offset(0, 5),
                                 ),
                               ],
@@ -1654,9 +1671,9 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments Section - 60% of image height
+                            // Comments Section - Medium size (55% of image height)
                             Container(
-                              width: MediaQuery.of(context).size.width * 0.8,
+                              width: MediaQuery.of(context).size.width * 0.78,
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
@@ -1667,21 +1684,44 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Comment count header
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Comments (${_comments.length})',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Recent',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   SizedBox(height: 8),
+                                  // SHOW ALL COMMENTS (not just 3)
                                   Container(
-                                    height: imageHeight * 0.6,
+                                    height: imageHeight * 0.5,
                                     child: _comments.isEmpty
                                         ? Center(
-                                            child: Text('No comments yet',
-                                                style: TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 11)),
+                                            child: Text(
+                                              'No comments yet',
+                                              style: TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 11,
+                                              ),
+                                            ),
                                           )
                                         : ListView.builder(
                                             shrinkWrap: true,
-                                            itemCount: _comments.length > 3
-                                                ? 3
-                                                : _comments.length,
+                                            itemCount: _comments.length,
                                             itemBuilder: (context, index) {
                                               final comment = _comments[index];
                                               return Padding(
@@ -1714,26 +1754,30 @@ class _ProductDetailsState extends State<ProductDetails>
                                                                 .start,
                                                         children: [
                                                           Text(
-                                                              comment.userName ??
-                                                                  'User',
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 11,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600)),
+                                                            comment.userName ??
+                                                                'User',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white,
+                                                              fontSize: 11,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                          ),
                                                           Text(
-                                                              comment.comment ??
-                                                                  '',
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white70,
-                                                                  fontSize: 10),
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis),
+                                                            comment.comment ??
+                                                                '',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white70,
+                                                              fontSize: 10,
+                                                            ),
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
@@ -1743,6 +1787,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
+                                  // Comment input
                                   Row(
                                     children: [
                                       Expanded(
@@ -1888,52 +1933,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Bid Info Section
-            SliverToBoxAdapter(
-              child: Container(
-                margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, -2)),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Bid Information',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                    SizedBox(height: 12),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 3,
-                      children: [
-                        _buildInfoItem('Starting bid',
-                            _formatPrice(_startingBid)),
-                        _buildInfoItem('Total bidders', '$_totalBids'),
-                        _buildInfoItem(
-                            'Highest bidder',
-                            _highestBidder.isNotEmpty
-                                ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                : 'No bids'),
-                        _buildInfoItem('Bid now at', '$_pointPerBid'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Remove the Bid Info Sliver from here - moved to Stack overlay
             // Reviews Section
             SliverToBoxAdapter(
               child: GestureDetector(
@@ -2036,6 +2036,61 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
             SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
+        ),
+        // Bid Info Section - Overlay with higher z-index
+        Positioned(
+          top: imageHeight - 30,
+          left: 16,
+          right: 16,
+          child: Material(
+            elevation: 10,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Bid Information',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 12),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 3,
+                    children: [
+                      _buildInfoItem('Starting bid',
+                          _formatPrice(_startingBid)),
+                      // Fix 7: Total bidders - updated from polling
+                      _buildInfoItem('Total bidders', '$_totalBids'),
+                      // Fix 8: Highest bidder - updated from polling
+                      _buildInfoItem(
+                          'Highest bidder',
+                          _highestBidder.isNotEmpty
+                              ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                              : 'No bids'),
+                      _buildInfoItem('Bid now at', '$_pointPerBid'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
         // Bottom Bar
         Positioned(
