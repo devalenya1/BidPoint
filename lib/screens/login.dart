@@ -82,9 +82,9 @@ class _LoginState extends State<Login> {
   // Helper method to handle successful login
   void _handleLoginSuccess() {
     // Call the callback if provided
-    if (widget.onLoginSuccess != null) {
-      widget.onLoginSuccess!();
-    }
+    // if (widget.onLoginSuccess != null) {
+    //   widget.onLoginSuccess!();
+    // }
     
     // Navigate to main screen
     context.push("/dashboard");
