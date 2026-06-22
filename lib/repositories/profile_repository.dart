@@ -299,6 +299,26 @@ class ProfileRepository {
     }
   }
 
+  // Mark notification as read (background)
+  Future<void> markNotificationAsRead(int notificationId) async {
+    String url = "${AppConfig.BASE_URL}/notification/mark-read/$notificationId";
+    
+    try {
+      await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({}),
+      );
+      // We don't care about the response - it's a background process
+    } catch (e) {
+      print("Error marking notification as read: $e");
+      // Silently fail - no user impact
+    }
+  }
 
   // Submit withdrawal request
   Future<Map<String, dynamic>> submitWithdrawalRequest(double amount) async {

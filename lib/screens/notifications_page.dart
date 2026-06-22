@@ -33,6 +33,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<model.Notification> _paymentNotifications = [];
   List<model.Notification> _systemNotifications = [];
   
+  // Background processing tracking
+  final Set<int> _processingIds = {};
+  
   @override
   void initState() {
     super.initState();
@@ -234,17 +237,108 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
   
-  Future<void> _markAsRead(int? notificationId) async {
+  // ============ BACKGROUND MARK AS READ (NO UI BLOCKING) ============
+  void _markAsReadInBackground(int? notificationId) {
     if (notificationId == null) return;
     
+    // Don't process if already processing
+    if (_processingIds.contains(notificationId)) return;
+    
+    // Add to processing set
+    _processingIds.add(notificationId);
+    
+    // Update local UI immediately (optimistic update)
+    setState(() {
+      // Mark as read locally
+      final notification = _allNotifications.firstWhere(
+        (n) => n.id == notificationId,
+        orElse: () => model.Notification(),
+      );
+      if (notification.id != null) {
+        // Create a new list with updated notification
+        _allNotifications = _allNotifications.map((n) {
+          if (n.id == notificationId) {
+            return model.Notification(
+              id: n.id,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              readAt: DateTime.now().toIso8601String(),
+              createdAt: n.createdAt,
+              isRead: true,
+            );
+          }
+          return n;
+        }).toList();
+        
+        // Update other lists
+        _auctionNotifications = _auctionNotifications.map((n) {
+          if (n.id == notificationId) {
+            return model.Notification(
+              id: n.id,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              readAt: DateTime.now().toIso8601String(),
+              createdAt: n.createdAt,
+              isRead: true,
+            );
+          }
+          return n;
+        }).toList();
+        
+        _paymentNotifications = _paymentNotifications.map((n) {
+          if (n.id == notificationId) {
+            return model.Notification(
+              id: n.id,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              readAt: DateTime.now().toIso8601String(),
+              createdAt: n.createdAt,
+              isRead: true,
+            );
+          }
+          return n;
+        }).toList();
+        
+        _systemNotifications = _systemNotifications.map((n) {
+          if (n.id == notificationId) {
+            return model.Notification(
+              id: n.id,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              readAt: DateTime.now().toIso8601String(),
+              createdAt: n.createdAt,
+              isRead: true,
+            );
+          }
+          return n;
+        }).toList();
+      }
+    });
+    
+    // Send background request (fire and forget)
+    _sendMarkAsReadRequest(notificationId);
+  }
+  
+  void _sendMarkAsReadRequest(int notificationId) async {
     try {
-      // TODO: Call API to mark notification as read
-      // await ProfileRepository().markNotificationAsRead(notificationId);
+      // This runs in background - no UI blocking
+      await ProfileRepository().markNotificationAsRead(notificationId);
       
-      // Reload to update UI
-      await _fetchNotifications();
+      // Remove from processing set
+      _processingIds.remove(notificationId);
+      
+      print('✅ Notification $notificationId marked as read in background');
     } catch (e) {
-      print("Error marking notification as read: $e");
+      print('❌ Failed to mark notification $notificationId as read: $e');
+      // Remove from processing set even on error
+      _processingIds.remove(notificationId);
+      
+      // Optional: Revert the optimistic update on error
+      // We could fetch fresh data if needed
     }
   }
   
@@ -403,10 +497,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     final isRead = notification.isRead ?? false;
+    final notificationId = notification.id;
+    final isProcessing = notificationId != null && _processingIds.contains(notificationId);
     
     return GestureDetector(
       onTap: () {
-        _markAsRead(notification.id);
+        if (!isRead) {
+          _markAsReadInBackground(notificationId);
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -429,11 +527,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 color: _getIconBackgroundColor(type),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                _getIconData(type),
-                size: 20,
-                color: _getIconColor(type),
-              ),
+              child: isProcessing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: MyTheme.accent_color,
+                      ),
+                    )
+                  : Icon(
+                      _getIconData(type),
+                      size: 20,
+                      color: _getIconColor(type),
+                    ),
             ),
             const SizedBox(width: 14),
             
@@ -473,7 +580,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
             
             // New Badge
-            if (!isRead)
+            if (!isRead && !isProcessing)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
