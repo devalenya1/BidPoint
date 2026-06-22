@@ -16,7 +16,7 @@ import '../data_model/user_info_response.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({Key? key}) : super(key: key);
-
+ 
   @override
   State<ActivityPage> createState() => _ActivityPageState();
 }
@@ -105,6 +105,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final auctionBids = _userInfo!.auctionBids ?? [];
     final distinctAuctionBids = _userInfo!.distinctAuctionBids ?? [];
     
+    // Create a map of product info by product ID
     final Map<int, DistinctAuctionBid> productInfoMap = {};
     for (var product in distinctAuctionBids) {
       if (product.productId != null) {
@@ -112,6 +113,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     }
     
+    // Group bids by product
     final Map<int, List<AuctionBid>> bidsByProduct = {};
     for (var bid in auctionBids) {
       if (bid.productId != null) {
@@ -226,34 +228,57 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return FormatHelper.formatPrice(price);
   }
   
-  String _getProductNameForBid(AuctionBid bid) {
-    if (_userInfo?.distinctAuctionBids == null) return AppLocalizations.of(context)!.unknown_product;
+  // ============ PRODUCT DATA HELPERS ============
+  DistinctAuctionBid? _getProductInfoForBid(AuctionBid bid) {
+    if (_userInfo?.distinctAuctionBids == null || bid.productId == null) return null;
     
-    final product = _userInfo!.distinctAuctionBids!.firstWhere(
-      (p) => p.productId == bid.productId,
-      orElse: () => DistinctAuctionBid(),
-    );
-    return product.productName ?? AppLocalizations.of(context)!.unknown_product;
+    try {
+      final product = _userInfo!.distinctAuctionBids!.firstWhere(
+        (p) => p.productId == bid.productId,
+      );
+      return product;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  String _getProductNameForBid(AuctionBid bid) {
+    final product = _getProductInfoForBid(bid);
+    if (product != null && product.productName != null && product.productName!.isNotEmpty) {
+      return product.productName!;
+    }
+    if (bid.productName != null && bid.productName!.isNotEmpty) {
+      return bid.productName!;
+    }
+    return AppLocalizations.of(context)!.unknown_product;
   }
   
   String? _getProductImageForBid(AuctionBid bid) {
-    if (_userInfo?.distinctAuctionBids == null) return null;
-    
-    final product = _userInfo!.distinctAuctionBids!.firstWhere(
-      (p) => p.productId == bid.productId,
-      orElse: () => DistinctAuctionBid(),
-    );
-    return product.productImage;
+    final product = _getProductInfoForBid(bid);
+    if (product != null && product.productImage != null && product.productImage!.isNotEmpty) {
+      return product.productImage;
+    }
+    if (bid.productImage != null && bid.productImage!.isNotEmpty) {
+      return bid.productImage;
+    }
+    return null;
+  }
+  
+  // FIXED: Get product slug from DistinctAuctionBid
+  String? _getProductSlugForBid(AuctionBid bid) {
+    final product = _getProductInfoForBid(bid);
+    if (product != null && product.productSlug != null && product.productSlug!.isNotEmpty) {
+      return product.productSlug;
+    }
+    return null;
   }
   
   double _getCurrentBidForProduct(int productId) {
-    if (_userInfo?.distinctAuctionBids == null) return 0.0;
-    
-    final product = _userInfo!.distinctAuctionBids!.firstWhere(
-      (p) => p.productId == productId,
-      orElse: () => DistinctAuctionBid(),
-    );
-    return product.amount ?? 0.0;
+    final product = _getProductInfoForBid(AuctionBid(productId: productId));
+    if (product != null) {
+      return product.amount ?? 0.0;
+    }
+    return 0.0;
   }
   
   double _getUserHighestBidForProduct(int productId) {
@@ -274,16 +299,26 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return userBids.first.pointPerBid ?? 10;
   }
   
-  String? _getProductSlugForBid(AuctionBid bid) {
+  // Helper to get product info by product ID (overload)
+  DistinctAuctionBid? _getProductInfoById(int productId) {
     if (_userInfo?.distinctAuctionBids == null) return null;
     
-    final product = _userInfo!.distinctAuctionBids!.firstWhere(
-      (p) => p.productId == bid.productId,
-      orElse: () => DistinctAuctionBid(),
-    );
-    
-    // Return the product slug (both regular and auction products use the same slug)
-    return product.productSlug;
+    try {
+      final product = _userInfo!.distinctAuctionBids!.firstWhere(
+        (p) => p.productId == productId,
+      );
+      return product;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  double _getCurrentBidById(int productId) {
+    final product = _getProductInfoById(productId);
+    if (product != null) {
+      return product.amount ?? 0.0;
+    }
+    return 0.0;
   }
   
   List<AuctionBid> _getCurrentActivities() {
@@ -302,7 +337,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   // ============ NAVIGATION HELPERS ============
   void _navigateToProductDetails(String slug) {
     if (slug.isNotEmpty) {
-      // Navigate to ProductDetails screen using /product/:slug
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -336,7 +370,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              // Navigate to Main screen (home) with bottom navigation
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
@@ -537,7 +570,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final productImage = _getProductImageForBid(activity);
     final productSlug = _getProductSlugForBid(activity);
     final userHighestBid = _getUserHighestBidForProduct(productId);
-    final currentBid = _getCurrentBidForProduct(productId);
+    final currentBid = _getCurrentBidById(productId);
     final pointPerBid = _getPointPerBidForProduct(productId);
     
     final isOutbid = userHighestBid > 0 && userHighestBid < currentBid;
