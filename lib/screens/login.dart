@@ -87,7 +87,7 @@ class _LoginState extends State<Login> {
     }
     
     // Navigate to main screen
-    context.push("/");
+    context.push("/dashboard");
   }
 
   onPressedLogin() async {

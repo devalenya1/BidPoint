@@ -140,7 +140,7 @@ class ProductRepository {
   // }
 
   Future<ProductDetailsResponse> getProductDetails({String? slug = ""}) async {
-    String url = ("${AppConfig.BASE_URL}/products/" + slug.toString());
+    String url = ("${AppConfig.BASE_URL}/products/details/" + slug.toString());
     print("Product Url: $url");
 
     final response = await ApiRequest.get(url: url, headers: {
