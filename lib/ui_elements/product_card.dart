@@ -320,7 +320,8 @@ class _ProductCardState extends State<ProductCard> {
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Text(
-                    widget.name ?? 'Product',
+                    widget.slug '-' widget.name,
+                    // widget.name ?? 'Product',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
