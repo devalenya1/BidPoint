@@ -391,7 +391,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
-                    widget.slug '-' widget.name,
+                    widget.slug,
                     // widget.name ?? 'Product',
                     style: const TextStyle(
                       fontSize: 14,
