@@ -179,7 +179,7 @@ class DetailedProduct {
   String? get shop_name => shopName;
   String? get shop_logo => shopLogo;
   String? get thumbnail_image => thumbnailImage;
-  String? get price_high_low => priceHighLow;
+  // String? get price_high_low => priceHighLow;
   List<ChoiceOption>? get choice_options => choiceOptions;
   bool? get has_discount => hasDiscount;
   String? get stroked_price => strokedPrice;
@@ -222,7 +222,7 @@ class DetailedProduct {
         tags: json["tags"] != null
             ? List<String>.from(json["tags"].map((x) => x))
             : [],
-        priceHighLow: json["price_high_low"],
+        // priceHighLow: json["price_high_low"],
         choiceOptions: json["choice_options"] != null
             ? List<ChoiceOption>.from(
                 json["choice_options"].map((x) => ChoiceOption.fromJson(x)))
@@ -304,7 +304,7 @@ class DetailedProduct {
             : [],
         "thumbnail_image": thumbnailImage,
         "tags": tags != null ? List<dynamic>.from(tags!.map((x) => x)) : [],
-        "price_high_low": priceHighLow,
+        // "price_high_low": priceHighLow,
         "choice_options": choiceOptions != null
             ? List<dynamic>.from(choiceOptions!.map((x) => x.toJson()))
             : [],
