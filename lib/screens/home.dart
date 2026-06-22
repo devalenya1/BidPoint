@@ -11,7 +11,6 @@ import 'package:active_ecommerce_flutter/screens/filter.dart';
 import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
-// import 'package:active_ecommerce_flutter/ui_elements/auction_product_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/hot_auction_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/ending_soon_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/upcoming_card.dart';
