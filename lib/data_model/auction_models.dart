@@ -631,7 +631,7 @@ class BidHistoryItem {
   int? userId;
   String? userName;
   double? amount;
-  String? createdAt;
+  String? createdAt; 
 
   BidHistoryItem({
     this.userId,
