@@ -300,8 +300,8 @@ class ProfileRepository {
   }
 
   // Mark notification as read (background)
-  Future<void> markNotificationAsRead(int notificationId) async {
-    String url = "${AppConfig.BASE_URL}/notification/mark-read/$notificationId";
+  Future<void> markAllNotificationsAsRead() async {
+    String url = "${AppConfig.BASE_URL}/notification/mark-all-read";
     
     try {
       await ApiRequest.post(

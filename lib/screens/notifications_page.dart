@@ -20,59 +20,60 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage> {
   int _selectedTab = 0; // 0: All, 1: Auctions, 2: Payments, 3: System
-  
-  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+
+  // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
-  
-  model.UserInformation? _userInfo;  // Store the complete user info response
-  
+  bool _isMarkingAllAsRead = false;
+
+  model.UserInformation? _userInfo; // Store the complete user info response
+
   // Derived notification lists (processed from _userInfo)
   List<model.Notification> _allNotifications = [];
   List<model.Notification> _auctionNotifications = [];
   List<model.Notification> _paymentNotifications = [];
   List<model.Notification> _systemNotifications = [];
-  
-  // Background processing tracking
-  final Set<int> _processingIds = {};
-  
+
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _fetchNotifications();  // Fetch fresh data from API
+      _fetchNotifications(); // Fetch fresh data from API
     } else {
       setState(() {
         _isLoading = false;
       });
     }
   }
-  
+
   // ============ FETCH DATA FROM API (Like ProductDetails) ============
   Future<void> _fetchNotifications() async {
     try {
       setState(() {
         _isLoading = true;
       });
-      
+
       var response = await ProfileRepository().getUserInfoResponse();
-      
+
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
-          _userInfo = response.data![0];  // Store locally like _productDetails
+          _userInfo = response.data![0];
         });
-        
+
         // Process notifications from the stored user info
         _processNotifications();
-        
+
         // Optional: Update global SharedValues for unread count
         unread_notifications_count.$ = _userInfo?.unreadNotificationsCount ?? 0;
         unread_notifications_count.save();
-        
+
         // Save all user data to SharedPreferences for other screens
         if (_userInfo != null) {
           UserDataHelper.saveUserData(_userInfo!);
         }
+
+        // AFTER loading notifications, mark all as read in background
+        _markAllAsReadInBackground();
       } else {
         // Handle empty response
         setState(() {
@@ -92,68 +93,188 @@ class _NotificationsPageState extends State<NotificationsPage> {
       });
     }
   }
-  
+
   // ============ PROCESS NOTIFICATIONS (Extract from stored user info) ============
   void _processNotifications() {
     if (_userInfo == null) return;
-    
+
     final notifications = _userInfo!.notifications ?? [];
-    
+
     // Auction related: outbid, newbid, point_deduction, bid_placed, etc.
     const auctionTypes = [
-      'outbid', 'newbid', 'point_deduction', 'bid_placed', 
-      'auction_win', 'auction_lose', 'auction_ending'
+      'outbid',
+      'newbid',
+      'point_deduction',
+      'bid_placed',
+      'auction_win',
+      'auction_lose',
+      'auction_ending'
     ];
-    
+
     // Payment related: payment_success, payment_failed, etc.
     const paymentTypes = [
-      'payment', 'payment_success', 'payment_failed', 'package_purchase',
-      'withdrawal', 'withdrawal_success', 'withdrawal_failed'
+      'payment',
+      'payment_success',
+      'payment_failed',
+      'package_purchase',
+      'withdrawal',
+      'withdrawal_success',
+      'withdrawal_failed'
     ];
-    
+
     setState(() {
       _allNotifications = notifications;
-      
+
       _auctionNotifications = notifications.where((n) {
         return auctionTypes.contains(n.type);
       }).toList();
-      
+
       _paymentNotifications = notifications.where((n) {
         return paymentTypes.contains(n.type);
       }).toList();
-      
+
       _systemNotifications = notifications.where((n) {
         return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
       }).toList();
     });
   }
-  
-  // ============ PULL TO REFRESH (Like ProductDetails) ============
+
+  // ============ PULL TO REFRESH ============
   Future<void> _onPageRefresh() async {
     setState(() {
       _isRefreshing = true;
     });
     await _fetchNotifications();
   }
-  
+
+  // ============ MARK ALL AS READ (BACKGROUND - NO UI BLOCKING) ============
+  void _markAllAsReadInBackground() {
+    // Only mark if there are unread notifications
+    if (_userInfo == null || (_userInfo?.unreadNotificationsCount ?? 0) <= 0) {
+      return;
+    }
+
+    // Don't process if already processing
+    if (_isMarkingAllAsRead) return;
+
+    setState(() {
+      _isMarkingAllAsRead = true;
+    });
+
+    // Update local UI immediately (optimistic update)
+    setState(() {
+      // Mark all notifications as read locally
+      _allNotifications = _allNotifications.map((n) {
+        return model.Notification(
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          readAt: DateTime.now().toIso8601String(),
+          createdAt: n.createdAt,
+          isRead: true,
+        );
+      }).toList();
+
+      _auctionNotifications = _auctionNotifications.map((n) {
+        return model.Notification(
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          readAt: DateTime.now().toIso8601String(),
+          createdAt: n.createdAt,
+          isRead: true,
+        );
+      }).toList();
+
+      _paymentNotifications = _paymentNotifications.map((n) {
+        return model.Notification(
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          readAt: DateTime.now().toIso8601String(),
+          createdAt: n.createdAt,
+          isRead: true,
+        );
+      }).toList();
+
+      _systemNotifications = _systemNotifications.map((n) {
+        return model.Notification(
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          readAt: DateTime.now().toIso8601String(),
+          createdAt: n.createdAt,
+          isRead: true,
+        );
+      }).toList();
+
+      // Update unread count
+      unread_notifications_count.$ = 0;
+      unread_notifications_count.save();
+    });
+
+    // Send background request (fire and forget)
+    _sendMarkAllAsReadRequest();
+  }
+
+  void _sendMarkAllAsReadRequest() async {
+    try {
+      // This runs in background - no UI blocking
+      final response = await ProfileRepository().markAllNotificationsAsRead();
+
+      setState(() {
+        _isMarkingAllAsRead = false;
+      });
+
+      if (response['success'] == true) {
+        print('✅ All notifications marked as read in background');
+      } else {
+        print('❌ Failed to mark all notifications as read: ${response['message']}');
+        // If failed, revert the optimistic update by fetching fresh data
+        await _fetchNotifications();
+      }
+    } catch (e) {
+      print('❌ Failed to mark all notifications as read: $e');
+      setState(() {
+        _isMarkingAllAsRead = false;
+      });
+      // Revert the optimistic update on error
+      await _fetchNotifications();
+    }
+  }
+
   // Helper to get notification type category
   String _getNotificationType(String type) {
     const auctionTypes = [
-      'outbid', 'newbid', 'bid_placed', 'auction_win', 'auction_lose', 'auction_ending'
+      'outbid',
+      'newbid',
+      'bid_placed',
+      'auction_win',
+      'auction_lose',
+      'auction_ending'
     ];
     const paymentTypes = [
-      'payment', 'payment_success', 'payment_failed', 'package_purchase',
-      'withdrawal', 'withdrawal_success', 'withdrawal_failed'
+      'payment',
+      'payment_success',
+      'payment_failed',
+      'package_purchase',
+      'withdrawal',
+      'withdrawal_success',
+      'withdrawal_failed'
     ];
-    
+
     if (auctionTypes.contains(type)) return 'auction';
     if (paymentTypes.contains(type)) return 'payment';
     if (type == 'point_deduction') return 'point';
     if (type == 'new_chat') return 'chat';
-    
+
     return 'system';
   }
-  
+
   Color _getIconBackgroundColor(String type) {
     final notificationType = _getNotificationType(type);
     switch (notificationType) {
@@ -171,7 +292,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return const Color(0xFFF5F5F5);
     }
   }
-  
+
   Color _getIconColor(String type) {
     final notificationType = _getNotificationType(type);
     switch (notificationType) {
@@ -189,7 +310,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return const Color(0xFF64748B);
     }
   }
-  
+
   IconData _getIconData(String type) {
     final notificationType = _getNotificationType(type);
     switch (notificationType) {
@@ -207,23 +328,33 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return Icons.notifications;
     }
   }
-  
+
   String _formatDate(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
-    
+
     String hourFormat = date.hour > 12 ? (date.hour - 12).toString() : date.hour.toString();
     String ampm = date.hour >= 12 ? 'pm' : 'am';
     if (date.hour == 0) hourFormat = '12';
     if (date.hour == 12) hourFormat = '12';
-    
+
     final minute = date.minute.toString().padLeft(2, '0');
-    
+
     return '${months[date.month - 1]} ${date.day} ${date.year}, $hourFormat:$minute $ampm';
   }
-  
+
   List<model.Notification> _getCurrentNotifications() {
     switch (_selectedTab) {
       case 1:
@@ -236,117 +367,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return _allNotifications;
     }
   }
-  
-  // ============ BACKGROUND MARK AS READ (NO UI BLOCKING) ============
-  void _markAsReadInBackground(int? notificationId) {
-    if (notificationId == null) return;
-    
-    // Don't process if already processing
-    if (_processingIds.contains(notificationId)) return;
-    
-    // Add to processing set
-    _processingIds.add(notificationId);
-    
-    // Update local UI immediately (optimistic update)
-    setState(() {
-      // Mark as read locally
-      final notification = _allNotifications.firstWhere(
-        (n) => n.id == notificationId,
-        orElse: () => model.Notification(),
-      );
-      if (notification.id != null) {
-        // Create a new list with updated notification
-        _allNotifications = _allNotifications.map((n) {
-          if (n.id == notificationId) {
-            return model.Notification(
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              message: n.message,
-              readAt: DateTime.now().toIso8601String(),
-              createdAt: n.createdAt,
-              isRead: true,
-            );
-          }
-          return n;
-        }).toList();
-        
-        // Update other lists
-        _auctionNotifications = _auctionNotifications.map((n) {
-          if (n.id == notificationId) {
-            return model.Notification(
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              message: n.message,
-              readAt: DateTime.now().toIso8601String(),
-              createdAt: n.createdAt,
-              isRead: true,
-            );
-          }
-          return n;
-        }).toList();
-        
-        _paymentNotifications = _paymentNotifications.map((n) {
-          if (n.id == notificationId) {
-            return model.Notification(
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              message: n.message,
-              readAt: DateTime.now().toIso8601String(),
-              createdAt: n.createdAt,
-              isRead: true,
-            );
-          }
-          return n;
-        }).toList();
-        
-        _systemNotifications = _systemNotifications.map((n) {
-          if (n.id == notificationId) {
-            return model.Notification(
-              id: n.id,
-              type: n.type,
-              title: n.title,
-              message: n.message,
-              readAt: DateTime.now().toIso8601String(),
-              createdAt: n.createdAt,
-              isRead: true,
-            );
-          }
-          return n;
-        }).toList();
-      }
-    });
-    
-    // Send background request (fire and forget)
-    _sendMarkAsReadRequest(notificationId);
-  }
-  
-  void _sendMarkAsReadRequest(int notificationId) async {
-    try {
-      // This runs in background - no UI blocking
-      await ProfileRepository().markNotificationAsRead(notificationId);
-      
-      // Remove from processing set
-      _processingIds.remove(notificationId);
-      
-      print('✅ Notification $notificationId marked as read in background');
-    } catch (e) {
-      print('❌ Failed to mark notification $notificationId as read: $e');
-      // Remove from processing set even on error
-      _processingIds.remove(notificationId);
-      
-      // Optional: Revert the optimistic update on error
-      // We could fetch fresh data if needed
-    }
-  }
-  
-  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
+
+  // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
     final currentNotifications = _getCurrentNotifications();
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -375,7 +401,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         backgroundColor: Colors.white,
         onRefresh: _onPageRefresh,
         child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading
+            ? _buildShimmer()
             : Column(
                 children: [
                   _buildTabs(),
@@ -389,7 +415,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               _buildEmptyState()
                             else
                               Column(
-                                children: currentNotifications.map((notification) => 
+                                children: currentNotifications.map((notification) =>
                                   _buildNotificationItem(notification)
                                 ).toList(),
                               ),
@@ -404,7 +430,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
     );
   }
-  
+
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return Column(
@@ -416,7 +442,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: List.generate(4, (index) => 
+              children: List.generate(4, (index) =>
                 Container(
                   margin: const EdgeInsets.only(right: 4),
                   width: 100,
@@ -448,7 +474,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ],
     );
   }
-  
+
   Widget _buildTabs() {
     final tabs = [
       '${AppLocalizations.of(context)!.all_ucf} (${_allNotifications.length})',
@@ -456,7 +482,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       '${AppLocalizations.of(context)!.payments_ucf} (${_paymentNotifications.length})',
       '${AppLocalizations.of(context)!.system_ucf} (${_systemNotifications.length})',
     ];
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       margin: const EdgeInsets.only(bottom: 16),
@@ -493,119 +519,101 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
     );
   }
-  
+
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     final isRead = notification.isRead ?? false;
-    final notificationId = notification.id;
-    final isProcessing = notificationId != null && _processingIds.contains(notificationId);
-    
-    return GestureDetector(
-      onTap: () {
-        if (!isRead) {
-          _markAsReadInBackground(notificationId);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: const Color(0xFFF0F0F0),
-              width: 1,
-            ),
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFF0F0F0),
+            width: 1,
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Notification Icon
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _getIconBackgroundColor(type),
-                shape: BoxShape.circle,
-              ),
-              child: isProcessing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: MyTheme.accent_color,
-                      ),
-                    )
-                  : Icon(
-                      _getIconData(type),
-                      size: 20,
-                      color: _getIconColor(type),
-                    ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Notification Icon
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _getIconBackgroundColor(type),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 14),
-            
-            // Notification Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    notification.title ?? '',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    notification.message ?? '',
-                    style: const TextStyle(
-                      fontSize: 13.6,
-                      color: Color(0xFF666666),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    notification.createdAt != null 
-                        ? _formatDate(notification.createdAt!)
-                        : '',
-                    style: const TextStyle(
-                      fontSize: 11.2,
-                      color: Color(0xFF999999),
-                    ),
-                  ),
-                ],
-              ),
+            child: Icon(
+              _getIconData(type),
+              size: 20,
+              color: _getIconColor(type),
             ),
-            
-            // New Badge
-            if (!isRead && !isProcessing)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF3B30),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.new_ucf,
+          ),
+          const SizedBox(width: 14),
+
+          // Notification Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.title ?? '',
                   style: const TextStyle(
-                    fontSize: 10.4,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  notification.message ?? '',
+                  style: const TextStyle(
+                    fontSize: 13.6,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  notification.createdAt != null
+                      ? _formatDate(notification.createdAt!)
+                      : '',
+                  style: const TextStyle(
+                    fontSize: 11.2,
+                    color: Color(0xFF999999),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // New Badge - Since all are marked as read on load, this will not show
+          if (!isRead)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF3B30),
+                borderRadius: BorderRadius.circular(20),
               ),
-          ],
-        ),
+              child: Text(
+                AppLocalizations.of(context)!.new_ucf,
+                style: const TextStyle(
+                  fontSize: 10.4,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     String icon;
     String text;
-    
+
     switch (_selectedTab) {
       case 1:
         icon = '🔔';
@@ -623,7 +631,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         icon = '🔔';
         text = AppLocalizations.of(context)!.no_notifications_yet;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
       child: Column(
