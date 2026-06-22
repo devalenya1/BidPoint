@@ -184,15 +184,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverToBoxAdapter(
                         child: _buildHotAuctionSection(),
                       ),
-
-                      // Upcoming Section
-                      SliverToBoxAdapter(
-                        child: _buildUpcomingSection(),
-                      ),
                       
                       // Ending Soon Section
                       SliverToBoxAdapter(
                         child: _buildEndingSoonSection(),
+                      ),
+
+                      // Upcoming Section
+                      SliverToBoxAdapter(
+                        child: _buildUpcomingSection(),
                       ),
 
                       
@@ -207,7 +207,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ),
     );
   }
-
 
   // ============ HOT AUCTION SECTION ============
   Widget _buildHotAuctionSection() {
@@ -503,53 +502,42 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildEndingSoonGridItem(List<dynamic> grid) {
-    // Ensure grid has at least 1 product
     if (grid.isEmpty) return const SizedBox.shrink();
 
-    // First product (left top)
     final product1 = grid.length >= 1 ? grid[0] : null;
-    // Second product (left bottom)
     final product2 = grid.length >= 2 ? grid[1] : null;
-    // Third product (right side)
     final product3 = grid.length >= 3 ? grid[2] : null;
 
-    // Debug: Print which products are in this grid
-    print('Building grid with:');
-    if (product1 != null) print('  Product 1: ${product1.name}');
-    if (product2 != null) print('  Product 2: ${product2.name}');
-    if (product3 != null) print('  Product 3: ${product3.name}');
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left side - 2/3 width
-        Expanded(
-          flex: 2,
-          child: Column(
-            children: [
-              if (product1 != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: EndingSoonCard(
-                    id: product1.id ?? 0,
-                    slug: product1.slug ?? '',
-                    image: product1.thumbnailImage,
-                    name: product1.name,
-                    description: product1.description,
-                    pointPerBid: product1.pointPerBid ?? 0,
-                    auctionEndDate: product1.auctionEndDate,
-                    currentBid: product1.highestBid,
-                    startingBid: product1.startingBid,
-                    isAuctionActive: product1.auctionEndDate != null && 
-                        product1.auctionEndDate is int && 
-                        product1.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                    cardType: 'left',
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Left side - 2/3 width
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                if (product1 != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: EndingSoonCard(
+                      id: product1.id ?? 0,
+                      slug: product1.slug ?? '',
+                      image: product1.thumbnailImage,
+                      name: product1.name,
+                      description: product1.description,
+                      pointPerBid: product1.pointPerBid ?? 0,
+                      auctionEndDate: product1.auctionEndDate,
+                      currentBid: product1.highestBid,
+                      startingBid: product1.startingBid,
+                      isAuctionActive: product1.auctionEndDate != null && 
+                          product1.auctionEndDate is int && 
+                          product1.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                      cardType: 'left',
+                    ),
                   ),
-                ),
-              if (product2 != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 0),
-                  child: EndingSoonCard(
+                if (product2 != null)
+                  EndingSoonCard(
                     id: product2.id ?? 0,
                     slug: product2.slug ?? '',
                     image: product2.thumbnailImage,
@@ -564,36 +552,38 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         product2.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
                     cardType: 'left',
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        // Right side - 1/3 width
-        Expanded(
-          flex: 1,
-          child: Column(
-            children: [
-              if (product3 != null)
-                EndingSoonCard(
-                  id: product3.id ?? 0,
-                  slug: product3.slug ?? '',
-                  image: product3.thumbnailImage,
-                  name: product3.name,
-                  description: product3.description,
-                  pointPerBid: product3.pointPerBid ?? 0,
-                  auctionEndDate: product3.auctionEndDate,
-                  currentBid: product3.highestBid,
-                  startingBid: product3.startingBid,
-                  isAuctionActive: product3.auctionEndDate != null && 
-                      product3.auctionEndDate is int && 
-                      product3.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                  cardType: 'right',
-                ),
-            ],
+          const SizedBox(width: 8),
+          // Right side - 1/3 width
+          Expanded(
+            flex: 1,
+            child: Column(
+              children: [
+                if (product3 != null)
+                  Expanded(
+                    child: EndingSoonCard(
+                      id: product3.id ?? 0,
+                      slug: product3.slug ?? '',
+                      image: product3.thumbnailImage,
+                      name: product3.name,
+                      description: product3.description,
+                      pointPerBid: product3.pointPerBid ?? 0,
+                      auctionEndDate: product3.auctionEndDate,
+                      currentBid: product3.highestBid,
+                      startingBid: product3.startingBid,
+                      isAuctionActive: product3.auctionEndDate != null && 
+                          product3.auctionEndDate is int && 
+                          product3.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                      cardType: 'right',
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

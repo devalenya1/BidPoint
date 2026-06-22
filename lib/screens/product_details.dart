@@ -1665,21 +1665,21 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Comments (${_comments.length})',
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600)),
-                                      Text('Recent',
-                                          style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 10)),
-                                    ],
-                                  ),
+                                  // Row(
+                                  //   mainAxisAlignment:
+                                  //       MainAxisAlignment.spaceBetween,
+                                  //   children: [
+                                  //     Text('Comments (${_comments.length})',
+                                  //         style: TextStyle(
+                                  //             color: Colors.white,
+                                  //             fontSize: 12,
+                                  //             fontWeight: FontWeight.w600)),
+                                  //     Text('Recent',
+                                  //         style: TextStyle(
+                                  //             color: Colors.white70,
+                                  //             fontSize: 10)),
+                                  //   ],
+                                  // ),
                                   SizedBox(height: 8),
                                   Container(
                                     height: imageHeight * 0.6,

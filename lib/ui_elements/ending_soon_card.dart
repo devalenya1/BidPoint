@@ -575,7 +575,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
 
   Widget _buildRightCard(double displayBid, bool showTimer) {
     return Container(
-      height: 208, // Fixed height to match two left cards (100 + 100 + 8 gap)
+      // Remove fixed height - let it expand
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -591,7 +591,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image with Timer
+          // Image section - fixed height
           Stack(
             children: [
               GestureDetector(
@@ -664,7 +664,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
             ],
           ),
           
-          // Product Info - Remaining space
+          // Product Info - Use Expanded to fill remaining space
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(10),
@@ -822,4 +822,5 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       ),
     );
   }
+
 }
