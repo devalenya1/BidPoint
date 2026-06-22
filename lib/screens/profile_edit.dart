@@ -797,7 +797,8 @@ class _ProfileEditState extends State<ProfileEdit> {
                       child: _buildTextField(
                         label: AppLocalizations.of(context)!.verification_code,
                         controller: _verificationCodeController,
-                        hint: "Enter code",
+                        hint: "Enter 6-digit code",
+                        keyboardType: TextInputType.number,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -811,7 +812,9 @@ class _ProfileEditState extends State<ProfileEdit> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: Text(AppLocalizations.of(context)!.verify_ucf),
+                      child: _isSaving
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: MyTheme.accent_color))
+                          : Text(AppLocalizations.of(context)!.verify_ucf),
                     ),
                   ],
                 ),

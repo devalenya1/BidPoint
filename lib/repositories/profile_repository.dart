@@ -203,30 +203,49 @@ class ProfileRepository {
     }
   }
 
+
   // Send email verification code
   Future<Map<String, dynamic>> sendEmailVerificationCode(String email) async {
     String url = "${AppConfig.BASE_URL}/user/email/verify/send";
     
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-      body: jsonEncode({"email": email})
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return {
-        'success': responseData['success'] ?? true,
-        'message': responseData['message'] ?? "Verification code sent",
-      };
-    } else {
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({"email": email})
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? "Verification code sent",
+          'data': responseData['data'],
+        };
+      } else {
+        // Try to parse error message from response
+        try {
+          final Map<String, dynamic> errorData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'message': errorData['message'] ?? "Failed to send verification code",
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'message': "Failed to send verification code",
+          };
+        }
+      }
+    } catch (e) {
+      print("Error sending verification code: $e");
       return {
         'success': false,
-        'message': "Failed to send verification code",
+        'message': "Network error. Please try again.",
       };
     }
   }
@@ -235,26 +254,47 @@ class ProfileRepository {
   Future<Map<String, dynamic>> verifyAndUpdateEmail(String email, String code) async {
     String url = "${AppConfig.BASE_URL}/user/email/verify/update";
     
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-      body: jsonEncode({"email": email, "code": code})
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return {
-        'success': responseData['success'] ?? true,
-        'message': responseData['message'] ?? "Email updated successfully",
-      };
-    } else {
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({
+          "email": email,
+          "code": code,
+        })
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? "Email updated successfully",
+          'data': responseData['data'],
+        };
+      } else {
+        // Try to parse error message from response
+        try {
+          final Map<String, dynamic> errorData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'message': errorData['message'] ?? "Verification failed",
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'message': "Verification failed",
+          };
+        }
+      }
+    } catch (e) {
+      print("Error verifying email: $e");
       return {
         'success': false,
-        'message': "Failed to update email",
+        'message': "Network error. Please try again.",
       };
     }
   }
