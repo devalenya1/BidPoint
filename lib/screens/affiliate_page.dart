@@ -494,46 +494,59 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   Widget _buildBanner() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Image.asset(
-          'assets/Banner_Image.png',
-          height: 150,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // Calculate height based on aspect ratio (e.g., 16:6)
+        final height = width * (6 / 16);
+        
+        return Container(
           width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              height: 150,
-              color: const Color(0xFFE2E8F0),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: MyTheme.accent_color.withOpacity(0.5),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      AppLocalizations.of(context)!.referral_banner,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: MyTheme.font_grey,
-                      ),
-                    ),
-                  ],
-                ),
+          height: height.clamp(100.0, 200.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            );
-          },
-        ),
-      ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              'assets/Banner_Image.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: const Color(0xFFE2E8F0),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported,
+                          size: 50,
+                          color: MyTheme.accent_color.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.referral_banner,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: MyTheme.font_grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
   
