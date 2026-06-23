@@ -244,6 +244,42 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
+        // Update all bid-related fields
+        setState(() {
+          // Update current highest bid
+          if (response.highestBid != null) {
+            _currentHighestBid = response.highestBid!;
+          }
+          
+          // Update total bids
+          if (response.totalBids != null) {
+            _totalBids = response.totalBids!;
+          }
+          
+          // Update highest bidder
+          if (response.lastBidderName != null && response.lastBidderName!.isNotEmpty) {
+            _highestBidder = response.lastBidderName!;
+          }
+          
+          // Update starting bid
+          if (response.startingBid != null) {
+            _startingBid = response.startingBid!;
+          }
+          
+          // Update point per bid
+          if (response.pointPerBid != null) {
+            _pointPerBid = response.pointPerBid!;
+          }
+          if (response.pointPerBidCustom != null) {
+            _pointPerBidCustom = response.pointPerBidCustom!;
+          }
+        });
+
+        // Calculate min next bid
+        _minNextBidNow = _currentHighestBid + 0.01;
+        _minNextBid = _currentHighestBid + 1;
+        setState(() {});
+
         // Update auction end date
         if (response.auctionEndDate != null) {
           try {
@@ -257,14 +293,6 @@ class _ProductDetailsState extends State<ProductDetails>
           } catch (e) {
             print('Error parsing auction end date: $e');
           }
-        }
-
-        // Update point per bid
-        if (response.pointPerBid != null) {
-          setState(() => _pointPerBid = response.pointPerBid!);
-        }
-        if (response.pointPerBidCustom != null) {
-          setState(() => _pointPerBidCustom = response.pointPerBidCustom!);
         }
 
         // Check if auction ended and show winner popup
@@ -302,38 +330,17 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _reviewsCount = response.reviewsCount!);
         }
 
-        // Update bid data
-        final oldHighestBid = _currentHighestBid;
-        final newHighestBid = response.highestBid ?? _currentHighestBid;
-        final newTotalBids = response.totalBids ?? _totalBids;
-        final newHighestBidder = response.lastBidderName ?? _highestBidder;
-
-        setState(() {
-          _currentHighestBid = newHighestBid;
-          _totalBids = newTotalBids;
-          _highestBidder = newHighestBidder;
-        });
-
-        if (_currentHighestBid > oldHighestBid) {
-          _playBidSound();
-          _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
-        }
-
-        _minNextBidNow = _currentHighestBid + 0.01;
-        _minNextBid = _currentHighestBid + 1;
-        setState(() {});
-
         // Update wishlist status
         if (response.isInWishlist != null) {
-          if (_isInWishlist != response.isInWishlist!) {
-            setState(() => _isInWishlist = response.isInWishlist!);
+          final newWishlistState = response.isInWishlist!;
+          if (_isInWishlist != newWishlistState) {
+            setState(() {
+              _isInWishlist = newWishlistState;
+            });
           }
         }
 
-        // ============================================
-        // FIX 1: Show ALL comments (not just 3)
-        // ============================================
-        // Refresh comments - now shows ALL comments from database
+        // Refresh comments
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() => _comments = response.comments!);
         }
@@ -346,7 +353,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
         // Refresh bid history
         if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
-          // Convert BidHistoryItem to BidHistory for display
           final List<BidHistory> convertedBids = response.bidHistory!.map((item) {
             return BidHistory(
               userId: item.userId,
@@ -611,28 +617,30 @@ class _ProductDetailsState extends State<ProductDetails>
 
     try {
       if (_isInWishlist) {
-        final response =
-            await _productRepository.removeFromWishlist(_product!.id ?? 0);
+        final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
         if (mounted) {
           setState(() => _isProcessing = false);
         }
         if (response.success == true) {
           setState(() => _isInWishlist = false);
-          // FIX 5: Play sound when removed
           _playCommentSound();
           _showToast('Removed from wishlist');
+          await _pollData(); // Refresh data after removal
+        } else {
+          _showToast(response.message ?? 'Failed to remove from wishlist');
         }
       } else {
-        final response =
-            await _productRepository.addToWishlist(_product!.id ?? 0);
+        final response = await _productRepository.addToWishlist(_product!.id ?? 0);
         if (mounted) {
           setState(() => _isProcessing = false);
         }
         if (response.success == true) {
           setState(() => _isInWishlist = true);
-          // FIX 5: Play sound when added
           _playBidSound();
           _showToast('Added to wishlist');
+          await _pollData(); // Refresh data after addition
+        } else {
+          _showToast(response.message ?? 'Failed to add to wishlist');
         }
       }
     } catch (e) {
@@ -1418,12 +1426,35 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   String _formatDateTime(String? dateTime) {
-    if (dateTime == null) return '';
+    if (dateTime == null || dateTime.isEmpty) return '';
     try {
-      final date = DateTime.parse(dateTime);
+      // Try to parse ISO format
+      DateTime date = DateTime.parse(dateTime);
       return '${date.day} ${_getMonthName(date.month)} ${date.year}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
     } catch (e) {
-      return '';
+      try {
+        // Try alternative format
+        final parts = dateTime.split(' ');
+        if (parts.length >= 2) {
+          final dateParts = parts[0].split('-');
+          if (dateParts.length == 3) {
+            final year = int.tryParse(dateParts[0]);
+            final month = int.tryParse(dateParts[1]);
+            final day = int.tryParse(dateParts[2]);
+            if (year != null && month != null && day != null) {
+              final timeParts = parts[1].split(':');
+              if (timeParts.length >= 2) {
+                final hour = int.tryParse(timeParts[0]) ?? 0;
+                final minute = int.tryParse(timeParts[1]) ?? 0;
+                return '$day ${_getMonthName(month)} $year, ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}';
+              }
+            }
+          }
+        }
+        return dateTime;
+      } catch (e) {
+        return dateTime;
+      }
     }
   }
 
@@ -1505,626 +1536,626 @@ class _ProductDetailsState extends State<ProductDetails>
     final screenHeight = MediaQuery.of(context).size.height;
     final imageHeight = screenHeight * 0.65;
 
-    return Stack(
-      children: [
-        // Main content - Scrollable
-        CustomScrollView(
-          controller: _mainScrollController,
-          physics: BouncingScrollPhysics(),
-          slivers: [
-            // Image Sliver - 65% of screen height
-            SliverAppBar(
-              expandedHeight: imageHeight,
-              pinned: true,
-              backgroundColor: Colors.black,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  children: [
-                    CarouselSlider(
-                      options: CarouselOptions(
-                        height: imageHeight,
-                        viewportFraction: 1,
-                        autoPlay: true,
-                        onPageChanged: (index, reason) {
-                          setState(() => _currentImageIndex = index);
-                        },
-                      ),
-                      items: _productImages.map((image) {
-                        return Builder(
-                          builder: (context) => GestureDetector(
-                            onTap: () => _showFullImage(image),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: NetworkImage(image),
-                                  fit: BoxFit.cover,
+    return Scaffold(
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: _fetchAllData,
+        child: Stack(
+          children: [
+            // Main content - Scrollable
+            CustomScrollView(
+              controller: _mainScrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Image Sliver - 65% of screen height
+                SliverAppBar(
+                  expandedHeight: imageHeight,
+                  pinned: true,
+                  backgroundColor: Colors.black,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      children: [
+                        CarouselSlider(
+                          options: CarouselOptions(
+                            height: imageHeight,
+                            viewportFraction: 1,
+                            autoPlay: true,
+                            onPageChanged: (index, reason) {
+                              setState(() => _currentImageIndex = index);
+                            },
+                          ),
+                          items: _productImages.map((image) {
+                            return Builder(
+                              builder: (context) => GestureDetector(
+                                onTap: () => _showFullImage(image),
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: NetworkImage(image),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
                                 ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        // Gradient Overlay
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              stops: [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
+                              colors: [
+                                Colors.black.withOpacity(0.9),
+                                Colors.black.withOpacity(0.5),
+                                Colors.black.withOpacity(0.2),
+                                Colors.black.withOpacity(0.1),
+                                Colors.black.withOpacity(0.3),
+                                Colors.black.withOpacity(0.7),
+                                Colors.black.withOpacity(0.95),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Top Icons - Vertical Right Icons
+                        Positioned(
+                          top: MediaQuery.of(context).padding.top + 8,
+                          right: 16,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildIconCircle(
+                                icon: Icons.more_vert,
+                                onTap: () =>
+                                    setState(() => _showMoreMenu = !_showMoreMenu),
+                                isLoading: _isProcessing,
+                              ),
+                              SizedBox(height: 12),
+                              _buildIconCircle(
+                                icon: _isInWishlist
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                isActive: _isInWishlist,
+                                onTap: _toggleWishlist,
+                                isLoading: _isProcessing,
+                              ),
+                              SizedBox(height: 12),
+                              _buildIconCircle(
+                                icon: Icons.share,
+                                onTap: _shareProduct,
+                                isLoading: false,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Left Icons - Back Button
+                        Positioned(
+                          top: MediaQuery.of(context).padding.top + 8,
+                          left: 16,
+                          child: _buildIconCircle(
+                            icon: Icons.arrow_back,
+                            onTap: () => Navigator.pop(context),
+                            isLoading: false,
+                          ),
+                        ),
+                        // More Menu
+                        if (_showMoreMenu)
+                          Positioned(
+                            top: 80,
+                            right: 16,
+                            child: Material(
+                              elevation: 10,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: 180,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.95),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildMoreMenuItem(
+                                      icon: Icons.history,
+                                      text: 'Bid History',
+                                      onTap: () {
+                                        setState(() => _showMoreMenu = false);
+                                        _openBidHistoryModal();
+                                      },
+                                    ),
+                                    _buildMoreMenuItem(
+                                      icon: Icons.info_outline,
+                                      text: 'Product Details',
+                                      onTap: () {
+                                        setState(() => _showMoreMenu = false);
+                                        _openTitleModal();
+                                      },
+                                    ),
+                                    _buildMoreMenuItem(
+                                      icon: Icons.contact_mail,
+                                      text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+                                      onTap: _isProcessing ? null : () {
+                                        setState(() => _showMoreMenu = false);
+                                        _contactSeller();
+                                      },
+                                    ),
+                                    _buildMoreMenuItem(
+                                      icon: Icons.share,
+                                      text: 'Share',
+                                      onTap: () {
+                                        setState(() => _showMoreMenu = false);
+                                        _shareProduct();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Bottom Content Overlay - Comments, Product Name, Timer
+                        Positioned(
+                          bottom: 15,
+                          left: 0,
+                          right: 0,
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Comments Section
+                                Container(
+                                  width: MediaQuery.of(context).size.width * 0.75,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: Colors.white.withOpacity(0.15)),
+                                  ),
+                                  padding: EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: 6),
+                                      Container(
+                                        height: imageHeight * 0.4,
+                                        child: _comments.isEmpty
+                                            ? Center(
+                                                child: Text(
+                                                  'No comments yet',
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              )
+                                            : ListView.builder(
+                                                shrinkWrap: true,
+                                                itemCount: _comments.length,
+                                                itemBuilder: (context, index) {
+                                                  final comment = _comments[index];
+                                                  return Padding(
+                                                    padding:
+                                                        EdgeInsets.only(bottom: 8),
+                                                    child: Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment.start,
+                                                      children: [
+                                                        CircleAvatar(
+                                                          radius: 18,
+                                                          backgroundImage:
+                                                              NetworkImage(comment
+                                                                      .userAvatar ??
+                                                                  ''),
+                                                          child: comment
+                                                                  .userAvatar ==
+                                                              null
+                                                              ? Icon(Icons.person,
+                                                                  size: 16,
+                                                                  color: Colors
+                                                                      .white54)
+                                                              : null,
+                                                        ),
+                                                        SizedBox(width: 10),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                comment.userName ??
+                                                                    'User',
+                                                                style: TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 13,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                comment.comment ??
+                                                                    '',
+                                                                style: TextStyle(
+                                                                  color: Colors
+                                                                      .white70,
+                                                                  fontSize: 12,
+                                                                ),
+                                                                maxLines: 3,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white
+                                                    .withOpacity(0.15),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: TextField(
+                                                controller: _commentController,
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 13),
+                                                decoration: InputDecoration(
+                                                  hintText: 'Add Comment...',
+                                                  hintStyle: TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 13),
+                                                  border: InputBorder.none,
+                                                  contentPadding:
+                                                      EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8),
+                                                ),
+                                                onSubmitted: (value) =>
+                                                    _sendComment(),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: _isProcessing ? null : _sendComment,
+                                            child: Container(
+                                              width: 34,
+                                              height: 34,
+                                              decoration: BoxDecoration(
+                                                color: MyTheme.accent_color,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: _isProcessing
+                                                  ? const SizedBox(
+                                                      height: 16,
+                                                      width: 16,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: Colors.white,
+                                                      ),
+                                                    )
+                                                  : Icon(Icons.send,
+                                                      size: 16,
+                                                      color: Colors.white),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                // Product name and description
+                                GestureDetector(
+                                  onTap: _openTitleModal,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(_product?.name ?? '',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold)),
+                                      SizedBox(height: 4),
+                                      Text(
+                                          _product?.description
+                                              ?.replaceAll(RegExp(r'<[^>]*>'),
+                                                  '') ??
+                                              '',
+                                          style: TextStyle(
+                                              color: Colors.white70, fontSize: 14),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+                                // Timer and Price
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('TIME LEFT',
+                                            style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12)),
+                                        SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            _buildTimerUnitBig(
+                                                timeComponents['days']!, 'D'),
+                                            _buildTimerUnitBig(
+                                                timeComponents['hours']!, 'H'),
+                                            _buildTimerUnitBig(
+                                                timeComponents['minutes']!, 'M'),
+                                            _buildTimerUnitBig(
+                                                timeComponents['seconds']!, 'S'),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                            color: Colors.white.withOpacity(0.2)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text('Current Bid',
+                                              style: TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 12)),
+                                          Text(_formatPrice(_currentHighestBid),
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Reviews Section
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: EdgeInsets.fromLTRB(16, 80, 16, 8), // Top margin for overlay spacing
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: GestureDetector(
+                      onTap: _openReviewsModal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Row(
+                                children: List.generate(5, (index) {
+                                  return Icon(
+                                    index < _rating.round()
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    size: 16,
+                                    color: Colors.amber,
+                                  );
+                                }),
+                              ),
+                              SizedBox(width: 8),
+                              Text(_rating.toStringAsFixed(1),
+                                  style: TextStyle(
+                                      fontSize: 18, fontWeight: FontWeight.bold)),
+                              SizedBox(width: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text('$_reviewsCount reviews',
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey)),
+                              ),
+                            ],
+                          ),
+                          Icon(Icons.arrow_forward_ios,
+                              size: 16, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Thumbnails
+                SliverToBoxAdapter(
+                  child: Container(
+                    height: 70,
+                    margin: EdgeInsets.all(16),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _productImages.length,
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => _currentImageIndex = index);
+                          },
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            margin: EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _currentImageIndex == index
+                                    ? MyTheme.accent_color
+                                    : Colors.grey.shade300,
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                _productImages[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(Icons.broken_image, color: Colors.grey),
                               ),
                             ),
                           ),
                         );
-                      }).toList(),
+                      },
                     ),
-                    // Gradient Overlay
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
-                          colors: [
-                            Colors.black.withOpacity(0.9),
-                            Colors.black.withOpacity(0.5),
-                            Colors.black.withOpacity(0.2),
-                            Colors.black.withOpacity(0.1),
-                            Colors.black.withOpacity(0.3),
-                            Colors.black.withOpacity(0.7),
-                            Colors.black.withOpacity(0.95),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Top Icons - Vertical Right Icons
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
-                      right: 16,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildIconCircle(
-                            icon: Icons.more_vert,
-                            onTap: () =>
-                                setState(() => _showMoreMenu = !_showMoreMenu),
-                            isLoading: _isProcessing,
-                          ),
-                          SizedBox(height: 12),
-                          _buildIconCircle(
-                            icon: _isInWishlist
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            isActive: _isInWishlist,
-                            onTap: _toggleWishlist,
-                            isLoading: _isProcessing,
-                          ),
-                          SizedBox(height: 12),
-                          _buildIconCircle(
-                            icon: Icons.share,
-                            onTap: _shareProduct,
-                            isLoading: false,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Left Icons - Back Button
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
-                      left: 16,
-                      child: _buildIconCircle(
-                        icon: Icons.arrow_back,
-                        onTap: () => Navigator.pop(context),
-                        isLoading: false,
-                      ),
-                    ),
-                    // More Menu
-                    if (_showMoreMenu)
-                      Positioned(
-                        top: 80,
-                        right: 16,
-                        child: Material(
-                          elevation: 10,
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 180,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.95),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _buildMoreMenuItem(
-                                  icon: Icons.history,
-                                  text: 'Bid History',
-                                  onTap: () {
-                                    setState(() => _showMoreMenu = false);
-                                    _openBidHistoryModal();
-                                  },
-                                ),
-                                _buildMoreMenuItem(
-                                  icon: Icons.info_outline,
-                                  text: 'Product Details',
-                                  onTap: () {
-                                    setState(() => _showMoreMenu = false);
-                                    _openTitleModal();
-                                  },
-                                ),
-                                _buildMoreMenuItem(
-                                  icon: Icons.contact_mail,
-                                  text: _isProcessing ? 'Contacting...' : 'Contact Seller',
-                                  onTap: _isProcessing ? null : () {
-                                    setState(() => _showMoreMenu = false);
-                                    _contactSeller();
-                                  },
-                                ),
-                                _buildMoreMenuItem(
-                                  icon: Icons.share,
-                                  text: 'Share',
-                                  onTap: () {
-                                    setState(() => _showMoreMenu = false);
-                                    _shareProduct();
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    // Bottom Content Overlay
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Comments Section
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.75,
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    color: Colors.white.withOpacity(0.15)),
-                              ),
-                              padding: EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(height: 6),
-                                  Container(
-                                    height: imageHeight * 0.4,
-                                    child: _comments.isEmpty
-                                        ? Center(
-                                            child: Text(
-                                              'No comments yet',
-                                              style: TextStyle(
-                                                color: Colors.white54,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          )
-                                        : ListView.builder(
-                                            shrinkWrap: true,
-                                            itemCount: _comments.length,
-                                            itemBuilder: (context, index) {
-                                              final comment = _comments[index];
-                                              return Padding(
-                                                padding:
-                                                    EdgeInsets.only(bottom: 6),
-                                                child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    CircleAvatar(
-                                                      radius: 12,
-                                                      backgroundImage:
-                                                          NetworkImage(comment
-                                                                  .userAvatar ??
-                                                              ''),
-                                                      child: comment
-                                                              .userAvatar ==
-                                                          null
-                                                          ? Icon(Icons.person,
-                                                              size: 12,
-                                                              color: Colors
-                                                                  .white54)
-                                                          : null,
-                                                    ),
-                                                    SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            comment.userName ??
-                                                                'User',
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .white,
-                                                              fontSize: 11,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            comment.comment ??
-                                                                '',
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .white70,
-                                                              fontSize: 10,
-                                                            ),
-                                                            maxLines: 2,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white
-                                                .withOpacity(0.15),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: TextField(
-                                            controller: _commentController,
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11),
-                                            decoration: InputDecoration(
-                                              hintText: 'Add Comment...',
-                                              hintStyle: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11),
-                                              border: InputBorder.none,
-                                              contentPadding:
-                                                  EdgeInsets.symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6),
-                                            ),
-                                            onSubmitted: (value) =>
-                                                _sendComment(),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      GestureDetector(
-                                        onTap: _isProcessing ? null : _sendComment,
-                                        child: Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: MyTheme.accent_color,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: _isProcessing
-                                              ? const SizedBox(
-                                                  height: 12,
-                                                  width: 12,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    color: Colors.white,
-                                                  ),
-                                                )
-                                              : Icon(Icons.send,
-                                                  size: 14,
-                                                  color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            // Product name and description
-                            GestureDetector(
-                              onTap: _openTitleModal,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(_product?.name ?? '',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold)),
-                                  SizedBox(height: 4),
-                                  Text(
-                                      _product?.description
-                                          ?.replaceAll(RegExp(r'<[^>]*>'),
-                                              '') ??
-                                          '',
-                                      style: TextStyle(
-                                          color: Colors.white70, fontSize: 14),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 16),
-                            // Timer and Price
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('TIME LEFT',
-                                        style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12)),
-                                    SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        _buildTimerUnitBig(
-                                            timeComponents['days']!, 'd'),
-                                        _buildTimerUnitBig(
-                                            timeComponents['hours']!, 'h'),
-                                        _buildTimerUnitBig(
-                                            timeComponents['minutes']!, 'm'),
-                                        _buildTimerUnitBig(
-                                            timeComponents['seconds']!, 's'),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                        color: Colors.white.withOpacity(0.2)),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text('Current Bid',
-                                          style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12)),
-                                      Text(_formatPrice(_currentHighestBid),
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                SliverToBoxAdapter(child: SizedBox(height: 80)),
+              ],
             ),
-            // Reviews Section
-            SliverToBoxAdapter(
-              child: GestureDetector(
-                onTap: _openReviewsModal,
+            
+            // ============================================
+            // BID INFO SECTION - OVERLAY ON TOP OF IMAGE
+            // ============================================
+            Positioned(
+              top: imageHeight - 15, // Overlaps the bottom of the image
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 16),
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: Offset(0, 2)),
-                    ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Text('Bid Information',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      SizedBox(height: 12),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 3,
                         children: [
-                          Row(
-                            children: List.generate(5, (index) {
-                              return Icon(
-                                index < _rating.round()
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                size: 16,
-                                color: Colors.amber,
-                              );
-                            }),
-                          ),
-                          SizedBox(width: 8),
-                          Text(_rating.toStringAsFixed(1),
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          SizedBox(width: 8),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text('$_reviewsCount reviews',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
-                          ),
+                          _buildInfoItem('Starting bid',
+                              _formatPrice(_startingBid)),
+                          _buildInfoItem('Total bidders', '$_totalBids'),
+                          _buildInfoItem(
+                              'Highest bidder',
+                              _highestBidder.isNotEmpty
+                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                  : 'No bids'),
+                          _buildInfoItem('Bid now at', '$_pointPerBid'),
                         ],
                       ),
-                      Icon(Icons.arrow_forward_ios,
-                          size: 16, color: Colors.grey),
                     ],
                   ),
                 ),
               ),
             ),
-            // Thumbnails
-            SliverToBoxAdapter(
-              child: Container(
-                height: 70,
-                margin: EdgeInsets.all(16),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _productImages.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _currentImageIndex = index);
-                      },
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        margin: EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _currentImageIndex == index
-                                ? MyTheme.accent_color
-                                : Colors.grey.shade300,
-                            width: 2,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            _productImages[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Icon(Icons.broken_image, color: Colors.grey),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
-        
-        // ============================================
-        // BID INFO SECTION - OVERLAY WITH POSITIONED
-        // ============================================
-        Positioned(
-          top: imageHeight - 30,
-          left: 16,
-          right: 16,
-          child: Material(
-            // elevation: 10,
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.white,
-            child: Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Bid Information',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
-                  SizedBox(height: 12),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 3,
-                    children: [
-                      _buildInfoItem('Starting bid',
-                          _formatPrice(_startingBid)),
-                      _buildInfoItem('Total bidders', '$_totalBids'),
-                      _buildInfoItem(
-                          'Highest bidder',
-                          _highestBidder.isNotEmpty
-                              ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                              : 'No bids'),
-                      _buildInfoItem('Bid now at', '$_pointPerBid'),
-                    ],
-                  ),
-                ],
+      ),
+      // Bottom Bar
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12,
+                blurRadius: 8,
+                offset: Offset(0, -2))
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _showBidInputDialog,
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text('Custom'),
               ),
             ),
-          ),
-        ),
-        
-        // Bottom Bar
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, -2))
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _showBidInputDialog,
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: Text('Custom'),
-                  ),
+            SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _isProcessing ? null : _placeBidNow,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyTheme.accent_color,
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isProcessing ? null : _placeBidNow,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: _isProcessing
-                        ? _buildButtonLoader()
-                        : Text(
-                            'Bid Now - ${_formatPrice(_minNextBidNow)}',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                  ),
-                ),
-              ],
+                child: _isProcessing
+                    ? _buildButtonLoader()
+                    : Text(
+                        'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                        style: TextStyle(color: Colors.white),
+                      ),
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

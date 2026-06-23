@@ -494,80 +494,31 @@ class _AffiliatePageState extends State<AffiliatePage> {
   }
   
   Widget _buildBanner() {
-    // Replace with your actual banner image URL
-    final String bannerImageUrl = "${AppConfig.BASE_URL}/assets/banner/referral_banner.png";
+    final double aspectRatio = 349 / 108;
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Container(
-        width: double.infinity,
-        height: 200,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: AspectRatio(
+        aspectRatio: aspectRatio,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(
+              'assets/Banner_Image.png',
+              fit: BoxFit.cover, // Fills the container, may crop
+              width: double.infinity,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.network(
-            bannerImageUrl,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: 200,
-            errorBuilder: (context, error, stackTrace) {
-              // Fallback to asset if network fails
-              return Image.asset(
-                'assets/Banner_Image.png',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: 200,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 200,
-                    color: const Color(0xFFE2E8F0),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_not_supported,
-                            size: 50,
-                            color: MyTheme.accent_color.withOpacity(0.5),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(context)!.referral_banner,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: MyTheme.font_grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                width: double.infinity,
-                height: 200,
-                color: const Color(0xFFE2E8F0),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: MyTheme.accent_color,
-                  ),
-                ),
-              );
-            },
           ),
         ),
       ),
