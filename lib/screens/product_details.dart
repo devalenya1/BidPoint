@@ -165,7 +165,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _reviewsCount = _product!.ratingCount ?? 0;
         _rating = (_product!.rating ?? 0).toDouble();
         _isWishlisted = false;
-        _isInWishlist = false;
+        
+        // FIX: Set _isInWishlist from the product data
+        _isInWishlist = _product!.isInWishlist ?? false;
+        
         _endingSeconds = _product!.swipeLeft ?? 10;
 
         _minNextBidNow = _currentHighestBid + 0.01;
@@ -244,42 +247,6 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
-        // Update all bid-related fields
-        setState(() {
-          // Update current highest bid
-          if (response.highestBid != null) {
-            _currentHighestBid = response.highestBid!;
-          }
-          
-          // Update total bids
-          if (response.totalBids != null) {
-            _totalBids = response.totalBids!;
-          }
-          
-          // Update highest bidder
-          if (response.lastBidderName != null && response.lastBidderName!.isNotEmpty) {
-            _highestBidder = response.lastBidderName!;
-          }
-          
-          // // Update starting bid
-          // if (response.startingBid != null) {
-          //   _startingBid = response.startingBid!;
-          // }
-          
-          // Update point per bid
-          if (response.pointPerBid != null) {
-            _pointPerBid = response.pointPerBid!;
-          }
-          if (response.pointPerBidCustom != null) {
-            _pointPerBidCustom = response.pointPerBidCustom!;
-          }
-        });
-
-        // Calculate min next bid
-        _minNextBidNow = _currentHighestBid + 0.01;
-        _minNextBid = _currentHighestBid + 1;
-        setState(() {});
-
         // Update auction end date
         if (response.auctionEndDate != null) {
           try {
@@ -293,6 +260,14 @@ class _ProductDetailsState extends State<ProductDetails>
           } catch (e) {
             print('Error parsing auction end date: $e');
           }
+        }
+
+        // Update point per bid
+        if (response.pointPerBid != null) {
+          setState(() => _pointPerBid = response.pointPerBid!);
+        }
+        if (response.pointPerBidCustom != null) {
+          setState(() => _pointPerBidCustom = response.pointPerBidCustom!);
         }
 
         // Check if auction ended and show winner popup
@@ -330,7 +305,28 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _reviewsCount = response.reviewsCount!);
         }
 
-        // Update wishlist status
+        // Update bid data
+        final oldHighestBid = _currentHighestBid;
+        final newHighestBid = response.highestBid ?? _currentHighestBid;
+        final newTotalBids = response.totalBids ?? _totalBids;
+        final newHighestBidder = response.lastBidderName ?? _highestBidder;
+
+        setState(() {
+          _currentHighestBid = newHighestBid;
+          _totalBids = newTotalBids;
+          _highestBidder = newHighestBidder;
+        });
+
+        if (_currentHighestBid > oldHighestBid) {
+          _playBidSound();
+          _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
+        }
+
+        _minNextBidNow = _currentHighestBid + 0.01;
+        _minNextBid = _currentHighestBid + 1;
+        setState(() {});
+
+        // FIX: Update wishlist status from poll response
         if (response.isInWishlist != null) {
           final newWishlistState = response.isInWishlist!;
           if (_isInWishlist != newWishlistState) {
@@ -617,7 +613,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     try {
       if (_isInWishlist) {
-        final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
+        final response =
+            await _productRepository.removeFromWishlist(_product!.id ?? 0);
         if (mounted) {
           setState(() => _isProcessing = false);
         }
@@ -625,12 +622,14 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _isInWishlist = false);
           _playCommentSound();
           _showToast('Removed from wishlist');
-          await _pollData(); // Refresh data after removal
+          // FIX: Refresh wishlist status from server
+          await _refreshWishlistStatus();
         } else {
           _showToast(response.message ?? 'Failed to remove from wishlist');
         }
       } else {
-        final response = await _productRepository.addToWishlist(_product!.id ?? 0);
+        final response =
+            await _productRepository.addToWishlist(_product!.id ?? 0);
         if (mounted) {
           setState(() => _isProcessing = false);
         }
@@ -638,7 +637,8 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _isInWishlist = true);
           _playBidSound();
           _showToast('Added to wishlist');
-          await _pollData(); // Refresh data after addition
+          // FIX: Refresh wishlist status from server
+          await _refreshWishlistStatus();
         } else {
           _showToast(response.message ?? 'Failed to add to wishlist');
         }
@@ -648,6 +648,20 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() => _isProcessing = false);
       }
       _showToast('Error updating wishlist');
+    }
+  }
+
+  // FIX: Add this method to refresh wishlist status
+  Future<void> _refreshWishlistStatus() async {
+    try {
+      final response = await _productRepository.pollProductData(_product!.id ?? 0);
+      if (response.success == true && response.isInWishlist != null) {
+        setState(() {
+          _isInWishlist = response.isInWishlist!;
+        });
+      }
+    } catch (e) {
+      print('Error refreshing wishlist status: $e');
     }
   }
 
@@ -1426,35 +1440,12 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   String _formatDateTime(String? dateTime) {
-    if (dateTime == null || dateTime.isEmpty) return '';
+    if (dateTime == null) return '';
     try {
-      // Try to parse ISO format
-      DateTime date = DateTime.parse(dateTime);
+      final date = DateTime.parse(dateTime);
       return '${date.day} ${_getMonthName(date.month)} ${date.year}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
     } catch (e) {
-      try {
-        // Try alternative format
-        final parts = dateTime.split(' ');
-        if (parts.length >= 2) {
-          final dateParts = parts[0].split('-');
-          if (dateParts.length == 3) {
-            final year = int.tryParse(dateParts[0]);
-            final month = int.tryParse(dateParts[1]);
-            final day = int.tryParse(dateParts[2]);
-            if (year != null && month != null && day != null) {
-              final timeParts = parts[1].split(':');
-              if (timeParts.length >= 2) {
-                final hour = int.tryParse(timeParts[0]) ?? 0;
-                final minute = int.tryParse(timeParts[1]) ?? 0;
-                return '$day ${_getMonthName(month)} $year, ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}';
-              }
-            }
-          }
-        }
-        return dateTime;
-      } catch (e) {
-        return dateTime;
-      }
+      return '';
     }
   }
 
@@ -1528,7 +1519,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT - WITH BID INFO OVERLAY
+  // MOBILE LAYOUT
   // ============================================
 
   Widget _buildMobileLayout() {
@@ -1536,17 +1527,13 @@ class _ProductDetailsState extends State<ProductDetails>
     final screenHeight = MediaQuery.of(context).size.height;
     final imageHeight = screenHeight * 0.65;
 
-    return Scaffold(
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: _fetchAllData,
-        child: CustomScrollView(
+    return Stack(
+      children: [
+        CustomScrollView(
           controller: _mainScrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: BouncingScrollPhysics(),
           slivers: [
-            // ============================================
-            // IMAGE SLIVER
-            // ============================================
+            // Image Sliver - 65% of screen height
             SliverAppBar(
               expandedHeight: imageHeight,
               pinned: true,
@@ -1554,7 +1541,6 @@ class _ProductDetailsState extends State<ProductDetails>
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   children: [
-                    // Carousel
                     CarouselSlider(
                       options: CarouselOptions(
                         height: imageHeight,
@@ -1600,7 +1586,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                     ),
-                    // Top Right Icons
+                    // Top Icons - Vertical Right Icons
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       right: 16,
@@ -1614,6 +1600,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
+                          // FIX 4 & 5: Wishlist icon with sound
                           _buildIconCircle(
                             icon: _isInWishlist
                                 ? Icons.favorite
@@ -1631,7 +1618,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    // Back Button
+                    // Left Icons - Back Button
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       left: 16,
@@ -1702,9 +1689,9 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                    // Bottom Overlay - Comments, Product Name, Timer, Price
+                    // Bottom Content Overlay
                     Positioned(
-                      bottom: 15,
+                      bottom: 0,
                       left: 0,
                       right: 0,
                       child: Padding(
@@ -1712,7 +1699,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments
+                            // Comments Section - SHOW ALL COMMENTS
                             Container(
                               width: MediaQuery.of(context).size.width * 0.75,
                               decoration: BoxDecoration(
@@ -1725,16 +1712,38 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Comment count header
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Text(
+                                      //   'Comments (${_comments.length})',
+                                      //   style: TextStyle(
+                                      //     color: Colors.white,
+                                      //     fontSize: 12,
+                                      //     fontWeight: FontWeight.w600,
+                                      //   ),
+                                      // ),
+                                      // Text(
+                                      //   'Recent',
+                                      //   style: TextStyle(
+                                      //     color: Colors.white70,
+                                      //     fontSize: 10,
+                                      //   ),
+                                      // ),
+                                    ],
+                                  ),
                                   SizedBox(height: 6),
+                                  // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
                                   Container(
-                                    height: imageHeight * 0.4,
+                                    height: imageHeight * 0.4, // Reduced from 0.5 to 0.3
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
                                               'No comments yet',
                                               style: TextStyle(
                                                 color: Colors.white54,
-                                                fontSize: 13,
+                                                fontSize: 11,
                                               ),
                                             ),
                                           )
@@ -1745,13 +1754,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                               final comment = _comments[index];
                                               return Padding(
                                                 padding:
-                                                    EdgeInsets.only(bottom: 8),
+                                                    EdgeInsets.only(bottom: 6), // Reduced from 8 to 6
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 18,
+                                                      radius: 12, // Reduced from 12 to 10
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
@@ -1760,12 +1769,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               .userAvatar ==
                                                           null
                                                           ? Icon(Icons.person,
-                                                              size: 16,
+                                                              size: 12, // Reduced from 12 to 10
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 10),
+                                                    SizedBox(width: 8), // Reduced from 8 to 6
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1778,7 +1787,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 13,
+                                                              fontSize: 11, // Reduced from 11 to 10
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1790,9 +1799,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 12,
+                                                              fontSize: 10, // Reduced from 10 to 9
                                                             ),
-                                                            maxLines: 3,
+                                                            maxLines: 2,
                                                             overflow:
                                                                 TextOverflow
                                                                     .ellipsis,
@@ -1806,7 +1815,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
-                                  SizedBox(height: 4),
+                                  SizedBox(height: 4), // Reduced from 8 to 4
                                   Row(
                                     children: [
                                       Expanded(
@@ -1821,44 +1830,44 @@ class _ProductDetailsState extends State<ProductDetails>
                                             controller: _commentController,
                                             style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 13),
+                                                fontSize: 11), // Reduced from 12 to 11
                                             decoration: InputDecoration(
                                               hintText: 'Add Comment...',
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
-                                                  fontSize: 13),
+                                                  fontSize: 11), // Reduced from 12 to 11
                                               border: InputBorder.none,
                                               contentPadding:
                                                   EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 8),
+                                                      horizontal: 10, // Reduced from 12 to 10
+                                                      vertical: 6), // Reduced from 8 to 6
                                             ),
                                             onSubmitted: (value) =>
                                                 _sendComment(),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      SizedBox(width: 6), // Reduced from 8 to 6
                                       GestureDetector(
                                         onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
-                                          width: 34,
-                                          height: 34,
+                                          width: 28, // Reduced from 32 to 28
+                                          height: 28, // Reduced from 32 to 28
                                           decoration: BoxDecoration(
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
                                           child: _isProcessing
                                               ? const SizedBox(
-                                                  height: 16,
-                                                  width: 16,
+                                                  height: 12, // Reduced from 14 to 12
+                                                  width: 12, // Reduced from 14 to 12
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     color: Colors.white,
                                                   ),
                                                 )
                                               : Icon(Icons.send,
-                                                  size: 16,
+                                                  size: 14, // Reduced from 16 to 14
                                                   color: Colors.white),
                                         ),
                                       ),
@@ -1868,7 +1877,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             SizedBox(height: 12),
-                            // Product Name
+                            // Product name and description
                             GestureDetector(
                               onTap: _openTitleModal,
                               child: Column(
@@ -1882,8 +1891,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                   SizedBox(height: 4),
                                   Text(
                                       _product?.description
-                                          ?.replaceAll(RegExp(r'<[^>]*>'),
-                                              '') ??
+                                              ?.replaceAll(RegExp(r'<[^>]*>'),
+                                                  '') ??
                                           '',
                                       style: TextStyle(
                                           color: Colors.white70, fontSize: 14),
@@ -1908,13 +1917,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Row(
                                       children: [
                                         _buildTimerUnitBig(
-                                            timeComponents['days']!, 'D'),
+                                            timeComponents['days']!, 'd'),
                                         _buildTimerUnitBig(
-                                            timeComponents['hours']!, 'H'),
+                                            timeComponents['hours']!, 'h'),
                                         _buildTimerUnitBig(
-                                            timeComponents['minutes']!, 'M'),
+                                            timeComponents['minutes']!, 'm'),
                                         _buildTimerUnitBig(
-                                            timeComponents['seconds']!, 'S'),
+                                            timeComponents['seconds']!, 's'),
                                       ],
                                     ),
                                   ],
@@ -1953,137 +1962,57 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-
-            // ============================================
-            // BID INFORMATION - SCROLLABLE (NOT FIXED)
-            // ============================================
+            // Bid Info Section - Updated from polling data
             SliverToBoxAdapter(
-              child: Container(
-                margin: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Bid Information',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        GestureDetector(
-                          onTap: _openBidHistoryModal,
-                          child: Text(
-                            'View History →',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: MyTheme.accent_color,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 3,
-                      children: [
-                        _buildInfoItem('Starting bid',
-                            _formatPrice(_startingBid)),
-                        _buildInfoItem('Total bidders', '$_totalBids'),
-                        _buildInfoItem(
-                            'Highest bidder',
-                            _highestBidder.isNotEmpty
-                                ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                : 'No bids'),
-                        _buildInfoItem('Bid now at', '$_pointPerBid'),
-                      ],
-                    ),
-                    // Custom Bid Input
-                    SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _bidController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              hintText: 'Custom amount',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: _isProcessing ? null : _submitCustomBid,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: MyTheme.accent_color,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                          ),
-                          child: _isProcessing
-                              ? _buildButtonLoader()
-                              : Text('Place Bid',
-                                  style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    // Bid Now Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isProcessing ? null : _placeBidNow,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: MyTheme.accent_color,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: _isProcessing
-                            ? _buildButtonLoader()
-                            : Text(
-                                'Bid Now - ${_formatPrice(_minNextBidNow)}',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold),
-                              ),
+              child: Material(
+                
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    elevation: 40, // Creates shadow and lifts above other elements
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Bid Information',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      SizedBox(height: 12),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 3,
+                        children: [
+                          _buildInfoItem('Starting bid',
+                              _formatPrice(_startingBid)),
+                          _buildInfoItem('Total bidders', '$_totalBids'),
+                          _buildInfoItem(
+                              'Highest bidder',
+                              _highestBidder.isNotEmpty
+                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                  : 'No bids'),
+                          _buildInfoItem('Bid now at', '$_pointPerBid'),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-
-            // ============================================
-            // REVIEWS SECTION
-            // ============================================
+            // Reviews Section
             SliverToBoxAdapter(
               child: GestureDetector(
                 onTap: _openReviewsModal,
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: EdgeInsets.symmetric(horizontal: 16),
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -2137,10 +2066,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-
-            // ============================================
-            // THUMBNAILS
-            // ============================================
+            // Thumbnails
             SliverToBoxAdapter(
               child: Container(
                 height: 70,
@@ -2181,10 +2107,62 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: 20)),
+            SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
-      ),
+        // Bottom Bar
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, -2))
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _showBidInputDialog,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text('Custom'),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _isProcessing ? null : _placeBidNow,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyTheme.accent_color,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: _isProcessing
+                        ? _buildButtonLoader()
+                        : Text(
+                            'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
