@@ -1976,7 +1976,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Column(
-                    elevation: 40, // Creates shadow and lifts above other elements
+                    // elevation: 40, // Creates shadow and lifts above other elements
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Bid Information',

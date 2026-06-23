@@ -429,7 +429,10 @@
   "package_ucf": "Package",
   "for_free_ucf": "for free",
   "our_package_ucf": "Our Package",
-
+  "logged_out_successfully": "Logged out successfully",
+  "@logged_out_successfully": {
+    "description": "Message shown when user logs out"
+  },
 
   "@min_withdrawal_amount": {
     "description": "Minimum withdrawal amount message",
