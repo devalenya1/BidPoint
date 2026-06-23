@@ -165,6 +165,46 @@ class ProfileRepository {
     }
   }
 
+  // Remove from wishlist
+  Future<Map<String, dynamic>> removeFromWishlist(int productId) async {
+    String url = "${AppConfig.BASE_URL}/wishlist/remove";
+    
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({
+          "product_id": productId,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? 'Removed from wishlist successfully!',
+          'data': responseData['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to remove from wishlist',
+          'status': response.statusCode,
+        };
+      }
+    } catch (e) {
+      print("Error removing from wishlist: $e");
+      return {
+        'success': false,
+        'message': 'Network error. Please try again.',
+      };
+    }
+  }
+
   // Get notification settings
   Future<Map<String, dynamic>> getNotificationSettings() async {
     String url = "${AppConfig.BASE_URL}/notification-settings";

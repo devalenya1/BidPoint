@@ -16,62 +16,62 @@
 //     return WishlistResponse.fromJson(json);
 //   }
 
-//   Future<dynamic> getUserWishlist() async {
-//     String url = ("${AppConfig.BASE_URL}/wishlists");
-//     Map<String, String> header = commonHeader;
+//   // Future<dynamic> getUserWishlist() async {
+//   //   String url = ("${AppConfig.BASE_URL}/wishlists");
+//   //   Map<String, String> header = commonHeader;
 
-//     header.addAll(authHeader);
-//     header.addAll(currencyHeader);
+//   //   header.addAll(authHeader);
+//   //   header.addAll(currencyHeader);
 
-//     final response = await ApiRequest.get(
-//         url: url, headers: header, middleware: BannedUser());
+//   //   final response = await ApiRequest.get(
+//   //       url: url, headers: header, middleware: BannedUser());
 
-//     return wishlistResponseFromJson(response.body);
-//   }
+//   //   return wishlistResponseFromJson(response.body);
+//   // }
 
-//   Future<dynamic> delete({
-//     int? wishlist_id = 0,
-//   }) async {
-//     String url = ("${AppConfig.BASE_URL}/wishlists/${wishlist_id}");
-//     final response = await ApiRequest.delete(
-//         url: url,
-//         headers: {
-//           "Authorization": "Bearer ${access_token.$}",
-//           "App-Language": app_language.$!,
-//         },
-//         middleware: BannedUser());
-//     return wishlistDeleteResponseFromJson(response.body);
-//   }
+//   // Future<dynamic> delete({
+//   //   int? wishlist_id = 0,
+//   // }) async {
+//   //   String url = ("${AppConfig.BASE_URL}/wishlists/${wishlist_id}");
+//   //   final response = await ApiRequest.delete(
+//   //       url: url,
+//   //       headers: {
+//   //         "Authorization": "Bearer ${access_token.$}",
+//   //         "App-Language": app_language.$!,
+//   //       },
+//   //       middleware: BannedUser());
+//   //   return wishlistDeleteResponseFromJson(response.body);
+//   // }
 
-//   Future<dynamic> isProductInUserWishList({product_id = 0}) async {
-//     String url =
-//         ("${AppConfig.BASE_URL}/wishlists-check-product?product_id=${product_id}");
-//     final response = await ApiRequest.get(
-//         url: url,
-//         headers: {
-//           "Authorization": "Bearer ${access_token.$}",
-//           "App-Language": app_language.$!,
-//         },
-//         middleware: BannedUser());
+//   // Future<dynamic> isProductInUserWishList({product_id = 0}) async {
+//   //   String url =
+//   //       ("${AppConfig.BASE_URL}/wishlists-check-product?product_id=${product_id}");
+//   //   final response = await ApiRequest.get(
+//   //       url: url,
+//   //       headers: {
+//   //         "Authorization": "Bearer ${access_token.$}",
+//   //         "App-Language": app_language.$!,
+//   //       },
+//   //       middleware: BannedUser());
 
-//     return wishListChekResponseFromJson(response.body);
-//   }
+//   //   return wishListChekResponseFromJson(response.body);
+//   // }
 
-//   Future<dynamic> add({product_id = 0}) async {
-//     String url =
-//         ("${AppConfig.BASE_URL}/wishlists-add-product?product_id=${product_id}");
+//   // Future<dynamic> add({product_id = 0}) async {
+//   //   String url =
+//   //       ("${AppConfig.BASE_URL}/wishlists-add-product?product_id=${product_id}");
 
-//     print(url.toString());
-//     final response = await ApiRequest.get(
-//         url: url,
-//         headers: {
-//           "Authorization": "Bearer ${access_token.$}",
-//           "App-Language": app_language.$!,
-//         },
-//         middleware: BannedUser());
+//   //   print(url.toString());
+//   //   final response = await ApiRequest.get(
+//   //       url: url,
+//   //       headers: {
+//   //         "Authorization": "Bearer ${access_token.$}",
+//   //         "App-Language": app_language.$!,
+//   //       },
+//   //       middleware: BannedUser());
 
-//     return wishListChekResponseFromJson(response.body);
-//   }
+//   //   return wishListChekResponseFromJson(response.body);
+//   // }
 
 //   Future<dynamic> remove({product_id = 0}) async {
 //     String url =
@@ -87,39 +87,39 @@
 //     return wishListChekResponseFromJson(response.body);
 //   }
 
-//   // Add this method for adding to wishlist with POST
-//   Future<dynamic> addToWishlist(int productId) async {
-//     String url = ("${AppConfig.BASE_URL}/wishlist/add");
-//     var postBody = jsonEncode({
-//       "product_id": productId,
-//     });
-//     final response = await ApiRequest.post(
-//       url: url,
-//       headers: {
-//         "App-Language": app_language.$!,
-//         "Authorization": "Bearer ${access_token.$}",
-//         "Content-Type": "application/json",
-//       },
-//       body: postBody,
-//     );
-//     return wishlistResponseFromJson(response.body);
-//   }
+//   // // Add this method for adding to wishlist with POST
+//   // Future<dynamic> addToWishlist(int productId) async {
+//   //   String url = ("${AppConfig.BASE_URL}/wishlist/add");
+//   //   var postBody = jsonEncode({
+//   //     "product_id": productId,
+//   //   });
+//   //   final response = await ApiRequest.post(
+//   //     url: url,
+//   //     headers: {
+//   //       "App-Language": app_language.$!,
+//   //       "Authorization": "Bearer ${access_token.$}",
+//   //       "Content-Type": "application/json",
+//   //     },
+//   //     body: postBody,
+//   //   );
+//   //   return wishlistResponseFromJson(response.body);
+//   // }
 
-//   // Add this method for removing from wishlist with POST
-//   Future<dynamic> removeFromWishlist(int productId) async {
-//     String url = ("${AppConfig.BASE_URL}/wishlist/remove");
-//     var postBody = jsonEncode({
-//       "product_id": productId,
-//     });
-//     final response = await ApiRequest.post(
-//       url: url,
-//       headers: {
-//         "App-Language": app_language.$!,
-//         "Authorization": "Bearer ${access_token.$}",
-//         "Content-Type": "application/json",
-//       },
-//       body: postBody,
-//     );
-//     return wishlistResponseFromJson(response.body);
-//   }
+//   // // Add this method for removing from wishlist with POST
+//   // Future<dynamic> removeFromWishlist(int productId) async {
+//   //   String url = ("${AppConfig.BASE_URL}/wishlist/remove");
+//   //   var postBody = jsonEncode({
+//   //     "product_id": productId,
+//   //   });
+//   //   final response = await ApiRequest.post(
+//   //     url: url,
+//   //     headers: {
+//   //       "App-Language": app_language.$!,
+//   //       "Authorization": "Bearer ${access_token.$}",
+//   //       "Content-Type": "application/json",
+//   //     },
+//   //     body: postBody,
+//   //   );
+//   //   return wishlistResponseFromJson(response.body);
+//   // }
 // }
