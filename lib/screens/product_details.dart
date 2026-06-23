@@ -1715,7 +1715,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   SizedBox(height: 6),
                                   // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
                                   Container(
-                                    height: imageHeight * 0.3, // Reduced from 0.5 to 0.3
+                                    height: imageHeight * 0.4, // Reduced from 0.5 to 0.3
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
@@ -1739,7 +1739,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 10, // Reduced from 12 to 10
+                                                      radius: 12, // Reduced from 12 to 10
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
@@ -1748,12 +1748,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               .userAvatar ==
                                                           null
                                                           ? Icon(Icons.person,
-                                                              size: 10, // Reduced from 12 to 10
+                                                              size: 12, // Reduced from 12 to 10
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 6), // Reduced from 8 to 6
+                                                    SizedBox(width: 8), // Reduced from 8 to 6
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1766,7 +1766,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 10, // Reduced from 11 to 10
+                                                              fontSize: 11, // Reduced from 11 to 10
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1778,7 +1778,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 9, // Reduced from 10 to 9
+                                                              fontSize: 10, // Reduced from 10 to 9
                                                             ),
                                                             maxLines: 2,
                                                             overflow:
@@ -1944,7 +1944,7 @@ class _ProductDetailsState extends State<ProductDetails>
             // Bid Info Section - Updated from polling data
             SliverToBoxAdapter(
               child: Material(
-                elevation: 10, // Creates shadow and lifts above other elements
+                
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
@@ -1955,6 +1955,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Column(
+                    elevation: 40, // Creates shadow and lifts above other elements
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Bid Information',
