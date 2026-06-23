@@ -1497,7 +1497,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT
+  // MOBILE LAYOUT - WITH BID INFO OVERLAY
   // ============================================
 
   Widget _buildMobileLayout() {
@@ -1507,6 +1507,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     return Stack(
       children: [
+        // Main content - Scrollable
         CustomScrollView(
           controller: _mainScrollController,
           physics: BouncingScrollPhysics(),
@@ -1578,7 +1579,6 @@ class _ProductDetailsState extends State<ProductDetails>
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
-                          // FIX 4 & 5: Wishlist icon with sound
                           _buildIconCircle(
                             icon: _isInWishlist
                                 ? Icons.favorite
@@ -1677,7 +1677,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments Section - SHOW ALL COMMENTS
+                            // Comments Section
                             Container(
                               width: MediaQuery.of(context).size.width * 0.75,
                               decoration: BoxDecoration(
@@ -1690,31 +1690,9 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Comment count header
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Text(
-                                      //   'Comments (${_comments.length})',
-                                      //   style: TextStyle(
-                                      //     color: Colors.white,
-                                      //     fontSize: 12,
-                                      //     fontWeight: FontWeight.w600,
-                                      //   ),
-                                      // ),
-                                      // Text(
-                                      //   'Recent',
-                                      //   style: TextStyle(
-                                      //     color: Colors.white70,
-                                      //     fontSize: 10,
-                                      //   ),
-                                      // ),
-                                    ],
-                                  ),
                                   SizedBox(height: 6),
-                                  // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
                                   Container(
-                                    height: imageHeight * 0.4, // Reduced from 0.5 to 0.3
+                                    height: imageHeight * 0.4,
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
@@ -1732,13 +1710,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                               final comment = _comments[index];
                                               return Padding(
                                                 padding:
-                                                    EdgeInsets.only(bottom: 6), // Reduced from 8 to 6
+                                                    EdgeInsets.only(bottom: 6),
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 12, // Reduced from 12 to 10
+                                                      radius: 12,
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
@@ -1747,12 +1725,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               .userAvatar ==
                                                           null
                                                           ? Icon(Icons.person,
-                                                              size: 12, // Reduced from 12 to 10
+                                                              size: 12,
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 8), // Reduced from 8 to 6
+                                                    SizedBox(width: 8),
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1765,7 +1743,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 11, // Reduced from 11 to 10
+                                                              fontSize: 11,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1777,7 +1755,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 10, // Reduced from 10 to 9
+                                                              fontSize: 10,
                                                             ),
                                                             maxLines: 2,
                                                             overflow:
@@ -1793,7 +1771,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
-                                  SizedBox(height: 4), // Reduced from 8 to 4
+                                  SizedBox(height: 4),
                                   Row(
                                     children: [
                                       Expanded(
@@ -1808,44 +1786,44 @@ class _ProductDetailsState extends State<ProductDetails>
                                             controller: _commentController,
                                             style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 11), // Reduced from 12 to 11
+                                                fontSize: 11),
                                             decoration: InputDecoration(
                                               hintText: 'Add Comment...',
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
-                                                  fontSize: 11), // Reduced from 12 to 11
+                                                  fontSize: 11),
                                               border: InputBorder.none,
                                               contentPadding:
                                                   EdgeInsets.symmetric(
-                                                      horizontal: 10, // Reduced from 12 to 10
-                                                      vertical: 6), // Reduced from 8 to 6
+                                                      horizontal: 10,
+                                                      vertical: 6),
                                             ),
                                             onSubmitted: (value) =>
                                                 _sendComment(),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 6), // Reduced from 8 to 6
+                                      SizedBox(width: 6),
                                       GestureDetector(
                                         onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
-                                          width: 28, // Reduced from 32 to 28
-                                          height: 28, // Reduced from 32 to 28
+                                          width: 28,
+                                          height: 28,
                                           decoration: BoxDecoration(
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
                                           child: _isProcessing
                                               ? const SizedBox(
-                                                  height: 12, // Reduced from 14 to 12
-                                                  width: 12, // Reduced from 14 to 12
+                                                  height: 12,
+                                                  width: 12,
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     color: Colors.white,
                                                   ),
                                                 )
                                               : Icon(Icons.send,
-                                                  size: 14, // Reduced from 16 to 14
+                                                  size: 14,
                                                   color: Colors.white),
                                         ),
                                       ),
@@ -1869,8 +1847,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                   SizedBox(height: 4),
                                   Text(
                                       _product?.description
-                                              ?.replaceAll(RegExp(r'<[^>]*>'),
-                                                  '') ??
+                                          ?.replaceAll(RegExp(r'<[^>]*>'),
+                                              '') ??
                                           '',
                                       style: TextStyle(
                                           color: Colors.white70, fontSize: 14),
@@ -1937,51 +1915,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                   ],
-                ),
-              ),
-            ),
-            // Bid Info Section - Updated from polling data
-            SliverToBoxAdapter(
-              child: Material(
-                
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    elevation: 40, // Creates shadow and lifts above other elements
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Bid Information',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      SizedBox(height: 12),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 3,
-                        children: [
-                          _buildInfoItem('Starting bid',
-                              _formatPrice(_startingBid)),
-                          _buildInfoItem('Total bidders', '$_totalBids'),
-                          _buildInfoItem(
-                              'Highest bidder',
-                              _highestBidder.isNotEmpty
-                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                  : 'No bids'),
-                          _buildInfoItem('Bid now at', '$_pointPerBid'),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -2088,6 +2021,57 @@ class _ProductDetailsState extends State<ProductDetails>
             SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
+        
+        // ============================================
+        // BID INFO SECTION - OVERLAY WITH POSITIONED
+        // ============================================
+        Positioned(
+          top: imageHeight - 30,
+          left: 16,
+          right: 16,
+          child: Material(
+            // elevation: 10,
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.white,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Bid Information',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 12),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 3,
+                    children: [
+                      _buildInfoItem('Starting bid',
+                          _formatPrice(_startingBid)),
+                      _buildInfoItem('Total bidders', '$_totalBids'),
+                      _buildInfoItem(
+                          'Highest bidder',
+                          _highestBidder.isNotEmpty
+                              ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                              : 'No bids'),
+                      _buildInfoItem('Bid now at', '$_pointPerBid'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        
         // Bottom Bar
         Positioned(
           bottom: 0,
