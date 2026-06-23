@@ -261,10 +261,10 @@ class _ProductDetailsState extends State<ProductDetails>
             _highestBidder = response.lastBidderName!;
           }
           
-          // Update starting bid
-          if (response.startingBid != null) {
-            _startingBid = response.startingBid!;
-          }
+          // // Update starting bid
+          // if (response.startingBid != null) {
+          //   _startingBid = response.startingBid!;
+          // }
           
           // Update point per bid
           if (response.pointPerBid != null) {
