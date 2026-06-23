@@ -298,7 +298,9 @@ class _FilterState extends State<Filter> {
     final isSelected = _selectedSort == value;
     return GestureDetector(
       onTap: () {
+        // Close the dialog first
         Navigator.pop(context);
+        // Then apply the sort
         _onSortChange(value, label);
       },
       child: Container(

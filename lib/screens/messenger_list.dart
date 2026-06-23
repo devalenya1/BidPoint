@@ -129,10 +129,6 @@ class _MessengerListState extends State<MessengerList> {
       backgroundColor: Colors.white,
       elevation: 0,
       centerTitle: true,
-      title: Text(
-        AppLocalizations.of(context)!.messages_ucf,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-      ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.black),
         onPressed: () {
@@ -143,6 +139,14 @@ class _MessengerListState extends State<MessengerList> {
             context.go("/");
           }
         },
+      ),
+      title: Text(
+        AppLocalizations.of(context)!.messages_ucf,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.black,
+        ),
       ),
     );
   }
