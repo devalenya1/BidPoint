@@ -82,10 +82,10 @@ class _LoginState extends State<Login> {
   // Helper method to handle successful login with proper redirect
   void _handleLoginSuccess() {
     // Call the callback if provided (for custom navigation from other screens)
-    if (widget.onLoginSuccess != null) {
-      widget.onLoginSuccess!();
-      return;
-    }
+    // if (widget.onLoginSuccess != null) {
+    //   widget.onLoginSuccess!();
+    //   return;
+    // }
     
     // Check if there's a previous page using GoRouter
     final router = GoRouter.of(context);

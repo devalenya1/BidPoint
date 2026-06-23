@@ -211,10 +211,25 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      AuthHelper().clearUserData();
+      // Clear user data
+      await AuthHelper().clearUserData();
       _resetState();
-      // Redirect to home after logout
-      context.go("/");
+      
+      // Show logout success message
+      ToastComponent.showDialog(
+        AppLocalizations.of(context)!.logged_out_successfully,
+        gravity: ToastGravity.CENTER,
+        duration: Toast.LENGTH_SHORT,
+      );
+      
+      // FIX: Navigate to home and clear all back stack
+      if (context.mounted) {
+        // Use pushAndRemoveUntil to clear all previous routes
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const Main()), // Your home page
+          (Route<dynamic> route) => false,
+        );
+      }
     }
   }
 
