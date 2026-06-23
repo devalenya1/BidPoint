@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
@@ -718,8 +718,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   String _formatPrice(double amount) {
-    final symbol = _product?.currencySymbol ?? '\$';
-    return '$symbol${amount.toStringAsFixed(2)}';
+    return FormatHelper.formatPrice(amount);
   }
 
   String _formatTimeLeft() {

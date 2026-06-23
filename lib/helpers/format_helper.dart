@@ -1,9 +1,12 @@
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 
 class FormatHelper {
   static String formatPrice(double? price) {
     if (price == null) return '\$0.00';
-    return '\$${price.toStringAsFixed(2)}';
+    // Use system currency symbol if available, otherwise fallback to $
+    final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
+    return '$symbol${price.toStringAsFixed(2)}';
   }
   
   static String formatPoints(dynamic points) {
@@ -14,6 +17,7 @@ class FormatHelper {
   
   static String formatAffiliateBalance(double? balance) {
     if (balance == null) return '\$0.00';
-    return '\$${balance.toStringAsFixed(2)}';
+    final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
+    return '$symbol${balance.toStringAsFixed(2)}';
   }
 }
