@@ -1695,27 +1695,27 @@ class _ProductDetailsState extends State<ProductDetails>
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        'Comments (${_comments.length})',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Recent',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 10,
-                                        ),
-                                      ),
+                                      // Text(
+                                      //   'Comments (${_comments.length})',
+                                      //   style: TextStyle(
+                                      //     color: Colors.white,
+                                      //     fontSize: 12,
+                                      //     fontWeight: FontWeight.w600,
+                                      //   ),
+                                      // ),
+                                      // Text(
+                                      //   'Recent',
+                                      //   style: TextStyle(
+                                      //     color: Colors.white70,
+                                      //     fontSize: 10,
+                                      //   ),
+                                      // ),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
-                                  // FIX 1: Show ALL comments (not just 3)
+                                  SizedBox(height: 6),
+                                  // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
                                   Container(
-                                    height: imageHeight * 0.5,
+                                    height: imageHeight * 0.3, // Reduced from 0.5 to 0.3
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
@@ -1728,33 +1728,32 @@ class _ProductDetailsState extends State<ProductDetails>
                                           )
                                         : ListView.builder(
                                             shrinkWrap: true,
-                                            // FIX 1: Show ALL comments
                                             itemCount: _comments.length,
                                             itemBuilder: (context, index) {
                                               final comment = _comments[index];
                                               return Padding(
                                                 padding:
-                                                    EdgeInsets.only(bottom: 8),
+                                                    EdgeInsets.only(bottom: 6), // Reduced from 8 to 6
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 12,
+                                                      radius: 10, // Reduced from 12 to 10
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
                                                               ''),
                                                       child: comment
-                                                                  .userAvatar ==
-                                                              null
+                                                              .userAvatar ==
+                                                          null
                                                           ? Icon(Icons.person,
-                                                              size: 12,
+                                                              size: 10, // Reduced from 12 to 10
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 8),
+                                                    SizedBox(width: 6), // Reduced from 8 to 6
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1767,7 +1766,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 11,
+                                                              fontSize: 10, // Reduced from 11 to 10
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1779,7 +1778,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 10,
+                                                              fontSize: 9, // Reduced from 10 to 9
                                                             ),
                                                             maxLines: 2,
                                                             overflow:
@@ -1795,6 +1794,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
+                                  SizedBox(height: 4), // Reduced from 8 to 4
                                   Row(
                                     children: [
                                       Expanded(
@@ -1809,44 +1809,45 @@ class _ProductDetailsState extends State<ProductDetails>
                                             controller: _commentController,
                                             style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 12),
+                                                fontSize: 11), // Reduced from 12 to 11
                                             decoration: InputDecoration(
                                               hintText: 'Add Comment...',
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
-                                                  fontSize: 12),
+                                                  fontSize: 11), // Reduced from 12 to 11
                                               border: InputBorder.none,
                                               contentPadding:
                                                   EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 8),
+                                                      horizontal: 10, // Reduced from 12 to 10
+                                                      vertical: 6), // Reduced from 8 to 6
                                             ),
                                             onSubmitted: (value) =>
                                                 _sendComment(),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      SizedBox(width: 6), // Reduced from 8 to 6
                                       GestureDetector(
                                         onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
-                                          width: 32,
-                                          height: 32,
+                                          width: 28, // Reduced from 32 to 28
+                                          height: 28, // Reduced from 32 to 28
                                           decoration: BoxDecoration(
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
                                           child: _isProcessing
                                               ? const SizedBox(
-                                                  height: 14,
-                                                  width: 14,
+                                                  height: 12, // Reduced from 14 to 12
+                                                  width: 12, // Reduced from 14 to 12
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     color: Colors.white,
                                                   ),
                                                 )
                                               : Icon(Icons.send,
-                                                  size: 16, color: Colors.white),
+                                                  size: 14, // Reduced from 16 to 14
+                                                  color: Colors.white),
                                         ),
                                       ),
                                     ],
