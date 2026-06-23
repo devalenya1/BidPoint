@@ -339,12 +339,12 @@ class ProfileRepository {
     }
   }
 
-  // Mark notification as read (background)
-  Future<void> markAllNotificationsAsRead() async {
+  // In profile_repository.dart
+  Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
     String url = "${AppConfig.BASE_URL}/notification/mark-all-read";
     
     try {
-      await ApiRequest.post(
+      final response = await ApiRequest.post(
         url: url,
         headers: {
           "Content-Type": "application/json",
@@ -353,10 +353,26 @@ class ProfileRepository {
         },
         body: jsonEncode({}),
       );
-      // We don't care about the response - it's a background process
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? 'All notifications marked as read',
+          'data': responseData['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to mark all notifications as read',
+        };
+      }
     } catch (e) {
-      print("Error marking notification as read: $e");
-      // Silently fail - no user impact
+      print("Error marking all notifications as read: $e");
+      return {
+        'success': false,
+        'message': 'Network error. Please try again.',
+      };
     }
   }
 

@@ -221,6 +221,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     _sendMarkAllAsReadRequest();
   }
 
+  // In notifications_page.dart
   void _sendMarkAllAsReadRequest() async {
     try {
       // This runs in background - no UI blocking
