@@ -616,7 +616,7 @@ class _ProductDetailsState extends State<ProductDetails>
         if (mounted) {
           setState(() => _isProcessing = false);
         }
-        if (response['success'] == true) {
+        if (response.success == true) {
           setState(() => _isInWishlist = false);
           // FIX 5: Play sound when removed
           _playCommentSound();

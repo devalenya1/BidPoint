@@ -66,8 +66,9 @@ class AuthScreen{
                     ),
                     Padding(
                       // padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 0.0),
                       child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 20),
+                          // padding: EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecorations.buildBoxDecoration_1(radius: 16),
                           child: child,),
                     ),

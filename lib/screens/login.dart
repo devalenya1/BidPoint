@@ -87,18 +87,15 @@ class _LoginState extends State<Login> {
       return;
     }
     
-    // Check if there's a pending navigation route in the router
+    // Check if there's a previous page using GoRouter
     final router = GoRouter.of(context);
-    final currentLocation = router.location;
     
-    // If we're at the login page, go to dashboard
-    // Otherwise, go back to the previous page
-    if (currentLocation == '/login' || currentLocation == '/') {
+    // Try to go back if possible
+    if (router.canPop()) {
+      router.pop();
+    } else {
       // No previous page, go to dashboard
       router.go('/dashboard');
-    } else {
-      // Go back to previous page
-      router.pop();
     }
   }
 

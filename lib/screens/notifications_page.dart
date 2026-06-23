@@ -224,7 +224,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   void _sendMarkAllAsReadRequest() async {
     try {
       // This runs in background - no UI blocking
-      final response = await ProfileRepository().markAllNotificationsAsRead();
+      final Map<String, dynamic> response = await ProfileRepository().markAllNotificationsAsRead();
 
       setState(() {
         _isMarkingAllAsRead = false;
