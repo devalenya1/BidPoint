@@ -330,14 +330,33 @@ class _ProductDetailsState extends State<ProductDetails>
           }
         }
 
-        // Refresh comments
-        await _fetchComments();
+        // ============================================
+        // FIX 1: Show ALL comments (not just 3)
+        // ============================================
+        // Refresh comments - now shows ALL comments from database
+        if (response.comments != null && response.comments!.isNotEmpty) {
+          setState(() => _comments = response.comments!);
+        }
 
         // Refresh reviews
-        await _fetchReviews();
+        if (response.reviews != null && response.reviews!.isNotEmpty) {
+          setState(() => _reviews = response.reviews!);
+          _reviewsCount = _reviews.length;
+        }
 
         // Refresh bid history
-        await _fetchBidHistory();
+        if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
+          // Convert BidHistoryItem to BidHistory for display
+          final List<BidHistory> convertedBids = response.bidHistory!.map((item) {
+            return BidHistory(
+              userId: item.userId,
+              userName: item.userName,
+              amount: item.amount,
+              createdAt: item.createdAt,
+            );
+          }).toList();
+          setState(() => _bidHistory = convertedBids);
+        }
       }
     } catch (e) {
       print('Polling error: $e');
@@ -577,7 +596,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // WISHLIST ACTIONS
+  // WISHLIST ACTIONS - WITH SOUND
   // ============================================
 
   Future<void> _toggleWishlist() async {
@@ -597,8 +616,10 @@ class _ProductDetailsState extends State<ProductDetails>
         if (mounted) {
           setState(() => _isProcessing = false);
         }
-        if (response.success == true) {
+        if (response['success'] == true) {
           setState(() => _isInWishlist = false);
+          // FIX 5: Play sound when removed
+          _playCommentSound();
           _showToast('Removed from wishlist');
         }
       } else {
@@ -609,6 +630,8 @@ class _ProductDetailsState extends State<ProductDetails>
         }
         if (response.success == true) {
           setState(() => _isInWishlist = true);
+          // FIX 5: Play sound when added
+          _playBidSound();
           _showToast('Added to wishlist');
         }
       }
@@ -1556,6 +1579,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
+                          // FIX 4 & 5: Wishlist icon with sound
                           _buildIconCircle(
                             icon: _isInWishlist
                                 ? Icons.favorite
@@ -1654,7 +1678,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments Section - 60% of image height
+                            // Comments Section - SHOW ALL COMMENTS
                             Container(
                               width: MediaQuery.of(context).size.width * 0.75,
                               decoration: BoxDecoration(
@@ -1667,21 +1691,45 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Comment count header
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Comments (${_comments.length})',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Recent',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   SizedBox(height: 8),
+                                  // FIX 1: Show ALL comments (not just 3)
                                   Container(
-                                    height: imageHeight * 0.55,
+                                    height: imageHeight * 0.5,
                                     child: _comments.isEmpty
                                         ? Center(
-                                            child: Text('No comments yet',
-                                                style: TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 11)),
+                                            child: Text(
+                                              'No comments yet',
+                                              style: TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 11,
+                                              ),
+                                            ),
                                           )
                                         : ListView.builder(
                                             shrinkWrap: true,
-                                            itemCount: _comments.length > 3
-                                                ? 3
-                                                : _comments.length,
+                                            // FIX 1: Show ALL comments
+                                            itemCount: _comments.length,
                                             itemBuilder: (context, index) {
                                               final comment = _comments[index];
                                               return Padding(
@@ -1714,26 +1762,30 @@ class _ProductDetailsState extends State<ProductDetails>
                                                                 .start,
                                                         children: [
                                                           Text(
-                                                              comment.userName ??
-                                                                  'User',
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 11,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600)),
+                                                            comment.userName ??
+                                                                'User',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white,
+                                                              fontSize: 11,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                          ),
                                                           Text(
-                                                              comment.comment ??
-                                                                  '',
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white70,
-                                                                  fontSize: 10),
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis),
+                                                            comment.comment ??
+                                                                '',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white70,
+                                                              fontSize: 10,
+                                                            ),
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
                                                         ],
                                                       ),
                                                     ),
@@ -1888,49 +1940,47 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Bid Info Section
+            // Bid Info Section - Updated from polling data
             SliverToBoxAdapter(
-              child: Container(
-                margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, -2)),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Bid Information',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                    SizedBox(height: 12),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 3,
-                      children: [
-                        _buildInfoItem('Starting bid',
-                            _formatPrice(_startingBid)),
-                        _buildInfoItem('Total bidders', '$_totalBids'),
-                        _buildInfoItem(
-                            'Highest bidder',
-                            _highestBidder.isNotEmpty
-                                ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                : 'No bids'),
-                        _buildInfoItem('Bid now at', '$_pointPerBid'),
-                      ],
-                    ),
-                  ],
+              child: Material(
+                elevation: 10, // Creates shadow and lifts above other elements
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(16, -30, 16, 16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Bid Information',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      SizedBox(height: 12),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 3,
+                        children: [
+                          _buildInfoItem('Starting bid',
+                              _formatPrice(_startingBid)),
+                          _buildInfoItem('Total bidders', '$_totalBids'),
+                          _buildInfoItem(
+                              'Highest bidder',
+                              _highestBidder.isNotEmpty
+                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                  : 'No bids'),
+                          _buildInfoItem('Bid now at', '$_pointPerBid'),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

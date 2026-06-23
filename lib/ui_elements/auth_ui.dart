@@ -30,7 +30,7 @@ class AuthScreen{
               //controller: _mainScrollController,
               physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics()),
-              slivers: [
+              slivers: [ 
                 SliverList(
                   delegate: SliverChildListDelegate(
                       [
@@ -65,7 +65,7 @@ class AuthScreen{
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                      // padding: const EdgeInsets.symmetric(horizontal: 18.0),
                       child: Container(
                           padding: EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecorations.buildBoxDecoration_1(radius: 16),

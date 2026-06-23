@@ -79,15 +79,27 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  // Helper method to handle successful login
+  // Helper method to handle successful login with proper redirect
   void _handleLoginSuccess() {
-    // Call the callback if provided
-    // if (widget.onLoginSuccess != null) {
-    //   widget.onLoginSuccess!();
-    // }
+    // Call the callback if provided (for custom navigation from other screens)
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!();
+      return;
+    }
     
-    // Navigate to main screen
-    context.push("/dashboard");
+    // Check if there's a pending navigation route in the router
+    final router = GoRouter.of(context);
+    final currentLocation = router.location;
+    
+    // If we're at the login page, go to dashboard
+    // Otherwise, go back to the previous page
+    if (currentLocation == '/login' || currentLocation == '/') {
+      // No previous page, go to dashboard
+      router.go('/dashboard');
+    } else {
+      // Go back to previous page
+      router.pop();
+    }
   }
 
   onPressedLogin() async {

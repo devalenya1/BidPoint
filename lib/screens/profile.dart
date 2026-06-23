@@ -168,12 +168,6 @@ class _ProfileState extends State<Profile> {
     } else {
       // Go to home if can't pop
       context.go("/");
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => Main(),
-      //   ),
-      // );
     }
   }
 
@@ -219,6 +213,7 @@ class _ProfileState extends State<Profile> {
     if (confirm == true) {
       AuthHelper().clearUserData();
       _resetState();
+      // Redirect to home after logout
       context.go("/");
     }
   }
@@ -229,410 +224,6 @@ class _ProfileState extends State<Profile> {
       gravity: ToastGravity.CENTER,
       duration: Toast.LENGTH_LONG,
     );
-  }
-
-  Future<void> _debugShowApiResponse() async {
-    // Debug method - kept as is since it's a development tool
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-      
-      String url = "${AppConfig.BASE_URL}/customer/info";
-      String token = access_token.$ ?? "";
-      String appLanguage = app_language.$!;
-      
-      final startTime = DateTime.now();
-      
-      final response = await ApiRequest.get(
-        url: url,
-        headers: {
-          "Authorization": "Bearer $token", 
-          "App-Language": appLanguage
-        },
-      );
-      
-      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
-      
-      Navigator.pop(context);
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                response.statusCode == 200 ? Icons.check_circle : Icons.error,
-                color: response.statusCode == 200 ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 10),
-              const Text('API Debug Info'),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxHeight: 550),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.wifi, size: 16, color: Colors.green[700]),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "✅ REACHED SERVER - Response received in ${responseTime}ms",
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[700]),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: response.statusCode == 200 ? Colors.green[50] : Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              response.statusCode == 200 ? Icons.check_circle : Icons.error,
-                              size: 16,
-                              color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Status Code: ${response.statusCode}",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          response.statusCode == 200 
-                              ? "✅ Success - API responded correctly"
-                              : response.statusCode == 401 
-                                  ? "🔐 Unauthorized - Token may be expired. Try logging out and back in."
-                                  : response.statusCode == 404
-                                      ? "📍 Not Found - Wrong API endpoint. Check BASE_URL."
-                                      : response.statusCode == 500
-                                          ? "⚠️ Server Error - Issue on server side"
-                                          : "⚠️ Error - Something went wrong",
-                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.link, size: 14),
-                            SizedBox(width: 6),
-                            Text(
-                              "Full Endpoint URL:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: SelectableText(
-                            url,
-                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.purple[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.purple[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.key, size: 14),
-                            SizedBox(width: 6),
-                            Text(
-                              "Access Token Used:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Token exists: ${token.isNotEmpty ? "✅ Yes" : "❌ No"}",
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                              if (token.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                const Text(
-                                  "Full Token:",
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                                SelectableText(
-                                  token,
-                                  style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Request Headers Sent:",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Authorization: Bearer ${token.isNotEmpty ? (token.length > 30 ? token.substring(0, 30) + "..." : token) : "None"}"),
-                              Text("App-Language: $appLanguage"),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.code, size: 14, color: Colors.white),
-                            SizedBox(width: 6),
-                            Text(
-                              "Raw Server Response:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: SingleChildScrollView(
-                            child: SelectableText(
-                              response.body.isNotEmpty ? response.body : "(Empty response body)",
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                                color: Colors.green,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                final debugInfo = """
-=== API DEBUG INFO ===
-Endpoint: $url
-Status Code: ${response.statusCode}
-Response Time: ${responseTime}ms
-Token Used: $token
-Headers: Authorization: Bearer $token, App-Language: $appLanguage
-Raw Response: ${response.body}
-""";
-                Clipboard.setData(ClipboardData(text: debugInfo));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Debug info copied to clipboard'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy All'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-      
-    } catch (e, stackTrace) {
-      Navigator.pop(context);
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.error, color: Colors.red),
-              SizedBox(width: 10),
-              Text('Network/Parse Error'),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxHeight: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.wifi_off, size: 16, color: Colors.red),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "❌ FAILED TO REACH SERVER - Check your internet connection",
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Attempted Endpoint:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        "${AppConfig.BASE_URL}/customer/info",
-                        style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                Text(
-                  "Error: ${e.toString()}",
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SelectableText(
-                    stackTrace.toString(),
-                    style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 
   Widget _buildDivider() {
@@ -662,44 +253,59 @@ Raw Response: ${response.body}
               Navigator.of(context).pop();
             } else {
               // Go to home if can't pop
-              // context.go("/");
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Main(),
-                ),
-              );
+              context.go("/");
             }
           },
         ),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.bug_report, color: Colors.orange),
-            onSelected: (value) {
-              if (value == 'debug_api') {
-                _debugShowApiResponse();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'debug_api',
-                child: Row(
-                  children: [
-                    Icon(Icons.api, size: 18),
-                    SizedBox(width: 8),
-                    Text('Debug API Response'),
-                  ],
+          // Debug icon - only visible in debug mode
+          if (kDebugMode)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.bug_report, color: Colors.orange),
+              onSelected: (value) {
+                if (value == 'debug_api') {
+                  _debugShowApiResponse();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'debug_api',
+                  child: Row(
+                    children: [
+                      Icon(Icons.api, size: 18),
+                      SizedBox(width: 8),
+                      Text('Debug API Response'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          // Logout button - only show when logged in
+          if (is_logged_in.$)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+                onPressed: _onTapLogout,
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                onPressed: () {
+                  // Navigate to login page
+                  context.push("/users/login");
+                },
+                child: Text(
+                  AppLocalizations.of(context)!.login_ucf,
+                  style: const TextStyle(
+                    color: MyTheme.accent_color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
-              onPressed: is_logged_in.$ ? _onTapLogout : () => context.push("/users/login"),
             ),
-          ),
         ],
       ),
       body: RefreshIndicator(
@@ -1101,5 +707,412 @@ Raw Response: ${response.body}
         ),
       ),
     );
+  }
+
+  // ============ DEBUG METHODS (Hidden in release builds) ============
+  Future<void> _debugShowApiResponse() async {
+    // Only available in debug mode
+    if (!kDebugMode) return;
+    
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+      
+      String url = "${AppConfig.BASE_URL}/customer/info";
+      String token = access_token.$ ?? "";
+      String appLanguage = app_language.$!;
+      
+      final startTime = DateTime.now();
+      
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer $token", 
+          "App-Language": appLanguage
+        },
+      );
+      
+      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
+      
+      Navigator.pop(context);
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                response.statusCode == 200 ? Icons.check_circle : Icons.error,
+                color: response.statusCode == 200 ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 10),
+              const Text('API Debug Info'),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 550),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.wifi, size: 16, color: Colors.green[700]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "✅ REACHED SERVER - Response received in ${responseTime}ms",
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[700]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: response.statusCode == 200 ? Colors.green[50] : Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              response.statusCode == 200 ? Icons.check_circle : Icons.error,
+                              size: 16,
+                              color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Status Code: ${response.statusCode}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          response.statusCode == 200 
+                              ? "✅ Success - API responded correctly"
+                              : response.statusCode == 401 
+                                  ? "🔐 Unauthorized - Token may be expired. Try logging out and back in."
+                                  : response.statusCode == 404
+                                      ? "📍 Not Found - Wrong API endpoint. Check BASE_URL."
+                                      : response.statusCode == 500
+                                          ? "⚠️ Server Error - Issue on server side"
+                                          : "⚠️ Error - Something went wrong",
+                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.link, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              "Full Endpoint URL:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: SelectableText(
+                            url,
+                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.purple[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.key, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              "Access Token Used:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Token exists: ${token.isNotEmpty ? "✅ Yes" : "❌ No"}",
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              if (token.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                const Text(
+                                  "Full Token:",
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                                SelectableText(
+                                  token,
+                                  style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Request Headers Sent:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Authorization: Bearer ${token.isNotEmpty ? (token.length > 30 ? token.substring(0, 30) + "..." : token) : "None"}"),
+                              Text("App-Language: $appLanguage"),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.code, size: 14, color: Colors.white),
+                            SizedBox(width: 6),
+                            Text(
+                              "Raw Server Response:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: SingleChildScrollView(
+                            child: SelectableText(
+                              response.body.isNotEmpty ? response.body : "(Empty response body)",
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontFamily: 'monospace',
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                final debugInfo = """
+=== API DEBUG INFO ===
+Endpoint: $url
+Status Code: ${response.statusCode}
+Response Time: ${responseTime}ms
+Token Used: $token
+Headers: Authorization: Bearer $token, App-Language: $appLanguage
+Raw Response: ${response.body}
+""";
+                Clipboard.setData(ClipboardData(text: debugInfo));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Debug info copied to clipboard'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copy All'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      
+    } catch (e, stackTrace) {
+      Navigator.pop(context);
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Network/Parse Error'),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.wifi_off, size: 16, color: Colors.red),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "❌ FAILED TO REACH SERVER - Check your internet connection",
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Attempted Endpoint:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                      const SizedBox(height: 4),
+                      SelectableText(
+                        "${AppConfig.BASE_URL}/customer/info",
+                        style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Text(
+                  "Error: ${e.toString()}",
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    stackTrace.toString(),
+                    style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
