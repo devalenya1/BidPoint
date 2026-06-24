@@ -408,32 +408,35 @@ class PollDataResponse {
   });
 
   factory PollDataResponse.fromJson(Map<String, dynamic> json) {
+    // Get the data inside the 'data' key
+    final data = json['data'] ?? json; // Fallback to json if no data key
+    
     return PollDataResponse(
       success: json['success'],
-      auctionEndDate: json['auction_end_date'],
-      startingBid: (json['starting_bid'] ?? json['startingBid'])?.toDouble(), // ADD THIS
-      pointPerBid: (json['point_per_bid'] ?? json['pointPerBid'])?.toDouble(),
-      pointPerBidCustom: (json['point_per_bid_custom'] ?? json['pointPerBidCustom'])?.toDouble(),
-      auctionEnded: json['auction_ended'],
-      isEndingSoon: json['is_ending_soon'],
-      remainingSeconds: json['remaining_seconds'],
-      rating: json['rating']?.toDouble(),
-      reviewsCount: json['reviews_count'],
-      isInWishlist: json['is_in_wishlist'],
-      highestBid: (json['highest_bid'] ?? json['highestBid'])?.toDouble(),
-      highestBidFormatted: json['highest_bid_formatted'],
-      totalBids: json['total_bids'],
-      lastBidderName: json['last_bidder_name'],
-      lastBidAmount: (json['last_bid_amount'] ?? json['lastBidAmount'])?.toDouble(),
-      winner: json['winner'] != null ? Winner.fromJson(json['winner']) : null,
-      comments: json['comments'] != null 
-          ? List<Comment>.from(json['comments'].map((x) => Comment.fromJson(x)))
+      auctionEndDate: data['auction_end_date'],
+      startingBid: (data['starting_bid'] ?? data['startingBid'])?.toDouble(),
+      pointPerBid: (data['point_per_bid'] ?? data['pointPerBid'])?.toDouble(),
+      pointPerBidCustom: (data['point_per_bid_custom'] ?? data['pointPerBidCustom'])?.toDouble(),
+      auctionEnded: data['auction_ended'],
+      isEndingSoon: data['is_ending_soon'],
+      remainingSeconds: data['remaining_seconds'],
+      rating: data['rating']?.toDouble(),
+      reviewsCount: data['reviews_count'],
+      isInWishlist: data['is_in_wishlist'],
+      highestBid: (data['highest_bid'] ?? data['highestBid'])?.toDouble(),
+      highestBidFormatted: data['highest_bid_formatted'],
+      totalBids: data['total_bids'],
+      lastBidderName: data['last_bidder_name'],
+      lastBidAmount: (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
+      winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
+      comments: data['comments'] != null 
+          ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))
           : [],
-      reviews: json['reviews'] != null 
-          ? List<Review>.from(json['reviews'].map((x) => Review.fromJson(x)))
+      reviews: data['reviews'] != null 
+          ? List<Review>.from(data['reviews'].map((x) => Review.fromJson(x)))
           : [],
-      bidHistory: json['bid_history'] != null 
-          ? List<BidHistoryItem>.from(json['bid_history'].map((x) => BidHistoryItem.fromJson(x)))
+      bidHistory: data['bid_history'] != null 
+          ? List<BidHistoryItem>.from(data['bid_history'].map((x) => BidHistoryItem.fromJson(x)))
           : [],
     );
   }
