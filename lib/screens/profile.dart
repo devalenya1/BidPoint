@@ -211,31 +211,39 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      // Clear user data (same as original profile)
       await AuthHelper().clearUserData();
-      _resetState();
-      
-      // Show logout success message
+
+      access_token.$ = "";
+      access_token.save();
+
+      is_logged_in.$ = false;
+      is_logged_in.save();
+
+      user_id.$ = 0;
+      user_id.save();
+
+      user_name.$ = "";
+      user_name.save();
+
+      if (!mounted) return;
+
       ToastComponent.showDialog(
         "Logged out successfully",
         gravity: ToastGravity.CENTER,
         duration: Toast.LENGTH_SHORT,
       );
-      
-      // Navigate to home using go_router (same as original profile)
-      if (context.mounted) {
-        // Use pushAndRemoveUntil to clear all previous routes
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const Main()),
-          (route) => false,
-        );
-      }
-      
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      _redirectAfterLogout();
     }
   }
 
+  Future<void> _redirectAfterLogout() async {
+    if (!mounted) return;
 
+    context.go('/users/login');
+  }
 
   void _showLoginWarning() {
     ToastComponent.showDialog(
