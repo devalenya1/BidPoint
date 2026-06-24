@@ -295,7 +295,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const Login()),
+                MaterialPageRoute(builder: (context) => Login()),
               );
             },
             child: const Text('Login'),

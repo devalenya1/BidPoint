@@ -229,12 +229,7 @@ class _ProfileState extends State<Profile> {
     }
   }
 
-void _resetState() {
-  setState(() {
-    _userInfo = null;
-    _isLoading = true;
-  });
-}
+
 
   void _showLoginWarning() {
     ToastComponent.showDialog(

@@ -113,7 +113,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   void _redirectToLogin() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const Login()));
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
   @override
