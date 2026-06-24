@@ -651,7 +651,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
   // WISHLIST ACTIONS - WITH SOUND
   // ============================================
-
   Future<void> _toggleWishlist() async {
     if (!is_logged_in.$) {
       _showLoginRequired();
@@ -660,66 +659,37 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
 
-    setState(() => _isProcessing = true);
+    final wasInWishlist = _isInWishlist;
+
+    setState(() {
+      _isProcessing = true;
+      _isInWishlist = !wasInWishlist;
+    });
 
     try {
-      print('========== TOGGLE WISHLIST ==========');
-      print('Current _isInWishlist: $_isInWishlist');
-      print('Product ID: ${_product!.id}');
-      
-      if (_isInWishlist) {
-        // PRODUCT IS IN WISHLIST - REMOVE IT
-        print('Attempting to REMOVE from wishlist...');
-        final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
-        print('Remove response success: ${response.success}');
-        print('Remove response message: ${response.message}');
-        
-        if (mounted) {
-          setState(() => _isProcessing = false);
-        }
-        if (response.success == true) {
-          setState(() => _isInWishlist = false);
-          _playCommentSound();
-          _showToast('Removed from wishlist');
-          await _refreshWishlistStatus();
-        } else {
-          _showToast(response.message ?? 'Failed to remove from wishlist');
-        }
-      } else {
-        // PRODUCT IS NOT IN WISHLIST - ADD IT
-        print('Attempting to ADD to wishlist...');
-        final response = await _productRepository.addToWishlist(_product!.id ?? 0);
-        print('Add response success: ${response.success}');
-        print('Add response message: ${response.message}');
-        
-        if (mounted) {
-          setState(() => _isProcessing = false);
-        }
-        
-        // Handle "already in wishlist" case
-        if (response.success == true) {
-          setState(() => _isInWishlist = true);
-          _playBidSound();
-          _showToast('Added to wishlist');
-          await _refreshWishlistStatus();
-        } else if (response.message?.contains('already in wishlist') == true) {
-          // Product is already in wishlist - update UI
-          setState(() {
-            _isInWishlist = true;
-          });
-          _showToast('Product is already in your wishlist');
-          await _refreshWishlistStatus();
-        } else {
-          _showToast(response.message ?? 'Failed to add to wishlist');
-        }
+      final response = wasInWishlist
+          ? await _productRepository.removeFromWishlist(_product!.id ?? 0)
+          : await _productRepository.addToWishlist(_product!.id ?? 0);
+
+      if (response.success != true) {
+        setState(() {
+          _isInWishlist = wasInWishlist;
+        });
+
+        _showToast(response.message ?? 'Wishlist update failed');
       }
-      print('=====================================');
     } catch (e) {
-      print('Error in _toggleWishlist: $e');
+      setState(() {
+        _isInWishlist = wasInWishlist;
+      });
+
+      _showToast('Wishlist update failed');
+    } finally {
       if (mounted) {
-        setState(() => _isProcessing = false);
+        setState(() {
+          _isProcessing = false;
+        });
       }
-      _showToast('Error updating wishlist');
     }
   }
 

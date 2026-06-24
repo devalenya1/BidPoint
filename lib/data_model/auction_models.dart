@@ -422,7 +422,7 @@ class PollDataResponse {
       remainingSeconds: data['remaining_seconds'],
       rating: data['rating']?.toDouble(),
       reviewsCount: data['reviews_count'],
-      isInWishlist: ['is_in_wishlist'] ?? false,
+      isInWishlist: data['is_in_wishlist'] ?? false,
       highestBid: (data['highest_bid'] ?? data['highestBid'])?.toDouble(),
       highestBidFormatted: data['highest_bid_formatted'],
       totalBids: data['total_bids'],
