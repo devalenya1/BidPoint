@@ -224,8 +224,14 @@ class _ProfileState extends State<Profile> {
       
       // Navigate to home using go_router (same as original profile)
       if (context.mounted) {
-        context.go("/");
+        // Use pushAndRemoveUntil to clear all previous routes
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const Main()),
+          (route) => false,
+        );
       }
+      
     }
   }
 
