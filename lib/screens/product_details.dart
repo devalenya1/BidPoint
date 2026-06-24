@@ -166,12 +166,17 @@ class _ProductDetailsState extends State<ProductDetails>
         _rating = (_product!.rating ?? 0).toDouble();
         _isWishlisted = false;
         
-        // FIX: Set _isInWishlist from the product data
+        // ✅ FIX: Set _isInWishlist from the product data
         // The product data from API should contain isInWishlist field
         _isInWishlist = _product!.isInWishlist ?? false;
         
-        // DEBUG: Print to verify
-        print('Product: ${_product!.name}, isInWishlist: ${_product!.isInWishlist}');
+        // ✅ DEBUG: Print to verify
+        print('========== WISHLIST DEBUG ==========');
+        print('Product: ${_product!.name}');
+        print('Product ID: ${_product!.id}');
+        print('_product!.isInWishlist: ${_product!.isInWishlist}');
+        print('_isInWishlist set to: $_isInWishlist');
+        print('====================================');
         
         _endingSeconds = _product!.swipeLeft ?? 10;
 
