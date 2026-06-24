@@ -212,7 +212,7 @@ class _ProfileState extends State<Profile> {
     
     if (confirm == true) {
       // Clear user data (same as original profile)
-      AuthHelper().clearUserData();
+      await AuthHelper().clearUserData();
       _resetState();
       
       // Show logout success message

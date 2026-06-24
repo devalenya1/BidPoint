@@ -87,18 +87,18 @@ class _LoginState extends State<Login> {
       return;
     }
 
-    context.push("/");
-    
+    // context.push("/");
+
     // Check if there's a previous page using GoRouter
-    // final router = GoRouter.of(context);
+    final router = GoRouter.of(context);
     
-    // // Try to go back if possible
-    // if (router.canPop()) {
-    //   router.pop();
-    // } else {
-    //   // No previous page, go to dashboard
-    //   router.go('/dashboard');
-    // }
+    // Try to go back if possible
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      // No previous page, go to dashboard
+      router.go('/dashboard');
+    }
   }
 
   onPressedLogin() async {
@@ -136,7 +136,7 @@ class _LoginState extends State<Login> {
     } else {
       ToastComponent.showDialog(loginResponse.message!,
           gravity: Toast.center, duration: Toast.lengthLong);
-      AuthHelper().setUserData(loginResponse);
+      await AuthHelper().setUserData(loginResponse);
       // push notification starts
       if (OtherConfig.USE_PUSH_NOTIFICATION) {
         final FirebaseMessaging _fcm = FirebaseMessaging.instance;
@@ -190,7 +190,7 @@ class _LoginState extends State<Login> {
           ToastComponent.showDialog(loginResponse.message!,
               gravity: Toast.center, duration: Toast.lengthLong);
 
-          AuthHelper().setUserData(loginResponse);
+          await AuthHelper().setUserData(loginResponse);
           _handleLoginSuccess();
           FacebookAuth.instance.logOut();
         }
@@ -230,7 +230,7 @@ class _LoginState extends State<Login> {
       } else {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
-        AuthHelper().setUserData(loginResponse);
+        await AuthHelper().setUserData(loginResponse);
         _handleLoginSuccess();
       }
       GoogleSignIn().disconnect();
@@ -268,7 +268,7 @@ class _LoginState extends State<Login> {
       } else {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
-        AuthHelper().setUserData(loginResponse);
+        await AuthHelper().setUserData(loginResponse);
         _handleLoginSuccess();
       }
     } on Exception catch (e) {
@@ -323,7 +323,7 @@ class _LoginState extends State<Login> {
       } else {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
-        AuthHelper().setUserData(loginResponse);
+        await AuthHelper().setUserData(loginResponse);
         _handleLoginSuccess();
       }
     } on Exception catch (e) {
