@@ -676,9 +676,7 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _isInWishlist = false);
           _playCommentSound();
           _showToast('Removed from wishlist');
-          // Refresh wishlist status from server
           await _refreshWishlistStatus();
-          print('New _isInWishlist after removal: $_isInWishlist');
         } else {
           _showToast(response.message ?? 'Failed to remove from wishlist');
         }
@@ -692,13 +690,20 @@ class _ProductDetailsState extends State<ProductDetails>
         if (mounted) {
           setState(() => _isProcessing = false);
         }
+        
+        // Handle "already in wishlist" case
         if (response.success == true) {
           setState(() => _isInWishlist = true);
           _playBidSound();
           _showToast('Added to wishlist');
-          // Refresh wishlist status from server
           await _refreshWishlistStatus();
-          print('New _isInWishlist after addition: $_isInWishlist');
+        } else if (response.message?.contains('already in wishlist') == true) {
+          // Product is already in wishlist - update UI
+          setState(() {
+            _isInWishlist = true;
+          });
+          _showToast('Product is already in your wishlist');
+          await _refreshWishlistStatus();
         } else {
           _showToast(response.message ?? 'Failed to add to wishlist');
         }
