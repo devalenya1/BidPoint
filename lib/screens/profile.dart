@@ -53,7 +53,7 @@ import 'invite_history_page.dart';
 import 'payment_settings_page.dart';
 import 'terms_conditions_page.dart';
 import 'package:flutter/services.dart';
-
+ 
 class Profile extends StatefulWidget {
   Profile({Key? key, this.show_back_button = false}) : super(key: key);
 
