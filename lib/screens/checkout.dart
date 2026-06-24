@@ -118,8 +118,7 @@ class _CheckoutState extends State<Checkout> {
     setState(() {
       mode = widget.paymentFor != PaymentFor.Order &&
               widget.paymentFor != PaymentFor.ManualPayment
-          // ? "wallet"
-          ? "order"
+          ? "wallet"
           : "order";
     });
 

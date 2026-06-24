@@ -658,9 +658,17 @@ class _ProductDetailsState extends State<ProductDetails>
     setState(() => _isProcessing = true);
 
     try {
+      print('========== TOGGLE WISHLIST ==========');
+      print('Current _isInWishlist: $_isInWishlist');
+      print('Product ID: ${_product!.id}');
+      
       if (_isInWishlist) {
         // PRODUCT IS IN WISHLIST - REMOVE IT
+        print('Attempting to REMOVE from wishlist...');
         final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
+        print('Remove response success: ${response.success}');
+        print('Remove response message: ${response.message}');
+        
         if (mounted) {
           setState(() => _isProcessing = false);
         }
@@ -670,12 +678,17 @@ class _ProductDetailsState extends State<ProductDetails>
           _showToast('Removed from wishlist');
           // Refresh wishlist status from server
           await _refreshWishlistStatus();
+          print('New _isInWishlist after removal: $_isInWishlist');
         } else {
           _showToast(response.message ?? 'Failed to remove from wishlist');
         }
       } else {
         // PRODUCT IS NOT IN WISHLIST - ADD IT
+        print('Attempting to ADD to wishlist...');
         final response = await _productRepository.addToWishlist(_product!.id ?? 0);
+        print('Add response success: ${response.success}');
+        print('Add response message: ${response.message}');
+        
         if (mounted) {
           setState(() => _isProcessing = false);
         }
@@ -685,11 +698,14 @@ class _ProductDetailsState extends State<ProductDetails>
           _showToast('Added to wishlist');
           // Refresh wishlist status from server
           await _refreshWishlistStatus();
+          print('New _isInWishlist after addition: $_isInWishlist');
         } else {
           _showToast(response.message ?? 'Failed to add to wishlist');
         }
       }
+      print('=====================================');
     } catch (e) {
+      print('Error in _toggleWishlist: $e');
       if (mounted) {
         setState(() => _isProcessing = false);
       }
@@ -700,11 +716,18 @@ class _ProductDetailsState extends State<ProductDetails>
   // FIX: Add this method to refresh wishlist status
   Future<void> _refreshWishlistStatus() async {
     try {
+      print('Refreshing wishlist status...');
       final response = await _productRepository.pollProductData(_product!.id ?? 0);
+      print('Poll response success: ${response.success}');
+      print('Poll response isInWishlist: ${response.isInWishlist}');
+      
       if (response.success == true && response.isInWishlist != null) {
         setState(() {
           _isInWishlist = response.isInWishlist!;
         });
+        print('Updated _isInWishlist to: $_isInWishlist');
+      } else {
+        print('Failed to refresh wishlist status');
       }
     } catch (e) {
       print('Error refreshing wishlist status: $e');
