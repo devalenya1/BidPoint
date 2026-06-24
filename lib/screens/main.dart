@@ -51,26 +51,26 @@ class _MainState extends State<Main> {
     if (!is_logged_in.$ && (i == 2 || i == 3 || i == 4)) {
       _pendingIndex = i;
       
-      // Navigator.push(
-      //   context, 
-      //   MaterialPageRoute(
-      //     builder: (context) => Login(
-      //       onLoginSuccess: () {
-      //         if (mounted && _pendingIndex != null) {
-      //           setState(() {
-      //             _currentIndex = _pendingIndex!;
-      //             _pendingIndex = null;
-      //           });
-      //         }
-      //       },
-      //     ),
-      //   ),
-      
       Navigator.push(
-        context,
+        context, 
         MaterialPageRoute(
-          builder: (context) => const Main(),
+          builder: (context) => Login(
+            onLoginSuccess: () {
+              if (mounted && _pendingIndex != null) {
+                setState(() {
+                  _currentIndex = _pendingIndex!;
+                  _pendingIndex = null;
+                });
+              }
+            },
+          ),
         ),
+      
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (context) => const Main(),
+      //   ),
       ).then((_) {
         if (mounted && is_logged_in.$ && _pendingIndex != null) {
           setState(() {

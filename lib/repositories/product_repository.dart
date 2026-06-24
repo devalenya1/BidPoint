@@ -260,7 +260,7 @@ class ProductRepository {
         "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
       },
     );
-    return PollDataResponse.fromJson(jsonDecode(response.body)['data']);
+    return pollDataResponseFromJson(response.body);
   }
 
   // ✅ FIXED: Place bid

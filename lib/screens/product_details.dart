@@ -167,7 +167,11 @@ class _ProductDetailsState extends State<ProductDetails>
         _isWishlisted = false;
         
         // FIX: Set _isInWishlist from the product data
+        // The product data from API should contain isInWishlist field
         _isInWishlist = _product!.isInWishlist ?? false;
+        
+        // DEBUG: Print to verify
+        print('Product: ${_product!.name}, isInWishlist: ${_product!.isInWishlist}');
         
         _endingSeconds = _product!.swipeLeft ?? 10;
 
@@ -655,8 +659,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     try {
       if (_isInWishlist) {
-        final response =
-            await _productRepository.removeFromWishlist(_product!.id ?? 0);
+        // PRODUCT IS IN WISHLIST - REMOVE IT
+        final response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
         if (mounted) {
           setState(() => _isProcessing = false);
         }
@@ -664,14 +668,14 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _isInWishlist = false);
           _playCommentSound();
           _showToast('Removed from wishlist');
-          // FIX: Refresh wishlist status from server
+          // Refresh wishlist status from server
           await _refreshWishlistStatus();
         } else {
           _showToast(response.message ?? 'Failed to remove from wishlist');
         }
       } else {
-        final response =
-            await _productRepository.addToWishlist(_product!.id ?? 0);
+        // PRODUCT IS NOT IN WISHLIST - ADD IT
+        final response = await _productRepository.addToWishlist(_product!.id ?? 0);
         if (mounted) {
           setState(() => _isProcessing = false);
         }
@@ -679,7 +683,7 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _isInWishlist = true);
           _playBidSound();
           _showToast('Added to wishlist');
-          // FIX: Refresh wishlist status from server
+          // Refresh wishlist status from server
           await _refreshWishlistStatus();
         } else {
           _showToast(response.message ?? 'Failed to add to wishlist');
