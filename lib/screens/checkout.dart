@@ -1,3 +1,5 @@
+// checkout.dart
+
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/custom/enum_classes.dart';
@@ -116,7 +118,8 @@ class _CheckoutState extends State<Checkout> {
     setState(() {
       mode = widget.paymentFor != PaymentFor.Order &&
               widget.paymentFor != PaymentFor.ManualPayment
-          ? "wallet"
+          // ? "wallet"
+          ? "order"
           : "order";
     });
 
