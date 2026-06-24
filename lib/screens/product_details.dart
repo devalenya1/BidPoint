@@ -247,7 +247,65 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
-        // Update auction end date
+        // ============================================
+        // UPDATE BID DATA FROM POLL RESPONSE
+        // ============================================
+        
+        // 1. Starting bid
+        if (response.startingBid != null) {
+          setState(() {
+            _startingBid = response.startingBid!;
+          });
+        }
+
+        // 2. Current highest bid
+        if (response.highestBid != null) {
+          final oldHighestBid = _currentHighestBid;
+          setState(() {
+            _currentHighestBid = response.highestBid!;
+          });
+          
+          // Play sound if new bid is higher
+          if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
+            _playBidSound();
+            _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
+          }
+        }
+
+        // 3. Total bidders
+        if (response.totalBids != null) {
+          setState(() {
+            _totalBids = response.totalBids!;
+          });
+        }
+
+        // 4. Highest bidder (last_bidder_name)
+        if (response.lastBidderName != null && response.lastBidderName!.isNotEmpty) {
+          setState(() {
+            _highestBidder = response.lastBidderName!;
+          });
+        }
+
+        // 5. Point per bid
+        if (response.pointPerBid != null) {
+          setState(() {
+            _pointPerBid = response.pointPerBid!;
+          });
+        }
+        if (response.pointPerBidCustom != null) {
+          setState(() {
+            _pointPerBidCustom = response.pointPerBidCustom!;
+          });
+        }
+
+        // Calculate min next bid
+        _minNextBidNow = _currentHighestBid + 0.01;
+        _minNextBid = _currentHighestBid + 1;
+        setState(() {});
+
+        // ============================================
+        // UPDATE AUCTION END DATE
+        // ============================================
         if (response.auctionEndDate != null) {
           try {
             final newEndTime = DateTime.parse(response.auctionEndDate!);
@@ -262,15 +320,9 @@ class _ProductDetailsState extends State<ProductDetails>
           }
         }
 
-        // Update point per bid
-        if (response.pointPerBid != null) {
-          setState(() => _pointPerBid = response.pointPerBid!);
-        }
-        if (response.pointPerBidCustom != null) {
-          setState(() => _pointPerBidCustom = response.pointPerBidCustom!);
-        }
-
-        // Check if auction ended and show winner popup
+        // ============================================
+        // CHECK AUCTION ENDED & SHOW WINNER
+        // ============================================
         if (response.auctionEnded == true &&
             response.winner != null &&
             !_winnerModalShown) {
@@ -281,7 +333,9 @@ class _ProductDetailsState extends State<ProductDetails>
           });
         }
 
-        // Update ending soon status
+        // ============================================
+        // UPDATE ENDING SOON STATUS
+        // ============================================
         if (response.isEndingSoon == true &&
             response.remainingSeconds != null) {
           if (!_isEndingSoon &&
@@ -295,38 +349,19 @@ class _ProductDetailsState extends State<ProductDetails>
           if (_isEndingSoon) setState(() => _isEndingSoon = false);
         }
 
-        // Update rating
+        // ============================================
+        // UPDATE RATING & REVIEWS COUNT
+        // ============================================
         if (response.rating != null) {
           setState(() => _rating = response.rating!);
         }
-
-        // Update review count
         if (response.reviewsCount != null) {
           setState(() => _reviewsCount = response.reviewsCount!);
         }
 
-        // Update bid data
-        final oldHighestBid = _currentHighestBid;
-        final newHighestBid = response.highestBid ?? _currentHighestBid;
-        final newTotalBids = response.totalBids ?? _totalBids;
-        final newHighestBidder = response.lastBidderName ?? _highestBidder;
-
-        setState(() {
-          _currentHighestBid = newHighestBid;
-          _totalBids = newTotalBids;
-          _highestBidder = newHighestBidder;
-        });
-
-        if (_currentHighestBid > oldHighestBid) {
-          _playBidSound();
-          _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
-        }
-
-        _minNextBidNow = _currentHighestBid + 0.01;
-        _minNextBid = _currentHighestBid + 1;
-        setState(() {});
-
-        // FIX: Update wishlist status from poll response
+        // ============================================
+        // UPDATE WISHLIST STATUS
+        // ============================================
         if (response.isInWishlist != null) {
           final newWishlistState = response.isInWishlist!;
           if (_isInWishlist != newWishlistState) {
@@ -336,25 +371,32 @@ class _ProductDetailsState extends State<ProductDetails>
           }
         }
 
-        // Refresh comments
+        // ============================================
+        // UPDATE COMMENTS (ALL COMMENTS)
+        // ============================================
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() => _comments = response.comments!);
         }
 
-        // Refresh reviews
+        // ============================================
+        // UPDATE REVIEWS
+        // ============================================
         if (response.reviews != null && response.reviews!.isNotEmpty) {
           setState(() => _reviews = response.reviews!);
           _reviewsCount = _reviews.length;
         }
 
-        // Refresh bid history
+        // ============================================
+        // UPDATE BID HISTORY
+        // ============================================
         if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
+          // Convert BidHistoryItem to BidHistory for display
           final List<BidHistory> convertedBids = response.bidHistory!.map((item) {
             return BidHistory(
               userId: item.userId,
               userName: item.userName,
               amount: item.amount,
-              createdAt: item.createdAt,
+              createdAt: item.createdAt, // Keep the original format from API
             );
           }).toList();
           setState(() => _bidHistory = convertedBids);
@@ -1440,13 +1482,10 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   String _formatDateTime(String? dateTime) {
-    if (dateTime == null) return '';
-    try {
-      final date = DateTime.parse(dateTime);
-      return '${date.day} ${_getMonthName(date.month)} ${date.year}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
-    } catch (e) {
-      return '';
-    }
+    if (dateTime == null || dateTime.isEmpty) return '';
+    // The API already returns formatted dates like "01 Jun 2026, 06:12 AM"
+    // Just return it as-is
+    return dateTime;
   }
 
   String _getMonthName(int month) {
@@ -1676,14 +1715,14 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _contactSeller();
                                   },
                                 ),
-                                _buildMoreMenuItem(
-                                  icon: Icons.share,
-                                  text: 'Share',
-                                  onTap: () {
-                                    setState(() => _showMoreMenu = false);
-                                    _shareProduct();
-                                  },
-                                ),
+                                // _buildMoreMenuItem(
+                                //   icon: Icons.share,
+                                //   text: 'Share',
+                                //   onTap: () {
+                                //     setState(() => _showMoreMenu = false);
+                                //     _shareProduct();
+                                //   },
+                                // ),
                               ],
                             ),
                           ),

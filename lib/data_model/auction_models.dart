@@ -365,6 +365,7 @@ String pollDataResponseToJson(PollDataResponse data) => json.encode(data.toJson(
 class PollDataResponse {
   bool? success;
   String? auctionEndDate;
+  double? startingBid; // ADD THIS - starting_bid from API
   double? pointPerBid;
   double? pointPerBidCustom;
   bool? auctionEnded;
@@ -386,6 +387,7 @@ class PollDataResponse {
   PollDataResponse({
     this.success,
     this.auctionEndDate,
+    this.startingBid, // ADD THIS
     this.pointPerBid,
     this.pointPerBidCustom,
     this.auctionEnded,
@@ -409,6 +411,7 @@ class PollDataResponse {
     return PollDataResponse(
       success: json['success'],
       auctionEndDate: json['auction_end_date'],
+      startingBid: (json['starting_bid'] ?? json['startingBid'])?.toDouble(), // ADD THIS
       pointPerBid: (json['point_per_bid'] ?? json['pointPerBid'])?.toDouble(),
       pointPerBidCustom: (json['point_per_bid_custom'] ?? json['pointPerBidCustom'])?.toDouble(),
       auctionEnded: json['auction_ended'],
@@ -438,6 +441,7 @@ class PollDataResponse {
   Map<String, dynamic> toJson() => {
     'success': success,
     'auction_end_date': auctionEndDate,
+    'starting_bid': startingBid, // ADD THIS
     'point_per_bid': pointPerBid,
     'point_per_bid_custom': pointPerBidCustom,
     'auction_ended': auctionEnded,
@@ -457,8 +461,9 @@ class PollDataResponse {
     'bid_history': bidHistory?.map((x) => x.toJson()).toList(),
   };
 
-  // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  // ============ SNAKE_CASE GETTERS ============
   String? get auction_end_date => auctionEndDate;
+  double? get starting_bid => startingBid; // ADD THIS
   double? get point_per_bid => pointPerBid;
   double? get point_per_bid_custom => pointPerBidCustom;
   bool? get auction_ended => auctionEnded;
@@ -466,9 +471,6 @@ class PollDataResponse {
   int? get remaining_seconds => remainingSeconds;
   int? get reviews_count => reviewsCount;
   bool? get is_in_wishlist => isInWishlist;
-  String? get comments_html => null;
-  String? get reviews_html => null;
-  String? get bid_history_html => null;
   
   // ============ HELPER METHODS ============
   bool get isAuctionEnded => auctionEnded ?? false;
@@ -482,7 +484,6 @@ class PollDataResponse {
   bool get hasReviews => (reviews?.length ?? 0) > 0;
   bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
 }
-
 
 // ============================================
 // 9. SUPPORTING MODELS (Comment, Review, Winner, BidHistoryItem, BidHistory, Pagination)
