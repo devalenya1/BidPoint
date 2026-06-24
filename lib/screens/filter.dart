@@ -256,43 +256,138 @@ class _FilterState extends State<Filter> {
     _resetProductList();
   }
 
-  void _showSortDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
+void _showSortDialog() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Directionality(
+        textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
+        child: AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: Text(
-            AppLocalizations.of(context)!.sort_by_ucf,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildSortOption("", AppLocalizations.of(context)!.default_ucf),
-              _buildSortOption("newest", AppLocalizations.of(context)!.newest_ucf),
-              _buildSortOption("oldest", AppLocalizations.of(context)!.oldest_ucf),
-              _buildSortOption("price_low_to_high", AppLocalizations.of(context)!.price_low_to_high),
-              _buildSortOption("price_high_to_low", AppLocalizations.of(context)!.price_high_to_low),
-              _buildSortOption("popularity", AppLocalizations.of(context)!.popularity_ucf),
-              _buildSortOption("top_rated", AppLocalizations.of(context)!.top_rated_ucf),
-            ],
+          contentPadding: const EdgeInsets.only(top: 16.0, left: 2.0, right: 2.0, bottom: 2.0),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      AppLocalizations.of(context)!.sort_products_by_ucf,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  RadioListTile(
+                    dense: true,
+                    value: "",
+                    groupValue: _selectedSort,
+                    activeColor: MyTheme.accent_color,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(AppLocalizations.of(context)!.default_ucf),
+                    onChanged: (dynamic value) {
+                      setState(() {
+                        _selectedSort = value;
+                      });
+                      _onSortChange(value, AppLocalizations.of(context)!.default_ucf);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  RadioListTile(
+                    dense: true,
+                    value: "price_high_to_low",
+                    groupValue: _selectedSort,
+                    activeColor: MyTheme.accent_color,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(AppLocalizations.of(context)!.price_high_to_low),
+                    onChanged: (dynamic value) {
+                      setState(() {
+                        _selectedSort = value;
+                      });
+                      _onSortChange(value, AppLocalizations.of(context)!.price_high_to_low);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  RadioListTile(
+                    dense: true,
+                    value: "price_low_to_high",
+                    groupValue: _selectedSort,
+                    activeColor: MyTheme.accent_color,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(AppLocalizations.of(context)!.price_low_to_high),
+                    onChanged: (dynamic value) {
+                      setState(() {
+                        _selectedSort = value;
+                      });
+                      _onSortChange(value, AppLocalizations.of(context)!.price_low_to_high);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  RadioListTile(
+                    dense: true,
+                    value: "new_arrival",
+                    groupValue: _selectedSort,
+                    activeColor: MyTheme.accent_color,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(AppLocalizations.of(context)!.new_arrival_ucf),
+                    onChanged: (dynamic value) {
+                      setState(() {
+                        _selectedSort = value;
+                      });
+                      _onSortChange(value, AppLocalizations.of(context)!.new_arrival_ucf);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  RadioListTile(
+                    dense: true,
+                    value: "popularity",
+                    groupValue: _selectedSort,
+                    activeColor: MyTheme.accent_color,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(AppLocalizations.of(context)!.popularity_ucf),
+                    onChanged: (dynamic value) {
+                      setState(() {
+                        _selectedSort = value;
+                      });
+                      _onSortChange(value, AppLocalizations.of(context)!.popularity_ucf);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  RadioListTile(
+                    dense: true,
+                    value: "top_rated",
+                    groupValue: _selectedSort,
+                    activeColor: MyTheme.accent_color,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(AppLocalizations.of(context)!.top_rated_ucf),
+                    onChanged: (dynamic value) {
+                      setState(() {
+                        _selectedSort = value;
+                      });
+                      _onSortChange(value, AppLocalizations.of(context)!.top_rated_ucf);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              );
+            },
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                AppLocalizations.of(context)!.cancel_ucf,
+                AppLocalizations.of(context)!.close_all_capital,
                 style: const TextStyle(color: Color(0xFF64748B)),
               ),
             ),
           ],
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildSortOption(String value, String label) {
     final isSelected = _selectedSort == value;
