@@ -440,7 +440,8 @@ class ProductRepository {
     return wishlistResponseFromJson(response.body);
   }
 
-  // ✅ Get wishlist status for a single product
+
+  // ============ WISHLIST STATUS ============
   Future<Map<String, dynamic>> getWishlistStatus(int productId) async {
     String url = "${AppConfig.BASE_URL}/wishlist/status/$productId";
     

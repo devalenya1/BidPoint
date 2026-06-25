@@ -170,17 +170,8 @@ class _ProductDetailsState extends State<ProductDetails>
         _rating = (_product!.rating ?? 0).toDouble();
         _isWishlisted = false;
         
-        // ✅ FIX: Set _isInWishlist from the product data
-        // The product data from API should contain isInWishlist field
-        _isInWishlist = _product!.isInWishlist ?? false;
-        
-        // ✅ DEBUG: Print to verify
-        print('========== WISHLIST DEBUG ==========');
-        print('Product: ${_product!.name}');
-        print('Product ID: ${_product!.id}');
-        print('_product!.isInWishlist: ${_product!.isInWishlist}');
-        print('_isInWishlist set to: $_isInWishlist');
-        print('====================================');
+        // ✅ Set default wishlist state (will be updated by dedicated endpoint)
+        _isInWishlist = false;
         
         _endingSeconds = _product!.swipeLeft ?? 10;
 
@@ -200,6 +191,9 @@ class _ProductDetailsState extends State<ProductDetails>
       await _fetchComments();
       await _fetchReviews();
       await _fetchBidHistory();
+      
+      // ✅ Fetch wishlist status from dedicated endpoint
+      await _fetchWishlistStatus();
 
       setState(() => _isLoading = false);
     } catch (e) {
@@ -314,8 +308,7 @@ class _ProductDetailsState extends State<ProductDetails>
         // Calculate min next bid
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
-        _isWishlisted = false;
-        _isInWishlist = false;
+        // ❌ REMOVED: _isWishlisted = false; _isInWishlist = false;
         setState(() {});
 
         // ============================================
@@ -375,20 +368,6 @@ class _ProductDetailsState extends State<ProductDetails>
         }
 
         // ============================================
-        // UPDATE WISHLIST STATUS
-        // ============================================
-        // if (response.isInWishlist != null) {
-        //   final newWishlistState = response.isInWishlist!;
-        //   print('🔄 Poll: isInWishlist = $newWishlistState (was $_isInWishlist)');
-        //   if (_isInWishlist != newWishlistState) {
-        //     setState(() {
-        //       _isInWishlist = newWishlistState;
-        //     });
-        //     print('✅ Updated wishlist to: $_isInWishlist');
-        //   }
-        // }
-
-        // ============================================
         // UPDATE COMMENTS (ALL COMMENTS)
         // ============================================
         if (response.comments != null && response.comments!.isNotEmpty) {
@@ -407,13 +386,12 @@ class _ProductDetailsState extends State<ProductDetails>
         // UPDATE BID HISTORY
         // ============================================
         if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
-          // Convert BidHistoryItem to BidHistory for display
           final List<BidHistory> convertedBids = response.bidHistory!.map((item) {
             return BidHistory(
               userId: item.userId,
               userName: item.userName,
               amount: item.amount,
-              createdAt: item.createdAt, // Keep the original format from API
+              createdAt: item.createdAt,
             );
           }).toList();
           setState(() => _bidHistory = convertedBids);
