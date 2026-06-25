@@ -21,7 +21,6 @@ import 'package:active_ecommerce_flutter/ui_elements/auth_ui.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -34,7 +33,6 @@ import 'package:twitter_login/twitter_login.dart';
 
 import '../custom/loading.dart';
 import '../repositories/address_repository.dart';
-import '../helpers/debug_helper.dart';
 
 class Login extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
@@ -49,6 +47,7 @@ class _LoginState extends State<Login> {
   String _login_by = "email"; //phone or email
   String initialCountry = 'US';
 
+  // PhoneNumber phoneCode = PhoneNumber(isoCode: 'US', dialCode: "+1");
   var countries_code = <String?>[];
 
   String? _phone = "";
@@ -60,17 +59,11 @@ class _LoginState extends State<Login> {
 
   @override
   void initState() {
+    //on Splash Screen hide statusbar
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: [SystemUiOverlay.bottom]);
     super.initState();
     fetch_country();
-    
-    // ✅ DEBUG: Print login page init
-    print('========== LOGIN PAGE INIT ==========');
-    print('is_logged_in: ${is_logged_in.$}');
-    print('access_token: ${access_token.$}');
-    print('has onLoginSuccess callback: ${widget.onLoginSuccess != null}');
-    print('========================================');
   }
 
   fetch_country() async {
@@ -80,137 +73,62 @@ class _LoginState extends State<Login> {
 
   @override
   void dispose() {
+    //before going to other screen show statusbar
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom]);
     super.dispose();
   }
 
-  // ============ HANDLE LOGIN SUCCESS WITH DEBUG ============
+  // Helper method to handle successful login with proper redirect
+  // void _handleLoginSuccess() {
+  //   // Call the callback if provided (for custom navigation from other screens)
+  //   if (widget.onLoginSuccess != null) {
+  //     widget.onLoginSuccess!();
+  //     return;
+  //   }
+
+  //   final router = GoRouter.of(context);
+    
+  //   // Try to go back to previous page if possible
+  //   if (router.canPop()) {
+  //     router.pop();
+  //     return;
+  //   }
+    
+  //   // No previous page - navigate to home (Main page)
+  //   // This uses pushReplacement to remove login from the stack
+  //   Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => const Main()),
+  //   );
+
+    // // Check if there's a previous page using GoRouter
+    // final router = GoRouter.of(context);
+    
+    // // Try to go back if possible
+    // if (router.canPop()) {
+    //   router.pop();
+    // } else {
+    //   // No previous page, go to dashboard
+      // router.go('/dashboard');
+
+    // }
+  // }
+
   Future<void> _handleLoginSuccess() async {
-    print('========== LOGIN SUCCESS ==========');
-    print('is_logged_in: ${is_logged_in.$}');
-    print('access_token: ${access_token.$}');
-    print('user_id: ${user_id.$}');
-    print('user_name: ${user_name.$}');
-    print('mounted: ${mounted}');
-    print('has onLoginSuccess callback: ${widget.onLoginSuccess != null}');
-    
-    // Step 1: Call callback if provided
-    if (widget.onLoginSuccess != null) {
-      print('Calling onLoginSuccess callback...');
-      widget.onLoginSuccess!();
-      print('Callback completed');
-      return;
-    }
+    // if (widget.onLoginSuccess != null) {
+    //   widget.onLoginSuccess!();
+    //   return;
+    // }
 
-    // Step 2: Show debug dialog if in debug mode
-    if (kDebugMode && mounted) {
-      _debugShowLoginSuccessInfo();
-    }
+    await Future.delayed(const Duration(milliseconds: 200));
 
-    // Step 3: Wait a moment before redirect
-    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
 
-    if (!mounted) {
-      print('❌ Widget not mounted, cannot redirect');
-      return;
-    }
-
-    // Step 4: Attempt redirect
-    await _redirectAfterLogin();
-
-    print('========== LOGIN SUCCESS COMPLETE ==========');
+    context.go('/');
   }
 
-  // ============ REDIRECT AFTER LOGIN ============
-  Future<void> _redirectAfterLogin() async {
-    print('========== REDIRECT ATTEMPT ==========');
-    print('mounted: ${mounted}');
-    print('context.runtimeType: ${context.runtimeType}');
-    
-    // Check if GoRouter is available
-    try {
-      final router = GoRouter.of(context);
-      print('✅ GoRouter found: ${router.runtimeType}');
-      print('Current route: ${router.routeInformationProvider.value.location}');
-      print('Can pop: ${router.canPop()}');
-      
-      // Try to pop if possible (go back to previous page)
-      if (router.canPop()) {
-        print('Can pop, popping to previous page...');
-        router.pop();
-        print('Pop completed');
-        return;
-      }
-      
-      // If can't pop, go to home
-      print('Cannot pop, going to home with context.go("/")...');
-      context.go('/');
-      print('context.go("/") completed');
-      
-    } catch (e) {
-      print('❌ GoRouter error: $e');
-      
-      // Fallback: Use Navigator
-      print('Falling back to Navigator.pushReplacement...');
-      try {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Main()),
-        );
-        print('Navigator.pushReplacement completed');
-      } catch (navError) {
-        print('❌ Navigator error: $navError');
-        
-        // Last resort: pop all and navigate
-        try {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const Main()),
-          );
-          print('PopUntil + pushReplacement completed');
-        } catch (finalError) {
-          print('❌ All navigation attempts failed: $finalError');
-        }
-      }
-    }
-    
-    print('========== REDIRECT COMPLETE ==========');
-  }
-
-  // ============ DEBUG METHOD ============
-  void _debugShowLoginSuccessInfo() {
-    if (!kDebugMode) return;
-    
-    final data = {
-      'action': 'Login Successful',
-      'is_logged_in': is_logged_in.$,
-      'access_token': access_token.$?.isNotEmpty == true ? '✅ Present' : '❌ Empty',
-      'user_id': user_id.$,
-      'user_name': user_name.$,
-      'mounted': mounted,
-      'has_context': context != null,
-      'router_available': GoRouter.of(context) != null,
-      'current_route': GoRouter.of(context).routeInformationProvider.value.location,
-      'can_pop': GoRouter.of(context).canPop(),
-      'has_onLoginSuccess': widget.onLoginSuccess != null,
-      'login_by': _login_by,
-    };
-    
-    DebugHelper.showApiResponseDialog(
-      context,
-      title: '🔐 Login Success Debug',
-      responseData: data,
-      isSuccess: true,
-    );
-  }
-
-  // ============ LOGIN BUTTON PRESS ============
   onPressedLogin() async {
-    print('========== LOGIN ATTEMPT ==========');
-    print('login_by: $_login_by');
-    
     Loading.show(context);
     var email = _emailController.text.toString();
     var password = _passwordController.text.toString();
@@ -218,30 +136,22 @@ class _LoginState extends State<Login> {
     if (_login_by == 'email' && email == "") {
       ToastComponent.showDialog(AppLocalizations.of(context)!.enter_email,
           gravity: Toast.center, duration: Toast.lengthLong);
-      Loading.close();
       return;
     } else if (_login_by == 'phone' && _phone == "") {
       ToastComponent.showDialog(
           AppLocalizations.of(context)!.enter_phone_number,
           gravity: Toast.center,
           duration: Toast.lengthLong);
-      Loading.close();
       return;
     } else if (password == "") {
       ToastComponent.showDialog(AppLocalizations.of(context)!.enter_password,
           gravity: Toast.center, duration: Toast.lengthLong);
-      Loading.close();
       return;
     }
 
-    print('Calling AuthRepository().getLoginResponse...');
     var loginResponse = await AuthRepository().getLoginResponse(
         _login_by == 'email' ? email : _phone, password, _login_by);
     Loading.close();
-    
-    print('Login response result: ${loginResponse.result}');
-    print('Login response message: ${loginResponse.message}');
-    
     if (loginResponse.result == false) {
       if (loginResponse.message.runtimeType == List) {
         ToastComponent.showDialog(loginResponse.message!.join("\n"),
@@ -251,17 +161,11 @@ class _LoginState extends State<Login> {
       ToastComponent.showDialog(loginResponse.message!.toString(),
           gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      print('✅ Login successful!');
       ToastComponent.showDialog(loginResponse.message!,
           gravity: Toast.center, duration: Toast.lengthLong);
-      
-      print('Setting user data...');
       await AuthHelper().setUserData(loginResponse);
-      print('User data set completed');
-      
       // push notification starts
       if (OtherConfig.USE_PUSH_NOTIFICATION) {
-        print('Setting up push notifications...');
         final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
         await _fcm.requestPermission(
@@ -277,30 +181,27 @@ class _LoginState extends State<Login> {
         String? fcmToken = await _fcm.getToken();
 
         if (fcmToken != null) {
-          print("--fcm token received--");
+          print("--fcm token--");
           if (is_logged_in.$ == true) {
             // update device token
             var deviceTokenUpdateResponse = await ProfileRepository()
                 .getDeviceTokenUpdateResponse(fcmToken);
-            print('Device token updated');
           }
         }
       }
 
-      print('Calling _handleLoginSuccess()...');
-      await _handleLoginSuccess();
+      _handleLoginSuccess();
     }
-    print('========== LOGIN ATTEMPT COMPLETE ==========');
   }
 
-  // ============ SOCIAL LOGIN METHODS ============
-  
   onPressedFacebookLogin() async {
     try {
       final facebookLogin = await FacebookAuth.instance
           .login(loginBehavior: LoginBehavior.webOnly);
 
       if (facebookLogin.status == LoginStatus.success) {
+        // get the user data
+        // by default we get the userId, email,name and picture
         final userData = await FacebookAuth.instance.getUserData();
         var loginResponse = await AuthRepository().getSocialLoginResponse(
             "facebook",
@@ -308,17 +209,19 @@ class _LoginState extends State<Login> {
             userData['email'].toString(),
             userData['id'].toString(),
             access_token: facebookLogin.accessToken!.token);
-        
+        print("..........................${loginResponse.toString()}");
         if (loginResponse.result == false) {
           ToastComponent.showDialog(loginResponse.message!,
               gravity: Toast.center, duration: Toast.lengthLong);
         } else {
           ToastComponent.showDialog(loginResponse.message!,
               gravity: Toast.center, duration: Toast.lengthLong);
+
           await AuthHelper().setUserData(loginResponse);
-          await _handleLoginSuccess();
+          _handleLoginSuccess();
           FacebookAuth.instance.logOut();
         }
+        // final userData = await FacebookAuth.instance.getUserData(fields: "email,birthday,friends,gender,link");
       } else {
         print("....Facebook auth Failed.........");
         print(facebookLogin.status);
@@ -326,6 +229,7 @@ class _LoginState extends State<Login> {
       }
     } on Exception catch (e) {
       print(e);
+      // TODO
     }
   }
 
@@ -333,9 +237,15 @@ class _LoginState extends State<Login> {
     try {
       final GoogleSignInAccount googleUser = (await GoogleSignIn().signIn())!;
 
+      print(googleUser.toString());
+
       GoogleSignInAuthentication googleSignInAuthentication =
           await googleUser.authentication;
       String? accessToken = googleSignInAuthentication.accessToken;
+
+      print("displayName ${googleUser.displayName}");
+      print("email ${googleUser.email}");
+      print("googleUser.id ${googleUser.id}");
 
       var loginResponse = await AuthRepository().getSocialLoginResponse(
           "google", googleUser.displayName, googleUser.email, googleUser.id,
@@ -348,11 +258,12 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        await _handleLoginSuccess();
+        _handleLoginSuccess();
       }
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
       print("error is ....... $e");
+      // TODO
     }
   }
 
@@ -362,8 +273,13 @@ class _LoginState extends State<Login> {
           apiKey: SocialConfig().twitter_consumer_key,
           apiSecretKey: SocialConfig().twitter_consumer_secret,
           redirectURI: 'activeecommerceflutterapp://');
+      // Trigger the sign-in flow
 
       final authResult = await twitterLogin.login();
+
+      print("authResult");
+
+      // print(json.encode(authResult));
 
       var loginResponse = await AuthRepository().getSocialLoginResponse(
           "twitter",
@@ -380,10 +296,11 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        await _handleLoginSuccess();
+        _handleLoginSuccess();
       }
     } on Exception catch (e) {
       print("error is ....... $e");
+      // TODO
     }
   }
 
@@ -395,6 +312,7 @@ class _LoginState extends State<Login> {
         .join();
   }
 
+  /// Returns the sha256 hash of [input] in hex notation.
   String sha256ofString(String input) {
     final bytes = utf8.encode(input);
     final digest = sha256.convert(bytes);
@@ -402,9 +320,14 @@ class _LoginState extends State<Login> {
   }
 
   signInWithApple() async {
+    // To prevent replay attacks with the credential returned from Apple, we
+    // include a nonce in the credential request. When signing in with
+    // Firebase, the nonce in the id token returned by Apple, is expected to
+    // match the sha256 hash of `rawNonce`.
     final rawNonce = generateNonce();
     final nonce = sha256ofString(rawNonce);
 
+    // Request credential for the currently signed in Apple account.
     try {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -428,17 +351,17 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        await _handleLoginSuccess();
+        _handleLoginSuccess();
       }
     } on Exception catch (e) {
       print(e);
+      // TODO
     }
   }
 
-  // ============ BUILD METHOD ============
-  
   @override
   Widget build(BuildContext context) {
+    final _screen_height = MediaQuery.of(context).size.height;
     final _screen_width = MediaQuery.of(context).size.width;
     return AuthScreen.buildScreen(
         context,
@@ -448,7 +371,8 @@ class _LoginState extends State<Login> {
 
   Widget buildBody(BuildContext context, double _screen_width) {
     return Container(
-      width: _screen_width,
+      width: _screen_width,  // Make the outer container full width
+      // color: Colors.white,  
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -457,7 +381,6 @@ class _LoginState extends State<Login> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Email/Phone field
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4.0),
                   child: Text(
@@ -530,6 +453,8 @@ class _LoginState extends State<Login> {
                             selectorTextStyle:
                                 TextStyle(color: MyTheme.font_grey),
                             textStyle: TextStyle(color: MyTheme.font_grey),
+                            // initialValue: PhoneNumber(
+                            //     isoCode: countries_code[0].toString()),
                             textFieldController: _phoneNumberController,
                             formatInput: true,
                             keyboardType: TextInputType.numberWithOptions(
@@ -559,8 +484,6 @@ class _LoginState extends State<Login> {
                       ],
                     ),
                   ),
-                
-                // Password field
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4.0),
                   child: Text(
@@ -605,8 +528,6 @@ class _LoginState extends State<Login> {
                     ],
                   ),
                 ),
-                
-                // Login Button
                 Padding(
                   padding: const EdgeInsets.only(top: 30.0),
                   child: Container(
@@ -636,8 +557,6 @@ class _LoginState extends State<Login> {
                     ),
                   ),
                 ),
-                
-                // Sign Up link
                 Padding(
                   padding: const EdgeInsets.only(top: 15.0, bottom: 15),
                   child: Center(
@@ -671,8 +590,6 @@ class _LoginState extends State<Login> {
                     },
                   ),
                 ),
-                
-                // Social Login
                 if (Platform.isIOS)
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
@@ -740,6 +657,20 @@ class _LoginState extends State<Login> {
                                 ),
                               ),
                             ),
+                          /* if (Platform.isIOS)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 15.0),
+                              // visible: true,
+                              child: A(
+                                onTap: () async {
+                                  signInWithApple();
+                                },
+                                child: Container(
+                                  width: 28,
+                                  child: Image.asset("assets/apple_logo.png"),
+                                ),
+                              ),
+                            ),*/
                         ],
                       ),
                     ),

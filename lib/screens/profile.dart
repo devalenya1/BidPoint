@@ -16,6 +16,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/address.dart';
+// import 'package:active_ecommerce_flutter/screens/auction_products.dart';
 import 'package:active_ecommerce_flutter/screens/change_language.dart';
 import 'package:active_ecommerce_flutter/screens/classified_ads/classified_ads.dart';
 import 'package:active_ecommerce_flutter/screens/classified_ads/my_classified_ads.dart';
@@ -42,16 +43,17 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
-import 'package:active_ecommerce_flutter/data_model/user_info_response.dart';
-import 'package:active_ecommerce_flutter/repositories/auth_repository.dart';
+
+import '../repositories/auth_repository.dart';
+import '../data_model/user_info_response.dart';
+// import 'auction_bidded_products.dart';
 import 'auction_purchase_history.dart';
 import 'coming_soon_page.dart';
 import 'invite_history_page.dart';
 import 'payment_settings_page.dart';
 import 'terms_conditions_page.dart';
 import 'package:flutter/services.dart';
-
+ 
 class Profile extends StatefulWidget {
   Profile({Key? key, this.show_back_button = false}) : super(key: key);
 
@@ -164,6 +166,7 @@ class _ProfileState extends State<Profile> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
+      // Go to home if can't pop
       context.go("/");
     }
   }
@@ -174,13 +177,7 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-  // ============ LOGOUT WITH DEBUG ============
   void _onTapLogout() async {
-    print('========== LOGOUT STARTED ==========');
-    print('is_logged_in before logout: ${is_logged_in.$}');
-    print('access_token before logout: ${access_token.$}');
-    print('user_id before logout: ${user_id.$}');
-    
     bool? confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -213,219 +210,44 @@ class _ProfileState extends State<Profile> {
       ),
     );
     
-    if (confirm != true) {
-      print('Logout cancelled by user');
-      return;
-    }
-
-    print('User confirmed logout, proceeding...');
-
-    try {
-      // Step 1: Clear user data
-      print('Step 1: Clearing user data...');
+    if (confirm == true) {
       await AuthHelper().clearUserData();
-      print('AuthHelper.clearUserData() completed');
 
-      // Step 2: Clear shared preferences
-      print('Step 2: Clearing shared preferences...');
       access_token.$ = "";
       access_token.save();
-      print('access_token cleared');
 
       is_logged_in.$ = false;
       is_logged_in.save();
-      print('is_logged_in set to false');
 
       user_id.$ = 0;
       user_id.save();
-      print('user_id set to 0');
 
       user_name.$ = "";
       user_name.save();
-      print('user_name cleared');
 
-      // Step 3: Show toast
-      print('Step 3: Showing toast...');
-      if (mounted) {
-        ToastComponent.showDialog(
-          "Logged out successfully",
-          gravity: ToastGravity.CENTER,
-          duration: Toast.LENGTH_SHORT,
-        );
-      }
+      if (!mounted) return;
 
-      // Step 4: Debug current state
-      print('Step 4: Debug state after logout');
-      print('is_logged_in after logout: ${is_logged_in.$}');
-      print('access_token after logout: ${access_token.$}');
-      print('user_id after logout: ${user_id.$}');
-      print('mounted: ${mounted}');
-      print('context: ${context.runtimeType}');
+      ToastComponent.showDialog(
+        "Logged out successfully",
+        gravity: ToastGravity.CENTER,
+        duration: Toast.LENGTH_SHORT,
+      );
 
-      // Step 5: Show debug dialog with navigation info
-      if (kDebugMode && mounted) {
-        _debugShowLogoutInfo();
-      }
+      await Future.delayed(const Duration(milliseconds: 300));
 
-      // Step 6: Delay and redirect
-      print('Step 5: Waiting 500ms before redirect...');
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) {
-        print('Widget not mounted, cannot redirect');
-        return;
-      }
-
-      print('Step 6: Attempting redirect...');
-      await _redirectAfterLogout();
-
-    } catch (e) {
-      print('❌ Error during logout: $e');
-      if (kDebugMode && mounted) {
-        DebugHelper.showErrorDialog(
-          context,
-          title: 'Logout Error',
-          error: e,
-        );
-      }
+      _redirectAfterLogout();
     }
   }
 
   Future<void> _redirectAfterLogout() async {
-    print('========== REDIRECT ATTEMPT ==========');
-    print('mounted: ${mounted}');
-    print('context.runtimeType: ${context.runtimeType}');
-    
-    // Check if GoRouter is available
-    try {
-      final router = GoRouter.of(context);
-      print('✅ GoRouter found: ${router.runtimeType}');
-      print('Current route: ${router.routeInformationProvider.value.location}');
-      print('Can pop: ${router.canPop()}');
-      
-      // Try to pop if possible
-      if (router.canPop()) {
-        print('Can pop, popping...');
-        router.pop();
-        print('Pop completed');
-        return;
-      }
-      
-      // Option 1: Use go_router
-      print('Attempting context.go("/users/login")...');
-      context.go('/users/login');
-      print('context.go completed');
-      
-    } catch (e) {
-      print('❌ GoRouter error: $e');
-      
-      // Option 2: Fallback to Navigator
-      print('Falling back to Navigator.pushReplacement...');
-      try {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Login()),
-        );
-        print('Navigator.pushReplacement completed');
-      } catch (navError) {
-        print('❌ Navigator error: $navError');
-        
-        // Option 3: Last resort - pop all and navigate
-        try {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const Login()),
-          );
-          print('PopUntil + pushReplacement completed');
-        } catch (finalError) {
-          print('❌ All navigation attempts failed: $finalError');
-        }
-      }
-    }
-    
-    print('========== REDIRECT COMPLETE ==========');
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    if (!mounted) return;
+
+    context.go('/users/login');
   }
 
-  // ============ DEBUG METHOD FOR LOGOUT ============
-  Future<void> _debugShowLogoutInfo() async {
-    if (!kDebugMode) return;
-    
-    final data = {
-      'action': 'Logout attempted',
-      'is_logged_in': is_logged_in.$,
-      'access_token': access_token.$?.isNotEmpty == true ? '✅ Present' : '❌ Empty',
-      'user_id': user_id.$,
-      'user_name': user_name.$,
-      'mounted': mounted,
-      'has_context': context != null,
-      'router_available': GoRouter.of(context) != null,
-      'current_route': GoRouter.of(context).routeInformationProvider.value.location,
-    };
-    
-    DebugHelper.showApiResponseDialog(
-      context,
-      title: '🚪 Logout Debug Info',
-      responseData: data,
-      isSuccess: true,
-    );
-  }
-
-  // ============ DEBUG METHODS (Hidden in release builds) ============
-  Future<void> _debugShowApiResponse() async {
-    if (!kDebugMode) return;
-    
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-      
-      String url = "${AppConfig.BASE_URL}/customer/info";
-      String token = access_token.$ ?? "";
-      String appLanguage = app_language.$!;
-      
-      final startTime = DateTime.now();
-      
-      final response = await ApiRequest.get(
-        url: url,
-        headers: {
-          "Authorization": "Bearer $token", 
-          "App-Language": appLanguage
-        },
-      );
-      
-      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
-      
-      Navigator.pop(context);
-      
-      final data = {
-        'url': url,
-        'status_code': response.statusCode,
-        'response_time_ms': responseTime,
-        'token_present': token.isNotEmpty,
-        'app_language': appLanguage,
-        'body': response.body.isNotEmpty ? jsonDecode(response.body) : 'empty',
-      };
-      
-      DebugHelper.showApiResponseDialog(
-        context,
-        title: '📡 API Debug Info',
-        responseData: data,
-        isSuccess: response.statusCode == 200,
-      );
-      
-    } catch (e, stackTrace) {
-      Navigator.pop(context);
-      DebugHelper.showErrorDialog(
-        context,
-        title: 'API Debug Error',
-        error: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
 
   void _showLoginWarning() {
     ToastComponent.showDialog(
@@ -461,6 +283,7 @@ class _ProfileState extends State<Profile> {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
+              // Go to home if can't pop
               context.go("/");
             }
           },
@@ -474,9 +297,6 @@ class _ProfileState extends State<Profile> {
                 if (value == 'debug_api') {
                   _debugShowApiResponse();
                 }
-                if (value == 'debug_logout') {
-                  _debugShowLogoutInfo();
-                }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
@@ -485,17 +305,7 @@ class _ProfileState extends State<Profile> {
                     children: [
                       Icon(Icons.api, size: 18),
                       SizedBox(width: 8),
-                      Text('API Debug'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'debug_logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, size: 18, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Logout Debug'),
+                      Text('Debug API Response'),
                     ],
                   ),
                 ),
@@ -515,6 +325,7 @@ class _ProfileState extends State<Profile> {
               padding: const EdgeInsets.only(right: 8),
               child: TextButton(
                 onPressed: () {
+                  // Navigate to login page
                   context.push("/users/login");
                 },
                 child: Text(
@@ -927,5 +738,412 @@ class _ProfileState extends State<Profile> {
         ),
       ),
     );
+  }
+
+  // ============ DEBUG METHODS (Hidden in release builds) ============
+  Future<void> _debugShowApiResponse() async {
+    // Only available in debug mode
+    if (!kDebugMode) return;
+    
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+      
+      String url = "${AppConfig.BASE_URL}/customer/info";
+      String token = access_token.$ ?? "";
+      String appLanguage = app_language.$!;
+      
+      final startTime = DateTime.now();
+      
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer $token", 
+          "App-Language": appLanguage
+        },
+      );
+      
+      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
+      
+      Navigator.pop(context);
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                response.statusCode == 200 ? Icons.check_circle : Icons.error,
+                color: response.statusCode == 200 ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 10),
+              const Text('API Debug Info'),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 550),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.wifi, size: 16, color: Colors.green[700]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "✅ REACHED SERVER - Response received in ${responseTime}ms",
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[700]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: response.statusCode == 200 ? Colors.green[50] : Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              response.statusCode == 200 ? Icons.check_circle : Icons.error,
+                              size: 16,
+                              color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Status Code: ${response.statusCode}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          response.statusCode == 200 
+                              ? "✅ Success - API responded correctly"
+                              : response.statusCode == 401 
+                                  ? "🔐 Unauthorized - Token may be expired. Try logging out and back in."
+                                  : response.statusCode == 404
+                                      ? "📍 Not Found - Wrong API endpoint. Check BASE_URL."
+                                      : response.statusCode == 500
+                                          ? "⚠️ Server Error - Issue on server side"
+                                          : "⚠️ Error - Something went wrong",
+                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.link, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              "Full Endpoint URL:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: SelectableText(
+                            url,
+                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.purple[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.key, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              "Access Token Used:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Token exists: ${token.isNotEmpty ? "✅ Yes" : "❌ No"}",
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              if (token.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                const Text(
+                                  "Full Token:",
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                                SelectableText(
+                                  token,
+                                  style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Request Headers Sent:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Authorization: Bearer ${token.isNotEmpty ? (token.length > 30 ? token.substring(0, 30) + "..." : token) : "None"}"),
+                              Text("App-Language: $appLanguage"),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.code, size: 14, color: Colors.white),
+                            SizedBox(width: 6),
+                            Text(
+                              "Raw Server Response:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: SingleChildScrollView(
+                            child: SelectableText(
+                              response.body.isNotEmpty ? response.body : "(Empty response body)",
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontFamily: 'monospace',
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                final debugInfo = """
+=== API DEBUG INFO ===
+Endpoint: $url
+Status Code: ${response.statusCode}
+Response Time: ${responseTime}ms
+Token Used: $token
+Headers: Authorization: Bearer $token, App-Language: $appLanguage
+Raw Response: ${response.body}
+""";
+                Clipboard.setData(ClipboardData(text: debugInfo));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Debug info copied to clipboard'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copy All'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+      
+    } catch (e, stackTrace) {
+      Navigator.pop(context);
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Network/Parse Error'),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.wifi_off, size: 16, color: Colors.red),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "❌ FAILED TO REACH SERVER - Check your internet connection",
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Attempted Endpoint:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                      const SizedBox(height: 4),
+                      SelectableText(
+                        "${AppConfig.BASE_URL}/customer/info",
+                        style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Text(
+                  "Error: ${e.toString()}",
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    stackTrace.toString(),
+                    style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
