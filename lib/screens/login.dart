@@ -48,7 +48,6 @@ class _LoginState extends State<Login> {
   String _login_by = "email"; //phone or email
   String initialCountry = 'US';
 
-  // PhoneNumber phoneCode = PhoneNumber(isoCode: 'US', dialCode: "+1");
   var countries_code = <String?>[];
 
   String? _phone = "";
@@ -80,9 +79,14 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  // ✅ FIXED: Simple redirect using context.go() like original
-  void _redirectToMain() {
-    context.go('/');
+  // ✅ Helper method to redirect after successful login
+  void _redirectAfterLogin() {
+    // Use pushAndRemoveUntil to clear the entire stack and rebuild
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const Main()),
+      (route) => false,
+    );
   }
 
   onPressedLogin() async {
@@ -147,8 +151,8 @@ class _LoginState extends State<Login> {
         }
       }
 
-      // ✅ FIXED: Use context.go() like original
-      context.go('/');
+      // ✅ Redirect after successful login
+      _redirectAfterLogin();
     }
   }
 
@@ -159,7 +163,6 @@ class _LoginState extends State<Login> {
 
       if (facebookLogin.status == LoginStatus.success) {
         // get the user data
-        // by default we get the userId, email,name and picture
         final userData = await FacebookAuth.instance.getUserData();
         var loginResponse = await AuthRepository().getSocialLoginResponse(
             "facebook",
@@ -176,11 +179,10 @@ class _LoginState extends State<Login> {
               gravity: Toast.center, duration: Toast.lengthLong);
 
           await AuthHelper().setUserData(loginResponse);
-          // ✅ FIXED: Use context.go() like original
-          context.go('/');
+          // ✅ Redirect after successful login
+          _redirectAfterLogin();
           FacebookAuth.instance.logOut();
         }
-        // final userData = await FacebookAuth.instance.getUserData(fields: "email,birthday,friends,gender,link");
       } else {
         print("....Facebook auth Failed.........");
         print(facebookLogin.status);
@@ -188,7 +190,6 @@ class _LoginState extends State<Login> {
       }
     } on Exception catch (e) {
       print(e);
-      // TODO
     }
   }
 
@@ -217,13 +218,12 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ FIXED: Use context.go() like original
-        context.go('/');
+        // ✅ Redirect after successful login
+        _redirectAfterLogin();
       }
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
       print("error is ....... $e");
-      // TODO
     }
   }
 
@@ -238,8 +238,6 @@ class _LoginState extends State<Login> {
       final authResult = await twitterLogin.login();
 
       print("authResult");
-
-      // print(json.encode(authResult));
 
       var loginResponse = await AuthRepository().getSocialLoginResponse(
           "twitter",
@@ -256,12 +254,11 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ FIXED: Use context.go() like original
-        context.go('/');
+        // ✅ Redirect after successful login
+        _redirectAfterLogin();
       }
     } on Exception catch (e) {
       print("error is ....... $e");
-      // TODO
     }
   }
 
@@ -312,12 +309,11 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ FIXED: Use context.go() like original
-        context.go('/');
+        // ✅ Redirect after successful login
+        _redirectAfterLogin();
       }
     } on Exception catch (e) {
       print(e);
-      // TODO
     }
   }
 
@@ -412,8 +408,6 @@ class _LoginState extends State<Login> {
                           selectorTextStyle:
                               TextStyle(color: MyTheme.font_grey),
                           textStyle: TextStyle(color: MyTheme.font_grey),
-                          // initialValue: PhoneNumber(
-                          //     isoCode: countries_code[0].toString()),
                           textFieldController: _phoneNumberController,
                           formatInput: true,
                           keyboardType: TextInputType.numberWithOptions(
@@ -616,20 +610,6 @@ class _LoginState extends State<Login> {
                               ),
                             ),
                           ),
-                        /* if (Platform.isIOS)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 15.0),
-                            // visible: true,
-                            child: A(
-                              onTap: () async {
-                                signInWithApple();
-                              },
-                              child: Container(
-                                width: 28,
-                                child: Image.asset("assets/apple_logo.png"),
-                              ),
-                            ),
-                          ),*/
                       ],
                     ),
                   ),
