@@ -115,11 +115,13 @@ class _LoginState extends State<Login> {
     // }
   // }
 
-  void _handleLoginSuccess() {
-    if (widget.onLoginSuccess != null) {
-      widget.onLoginSuccess!();
-      return;
-    }
+  Future<void> _handleLoginSuccess() async {
+    // if (widget.onLoginSuccess != null) {
+    //   widget.onLoginSuccess!();
+    //   return;
+    // }
+
+    await Future.delayed(const Duration(milliseconds: 200));
 
     if (!mounted) return;
 

@@ -651,6 +651,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
   // WISHLIST ACTIONS - WITH SOUND
   // ============================================
+
   Future<void> _toggleWishlist() async {
     if (!is_logged_in.$) {
       _showLoginRequired();
@@ -659,8 +660,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
 
+    // Optimistically update UI
     final wasInWishlist = _isInWishlist;
-
     setState(() {
       _isProcessing = true;
       _isInWishlist = !wasInWishlist;
@@ -671,18 +672,40 @@ class _ProductDetailsState extends State<ProductDetails>
           ? await _productRepository.removeFromWishlist(_product!.id ?? 0)
           : await _productRepository.addToWishlist(_product!.id ?? 0);
 
-      if (response.success != true) {
+      if (response.success == true) {
+        // Success - UI already updated
+        if (wasInWishlist) {
+          _playCommentSound();
+          _showToast('Removed from wishlist');
+        } else {
+          _playBidSound();
+          _showToast('Added to wishlist');
+        }
+        
+        // Refresh to get latest status from server
+        await _refreshWishlistStatus();
+      } else {
+        // Failed - revert UI
         setState(() {
           _isInWishlist = wasInWishlist;
         });
-
-        _showToast(response.message ?? 'Wishlist update failed');
+        
+        // Check if it's the "already in wishlist" case
+        if (response.message?.contains('already in wishlist') == true) {
+          setState(() {
+            _isInWishlist = true;
+          });
+          _showToast('Product is already in your wishlist');
+          await _refreshWishlistStatus();
+        } else {
+          _showToast(response.message ?? 'Wishlist update failed');
+        }
       }
     } catch (e) {
+      // Error - revert UI
       setState(() {
         _isInWishlist = wasInWishlist;
       });
-
       _showToast('Wishlist update failed');
     } finally {
       if (mounted) {
@@ -693,7 +716,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // FIX: Add this method to refresh wishlist status
   Future<void> _refreshWishlistStatus() async {
     try {
       print('Refreshing wishlist status...');

@@ -240,10 +240,14 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _redirectAfterLogout() async {
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
     if (!mounted) return;
 
     context.go('/users/login');
   }
+
 
   void _showLoginWarning() {
     ToastComponent.showDialog(
