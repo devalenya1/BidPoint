@@ -942,7 +942,36 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     );
   }
-
+  
+  // Add this debug method
+  void _debugShowCurrentState() {
+    if (!kDebugMode) return;
+    
+    final data = {
+      'product_id': _product?.id ?? 'null',
+      'product_name': _product?.name ?? 'null',
+      '_isInWishlist': _isInWishlist,
+      '_isWishlisted': _isWishlisted,
+      '_isProcessing': _isProcessing,
+      '_isLoading': _isLoading,
+      'is_logged_in': is_logged_in.$,
+      'heart_icon': _isInWishlist ? '❤️ FULL (Icons.favorite)' : '🤍 EMPTY (Icons.favorite_border)',
+      'expected_behavior': _isInWishlist 
+          ? 'Should show FULL heart and REMOVE on tap' 
+          : 'Should show EMPTY heart and ADD on tap',
+      'total_bids': _totalBids,
+      'current_highest_bid': _currentHighestBid,
+      'total_comments': _comments.length,
+      'total_reviews': _reviews.length,
+    };
+    
+    DebugHelper.showApiResponseDialog(
+      context,
+      title: '🔍 Current State Debug',
+      responseData: data,
+      isSuccess: true,
+    );
+  }
   // ============================================
   // CONTACT SELLER
   // ============================================
@@ -3141,96 +3170,7 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // Add this method to your class
-  Widget _buildDebugFloatingButton() {
-    if (!kDebugMode) return const SizedBox.shrink();
-    
-    return Positioned(
-      bottom: 120,
-      right: 16,
-      child: FloatingActionButton(
-        mini: true,
-        backgroundColor: Colors.orange,
-        onPressed: () {
-          // Show a menu of debug options
-          showModalBottomSheet(
-            context: context,
-            builder: (context) => Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.favorite, color: Colors.red),
-                    title: const Text('Wishlist Status'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _debugShowWishlistInfo();
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.api, color: Colors.blue),
-                    title: const Text('API Response'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _debugShowProductData();
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.refresh, color: Colors.green),
-                    title: const Text('Poll Data'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _debugShowPollData();
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.info, color: Colors.purple),
-                    title: const Text('Current State'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _debugShowCurrentState();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-        child: const Icon(Icons.bug_report, color: Colors.white),
-      ),
-    );
-  }
 
-  // Add this debug method
-  void _debugShowCurrentState() {
-    if (!kDebugMode) return;
-    
-    final data = {
-      'product_id': _product?.id ?? 'null',
-      'product_name': _product?.name ?? 'null',
-      '_isInWishlist': _isInWishlist,
-      '_isWishlisted': _isWishlisted,
-      '_isProcessing': _isProcessing,
-      '_isLoading': _isLoading,
-      'is_logged_in': is_logged_in.$,
-      'heart_icon': _isInWishlist ? '❤️ FULL (Icons.favorite)' : '🤍 EMPTY (Icons.favorite_border)',
-      'expected_behavior': _isInWishlist 
-          ? 'Should show FULL heart and REMOVE on tap' 
-          : 'Should show EMPTY heart and ADD on tap',
-      'total_bids': _totalBids,
-      'current_highest_bid': _currentHighestBid,
-      'total_comments': _comments.length,
-      'total_reviews': _reviews.length,
-    };
-    
-    DebugHelper.showApiResponseDialog(
-      context,
-      title: '🔍 Current State Debug',
-      responseData: data,
-      isSuccess: true,
-    );
-  }
 
   // ============================================
   // MOBILE WIDGETS
