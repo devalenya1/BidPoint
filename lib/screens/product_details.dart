@@ -314,6 +314,8 @@ class _ProductDetailsState extends State<ProductDetails>
         // Calculate min next bid
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
+        _isWishlisted = false;
+        _isInWishlist = false;
         setState(() {});
 
         // ============================================
@@ -375,16 +377,16 @@ class _ProductDetailsState extends State<ProductDetails>
         // ============================================
         // UPDATE WISHLIST STATUS
         // ============================================
-        if (response.isInWishlist != null) {
-          final newWishlistState = response.isInWishlist!;
-          print('🔄 Poll: isInWishlist = $newWishlistState (was $_isInWishlist)');
-          if (_isInWishlist != newWishlistState) {
-            setState(() {
-              _isInWishlist = newWishlistState;
-            });
-            print('✅ Updated wishlist to: $_isInWishlist');
-          }
-        }
+        // if (response.isInWishlist != null) {
+        //   final newWishlistState = response.isInWishlist!;
+        //   print('🔄 Poll: isInWishlist = $newWishlistState (was $_isInWishlist)');
+        //   if (_isInWishlist != newWishlistState) {
+        //     setState(() {
+        //       _isInWishlist = newWishlistState;
+        //     });
+        //     print('✅ Updated wishlist to: $_isInWishlist');
+        //   }
+        // }
 
         // ============================================
         // UPDATE COMMENTS (ALL COMMENTS)
@@ -427,7 +429,7 @@ class _ProductDetailsState extends State<ProductDetails>
     // Only refresh if product exists, user is logged in, and not currently loading
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
       print('✅ Checking wishlist status on page focus...');
-      _refreshWishlistStatus();
+      _fetchWishlistStatus(); // ✅ Use dedicated endpoint
     } else {
       print('⏭️ Skipping wishlist refresh: product=${_product != null}, loggedIn=${is_logged_in.$}, loading=$_isLoading, processing=$_isProcessing');
     }
@@ -685,6 +687,46 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
+  // WISHLIST STATUS - DEDICATED ENDPOINT
+  // ============================================
+
+  Future<void> _fetchWishlistStatus() async {
+    // Don't check if user not logged in
+    if (!is_logged_in.$) {
+      setState(() {
+        _isInWishlist = false;
+      });
+      return;
+    }
+    
+    // Don't check if product is null
+    if (_product == null) {
+      return;
+    }
+    
+    try {
+      print('🔄 Fetching wishlist status from dedicated endpoint...');
+      final result = await _productRepository.getWishlistStatus(_product!.id ?? 0);
+      
+      print('📡 Wishlist status response: $result');
+      
+      if (result['success'] == true) {
+        final newState = result['isInWishlist'] ?? false;
+        if (_isInWishlist != newState) {
+          setState(() {
+            _isInWishlist = newState;
+          });
+          print('✅ Updated wishlist to: $_isInWishlist');
+        }
+      } else {
+        print('❌ Failed to get wishlist status: ${result['message']}');
+      }
+    } catch (e) {
+      print('❌ Error fetching wishlist status: $e');
+    }
+  }
+
+  // ============================================
   // WISHLIST ACTIONS - WITH SOUND
   // ============================================
 
@@ -696,17 +738,30 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
 
-    // Optimistically update UI
+    // Save current state
     final wasInWishlist = _isInWishlist;
+    
+    // Optimistically update UI
     setState(() {
       _isProcessing = true;
       _isInWishlist = !wasInWishlist;
     });
 
     try {
-      final response = wasInWishlist
-          ? await _productRepository.removeFromWishlist(_product!.id ?? 0)
-          : await _productRepository.addToWishlist(_product!.id ?? 0);
+      late WishlistResponse response;
+      
+      if (wasInWishlist) {
+        // ✅ PRODUCT IS IN WISHLIST - REMOVE IT
+        print('🗑️ Removing from wishlist...');
+        response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
+      } else {
+        // ✅ PRODUCT IS NOT IN WISHLIST - ADD IT
+        print('❤️ Adding to wishlist...');
+        response = await _productRepository.addToWishlist(_product!.id ?? 0);
+      }
+
+      print('📡 Response success: ${response.success}');
+      print('📡 Response message: ${response.message}');
 
       if (response.success == true) {
         // Success - UI already updated
@@ -718,31 +773,29 @@ class _ProductDetailsState extends State<ProductDetails>
           _showToast('Added to wishlist');
         }
         
-        // Refresh to get latest status from server
-        await _refreshWishlistStatus();
+        // ✅ Refresh wishlist status from dedicated endpoint to confirm
+        await _fetchWishlistStatus();
       } else {
-        // Failed - revert UI
+        // ❌ Failed - revert UI
         setState(() {
           _isInWishlist = wasInWishlist;
         });
         
-        // Check if it's the "already in wishlist" case
-        if (response.message?.contains('already in wishlist') == true) {
-          setState(() {
-            _isInWishlist = true;
-          });
-          _showToast('Product is already in your wishlist');
-          await _refreshWishlistStatus();
-        } else {
-          _showToast(response.message ?? 'Wishlist update failed');
-        }
+        // 🔥 FIX: Don't show "already in wishlist" message
+        // Just show a generic error and refresh the status
+        print('❌ Wishlist operation failed: ${response.message}');
+        _showToast('Wishlist update failed. Please try again.');
+        
+        // Refresh status to make sure UI matches server
+        await _fetchWishlistStatus();
       }
     } catch (e) {
-      // Error - revert UI
+      // ❌ Error - revert UI
+      print('❌ Wishlist error: $e');
       setState(() {
         _isInWishlist = wasInWishlist;
       });
-      _showToast('Wishlist update failed');
+      _showToast('Wishlist update failed. Please try again.');
     } finally {
       if (mounted) {
         setState(() {

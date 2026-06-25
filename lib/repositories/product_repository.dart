@@ -440,6 +440,91 @@ class ProductRepository {
     return wishlistResponseFromJson(response.body);
   }
 
+  // ✅ Get wishlist status for a single product
+  Future<Map<String, dynamic>> getWishlistStatus(int productId) async {
+    String url = "${AppConfig.BASE_URL}/wishlist/status/$productId";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "App-Language": app_language.$!,
+          "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': data['success'] ?? false,
+          'isInWishlist': data['is_in_wishlist'] ?? false,
+          'message': data['message'] ?? '',
+        };
+      } else {
+        return {
+          'success': false,
+          'isInWishlist': false,
+          'message': 'Failed to get wishlist status',
+        };
+      }
+    } catch (e) {
+      print('Error getting wishlist status: $e');
+      return {
+        'success': false,
+        'isInWishlist': false,
+        'message': 'Network error',
+      };
+    }
+  }
+
+  // ✅ Get wishlist status for multiple products (for batch checking)
+  Future<Map<String, bool>> getWishlistStatusBatch(List<int> productIds) async {
+    String url = "${AppConfig.BASE_URL}/wishlist/status-batch";
+    
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "App-Language": app_language.$!,
+          "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "product_ids": productIds,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          return Map<String, bool>.from(data['data']);
+        }
+      }
+      return {};
+    } catch (e) {
+      print('Error getting batch wishlist status: $e');
+      return {};
+    }
+  }
+
+  // In product_repository.dart
+  Future<WishlistResponse> toggleWishlist(int productId) async {
+    String url = "${AppConfig.BASE_URL}/wishlist/toggle";
+    var postBody = jsonEncode({
+      "product_id": productId,
+    });
+    final response = await ApiRequest.post(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": "Bearer ${access_token.$}",
+        "Content-Type": "application/json",
+      },
+      body: postBody,
+    );
+    return wishlistResponseFromJson(response.body);
+  }
+
   // ============ NOTIFY ME ============
   
   // ✅ FIXED: Notify me for auction
