@@ -300,7 +300,7 @@ class _ProfileState extends State<Profile> {
     try {
       final router = GoRouter.of(context);
       print('✅ GoRouter found: ${router.runtimeType}');
-      print('Current route: ${router.routeInformationProvider.value.uri.path}');
+      print('Current route: ${router.routeInformationProvider.value.location}');
       print('Can pop: ${router.canPop()}');
       
       // Try to pop if possible
@@ -360,7 +360,7 @@ class _ProfileState extends State<Profile> {
       'mounted': mounted,
       'has_context': context != null,
       'router_available': GoRouter.of(context) != null,
-      'current_route': GoRouter.of(context).routeInformationProvider.value.uri.path,
+      'current_route': GoRouter.of(context).routeInformationProvider.value.location,
     };
     
     DebugHelper.showApiResponseDialog(
