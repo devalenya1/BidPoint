@@ -120,6 +120,9 @@ class _ProductDetailsState extends State<ProductDetails>
     
     // Initialize audio player
     _audioPlayer.setReleaseMode(ReleaseMode.release);
+    
+    // Add listener for login state changes
+    _setupLoginStateListener();
   }
 
   @override
