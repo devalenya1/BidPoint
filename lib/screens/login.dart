@@ -80,23 +80,27 @@ class _LoginState extends State<Login> {
   }
 
   // Helper method to handle successful login with proper redirect
-  void _handleLoginSuccess() {
-    if (widget.onLoginSuccess != null) {
-      widget.onLoginSuccess!();
-      return;
-    }
+  // void _handleLoginSuccess() {
+  //   // Call the callback if provided (for custom navigation from other screens)
+  //   if (widget.onLoginSuccess != null) {
+  //     widget.onLoginSuccess!();
+  //     return;
+  //   }
 
-    if (!mounted) return;
-
-    context.go('/');
-  }
+  //   final router = GoRouter.of(context);
     
-    // No previous page - navigate to home (Main page)
-    // This uses pushReplacement to remove login from the stack
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const Main()),
-    );
+  //   // Try to go back to previous page if possible
+  //   if (router.canPop()) {
+  //     router.pop();
+  //     return;
+  //   }
+    
+  //   // No previous page - navigate to home (Main page)
+  //   // This uses pushReplacement to remove login from the stack
+  //   Navigator.pushReplacement(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => const Main()),
+  //   );
 
     // // Check if there's a previous page using GoRouter
     // final router = GoRouter.of(context);
@@ -109,6 +113,17 @@ class _LoginState extends State<Login> {
       // router.go('/dashboard');
 
     // }
+  // }
+
+  void _handleLoginSuccess() {
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!();
+      return;
+    }
+
+    if (!mounted) return;
+
+    context.go('/');
   }
 
   onPressedLogin() async {
