@@ -433,22 +433,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _mainScrollController = ScrollController();
-    _fetchAllData();
-    _startPolling();
-    
-    // Initialize audio player
-    _audioPlayer.setReleaseMode(ReleaseMode.release);
-    
-    // Add listener for login state changes
-    _setupLoginStateListener();
-  }
-
   void _setupLoginStateListener() {
     // Listen to login state changes
     if (!_isListening) {
