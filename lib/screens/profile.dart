@@ -175,6 +175,7 @@ class _ProfileState extends State<Profile> {
   }
 
   // ============ LOGOUT ============
+  // ✅ EXACT SAME AS ORIGINAL - Simple and works!
   void _onTapLogout() async {
     bool? confirm = await showDialog(
       context: context,
@@ -209,113 +210,16 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      print('========== LOGOUT STARTED ==========');
-      print('Current route before logout: ${GoRouter.of(context).routeInformationProvider.value.location}');
-      
-      // Clear user data
-      await AuthHelper().clearUserData();
-
-      access_token.$ = "";
-      access_token.save();
-
-      is_logged_in.$ = false;
-      is_logged_in.save();
-
-      user_id.$ = 0;
-      user_id.save();
-
-      user_name.$ = "";
-      user_name.save();
-
-      if (!mounted) return;
-
+      // ✅ EXACT SAME AS ORIGINAL
+      AuthHelper().clearUserData();
       ToastComponent.showDialog(
         "Logged out successfully",
         gravity: ToastGravity.CENTER,
         duration: Toast.LENGTH_SHORT,
       );
-
-      print('User data cleared, attempting redirect...');
       
-      // Small delay to ensure data is saved
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      await _redirectAfterLogout();
-    }
-  }
-
-  Future<void> _redirectAfterLogout() async {
-    print('========== REDIRECT ATTEMPT ==========');
-    print('mounted: ${mounted}');
-    print('current_route: ${GoRouter.of(context).routeInformationProvider.value.location}');
-    print('canPop: ${GoRouter.of(context).canPop()}');
-    print('========================================');
-
-    if (!mounted) return;
-
-    // Method 1: Try to pop if possible (go back to previous page)
-    try {
-      final router = GoRouter.of(context);
-      if (router.canPop()) {
-        print('✅ Can pop, going back to previous page...');
-        router.pop();
-        return;
-      }
-    } catch (e) {
-      print('❌ GoRouter pop error: $e');
-    }
-
-    // Method 2: Use context.go('/users/login')
-    try {
-      print('Attempting context.go("/users/login")...');
-      context.go('/users/login');
-      print('context.go("/users/login") completed');
-      
-      // Verify navigation after a delay
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          print('Current route after go: ${GoRouter.of(context).routeInformationProvider.value.location}');
-        }
-      });
-      return;
-    } catch (e) {
-      print('❌ context.go error: $e');
-    }
-
-    // Method 3: Use Navigator.pushReplacement
-    try {
-      print('Attempting Navigator.pushReplacement to Login...');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Login()),
-      );
-      print('Navigator.pushReplacement completed');
-      return;
-    } catch (e) {
-      print('❌ Navigator.pushReplacement error: $e');
-    }
-
-    // Method 4: Use popAndPushNamed
-    try {
-      print('Attempting Navigator.popAndPushNamed...');
-      Navigator.popAndPushNamed(context, '/users/login');
-      print('popAndPushNamed completed');
-      return;
-    } catch (e) {
-      print('❌ popAndPushNamed error: $e');
-    }
-
-    // Method 5: Last resort - pushAndRemoveUntil
-    try {
-      print('Attempting Navigator.pushAndRemoveUntil to Login...');
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const Login()),
-        (route) => false,
-      );
-      print('pushAndRemoveUntil completed');
-    } catch (e) {
-      print('❌ All navigation attempts failed: $e');
+      // ✅ EXACT SAME AS ORIGINAL - Just context.go("/")
+      context.go("/");
     }
   }
 
