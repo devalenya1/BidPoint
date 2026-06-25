@@ -16,6 +16,7 @@ import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
 import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -660,8 +661,27 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
 
-    // Optimistically update UI
+    // Save current state
     final wasInWishlist = _isInWishlist;
+    final action = wasInWishlist ? 'REMOVE' : 'ADD';
+    
+    // Show debug before action
+    if (kDebugMode) {
+      DebugHelper.showApiResponseDialog(
+        context,
+        title: '🔄 Toggling Wishlist',
+        responseData: {
+          'action': action,
+          'current_state': wasInWishlist,
+          'product_id': _product?.id,
+          'product_name': _product?.name,
+          'will_become': !wasInWishlist,
+        },
+        isSuccess: true,
+      );
+    }
+
+    // Optimistically update UI
     setState(() {
       _isProcessing = true;
       _isInWishlist = !wasInWishlist;
@@ -684,21 +704,61 @@ class _ProductDetailsState extends State<ProductDetails>
         
         // Refresh to get latest status from server
         await _refreshWishlistStatus();
-      } else {
-        // Failed - revert UI
-        setState(() {
-          _isInWishlist = wasInWishlist;
-        });
         
-        // Check if it's the "already in wishlist" case
+        // Show success debug
+        if (kDebugMode) {
+          DebugHelper.showApiResponseDialog(
+            context,
+            title: '✅ Wishlist Toggle Success',
+            responseData: {
+              'action': action,
+              'result': 'success',
+              'message': response.message,
+              'new_state': _isInWishlist,
+            },
+            isSuccess: true,
+          );
+        }
+      } else {
+        // Failed - check if it's "already in wishlist" case
         if (response.message?.contains('already in wishlist') == true) {
           setState(() {
             _isInWishlist = true;
           });
           _showToast('Product is already in your wishlist');
           await _refreshWishlistStatus();
+          
+          if (kDebugMode) {
+            DebugHelper.showApiResponseDialog(
+              context,
+              title: '⚠️ Already in Wishlist',
+              responseData: {
+                'action': action,
+                'message': response.message,
+                'forced_state': true,
+              },
+              isSuccess: true,
+            );
+          }
         } else {
+          // Revert UI on failure
+          setState(() {
+            _isInWishlist = wasInWishlist;
+          });
           _showToast(response.message ?? 'Wishlist update failed');
+          
+          if (kDebugMode) {
+            DebugHelper.showApiResponseDialog(
+              context,
+              title: '❌ Wishlist Toggle Failed',
+              responseData: {
+                'action': action,
+                'message': response.message,
+                'reverted_state': wasInWishlist,
+              },
+              isSuccess: false,
+            );
+          }
         }
       }
     } catch (e) {
@@ -707,6 +767,14 @@ class _ProductDetailsState extends State<ProductDetails>
         _isInWishlist = wasInWishlist;
       });
       _showToast('Wishlist update failed');
+      
+      if (kDebugMode) {
+        DebugHelper.showErrorDialog(
+          context,
+          title: '❌ Wishlist Error',
+          error: e,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -734,6 +802,144 @@ class _ProductDetailsState extends State<ProductDetails>
     } catch (e) {
       print('Error refreshing wishlist status: $e');
     }
+  }
+
+
+
+  // ============ DEBUG METHODS ============
+
+  void _debugShowWishlistInfo() {
+    if (!kDebugMode) return;
+    
+    final data = {
+      'product_id': _product?.id ?? 'null',
+      'product_name': _product?.name ?? 'null',
+      '_isInWishlist': _isInWishlist,
+      '_isWishlisted': _isWishlisted,
+      'is_logged_in': is_logged_in.$,
+      'heart_icon': _isInWishlist ? '❤️ FULL (Icons.favorite)' : '🤍 EMPTY (Icons.favorite_border)',
+      'expected_behavior': _isInWishlist 
+          ? 'Should show FULL heart and REMOVE on tap' 
+          : 'Should show EMPTY heart and ADD on tap',
+    };
+    
+    DebugHelper.showApiResponseDialog(
+      context,
+      title: '🔍 Wishlist Debug Info',
+      responseData: data,
+      isSuccess: true,
+    );
+  }
+
+  void _debugShowProductData() async {
+    if (!kDebugMode) return;
+    
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+      
+      final productData = await _productRepository.getProductDetails(slug: widget.slug);
+      
+      Navigator.pop(context);
+      
+      if (productData.detailedProducts != null && 
+          productData.detailedProducts!.isNotEmpty) {
+        final product = productData.detailedProducts![0];
+        
+        final data = {
+          'id': product.id,
+          'name': product.name,
+          'isInWishlist (from API)': product.isInWishlist,
+          'isInWishlist_parsed': product.isInWishlist ?? false,
+          'has_isInWishlist_field': product.isInWishlist != null,
+          'current_state': _isInWishlist,
+        };
+        
+        DebugHelper.showApiResponseDialog(
+          context,
+          title: '📦 Product API Data',
+          responseData: data,
+          isSuccess: true,
+        );
+      } else {
+        DebugHelper.showApiResponseDialog(
+          context,
+          title: '⚠️ No Product Data',
+          responseData: {'error': 'No product data found'},
+          isSuccess: false,
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      DebugHelper.showErrorDialog(
+        context,
+        title: 'Failed to fetch product data',
+        error: e,
+      );
+    }
+  }
+
+  void _debugShowPollData() async {
+    if (!kDebugMode || _product == null) return;
+    
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+      
+      final response = await _productRepository.pollProductData(_product!.id ?? 0);
+      
+      Navigator.pop(context);
+      
+      final data = {
+        'success': response.success,
+        'isInWishlist (from poll)': response.isInWishlist,
+        'current_state': _isInWishlist,
+        'highestBid': response.highestBid,
+        'totalBids': response.totalBids,
+        'lastBidderName': response.lastBidderName,
+        'auctionEndDate': response.auctionEndDate,
+        'isEndingSoon': response.isEndingSoon,
+        'remainingSeconds': response.remainingSeconds,
+      };
+      
+      DebugHelper.showApiResponseDialog(
+        context,
+        title: '🔄 Poll Data Response',
+        responseData: data,
+        isSuccess: response.success ?? false,
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      DebugHelper.showErrorDialog(
+        context,
+        title: 'Failed to fetch poll data',
+        error: e,
+      );
+    }
+  }
+
+  // Optional: Add a floating debug button on the screen
+  Widget _buildDebugFloatingButton() {
+    if (!kDebugMode) return const SizedBox.shrink();
+    
+    return Positioned(
+      bottom: 100,
+      right: 16,
+      child: FloatingActionButton(
+        mini: true,
+        backgroundColor: Colors.orange,
+        onPressed: () {
+          _debugShowWishlistInfo();
+        },
+        child: const Icon(Icons.bug_report, color: Colors.white),
+      ),
+    );
   }
 
   // ============================================
@@ -1539,6 +1745,22 @@ class _ProductDetailsState extends State<ProductDetails>
   // BUILD METHOD
   // ============================================
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final screenWidth = MediaQuery.of(context).size.width;
+  //   final isDesktop = screenWidth >= 992;
+
+  //   return Scaffold(
+  //     backgroundColor: isDesktop ? Color(0xFFF5F7FA) : Colors.white,
+  //     body: _isLoading
+  //         ? _buildShimmerLoading()
+  //         : RefreshIndicator(
+  //             key: _refreshIndicatorKey,
+  //             onRefresh: _fetchAllData,
+  //             child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
+  //           ),
+  //   );
+  // }
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1546,6 +1768,70 @@ class _ProductDetailsState extends State<ProductDetails>
 
     return Scaffold(
       backgroundColor: isDesktop ? Color(0xFFF5F7FA) : Colors.white,
+      appBar: AppBar(
+        title: Text(
+          'Product Details',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          // Debug button - only visible in debug mode
+          if (kDebugMode)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.bug_report, color: Colors.orange),
+              onSelected: (value) {
+                if (value == 'debug_wishlist') {
+                  _debugShowWishlistInfo();
+                }
+                if (value == 'debug_api') {
+                  _debugShowProductData();
+                }
+                if (value == 'debug_poll') {
+                  _debugShowPollData();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'debug_wishlist',
+                  child: Row(
+                    children: [
+                      Icon(Icons.favorite, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Wishlist Status'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'debug_api',
+                  child: Row(
+                    children: [
+                      Icon(Icons.api, size: 18, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('API Response'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'debug_poll',
+                  child: Row(
+                    children: [
+                      Icon(Icons.refresh, size: 18, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('Poll Data'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       body: _isLoading
           ? _buildShimmerLoading()
           : RefreshIndicator(
@@ -1589,6 +1875,650 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
   // MOBILE LAYOUT
   // ============================================
+
+  // Widget _buildMobileLayout() {
+  //   final timeComponents = _getTimeComponents();
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final imageHeight = screenHeight * 0.65;
+
+  //   return Stack(
+  //     children: [
+  //       CustomScrollView(
+  //         controller: _mainScrollController,
+  //         physics: BouncingScrollPhysics(),
+  //         slivers: [
+  //           // Image Sliver - 65% of screen height
+  //           SliverAppBar(
+  //             expandedHeight: imageHeight,
+  //             pinned: true,
+  //             backgroundColor: Colors.black,
+  //             flexibleSpace: FlexibleSpaceBar(
+  //               background: Stack(
+  //                 children: [
+  //                   CarouselSlider(
+  //                     options: CarouselOptions(
+  //                       height: imageHeight,
+  //                       viewportFraction: 1,
+  //                       autoPlay: true,
+  //                       onPageChanged: (index, reason) {
+  //                         setState(() => _currentImageIndex = index);
+  //                       },
+  //                     ),
+  //                     items: _productImages.map((image) {
+  //                       return Builder(
+  //                         builder: (context) => GestureDetector(
+  //                           onTap: () => _showFullImage(image),
+  //                           child: Container(
+  //                             width: double.infinity,
+  //                             decoration: BoxDecoration(
+  //                               image: DecorationImage(
+  //                                 image: NetworkImage(image),
+  //                                 fit: BoxFit.cover,
+  //                               ),
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       );
+  //                     }).toList(),
+  //                   ),
+  //                   // Gradient Overlay
+  //                   Container(
+  //                     decoration: BoxDecoration(
+  //                       gradient: LinearGradient(
+  //                         begin: Alignment.topCenter,
+  //                         end: Alignment.bottomCenter,
+  //                         stops: [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
+  //                         colors: [
+  //                           Colors.black.withOpacity(0.9),
+  //                           Colors.black.withOpacity(0.5),
+  //                           Colors.black.withOpacity(0.2),
+  //                           Colors.black.withOpacity(0.1),
+  //                           Colors.black.withOpacity(0.3),
+  //                           Colors.black.withOpacity(0.7),
+  //                           Colors.black.withOpacity(0.95),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   // Top Icons - Vertical Right Icons
+  //                   Positioned(
+  //                     top: MediaQuery.of(context).padding.top + 8,
+  //                     right: 16,
+  //                     child: Column(
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       children: [
+  //                         _buildIconCircle(
+  //                           icon: Icons.more_vert,
+  //                           onTap: () =>
+  //                               setState(() => _showMoreMenu = !_showMoreMenu),
+  //                           isLoading: _isProcessing,
+  //                         ),
+  //                         SizedBox(height: 12),
+  //                         // FIX 4 & 5: Wishlist icon with sound
+  //                         _buildIconCircle(
+  //                           icon: _isInWishlist
+  //                               ? Icons.favorite
+  //                               : Icons.favorite_border,
+  //                           isActive: _isInWishlist,
+  //                           onTap: _toggleWishlist,
+  //                           isLoading: _isProcessing,
+  //                         ),
+  //                         SizedBox(height: 12),
+  //                         _buildIconCircle(
+  //                           icon: Icons.share,
+  //                           onTap: _shareProduct,
+  //                           isLoading: false,
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                   // Left Icons - Back Button
+  //                   Positioned(
+  //                     top: MediaQuery.of(context).padding.top + 8,
+  //                     left: 16,
+  //                     child: _buildIconCircle(
+  //                       icon: Icons.arrow_back,
+  //                       onTap: () => Navigator.pop(context),
+  //                       isLoading: false,
+  //                     ),
+  //                   ),
+  //                   // More Menu
+  //                   if (_showMoreMenu)
+  //                     Positioned(
+  //                       top: 80,
+  //                       right: 16,
+  //                       child: Material(
+  //                         elevation: 10,
+  //                         borderRadius: BorderRadius.circular(16),
+  //                         child: Container(
+  //                           width: 180,
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.white.withOpacity(0.95),
+  //                             borderRadius: BorderRadius.circular(16),
+  //                             boxShadow: [
+  //                               BoxShadow(
+  //                                 color: Colors.black.withOpacity(0.2),
+  //                                 blurRadius: 10,
+  //                                 offset: Offset(0, 5),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                           child: Column(
+  //                             mainAxisSize: MainAxisSize.min,
+  //                             children: [
+  //                               _buildMoreMenuItem(
+  //                                 icon: Icons.history,
+  //                                 text: 'Bid History',
+  //                                 onTap: () {
+  //                                   setState(() => _showMoreMenu = false);
+  //                                   _openBidHistoryModal();
+  //                                 },
+  //                               ),
+  //                               _buildMoreMenuItem(
+  //                                 icon: Icons.info_outline,
+  //                                 text: 'Product Details',
+  //                                 onTap: () {
+  //                                   setState(() => _showMoreMenu = false);
+  //                                   _openTitleModal();
+  //                                 },
+  //                               ),
+  //                               _buildMoreMenuItem(
+  //                                 icon: Icons.contact_mail,
+  //                                 text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+  //                                 onTap: _isProcessing ? null : () {
+  //                                   setState(() => _showMoreMenu = false);
+  //                                   _contactSeller();
+  //                                 },
+  //                               ),
+  //                               // _buildMoreMenuItem(
+  //                               //   icon: Icons.share,
+  //                               //   text: 'Share',
+  //                               //   onTap: () {
+  //                               //     setState(() => _showMoreMenu = false);
+  //                               //     _shareProduct();
+  //                               //   },
+  //                               // ),
+  //                             ],
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   // Bottom Content Overlay
+  //                   Positioned(
+  //                     bottom: 0,
+  //                     left: 0,
+  //                     right: 0,
+  //                     child: Padding(
+  //                       padding: EdgeInsets.all(16),
+  //                       child: Column(
+  //                         crossAxisAlignment: CrossAxisAlignment.start,
+  //                         children: [
+  //                           // Comments Section - SHOW ALL COMMENTS
+  //                           Container(
+  //                             width: MediaQuery.of(context).size.width * 0.75,
+  //                             decoration: BoxDecoration(
+  //                               color: Colors.black.withOpacity(0.1),
+  //                               borderRadius: BorderRadius.circular(20),
+  //                               border: Border.all(
+  //                                   color: Colors.white.withOpacity(0.15)),
+  //                             ),
+  //                             padding: EdgeInsets.all(12),
+  //                             child: Column(
+  //                               crossAxisAlignment: CrossAxisAlignment.start,
+  //                               children: [
+  //                                 // Comment count header
+  //                                 Row(
+  //                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                                   children: [
+  //                                     // Text(
+  //                                     //   'Comments (${_comments.length})',
+  //                                     //   style: TextStyle(
+  //                                     //     color: Colors.white,
+  //                                     //     fontSize: 12,
+  //                                     //     fontWeight: FontWeight.w600,
+  //                                     //   ),
+  //                                     // ),
+  //                                     // Text(
+  //                                     //   'Recent',
+  //                                     //   style: TextStyle(
+  //                                     //     color: Colors.white70,
+  //                                     //     fontSize: 10,
+  //                                     //   ),
+  //                                     // ),
+  //                                   ],
+  //                                 ),
+  //                                 SizedBox(height: 6),
+  //                                 // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
+  //                                 Container(
+  //                                   height: imageHeight * 0.4, // Reduced from 0.5 to 0.3
+  //                                   child: _comments.isEmpty
+  //                                       ? Center(
+  //                                           child: Text(
+  //                                             'No comments yet',
+  //                                             style: TextStyle(
+  //                                               color: Colors.white54,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         )
+  //                                       : ListView.builder(
+  //                                           shrinkWrap: true,
+  //                                           itemCount: _comments.length,
+  //                                           itemBuilder: (context, index) {
+  //                                             final comment = _comments[index];
+  //                                             return Padding(
+  //                                               padding:
+  //                                                   EdgeInsets.only(bottom: 6), // Reduced from 8 to 6
+  //                                               child: Row(
+  //                                                 crossAxisAlignment:
+  //                                                     CrossAxisAlignment.start,
+  //                                                 children: [
+  //                                                   CircleAvatar(
+  //                                                     radius: 12, // Reduced from 12 to 10
+  //                                                     backgroundImage:
+  //                                                         NetworkImage(comment
+  //                                                                 .userAvatar ??
+  //                                                             ''),
+  //                                                     child: comment
+  //                                                             .userAvatar ==
+  //                                                         null
+  //                                                         ? Icon(Icons.person,
+  //                                                             size: 12, // Reduced from 12 to 10
+  //                                                             color: Colors
+  //                                                                 .white54)
+  //                                                         : null,
+  //                                                   ),
+  //                                                   SizedBox(width: 8), // Reduced from 8 to 6
+  //                                                   Expanded(
+  //                                                     child: Column(
+  //                                                       crossAxisAlignment:
+  //                                                           CrossAxisAlignment
+  //                                                               .start,
+  //                                                       children: [
+  //                                                         Text(
+  //                                                           comment.userName ??
+  //                                                               'User',
+  //                                                           style: TextStyle(
+  //                                                             color: Colors
+  //                                                                 .white,
+  //                                                             fontSize: 11, // Reduced from 11 to 10
+  //                                                             fontWeight:
+  //                                                                 FontWeight
+  //                                                                     .w600,
+  //                                                           ),
+  //                                                         ),
+  //                                                         Text(
+  //                                                           comment.comment ??
+  //                                                               '',
+  //                                                           style: TextStyle(
+  //                                                             color: Colors
+  //                                                                 .white70,
+  //                                                             fontSize: 10, // Reduced from 10 to 9
+  //                                                           ),
+  //                                                           maxLines: 2,
+  //                                                           overflow:
+  //                                                               TextOverflow
+  //                                                                   .ellipsis,
+  //                                                         ),
+  //                                                       ],
+  //                                                     ),
+  //                                                   ),
+  //                                                 ],
+  //                                               ),
+  //                                             );
+  //                                           },
+  //                                         ),
+  //                                 ),
+  //                                 SizedBox(height: 4), // Reduced from 8 to 4
+  //                                 Row(
+  //                                   children: [
+  //                                     Expanded(
+  //                                       child: Container(
+  //                                         decoration: BoxDecoration(
+  //                                           color: Colors.white
+  //                                               .withOpacity(0.15),
+  //                                           borderRadius:
+  //                                               BorderRadius.circular(12),
+  //                                         ),
+  //                                         child: TextField(
+  //                                           controller: _commentController,
+  //                                           style: TextStyle(
+  //                                               color: Colors.white,
+  //                                               fontSize: 11), // Reduced from 12 to 11
+  //                                           decoration: InputDecoration(
+  //                                             hintText: 'Add Comment...',
+  //                                             hintStyle: TextStyle(
+  //                                                 color: Colors.white54,
+  //                                                 fontSize: 11), // Reduced from 12 to 11
+  //                                             border: InputBorder.none,
+  //                                             contentPadding:
+  //                                                 EdgeInsets.symmetric(
+  //                                                     horizontal: 10, // Reduced from 12 to 10
+  //                                                     vertical: 6), // Reduced from 8 to 6
+  //                                           ),
+  //                                           onSubmitted: (value) =>
+  //                                               _sendComment(),
+  //                                         ),
+  //                                       ),
+  //                                     ),
+  //                                     SizedBox(width: 6), // Reduced from 8 to 6
+  //                                     GestureDetector(
+  //                                       onTap: _isProcessing ? null : _sendComment,
+  //                                       child: Container(
+  //                                         width: 28, // Reduced from 32 to 28
+  //                                         height: 28, // Reduced from 32 to 28
+  //                                         decoration: BoxDecoration(
+  //                                           color: MyTheme.accent_color,
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: _isProcessing
+  //                                             ? const SizedBox(
+  //                                                 height: 12, // Reduced from 14 to 12
+  //                                                 width: 12, // Reduced from 14 to 12
+  //                                                 child: CircularProgressIndicator(
+  //                                                   strokeWidth: 2,
+  //                                                   color: Colors.white,
+  //                                                 ),
+  //                                               )
+  //                                             : Icon(Icons.send,
+  //                                                 size: 14, // Reduced from 16 to 14
+  //                                                 color: Colors.white),
+  //                                       ),
+  //                                     ),
+  //                                   ],
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                           SizedBox(height: 12),
+  //                           // Product name and description
+  //                           GestureDetector(
+  //                             onTap: _openTitleModal,
+  //                             child: Column(
+  //                               crossAxisAlignment: CrossAxisAlignment.start,
+  //                               children: [
+  //                                 Text(_product?.name ?? '',
+  //                                     style: TextStyle(
+  //                                         color: Colors.white,
+  //                                         fontSize: 22,
+  //                                         fontWeight: FontWeight.bold)),
+  //                                 SizedBox(height: 4),
+  //                                 Text(
+  //                                     _product?.description
+  //                                             ?.replaceAll(RegExp(r'<[^>]*>'),
+  //                                                 '') ??
+  //                                         '',
+  //                                     style: TextStyle(
+  //                                         color: Colors.white70, fontSize: 14),
+  //                                     maxLines: 2,
+  //                                     overflow: TextOverflow.ellipsis),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                           SizedBox(height: 16),
+  //                           // Timer and Price
+  //                           Row(
+  //                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                             children: [
+  //                               Column(
+  //                                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                                 children: [
+  //                                   Text('TIME LEFT',
+  //                                       style: TextStyle(
+  //                                           color: Colors.white70,
+  //                                           fontSize: 12)),
+  //                                   SizedBox(height: 4),
+  //                                   Row(
+  //                                     children: [
+  //                                       _buildTimerUnitBig(
+  //                                           timeComponents['days']!, 'd'),
+  //                                       _buildTimerUnitBig(
+  //                                           timeComponents['hours']!, 'h'),
+  //                                       _buildTimerUnitBig(
+  //                                           timeComponents['minutes']!, 'm'),
+  //                                       _buildTimerUnitBig(
+  //                                           timeComponents['seconds']!, 's'),
+  //                                     ],
+  //                                   ),
+  //                                 ],
+  //                               ),
+  //                               Container(
+  //                                 padding: EdgeInsets.symmetric(
+  //                                     horizontal: 20, vertical: 16),
+  //                                 decoration: BoxDecoration(
+  //                                   color: Colors.black.withOpacity(0.6),
+  //                                   borderRadius: BorderRadius.circular(16),
+  //                                   border: Border.all(
+  //                                       color: Colors.white.withOpacity(0.2)),
+  //                                 ),
+  //                                 child: Column(
+  //                                   crossAxisAlignment: CrossAxisAlignment.end,
+  //                                   children: [
+  //                                     Text('Current Bid',
+  //                                         style: TextStyle(
+  //                                             color: Colors.white70,
+  //                                             fontSize: 12)),
+  //                                     Text(_formatPrice(_currentHighestBid),
+  //                                         style: TextStyle(
+  //                                             color: Colors.white,
+  //                                             fontSize: 24,
+  //                                             fontWeight: FontWeight.bold)),
+  //                                   ],
+  //                                 ),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //           // Bid Info Section - Updated from polling data
+  //           SliverToBoxAdapter(
+  //             child: Material(
+                
+  //               borderRadius: BorderRadius.circular(16),
+  //               child: Container(
+  //                 margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
+  //                 padding: EdgeInsets.all(16),
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.white,
+  //                   borderRadius: BorderRadius.circular(16),
+  //                   border: Border.all(color: Colors.grey.shade200),
+  //                 ),
+  //                 child: Column(
+  //                   // elevation: 40, // Creates shadow and lifts above other elements
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Text('Bid Information',
+  //                         style: TextStyle(
+  //                             fontWeight: FontWeight.bold, fontSize: 16)),
+  //                     SizedBox(height: 12),
+  //                     GridView.count(
+  //                       shrinkWrap: true,
+  //                       physics: NeverScrollableScrollPhysics(),
+  //                       crossAxisCount: 2,
+  //                       crossAxisSpacing: 12,
+  //                       mainAxisSpacing: 12,
+  //                       childAspectRatio: 3,
+  //                       children: [
+  //                         _buildInfoItem('Starting bid',
+  //                             _formatPrice(_startingBid)),
+  //                         _buildInfoItem('Total bidders', '$_totalBids'),
+  //                         _buildInfoItem(
+  //                             'Highest bidder',
+  //                             _highestBidder.isNotEmpty
+  //                                 ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+  //                                 : 'No bids'),
+  //                         _buildInfoItem('Bid now at', '$_pointPerBid'),
+  //                       ],
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //           // Reviews Section
+  //           SliverToBoxAdapter(
+  //             child: GestureDetector(
+  //               onTap: _openReviewsModal,
+  //               child: Container(
+  //                 margin: EdgeInsets.symmetric(horizontal: 16),
+  //                 padding: EdgeInsets.all(16),
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.white,
+  //                   borderRadius: BorderRadius.circular(16),
+  //                   border: Border.all(color: Colors.grey.shade200),
+  //                   boxShadow: [
+  //                     BoxShadow(
+  //                         color: Colors.black.withOpacity(0.05),
+  //                         blurRadius: 4,
+  //                         offset: Offset(0, 2)),
+  //                   ],
+  //                 ),
+  //                 child: Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Row(
+  //                       children: [
+  //                         Row(
+  //                           children: List.generate(5, (index) {
+  //                             return Icon(
+  //                               index < _rating.round()
+  //                                   ? Icons.star
+  //                                   : Icons.star_border,
+  //                               size: 16,
+  //                               color: Colors.amber,
+  //                             );
+  //                           }),
+  //                         ),
+  //                         SizedBox(width: 8),
+  //                         Text(_rating.toStringAsFixed(1),
+  //                             style: TextStyle(
+  //                                 fontSize: 18, fontWeight: FontWeight.bold)),
+  //                         SizedBox(width: 8),
+  //                         Container(
+  //                           padding: EdgeInsets.symmetric(
+  //                               horizontal: 8, vertical: 4),
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.grey.shade100,
+  //                             borderRadius: BorderRadius.circular(20),
+  //                           ),
+  //                           child: Text('$_reviewsCount reviews',
+  //                               style: TextStyle(
+  //                                   fontSize: 12, color: Colors.grey)),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     Icon(Icons.arrow_forward_ios,
+  //                         size: 16, color: Colors.grey),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //           // Thumbnails
+  //           SliverToBoxAdapter(
+  //             child: Container(
+  //               height: 70,
+  //               margin: EdgeInsets.all(16),
+  //               child: ListView.builder(
+  //                 scrollDirection: Axis.horizontal,
+  //                 itemCount: _productImages.length,
+  //                 itemBuilder: (context, index) {
+  //                   return GestureDetector(
+  //                     onTap: () {
+  //                       setState(() => _currentImageIndex = index);
+  //                     },
+  //                     child: Container(
+  //                       width: 60,
+  //                       height: 60,
+  //                       margin: EdgeInsets.only(right: 8),
+  //                       decoration: BoxDecoration(
+  //                         borderRadius: BorderRadius.circular(12),
+  //                         border: Border.all(
+  //                           color: _currentImageIndex == index
+  //                               ? MyTheme.accent_color
+  //                               : Colors.grey.shade300,
+  //                           width: 2,
+  //                         ),
+  //                       ),
+  //                       child: ClipRRect(
+  //                         borderRadius: BorderRadius.circular(10),
+  //                         child: Image.network(
+  //                           _productImages[index],
+  //                           fit: BoxFit.cover,
+  //                           errorBuilder: (context, error, stackTrace) =>
+  //                               Icon(Icons.broken_image, color: Colors.grey),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   );
+  //                 },
+  //               ),
+  //             ),
+  //           ),
+  //           SliverToBoxAdapter(child: SizedBox(height: 80)),
+  //         ],
+  //       ),
+  //       // Bottom Bar
+  //       Positioned(
+  //         bottom: 0,
+  //         left: 0,
+  //         right: 0,
+  //         child: Container(
+  //           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             boxShadow: [
+  //               BoxShadow(
+  //                   color: Colors.black12,
+  //                   blurRadius: 8,
+  //                   offset: Offset(0, -2))
+  //             ],
+  //           ),
+  //           child: Row(
+  //             children: [
+  //               Expanded(
+  //                 child: OutlinedButton(
+  //                   onPressed: _showBidInputDialog,
+  //                   style: OutlinedButton.styleFrom(
+  //                     padding: EdgeInsets.symmetric(vertical: 14),
+  //                     shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(8)),
+  //                   ),
+  //                   child: Text('Custom'),
+  //                 ),
+  //               ),
+  //               SizedBox(width: 12),
+  //               Expanded(
+  //                 flex: 2,
+  //                 child: ElevatedButton(
+  //                   onPressed: _isProcessing ? null : _placeBidNow,
+  //                   style: ElevatedButton.styleFrom(
+  //                     backgroundColor: MyTheme.accent_color,
+  //                     padding: EdgeInsets.symmetric(vertical: 14),
+  //                     shape: RoundedRectangleBorder(
+  //                         borderRadius: BorderRadius.circular(8)),
+  //                   ),
+  //                   child: _isProcessing
+  //                       ? _buildButtonLoader()
+  //                       : Text(
+  //                           'Bid Now - ${_formatPrice(_minNextBidNow)}',
+  //                           style: TextStyle(color: Colors.white),
+  //                         ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildMobileLayout() {
     final timeComponents = _getTimeComponents();
@@ -1668,7 +2598,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
-                          // FIX 4 & 5: Wishlist icon with sound
+                          // Wishlist icon with sound
                           _buildIconCircle(
                             icon: _isInWishlist
                                 ? Icons.favorite
@@ -1744,14 +2674,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _contactSeller();
                                   },
                                 ),
-                                // _buildMoreMenuItem(
-                                //   icon: Icons.share,
-                                //   text: 'Share',
-                                //   onTap: () {
-                                //     setState(() => _showMoreMenu = false);
-                                //     _shareProduct();
-                                //   },
-                                // ),
                               ],
                             ),
                           ),
@@ -1780,31 +2702,15 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Comment count header
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      // Text(
-                                      //   'Comments (${_comments.length})',
-                                      //   style: TextStyle(
-                                      //     color: Colors.white,
-                                      //     fontSize: 12,
-                                      //     fontWeight: FontWeight.w600,
-                                      //   ),
-                                      // ),
-                                      // Text(
-                                      //   'Recent',
-                                      //   style: TextStyle(
-                                      //     color: Colors.white70,
-                                      //     fontSize: 10,
-                                      //   ),
-                                      // ),
+                                      // Comment count header (commented out)
                                     ],
                                   ),
                                   SizedBox(height: 6),
-                                  // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
                                   Container(
-                                    height: imageHeight * 0.4, // Reduced from 0.5 to 0.3
+                                    height: imageHeight * 0.4,
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
@@ -1822,13 +2728,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                               final comment = _comments[index];
                                               return Padding(
                                                 padding:
-                                                    EdgeInsets.only(bottom: 6), // Reduced from 8 to 6
+                                                    EdgeInsets.only(bottom: 6),
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 12, // Reduced from 12 to 10
+                                                      radius: 12,
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
@@ -1837,12 +2743,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               .userAvatar ==
                                                           null
                                                           ? Icon(Icons.person,
-                                                              size: 12, // Reduced from 12 to 10
+                                                              size: 12,
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 8), // Reduced from 8 to 6
+                                                    SizedBox(width: 8),
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1855,7 +2761,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 11, // Reduced from 11 to 10
+                                                              fontSize: 11,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1867,7 +2773,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 10, // Reduced from 10 to 9
+                                                              fontSize: 10,
                                                             ),
                                                             maxLines: 2,
                                                             overflow:
@@ -1883,7 +2789,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
-                                  SizedBox(height: 4), // Reduced from 8 to 4
+                                  SizedBox(height: 4),
                                   Row(
                                     children: [
                                       Expanded(
@@ -1898,44 +2804,44 @@ class _ProductDetailsState extends State<ProductDetails>
                                             controller: _commentController,
                                             style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 11), // Reduced from 12 to 11
+                                                fontSize: 11),
                                             decoration: InputDecoration(
                                               hintText: 'Add Comment...',
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
-                                                  fontSize: 11), // Reduced from 12 to 11
+                                                  fontSize: 11),
                                               border: InputBorder.none,
                                               contentPadding:
                                                   EdgeInsets.symmetric(
-                                                      horizontal: 10, // Reduced from 12 to 10
-                                                      vertical: 6), // Reduced from 8 to 6
+                                                      horizontal: 10,
+                                                      vertical: 6),
                                             ),
                                             onSubmitted: (value) =>
                                                 _sendComment(),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 6), // Reduced from 8 to 6
+                                      SizedBox(width: 6),
                                       GestureDetector(
                                         onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
-                                          width: 28, // Reduced from 32 to 28
-                                          height: 28, // Reduced from 32 to 28
+                                          width: 28,
+                                          height: 28,
                                           decoration: BoxDecoration(
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
                                           child: _isProcessing
                                               ? const SizedBox(
-                                                  height: 12, // Reduced from 14 to 12
-                                                  width: 12, // Reduced from 14 to 12
+                                                  height: 12,
+                                                  width: 12,
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     color: Colors.white,
                                                   ),
                                                 )
                                               : Icon(Icons.send,
-                                                  size: 14, // Reduced from 16 to 14
+                                                  size: 14,
                                                   color: Colors.white),
                                         ),
                                       ),
@@ -1959,8 +2865,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                   SizedBox(height: 4),
                                   Text(
                                       _product?.description
-                                              ?.replaceAll(RegExp(r'<[^>]*>'),
-                                                  '') ??
+                                          ?.replaceAll(RegExp(r'<[^>]*>'),
+                                              '') ??
                                           '',
                                       style: TextStyle(
                                           color: Colors.white70, fontSize: 14),
@@ -2033,7 +2939,6 @@ class _ProductDetailsState extends State<ProductDetails>
             // Bid Info Section - Updated from polling data
             SliverToBoxAdapter(
               child: Material(
-                
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -2044,7 +2949,6 @@ class _ProductDetailsState extends State<ProductDetails>
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Column(
-                    // elevation: 40, // Creates shadow and lifts above other elements
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Bid Information',
@@ -2230,7 +3134,100 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
         ),
+        // ✅ DEBUG FLOATING BUTTON - Added here
+        _buildDebugFloatingButton(),
       ],
+    );
+  }
+
+  // Add this method to your class
+  Widget _buildDebugFloatingButton() {
+    if (!kDebugMode) return const SizedBox.shrink();
+    
+    return Positioned(
+      bottom: 120,
+      right: 16,
+      child: FloatingActionButton(
+        mini: true,
+        backgroundColor: Colors.orange,
+        onPressed: () {
+          // Show a menu of debug options
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.favorite, color: Colors.red),
+                    title: const Text('Wishlist Status'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _debugShowWishlistInfo();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.api, color: Colors.blue),
+                    title: const Text('API Response'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _debugShowProductData();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.refresh, color: Colors.green),
+                    title: const Text('Poll Data'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _debugShowPollData();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.info, color: Colors.purple),
+                    title: const Text('Current State'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _debugShowCurrentState();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        child: const Icon(Icons.bug_report, color: Colors.white),
+      ),
+    );
+  }
+
+  // Add this debug method
+  void _debugShowCurrentState() {
+    if (!kDebugMode) return;
+    
+    final data = {
+      'product_id': _product?.id ?? 'null',
+      'product_name': _product?.name ?? 'null',
+      '_isInWishlist': _isInWishlist,
+      '_isWishlisted': _isWishlisted,
+      '_isProcessing': _isProcessing,
+      '_isLoading': _isLoading,
+      'is_logged_in': is_logged_in.$,
+      'heart_icon': _isInWishlist ? '❤️ FULL (Icons.favorite)' : '🤍 EMPTY (Icons.favorite_border)',
+      'expected_behavior': _isInWishlist 
+          ? 'Should show FULL heart and REMOVE on tap' 
+          : 'Should show EMPTY heart and ADD on tap',
+      'total_bids': _totalBids,
+      'current_highest_bid': _currentHighestBid,
+      'total_comments': _comments.length,
+      'total_reviews': _reviews.length,
+    };
+    
+    DebugHelper.showApiResponseDialog(
+      context,
+      title: '🔍 Current State Debug',
+      responseData: data,
+      isSuccess: true,
     );
   }
 
