@@ -16,7 +16,6 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/address.dart';
-// import 'package:active_ecommerce_flutter/screens/auction_products.dart';
 import 'package:active_ecommerce_flutter/screens/change_language.dart';
 import 'package:active_ecommerce_flutter/screens/classified_ads/classified_ads.dart';
 import 'package:active_ecommerce_flutter/screens/classified_ads/my_classified_ads.dart';
@@ -46,14 +45,13 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../repositories/auth_repository.dart';
 import '../data_model/user_info_response.dart';
-// import 'auction_bidded_products.dart';
 import 'auction_purchase_history.dart';
 import 'coming_soon_page.dart';
 import 'invite_history_page.dart';
 import 'payment_settings_page.dart';
 import 'terms_conditions_page.dart';
 import 'package:flutter/services.dart';
- 
+
 class Profile extends StatefulWidget {
   Profile({Key? key, this.show_back_button = false}) : super(key: key);
 
@@ -166,7 +164,6 @@ class _ProfileState extends State<Profile> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      // Go to home if can't pop
       context.go("/");
     }
   }
@@ -177,6 +174,7 @@ class _ProfileState extends State<Profile> {
     });
   }
 
+  // ============ LOGOUT ============
   void _onTapLogout() async {
     bool? confirm = await showDialog(
       context: context,
@@ -211,6 +209,10 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
+      print('========== LOGOUT STARTED ==========');
+      print('Current route before logout: ${GoRouter.of(context).routeInformationProvider.value.location}');
+      
+      // Clear user data
       await AuthHelper().clearUserData();
 
       access_token.$ = "";
@@ -233,21 +235,89 @@ class _ProfileState extends State<Profile> {
         duration: Toast.LENGTH_SHORT,
       );
 
+      print('User data cleared, attempting redirect...');
+      
+      // Small delay to ensure data is saved
       await Future.delayed(const Duration(milliseconds: 300));
 
-      _redirectAfterLogout();
+      await _redirectAfterLogout();
     }
   }
 
   Future<void> _redirectAfterLogout() async {
-
-    await Future.delayed(const Duration(milliseconds: 200));
+    print('========== REDIRECT ATTEMPT ==========');
+    print('mounted: ${mounted}');
+    print('current_route: ${GoRouter.of(context).routeInformationProvider.value.location}');
+    print('canPop: ${GoRouter.of(context).canPop()}');
+    print('========================================');
 
     if (!mounted) return;
 
-    context.go('/users/login');
-  }
+    // Method 1: Try to pop if possible (go back to previous page)
+    try {
+      final router = GoRouter.of(context);
+      if (router.canPop()) {
+        print('✅ Can pop, going back to previous page...');
+        router.pop();
+        return;
+      }
+    } catch (e) {
+      print('❌ GoRouter pop error: $e');
+    }
 
+    // Method 2: Use context.go('/users/login')
+    try {
+      print('Attempting context.go("/users/login")...');
+      context.go('/users/login');
+      print('context.go("/users/login") completed');
+      
+      // Verify navigation after a delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          print('Current route after go: ${GoRouter.of(context).routeInformationProvider.value.location}');
+        }
+      });
+      return;
+    } catch (e) {
+      print('❌ context.go error: $e');
+    }
+
+    // Method 3: Use Navigator.pushReplacement
+    try {
+      print('Attempting Navigator.pushReplacement to Login...');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Login()),
+      );
+      print('Navigator.pushReplacement completed');
+      return;
+    } catch (e) {
+      print('❌ Navigator.pushReplacement error: $e');
+    }
+
+    // Method 4: Use popAndPushNamed
+    try {
+      print('Attempting Navigator.popAndPushNamed...');
+      Navigator.popAndPushNamed(context, '/users/login');
+      print('popAndPushNamed completed');
+      return;
+    } catch (e) {
+      print('❌ popAndPushNamed error: $e');
+    }
+
+    // Method 5: Last resort - pushAndRemoveUntil
+    try {
+      print('Attempting Navigator.pushAndRemoveUntil to Login...');
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const Login()),
+        (route) => false,
+      );
+      print('pushAndRemoveUntil completed');
+    } catch (e) {
+      print('❌ All navigation attempts failed: $e');
+    }
+  }
 
   void _showLoginWarning() {
     ToastComponent.showDialog(
@@ -283,7 +353,6 @@ class _ProfileState extends State<Profile> {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              // Go to home if can't pop
               context.go("/");
             }
           },
@@ -325,7 +394,6 @@ class _ProfileState extends State<Profile> {
               padding: const EdgeInsets.only(right: 8),
               child: TextButton(
                 onPressed: () {
-                  // Navigate to login page
                   context.push("/users/login");
                 },
                 child: Text(
@@ -740,9 +808,8 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  // ============ DEBUG METHODS (Hidden in release builds) ============
+  // ============ DEBUG METHODS ============
   Future<void> _debugShowApiResponse() async {
-    // Only available in debug mode
     if (!kDebugMode) return;
     
     try {
@@ -811,7 +878,6 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -856,7 +922,6 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -893,7 +958,6 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -946,7 +1010,6 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -980,7 +1043,6 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -1096,7 +1158,6 @@ Raw Response: ${response.body}
                   ),
                 ),
                 const SizedBox(height: 12),
-                
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -1116,7 +1177,6 @@ Raw Response: ${response.body}
                   ),
                 ),
                 const SizedBox(height: 12),
-                
                 Text(
                   "Error: ${e.toString()}",
                   style: const TextStyle(fontSize: 12),
