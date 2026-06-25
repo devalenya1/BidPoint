@@ -81,19 +81,15 @@ class _LoginState extends State<Login> {
 
   // Helper method to handle successful login with proper redirect
   void _handleLoginSuccess() {
-    // Call the callback if provided (for custom navigation from other screens)
-    // if (widget.onLoginSuccess != null) {
-    //   widget.onLoginSuccess!();
-    //   return;
-    // }
-
-    final router = GoRouter.of(context);
-    
-    // Try to go back to previous page if possible
-    if (router.canPop()) {
-      router.pop();
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!();
       return;
     }
+
+    if (!mounted) return;
+
+    context.go('/');
+  }
     
     // No previous page - navigate to home (Main page)
     // This uses pushReplacement to remove login from the stack
