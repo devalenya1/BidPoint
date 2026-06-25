@@ -148,23 +148,20 @@ class _CheckoutState extends State<Checkout> {
           : "order";
     });
 
-    // ✅ DEBUG: Fetching payment list
-    print('========== FETCH PAYMENT LIST ==========');
-    print('mode: $mode');
-    print('list: ${widget.list}');
-    
     var paymentTypeResponseList = await PaymentRepository()
         .getPaymentResponseList(list: widget.list, mode: mode);
 
-    _paymentTypeList.addAll(paymentTypeResponseList);
-    
-    print('Payment methods found: ${_paymentTypeList.length}');
-    if (_paymentTypeList.isNotEmpty) {
-      print('First payment method: ${_paymentTypeList[0].payment_type}');
+    // ✅ DEBUG: Print all payment methods
+    print('========== PAYMENT METHODS LIST ==========');
+    print('mode: $mode');
+    print('Number of payment methods: ${paymentTypeResponseList.length}');
+    for (var method in paymentTypeResponseList) {
+      print('payment_type: ${method.payment_type}, title: ${method.title}');
     }
-    print('========================================');
-    
-    if (_paymentTypeList.isNotEmpty) {
+    print('============================================');
+
+    _paymentTypeList.addAll(paymentTypeResponseList);
+    if (_paymentTypeList.length > 0) {
       _selected_payment_method = _paymentTypeList[0].payment_type;
       _selected_payment_method_key = _paymentTypeList[0].payment_type_key;
     }
@@ -263,7 +260,6 @@ class _CheckoutState extends State<Checkout> {
   // ============ PAYMENT METHODS ============
   
   void onPressPlaceOrderOrProceed() {
-    // ✅ DEBUG: Print payment attempt info
     print('========== PAYMENT ATTEMPT ==========');
     print('selected_payment_method: $_selected_payment_method');
     print('selected_payment_method_key: $_selected_payment_method_key');
@@ -272,11 +268,6 @@ class _CheckoutState extends State<Checkout> {
     print('packageId: ${widget.packageId}');
     print('paymentFor: ${widget.paymentFor}');
     print('====================================');
-    
-    // Show debug dialog in debug mode
-    if (kDebugMode) {
-      _debugShowPaymentInfo();
-    }
 
     if (_selected_payment_method == "") {
       ToastComponent.showDialog(
@@ -291,8 +282,25 @@ class _CheckoutState extends State<Checkout> {
       return;
     }
 
-    // Handle different payment methods
-    if (_selected_payment_method == "stripe_payment") {
+    // ✅ FIX: Check for both "paypal" and "paypal_payment"
+    if (_selected_payment_method == "paypal_payment" || _selected_payment_method == "paypal") {
+      print('✅ Navigating to PayPal screen...');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaypalScreen(
+            amount: _grandTotalValue,
+            payment_type: payment_type,
+            payment_method_key: _selected_payment_method_key,
+            package_id: widget.packageId.toString(),
+          ),
+        ),
+      );
+      return;
+    }
+    
+    // Handle other payment methods
+    else if (_selected_payment_method == "stripe_payment" || _selected_payment_method == "stripe") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return StripeScreen(
           amount: _grandTotalValue,
@@ -300,10 +308,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "aamarpay") {
+      }));
+    }
+    else if (_selected_payment_method == "aamarpay") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return AmarpayScreen(
           amount: _grandTotalValue,
@@ -311,21 +318,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "paypal_payment") {
-      Navigator.push(context, MaterialPageRoute(builder: (context) {
-        return PaypalScreen(
-          amount: _grandTotalValue,
-          payment_type: payment_type,
-          payment_method_key: _selected_payment_method_key,
-          package_id: widget.packageId.toString(),
-        );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "razorpay") {
+      }));
+    }
+    else if (_selected_payment_method == "razorpay") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return RazorpayScreen(
           amount: _grandTotalValue,
@@ -333,10 +328,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "paystack") {
+      }));
+    }
+    else if (_selected_payment_method == "paystack") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return PaystackScreen(
           amount: _grandTotalValue,
@@ -344,10 +338,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "iyzico") {
+      }));
+    }
+    else if (_selected_payment_method == "iyzico") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return IyzicoScreen(
           amount: _grandTotalValue,
@@ -355,10 +348,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "bkash") {
+      }));
+    }
+    else if (_selected_payment_method == "bkash") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return BkashScreen(
           amount: _grandTotalValue,
@@ -366,10 +358,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "nagad") {
+      }));
+    }
+    else if (_selected_payment_method == "nagad") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return NagadScreen(
           amount: _grandTotalValue,
@@ -377,10 +368,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "sslcommerz_payment") {
+      }));
+    }
+    else if (_selected_payment_method == "sslcommerz_payment" || _selected_payment_method == "sslcommerz") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return SslCommerzScreen(
           amount: _grandTotalValue,
@@ -388,10 +378,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "flutterwave") {
+      }));
+    }
+    else if (_selected_payment_method == "flutterwave") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return FlutterwaveScreen(
           amount: _grandTotalValue,
@@ -399,10 +388,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "paytm") {
+      }));
+    }
+    else if (_selected_payment_method == "paytm") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return PaytmScreen(
           amount: _grandTotalValue,
@@ -410,10 +398,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "khalti") {
+      }));
+    }
+    else if (_selected_payment_method == "khalti") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return KhaltiScreen(
           amount: _grandTotalValue,
@@ -421,10 +408,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "instamojo_payment") {
+      }));
+    }
+    else if (_selected_payment_method == "instamojo_payment" || _selected_payment_method == "instamojo") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return OnlinePay(
           title: LangText(context).local.pay_with_instamojo,
@@ -433,10 +419,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "payfast") {
+      }));
+    }
+    else if (_selected_payment_method == "payfast") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return PayfastScreen(
           amount: _grandTotalValue,
@@ -444,10 +429,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "phonepe") {
+      }));
+    }
+    else if (_selected_payment_method == "phonepe") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return PhonepayScreen(
           amount: _grandTotalValue,
@@ -455,10 +439,9 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "myfatoorah") {
+      }));
+    }
+    else if (_selected_payment_method == "myfatoorah") {
       Navigator.push(context, MaterialPageRoute(builder: (context) {
         return MyFatooraScreen(
           amount: _grandTotalValue,
@@ -466,17 +449,19 @@ class _CheckoutState extends State<Checkout> {
           payment_method_key: _selected_payment_method_key,
           package_id: widget.packageId.toString(),
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else if (_selected_payment_method == "wallet_system") {
+      }));
+    }
+    else if (_selected_payment_method == "wallet_system" || _selected_payment_method == "wallet") {
       pay_by_wallet();
-    } else if (_selected_payment_method == "cash_payment") {
+    }
+    else if (_selected_payment_method == "cash_payment" || _selected_payment_method == "cash") {
       pay_by_cod();
-    } else if (_selected_payment_method == "manual_payment" &&
+    }
+    else if (_selected_payment_method == "manual_payment" &&
         widget.paymentFor == PaymentFor.Order) {
       pay_by_manual_payment();
-    } else if (_selected_payment_method == "manual_payment" &&
+    }
+    else if (_selected_payment_method == "manual_payment" &&
         (widget.paymentFor == PaymentFor.ManualPayment ||
             widget.paymentFor == PaymentFor.WalletRecharge ||
             widget.paymentFor == PaymentFor.PackagePay)) {
@@ -492,16 +477,16 @@ class _CheckoutState extends State<Checkout> {
           paymentMethod: _paymentTypeList[_selected_payment_method_index].name,
           packageId: widget.packageId,
         );
-      })).then((value) {
-        onPopped(value);
-      });
-    } else {
-      // ✅ DEBUG: Unknown payment method
-      print('Unknown payment method: $_selected_payment_method');
+      }));
+    }
+    else {
+      // ✅ Unknown payment method
+      print('❌ Unknown payment method: $_selected_payment_method');
       ToastComponent.showDialog(
-          'Payment method not supported: $_selected_payment_method',
-          gravity: Toast.center,
-          duration: Toast.lengthLong);
+        'Payment method not supported: $_selected_payment_method',
+        gravity: Toast.center,
+        duration: Toast.lengthLong,
+      );
     }
   }
 

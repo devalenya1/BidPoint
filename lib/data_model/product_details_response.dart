@@ -270,7 +270,7 @@ class DetailedProduct {
         // Additional fields from poll data
         totalBids: json["total_bids"],
         lastBidderName: json["last_bidder_name"],
-        isInWishlist: json["is_in_wishlist"],
+        isInWishlist: json["is_in_wishlist"] ?? false,
         reviewsCount: json["reviews_count"],
         highestBidFormatted: json["highest_bid_formatted"],
         lastBidAmount: json["last_bid_amount"]?.toDouble(),

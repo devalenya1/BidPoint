@@ -408,8 +408,30 @@ class PollDataResponse {
   });
 
   factory PollDataResponse.fromJson(Map<String, dynamic> json) {
-    // Get the data inside the 'data' key
-    final data = json['data'] ?? json; // Fallback to json if no data key
+    // DEBUG: Print the raw response to see the structure
+    print('========== POLL RESPONSE RAW ==========');
+    print(json);
+    print('========================================');
+    
+    // Try to get data from different possible structures
+    Map<String, dynamic> data;
+    
+    // Check if there's a 'data' key that contains the actual data
+    // if (json['data'] != null && json['data'] is Map<String, dynamic>) {
+    //   data = json['data'];
+    // } else {
+    //   // If no 'data' key, use the json itself
+    //   data = json;
+    // }
+
+    final data = json['data'] ?? json;
+    
+    // DEBUG: Print the data we're parsing
+    print('========== PARSING DATA ==========');
+    print('success: ${json['success']}');
+    print('is_in_wishlist from API: ${data['is_in_wishlist']}');
+    print('data keys: ${data.keys}');
+    print('==================================');
     
     return PollDataResponse(
       success: json['success'],

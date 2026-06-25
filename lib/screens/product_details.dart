@@ -52,6 +52,7 @@ class _ProductDetailsState extends State<ProductDetails>
   TextEditingController _reviewController = TextEditingController();
 
   // Data
+  bool _isListening = false;
   bool _isLoading = true;
   DetailedProduct? _product;
   List<String> _productImages = [];
@@ -373,10 +374,12 @@ class _ProductDetailsState extends State<ProductDetails>
         // ============================================
         if (response.isInWishlist != null) {
           final newWishlistState = response.isInWishlist!;
+          print('🔄 Poll: isInWishlist = $newWishlistState (was $_isInWishlist)');
           if (_isInWishlist != newWishlistState) {
             setState(() {
               _isInWishlist = newWishlistState;
             });
+            print('✅ Updated wishlist to: $_isInWishlist');
           }
         }
 
@@ -414,6 +417,54 @@ class _ProductDetailsState extends State<ProductDetails>
     } catch (e) {
       print('Polling error: $e');
     }
+  }
+
+
+  void _checkAndRefreshWishlist() {
+    // Only refresh if product exists, user is logged in, and not currently loading
+    if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
+      print('✅ Checking wishlist status on page focus...');
+      _refreshWishlistStatus();
+    } else {
+      print('⏭️ Skipping wishlist refresh: product=${_product != null}, loggedIn=${is_logged_in.$}, loading=$_isLoading, processing=$_isProcessing');
+    }
+  }
+
+  // Add this to your state class
+  bool _isListening = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _mainScrollController = ScrollController();
+    _fetchAllData();
+    _startPolling();
+    
+    // Initialize audio player
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
+    
+    // Add listener for login state changes
+    _setupLoginStateListener();
+  }
+
+  void _setupLoginStateListener() {
+    // Listen to login state changes
+    if (!_isListening) {
+      _isListening = true;
+      // This will be called when is_logged_in changes
+      // You can use a ValueNotifier or a custom listener
+      // For now, we'll use a simple check on page resume
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when dependencies change (like when coming back to the page)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndRefreshWishlist();
+    });
   }
 
   void _startCountdown(DateTime endTime) {
@@ -717,22 +768,38 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Future<void> _refreshWishlistStatus() async {
+    // Don't refresh if no product or user not logged in
+    if (_product == null) {
+      print('⏭️ Cannot refresh wishlist: product is null');
+      return;
+    }
+    
+    if (!is_logged_in.$) {
+      print('⏭️ Cannot refresh wishlist: user not logged in');
+      return;
+    }
+    
     try {
-      print('Refreshing wishlist status...');
+      print('🔄 Refreshing wishlist status for product ${_product!.id}...');
       final response = await _productRepository.pollProductData(_product!.id ?? 0);
-      print('Poll response success: ${response.success}');
-      print('Poll response isInWishlist: ${response.isInWishlist}');
+      print('📡 Poll response success: ${response.success}');
+      print('📡 Poll response isInWishlist: ${response.isInWishlist}');
       
       if (response.success == true && response.isInWishlist != null) {
-        setState(() {
-          _isInWishlist = response.isInWishlist!;
-        });
-        print('Updated _isInWishlist to: $_isInWishlist');
+        final newState = response.isInWishlist!;
+        if (_isInWishlist != newState) {
+          setState(() {
+            _isInWishlist = newState;
+          });
+          print('✅ Updated _isInWishlist to: $_isInWishlist');
+        } else {
+          print('✅ _isInWishlist already set to: $_isInWishlist');
+        }
       } else {
-        print('Failed to refresh wishlist status');
+        print('❌ Failed to refresh wishlist status');
       }
     } catch (e) {
-      print('Error refreshing wishlist status: $e');
+      print('❌ Error refreshing wishlist status: $e');
     }
   }
 
