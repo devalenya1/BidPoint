@@ -365,7 +365,7 @@ String pollDataResponseToJson(PollDataResponse data) => json.encode(data.toJson(
 class PollDataResponse {
   bool? success;
   String? auctionEndDate;
-  double? startingBid; // ADD THIS - starting_bid from API
+  double? startingBid;
   double? pointPerBid;
   double? pointPerBidCustom;
   bool? auctionEnded;
@@ -387,7 +387,7 @@ class PollDataResponse {
   PollDataResponse({
     this.success,
     this.auctionEndDate,
-    this.startingBid, // ADD THIS
+    this.startingBid,
     this.pointPerBid,
     this.pointPerBidCustom,
     this.auctionEnded,
@@ -408,30 +408,8 @@ class PollDataResponse {
   });
 
   factory PollDataResponse.fromJson(Map<String, dynamic> json) {
-    // DEBUG: Print the raw response to see the structure
-    print('========== POLL RESPONSE RAW ==========');
-    print(json);
-    print('========================================');
-    
-    // Try to get data from different possible structures
-    Map<String, dynamic> data;
-    
-    // Check if there's a 'data' key that contains the actual data
-    // if (json['data'] != null && json['data'] is Map<String, dynamic>) {
-    //   data = json['data'];
-    // } else {
-    //   // If no 'data' key, use the json itself
-    //   data = json;
-    // }
-
+    // Get the data inside the 'data' key or use json itself
     final data = json['data'] ?? json;
-    
-    // DEBUG: Print the data we're parsing
-    print('========== PARSING DATA ==========');
-    print('success: ${json['success']}');
-    print('is_in_wishlist from API: ${data['is_in_wishlist']}');
-    print('data keys: ${data.keys}');
-    print('==================================');
     
     return PollDataResponse(
       success: json['success'],
@@ -466,7 +444,7 @@ class PollDataResponse {
   Map<String, dynamic> toJson() => {
     'success': success,
     'auction_end_date': auctionEndDate,
-    'starting_bid': startingBid, // ADD THIS
+    'starting_bid': startingBid,
     'point_per_bid': pointPerBid,
     'point_per_bid_custom': pointPerBidCustom,
     'auction_ended': auctionEnded,
@@ -488,7 +466,7 @@ class PollDataResponse {
 
   // ============ SNAKE_CASE GETTERS ============
   String? get auction_end_date => auctionEndDate;
-  double? get starting_bid => startingBid; // ADD THIS
+  double? get starting_bid => startingBid;
   double? get point_per_bid => pointPerBid;
   double? get point_per_bid_custom => pointPerBidCustom;
   bool? get auction_ended => auctionEnded;

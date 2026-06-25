@@ -430,8 +430,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // Add this to your state class
-  bool _isListening = false;
 
   @override
   void initState() {
