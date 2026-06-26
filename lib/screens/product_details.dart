@@ -458,6 +458,35 @@ class _ProductDetailsState extends State<ProductDetails>
     });
   }
 
+  // Add these methods to your state class
+
+  Future<void> _likeComment(int commentId) async {
+    if (!is_logged_in.$) {
+      _showLoginRequired();
+      return;
+    }
+    
+    try {
+      final response = await _productRepository.likeProductComment(commentId);
+      if (response['success'] == true) {
+        // Update the comment likes in the list
+        setState(() {
+          final index = _comments.indexWhere((c) => c.id == commentId);
+          if (index != -1) {
+            _comments[index].likes = response['data']['likes'].toString();
+          }
+        });
+        _showToast('Comment liked!');
+      }
+    } catch (e) {
+      print('Error liking comment: $e');
+    }
+  }
+
+  void _replyToComment(String userName) {
+    _commentController.text = '@$userName ';
+    FocusScope.of(context).requestFocus(FocusNode());
+  }
   // ============================================
   // BID ACTIONS
   // ============================================
@@ -962,26 +991,28 @@ class _ProductDetailsState extends State<ProductDetails>
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Bid for Product',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Min bid amount: ${_formatPrice(_minNextBidNow)}',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-            Text('1 Bid = $_pointPerBidCustom',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-          ],
-        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Center title
+            Text(
+              'Enter Your Bid',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 4),
+            // Center subtitle
+            Text(
+              '1 Bid = $_pointPerBidCustom',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12),
             TextField(
               controller: _bidController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: 'Enter amount',
+                hintText: 'Min: ${_formatPrice(_minNextBidNow)}',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -991,45 +1022,47 @@ class _ProductDetailsState extends State<ProductDetails>
                 fillColor: Colors.grey.shade50,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(80, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Colors.grey.shade200,
                     ),
+                    child: Text('Cancel',
+                        style: TextStyle(color: Colors.grey.shade600)),
                   ),
-                  child: Text('Cancel',
-                      style: TextStyle(color: Colors.grey.shade600)),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _isProcessing
-                      ? null
-                      : () {
-                          Navigator.pop(context);
-                          _submitCustomBid();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MyTheme.accent_color,
-                    minimumSize: const Size(80, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isProcessing
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                            _submitCustomBid();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyTheme.accent_color,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
+                    child: _isProcessing
+                        ? _buildButtonLoader()
+                        : Text(
+                            'Place Bid',
+                            style: TextStyle(
+                                color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
                   ),
-                  child: _isProcessing
-                      ? _buildButtonLoader()
-                      : Text(
-                          'Place Bid',
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w600),
-                        ),
                 ),
               ],
             ),
@@ -1737,13 +1770,16 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                     ),
-                    // Top Icons - Vertical Right Icons
+                    // ============================================
+                    // TOP RIGHT ICONS: More, Bid History, Product Details
+                    // ============================================
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 8,
                       right: 16,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // 1. More Icon
                           _buildIconCircle(
                             icon: Icons.more_vert,
                             onTap: () =>
@@ -1751,20 +1787,22 @@ class _ProductDetailsState extends State<ProductDetails>
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
-                          // FIX 4 & 5: Wishlist icon with sound
-                          _buildIconCircle(
-                            icon: _isInWishlist
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            isActive: _isInWishlist,
-                            onTap: _toggleWishlist,
+                          // 2. Bid History Icon (using image)
+                          _buildIconCircleWithImage(
+                            imagePath: 'assets/bid_history.png',
+                            onTap: () {
+                              _openBidHistoryModal();
+                            },
                             isLoading: _isProcessing,
                           ),
                           SizedBox(height: 12),
-                          _buildIconCircle(
-                            icon: Icons.share,
-                            onTap: _shareProduct,
-                            isLoading: false,
+                          // 3. Product Details Icon (using image)
+                          _buildIconCircleWithImage(
+                            imagePath: 'assets/product_details.png',
+                            onTap: () {
+                              _openTitleModal();
+                            },
+                            isLoading: _isProcessing,
                           ),
                         ],
                       ),
@@ -1779,7 +1817,9 @@ class _ProductDetailsState extends State<ProductDetails>
                         isLoading: false,
                       ),
                     ),
-                    // More Menu
+                    // ============================================
+                    // MORE MENU: Share, Save(Wishlist), Contact Seller
+                    // ============================================
                     if (_showMoreMenu)
                       Positioned(
                         top: 80,
@@ -1803,22 +1843,27 @@ class _ProductDetailsState extends State<ProductDetails>
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                // 1. Share
                                 _buildMoreMenuItem(
-                                  icon: Icons.history,
-                                  text: 'Bid History',
+                                  icon: Icons.share,
+                                  text: 'Share',
                                   onTap: () {
                                     setState(() => _showMoreMenu = false);
-                                    _openBidHistoryModal();
+                                    _shareProduct();
                                   },
                                 ),
+                                // 2. Save / Saved (Wishlist)
                                 _buildMoreMenuItem(
-                                  icon: Icons.info_outline,
-                                  text: 'Product Details',
+                                  icon: _isInWishlist
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  text: _isInWishlist ? 'Saved' : 'Save',
                                   onTap: () {
                                     setState(() => _showMoreMenu = false);
-                                    _openTitleModal();
+                                    _toggleWishlist();
                                   },
                                 ),
+                                // 3. Contact Seller
                                 _buildMoreMenuItem(
                                   icon: Icons.contact_mail,
                                   text: _isProcessing ? 'Contacting...' : 'Contact Seller',
@@ -1827,14 +1872,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _contactSeller();
                                   },
                                 ),
-                                // _buildMoreMenuItem(
-                                //   icon: Icons.share,
-                                //   text: 'Share',
-                                //   onTap: () {
-                                //     setState(() => _showMoreMenu = false);
-                                //     _shareProduct();
-                                //   },
-                                // ),
                               ],
                             ),
                           ),
@@ -1885,9 +1922,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ],
                                   ),
                                   SizedBox(height: 6),
-                                  // Reduced height comments list - from imageHeight * 0.5 to imageHeight * 0.3
                                   Container(
-                                    height: imageHeight * 0.4, // Reduced from 0.5 to 0.3
+                                    height: imageHeight * 0.4,
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
@@ -1905,13 +1941,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                               final comment = _comments[index];
                                               return Padding(
                                                 padding:
-                                                    EdgeInsets.only(bottom: 6), // Reduced from 8 to 6
+                                                    EdgeInsets.only(bottom: 8),
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 12, // Reduced from 12 to 10
+                                                      radius: 18,
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
@@ -1920,12 +1956,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               .userAvatar ==
                                                           null
                                                           ? Icon(Icons.person,
-                                                              size: 12, // Reduced from 12 to 10
+                                                              size: 16,
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 8), // Reduced from 8 to 6
+                                                    SizedBox(width: 10),
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1938,7 +1974,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 11, // Reduced from 11 to 10
+                                                              fontSize: 13,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1950,12 +1986,44 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 10, // Reduced from 10 to 9
+                                                              fontSize: 12,
                                                             ),
-                                                            maxLines: 2,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
+                                                          ),
+                                                          // Comment actions - Like & Reply
+                                                          Row(
+                                                            children: [
+                                                              GestureDetector(
+                                                                onTap: () =>
+                                                                    _likeComment(
+                                                                        comment
+                                                                            .id ??
+                                                                            0),
+                                                                child: Text(
+                                                                  '${comment.likesCount} Likes',
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white54,
+                                                                    fontSize: 11,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              SizedBox(width: 12),
+                                                              GestureDetector(
+                                                                onTap: () =>
+                                                                    _replyToComment(
+                                                                        comment
+                                                                            .userName ??
+                                                                        'User'),
+                                                                child: Text(
+                                                                  'Reply',
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white54,
+                                                                    fontSize: 11,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
                                                         ],
                                                       ),
@@ -1966,7 +2034,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
-                                  SizedBox(height: 4), // Reduced from 8 to 4
+                                  SizedBox(height: 4),
                                   Row(
                                     children: [
                                       Expanded(
@@ -1981,44 +2049,44 @@ class _ProductDetailsState extends State<ProductDetails>
                                             controller: _commentController,
                                             style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 11), // Reduced from 12 to 11
+                                                fontSize: 11),
                                             decoration: InputDecoration(
                                               hintText: 'Add Comment...',
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
-                                                  fontSize: 11), // Reduced from 12 to 11
+                                                  fontSize: 11),
                                               border: InputBorder.none,
                                               contentPadding:
                                                   EdgeInsets.symmetric(
-                                                      horizontal: 10, // Reduced from 12 to 10
-                                                      vertical: 6), // Reduced from 8 to 6
+                                                      horizontal: 10,
+                                                      vertical: 6),
                                             ),
                                             onSubmitted: (value) =>
                                                 _sendComment(),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 6), // Reduced from 8 to 6
+                                      SizedBox(width: 6),
                                       GestureDetector(
                                         onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
-                                          width: 28, // Reduced from 32 to 28
-                                          height: 28, // Reduced from 32 to 28
+                                          width: 28,
+                                          height: 28,
                                           decoration: BoxDecoration(
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
                                           child: _isProcessing
                                               ? const SizedBox(
-                                                  height: 12, // Reduced from 14 to 12
-                                                  width: 12, // Reduced from 14 to 12
+                                                  height: 12,
+                                                  width: 12,
                                                   child: CircularProgressIndicator(
                                                     strokeWidth: 2,
                                                     color: Colors.white,
                                                   ),
                                                 )
                                               : Icon(Icons.send,
-                                                  size: 14, // Reduced from 16 to 14
+                                                  size: 14,
                                                   color: Colors.white),
                                         ),
                                       ),
@@ -2042,8 +2110,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                   SizedBox(height: 4),
                                   Text(
                                       _product?.description
-                                              ?.replaceAll(RegExp(r'<[^>]*>'),
-                                                  '') ??
+                                          ?.replaceAll(RegExp(r'<[^>]*>'),
+                                              '') ??
                                           '',
                                       style: TextStyle(
                                           color: Colors.white70, fontSize: 14),
@@ -2068,13 +2136,15 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Row(
                                       children: [
                                         _buildTimerUnitBig(
-                                            timeComponents['days']!, 'd'),
+                                            timeComponents['days']!, 'days'),
                                         _buildTimerUnitBig(
-                                            timeComponents['hours']!, 'h'),
+                                            timeComponents['hours']!, 'hours'),
                                         _buildTimerUnitBig(
-                                            timeComponents['minutes']!, 'm'),
+                                            timeComponents['minutes']!,
+                                            'minutes'),
                                         _buildTimerUnitBig(
-                                            timeComponents['seconds']!, 's'),
+                                            timeComponents['seconds']!,
+                                            'seconds'),
                                       ],
                                     ),
                                   ],
@@ -2116,7 +2186,6 @@ class _ProductDetailsState extends State<ProductDetails>
             // Bid Info Section - Updated from polling data
             SliverToBoxAdapter(
               child: Material(
-                
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -2127,7 +2196,6 @@ class _ProductDetailsState extends State<ProductDetails>
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Column(
-                    // elevation: 40, // Creates shadow and lifts above other elements
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Bid Information',
@@ -2314,6 +2382,61 @@ class _ProductDetailsState extends State<ProductDetails>
           ),
         ),
       ],
+    );
+  }
+
+  // ============================================
+  // NEW: Icon Circle with Custom Image
+  // ============================================
+
+  Widget _buildIconCircleWithImage({
+    required String imagePath,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: MyTheme.accent_color,
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Image.asset(
+                  imagePath,
+                  color: Colors.black87,
+                  height: 22,
+                  width: 22,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.image_not_supported,
+                      size: 22,
+                      color: Colors.black87,
+                    );
+                  },
+                ),
+              ),
+      ),
     );
   }
 

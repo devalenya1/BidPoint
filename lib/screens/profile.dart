@@ -174,8 +174,9 @@ class _ProfileState extends State<Profile> {
     });
   }
 
+
+
   // ============ LOGOUT ============
-  // ✅ EXACT SAME AS ORIGINAL - Simple and works!
   void _onTapLogout() async {
     bool? confirm = await showDialog(
       context: context,
@@ -210,10 +211,10 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      // ✅ EXACT SAME AS ORIGINAL
-      AuthHelper().clearUserData();
+      // Clear user data
+      await AuthHelper().clearUserData();
       
-      // ✅ Clear shared preferences
+      // Clear all shared preferences
       access_token.$ = "";
       access_token.save();
       is_logged_in.$ = false;
@@ -233,6 +234,7 @@ class _ProfileState extends State<Profile> {
       affiliate_balance.$ = "0";
       affiliate_balance.save();
 
+      // Reset local state
       _resetState();
 
       if (!mounted) return;
@@ -243,8 +245,12 @@ class _ProfileState extends State<Profile> {
         duration: Toast.LENGTH_SHORT,
       );
 
-      // ✅ EXACT SAME AS ORIGINAL - Just context.go("/")
-      context.go("/");
+      // ✅ Same as login pattern - use push with a small delay
+      // This ensures the state is fully cleared before navigating
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // ✅ MATCHES LOGIN PATTERN: Use context.push("/")
+      context.push("/");
     }
   }
 

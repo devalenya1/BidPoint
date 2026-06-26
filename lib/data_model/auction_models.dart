@@ -352,7 +352,7 @@ class WishlistResponse {
     'message': message,
   };
 }
-
+ 
 
 // ============================================
 // 8. POLL DATA RESPONSE (MAIN AUCTION DATA)
