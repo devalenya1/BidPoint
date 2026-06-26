@@ -877,12 +877,7 @@ class _ProductDetailsState extends State<ProductDetails>
         
         // ✅ Redirect to Messenger List page on success
         if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MessengerList(),
-            ),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (context) => MessengerList()));
         }
       } else {
         _showToast(response['message'] ?? 'Failed to contact seller');
