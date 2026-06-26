@@ -210,38 +210,29 @@ class _ProfileState extends State<Profile> {
     );
     
     if (confirm == true) {
-      // ✅ Clear user data
-      await AuthHelper().clearUserData();
-
-      // ✅ Clear all shared preferences values
+      // ✅ EXACT SAME AS ORIGINAL
+      AuthHelper().clearUserData();
+      
+      // ✅ Clear shared preferences
       access_token.$ = "";
       access_token.save();
-
       is_logged_in.$ = false;
       is_logged_in.save();
-
       user_id.$ = 0;
       user_id.save();
-
       user_name.$ = "";
       user_name.save();
-
       user_email.$ = "";
       user_email.save();
-
       user_phone.$ = "";
       user_phone.save();
-
       avatar_original.$ = "";
       avatar_original.save();
-
       points_balance.$ = "0";
       points_balance.save();
-
       affiliate_balance.$ = "0";
       affiliate_balance.save();
 
-      // ✅ Reset local state
       _resetState();
 
       if (!mounted) return;
@@ -252,13 +243,8 @@ class _ProfileState extends State<Profile> {
         duration: Toast.LENGTH_SHORT,
       );
 
-      // ✅ Force a complete rebuild by navigating with pushAndRemoveUntil
-      // This ensures the app state is completely reset
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const Main()),
-        (route) => false,
-      );
+      // ✅ EXACT SAME AS ORIGINAL - Just context.go("/")
+      context.go("/");
     }
   }
 

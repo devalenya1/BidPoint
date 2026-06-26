@@ -21,7 +21,6 @@ import 'package:active_ecommerce_flutter/ui_elements/auth_ui.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -79,16 +78,6 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
-  // ✅ Helper method to redirect after successful login
-  void _redirectAfterLogin() {
-    // Use pushAndRemoveUntil to clear the entire stack and rebuild
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const Main()),
-      (route) => false,
-    );
-  }
-
   onPressedLogin() async {
     Loading.show(context);
     var email = _emailController.text.toString();
@@ -113,6 +102,7 @@ class _LoginState extends State<Login> {
     var loginResponse = await AuthRepository().getLoginResponse(
         _login_by == 'email' ? email : _phone, password, _login_by);
     Loading.close();
+    
     if (loginResponse.result == false) {
       if (loginResponse.message.runtimeType == List) {
         ToastComponent.showDialog(loginResponse.message!.join("\n"),
@@ -124,7 +114,9 @@ class _LoginState extends State<Login> {
     } else {
       ToastComponent.showDialog(loginResponse.message!,
           gravity: Toast.center, duration: Toast.lengthLong);
+      
       await AuthHelper().setUserData(loginResponse);
+      
       // push notification starts
       if (OtherConfig.USE_PUSH_NOTIFICATION) {
         final FirebaseMessaging _fcm = FirebaseMessaging.instance;
@@ -151,8 +143,9 @@ class _LoginState extends State<Login> {
         }
       }
 
-      // ✅ Redirect after successful login
-      _redirectAfterLogin();
+      // ✅ MATCHES ORIGINAL: Use context.push("/") 
+      // This pushes the home page onto the navigation stack
+      context.push("/");
     }
   }
 
@@ -162,7 +155,6 @@ class _LoginState extends State<Login> {
           .login(loginBehavior: LoginBehavior.webOnly);
 
       if (facebookLogin.status == LoginStatus.success) {
-        // get the user data
         final userData = await FacebookAuth.instance.getUserData();
         var loginResponse = await AuthRepository().getSocialLoginResponse(
             "facebook",
@@ -171,6 +163,7 @@ class _LoginState extends State<Login> {
             userData['id'].toString(),
             access_token: facebookLogin.accessToken!.token);
         print("..........................${loginResponse.toString()}");
+        
         if (loginResponse.result == false) {
           ToastComponent.showDialog(loginResponse.message!,
               gravity: Toast.center, duration: Toast.lengthLong);
@@ -179,8 +172,10 @@ class _LoginState extends State<Login> {
               gravity: Toast.center, duration: Toast.lengthLong);
 
           await AuthHelper().setUserData(loginResponse);
-          // ✅ Redirect after successful login
-          _redirectAfterLogin();
+          // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return const Main();
+          }));
           FacebookAuth.instance.logOut();
         }
       } else {
@@ -218,8 +213,10 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ Redirect after successful login
-        _redirectAfterLogin();
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
       }
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
@@ -254,8 +251,10 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ Redirect after successful login
-        _redirectAfterLogin();
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
       }
     } on Exception catch (e) {
       print("error is ....... $e");
@@ -309,8 +308,10 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ Redirect after successful login
-        _redirectAfterLogin();
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
       }
     } on Exception catch (e) {
       print(e);
