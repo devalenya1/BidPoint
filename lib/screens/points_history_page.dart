@@ -17,7 +17,7 @@ import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
+// import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -78,9 +78,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         points_balance.save();
         
         // Save all user data to SharedPreferences for other screens
-        if (_userInfo != null) {
-          UserDataHelper.saveUserData(_userInfo!);
-        }
+        // if (_userInfo != null) {
+        //   UserDataHelper.saveUserData(_userInfo!);
+        // }
       } else {
         // Handle empty response
         setState(() {

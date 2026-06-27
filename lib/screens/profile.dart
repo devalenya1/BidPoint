@@ -174,10 +174,8 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-
-
-  // ============ LOGOUT - WITH SUCCESS TOAST BEFORE REDIRECT ============
-  void _onTapLogout(BuildContext context) {
+  // ============ LOGOUT - EXACTLY MATCHING ORIGINAL ============
+  void _onTapLogout(BuildContext context) async {
     // Show confirmation dialog
     showDialog(
       context: context,
@@ -202,23 +200,9 @@ class _ProfileState extends State<Profile> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              
-              // ✅ Clear user data first
+              // ✅ EXACTLY MATCHING ORIGINAL LOGOUT FLOW
               AuthHelper().clearUserData();
-              
-              // ✅ Show success toast (like login)
-              ToastComponent.showDialog(
-                "Logged out successfully",
-                gravity: ToastGravity.CENTER,
-                duration: Toast.LENGTH_SHORT,
-              );
-              
-              // ✅ Redirect to home after a small delay to show toast
-              Future.delayed(const Duration(milliseconds: 300), () {
-                if (mounted) {
-                  context.go("/");
-                }
-              });
+              context.go("/");
             },
             child: Text(
               AppLocalizations.of(context)!.yes_ucf,
@@ -296,7 +280,7 @@ class _ProfileState extends State<Profile> {
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
                 icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
-                onPressed: () => _onTapLogout(context),  // ✅ Pass context
+                onPressed: () => _onTapLogout(context),
               ),
             )
           else

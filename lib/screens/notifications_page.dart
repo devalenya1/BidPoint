@@ -68,9 +68,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
         unread_notifications_count.save();
 
         // Save all user data to SharedPreferences for other screens
-        if (_userInfo != null) {
-          UserDataHelper.saveUserData(_userInfo!);
-        }
+        // if (_userInfo != null) {
+        //   UserDataHelper.saveUserData(_userInfo!);
+        // }
 
         // AFTER loading notifications, mark all as read in background
         _markAllAsReadInBackground();
