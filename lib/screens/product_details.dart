@@ -1804,19 +1804,18 @@ class _ProductDetailsState extends State<ProductDetails>
                           // 2. Bid History Icon (using image)
                           _buildIconCircleWithImage(
                             imagePath: 'assets/bid_history.png',
-                            onTap: () {
-                              _openBidHistoryModal();
-                            },
+                            onTap: _openBidHistoryModal,
                             isLoading: _isProcessing,
+                            // Add a fallback icon in case the image doesn't load
+                            fallbackIcon: Icons.history,
                           ),
                           SizedBox(height: 12),
                           // 3. Product Details Icon (using image)
                           _buildIconCircleWithImage(
                             imagePath: 'assets/product_details.png',
-                            onTap: () {
-                              _openTitleModal();
-                            },
+                            onTap: _openTitleModal,
                             isLoading: _isProcessing,
+                            fallbackIcon: Icons.info_outline,
                           ),
                         ],
                       ),
@@ -2434,19 +2433,54 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               )
             : Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(10.0),
                 child: Image.asset(
                   imagePath,
-                  height: 22,
-                  width: 22,
+                  height: 24,
+                  width: 24,
                   color: Colors.black87,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
+                    // Show a fallback icon if image fails to load
+                    // Since you said bid_history uses image, we'll use appropriate icons
+                    String fallbackIcon = Icons.history.toString();
+                    if (imagePath.contains('product_details')) {
+                      return Icon(
+                        Icons.info_outline,
+                        size: 24,
+                        color: Colors.black87,
+                      );
+                    } else if (imagePath.contains('bid_history')) {
+                      return Icon(
+                        Icons.history,
+                        size: 24,
+                        color: Colors.black87,
+                      );
+                    }
                     return Icon(
                       Icons.image_not_supported,
-                      size: 22,
+                      size: 24,
                       color: Colors.black87,
                     );
+                  },
+                  // Add frame builder for better loading experience
+                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                    if (wasSynchronouslyLoaded) {
+                      return child;
+                    }
+                    // Show loader while image loads
+                    return frame == null
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: MyTheme.accent_color,
+                              ),
+                            ),
+                          )
+                        : child;
                   },
                 ),
               ),

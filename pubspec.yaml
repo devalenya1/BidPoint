@@ -118,6 +118,8 @@ flutter:
     - assets/fonts/
     - dummy_assets/
     - assets/sounds/
+    - assets/bid_history.png
+    - assets/product_details.png
   fonts:
     - family: PublicSansSerif
       fonts:

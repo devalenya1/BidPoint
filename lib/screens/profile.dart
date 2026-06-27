@@ -174,7 +174,243 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-  // ============ LOGOUT - WITH AWAIT FOR COMPLETE CLEARANCE ============
+  // ============ GET ALL SHARED VALUES FOR DEBUG ============
+  Map<String, dynamic> _getAllSharedValues() {
+    return {
+      // Auth values
+      'is_logged_in': is_logged_in.$,
+      'access_token': access_token.$ != null && access_token.$.isNotEmpty 
+          ? '${access_token.$.substring(0, 20)}...' 
+          : access_token.$,
+      'user_id': user_id.$,
+      'avatar_original': avatar_original.$,
+      
+      // User info
+      'user_name': user_name.$,
+      'user_email': user_email.$,
+      'user_phone': user_phone.$,
+      'user_address': user_address.$,
+      'user_country': user_country.$,
+      'user_state': user_state.$,
+      'user_city': user_city.$,
+      'user_postal_code': user_postal_code.$,
+      
+      // App settings (should NOT be cleared)
+      'app_language': app_language.$,
+      'app_mobile_language': app_mobile_language.$,
+      'system_currency': system_currency.$,
+      'app_language_rtl': app_language_rtl.$,
+      
+      // Points & Balance
+      'points_balance': points_balance.$,
+      
+      // Affiliate fields
+      'affiliate_id': affiliate_id.$,
+      'paypal_email': paypal_email.$,
+      'bank_name': bank_name.$,
+      'account_holder': account_holder.$,
+      'account_number': account_number.$,
+      'ifsc_code': ifsc_code.$,
+      'affiliate_balance': affiliate_balance.$,
+      'affiliate_status': affiliate_status.$,
+      'referral_code': referral_code.$,
+      'referral_link': referral_link.$,
+      'total_affiliate_earnings': total_affiliate_earnings.$,
+      
+      // Package fields
+      'customer_package_id': customer_package_id.$,
+      'customer_package_name': customer_package_name.$,
+      'remaining_uploads': remaining_uploads.$,
+      
+      // Notification counts
+      'unread_notifications_count': unread_notifications_count.$,
+      
+      // Wishlist
+      'wishlist_count': wishlist_count.$,
+      
+      // Auction bids
+      'auction_bids_count': auction_bids_count.$,
+      'distinct_auction_bids_count': distinct_auction_bids_count.$,
+      
+      // Withdrawal
+      'total_withdrawn_amount': total_withdrawn_amount.$,
+      'pending_withdraw_amount': pending_withdraw_amount.$,
+      
+      // Address counts
+      'address_count': address_count.$,
+      'default_address_count': default_address_count.$,
+      
+      // Package payments
+      'total_package_payments': total_package_payments.$,
+      
+      // Addons (should NOT be cleared)
+      'club_point_addon_installed': club_point_addon_installed.$,
+      'whole_sale_addon_installed': whole_sale_addon_installed.$,
+      'refund_addon_installed': refund_addon_installed.$,
+      'otp_addon_installed': otp_addon_installed.$,
+      'auction_addon_installed': auction_addon_installed.$,
+      
+      // Social login (should NOT be cleared)
+      'allow_google_login': allow_google_login.$,
+      'allow_facebook_login': allow_facebook_login.$,
+      'allow_twitter_login': allow_twitter_login.$,
+      'allow_apple_login': allow_apple_login.$,
+      
+      // Business settings (should NOT be cleared)
+      'pick_up_status': pick_up_status.$,
+      'carrier_base_shipping': carrier_base_shipping.$,
+      'google_recaptcha': google_recaptcha.$,
+      'wallet_system_status': wallet_system_status.$,
+      'mail_verification_status': mail_verification_status.$,
+      'conversation_system_status': conversation_system_status.$,
+      'vendor_system': vendor_system.$,
+      'classified_product_status': classified_product_status.$,
+    };
+  }
+
+  // ============ SHOW DEBUG LOGOUT DIALOG ============
+  void _showDebugLogoutDialog(BuildContext context, Map<String, dynamic> steps) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.bug_report, color: Colors.orange),
+            const SizedBox(width: 10),
+            const Text(
+              'Logout Debug Report',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status summary
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: steps['success'] ? Colors.green[50] : Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: steps['success'] ? Colors.green[200]! : Colors.red[200]!,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        steps['success'] ? Icons.check_circle : Icons.error,
+                        color: steps['success'] ? Colors.green[700] : Colors.red[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          steps['message'] ?? 'Logout completed',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: steps['success'] ? Colors.green[700] : Colors.red[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Steps
+                const Text(
+                  'Steps:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                ...steps['steps'].map((step) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Icon(
+                        step['success'] ? Icons.check_circle : Icons.error,
+                        size: 14,
+                        color: step['success'] ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          step['message'],
+                          style: TextStyle(
+                            color: step['success'] ? Colors.black : Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+                const SizedBox(height: 12),
+                // Final values
+                const Text(
+                  'Final Shared Values:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      const JsonEncoder.withIndent('  ').convert(steps['finalValues']),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              final debugReport = '''
+=== LOGOUT DEBUG REPORT ===
+Message: ${steps['message']}
+Success: ${steps['success']}
+
+=== STEPS ===
+${steps['steps'].map((s) => '[${s['success'] ? '✓' : '✗'}] ${s['message']}').join('\n')}
+
+=== FINAL SHARED VALUES ===
+${const JsonEncoder.withIndent('  ').convert(steps['finalValues'])}
+''';
+              Clipboard.setData(ClipboardData(text: debugReport));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Debug report copied to clipboard'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copy Report'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============ LOGOUT - WITH FULL DEBUG ============
   void _onTapLogout(BuildContext context) async {
     // Show confirmation dialog
     bool? confirm = await showDialog<bool>(
@@ -190,42 +426,179 @@ class _ProfileState extends State<Profile> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context, false);
-            },
-            child: Text(
-              AppLocalizations.of(context)!.no_ucf,
-            ),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context)!.no_ucf),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context, true);
-            },
-            child: Text(
-              AppLocalizations.of(context)!.yes_ucf,
-            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppLocalizations.of(context)!.yes_ucf),
           )
         ],
       ),
     );
     
     if (confirm == true) {
-      // ✅ Clear user data with await to ensure it completes
-      await AuthHelper().clearUserData();
+      // Initialize debug steps
+      List<Map<String, dynamic>> steps = [];
+      bool allSuccess = true;
       
-      // ✅ Show success toast
-      ToastComponent.showDialog(
-        "Logged out successfully",
-        gravity: ToastGravity.CENTER,
-        duration: Toast.LENGTH_SHORT,
-      );
+      // STEP 1: Start logout process
+      steps.add({
+        'success': true,
+        'message': 'Step 1: Logout process started',
+      });
       
-      // ✅ Reset local state
-      _resetState();
-      
-      // ✅ Navigate to login screen
-      if (mounted) {
-        context.go("/users/login");
+      try {
+        // STEP 2: Clear user data
+        steps.add({
+          'success': true,
+          'message': 'Step 2: Calling AuthHelper.clearUserData()...',
+        });
+        
+        await AuthHelper().clearUserData();
+        
+        steps.add({
+          'success': true,
+          'message': 'Step 2: AuthHelper.clearUserData() completed successfully',
+        });
+        
+        // In _onTapLogout method, after clearing:
+        // STEP 3: Get all shared values after clearing
+        steps.add({
+          'success': true,
+          'message': 'Step 3: Checking shared values after clearing...',
+        });
+
+        final afterClearValues = _getAllSharedValues();
+
+        // Check each critical value
+        List<Map<String, dynamic>> checkResults = [
+          {'key': 'is_logged_in', 'expected': false, 'actual': afterClearValues['is_logged_in']},
+          {'key': 'access_token', 'expected': '', 'actual': afterClearValues['access_token']},
+          {'key': 'user_id', 'expected': 0, 'actual': afterClearValues['user_id']},
+          {'key': 'user_name', 'expected': '', 'actual': afterClearValues['user_name']},
+          {'key': 'user_email', 'expected': '', 'actual': afterClearValues['user_email']},
+          {'key': 'user_phone', 'expected': '', 'actual': afterClearValues['user_phone']},
+          {'key': 'avatar_original', 'expected': '', 'actual': afterClearValues['avatar_original']},
+          {'key': 'points_balance', 'expected': '0', 'actual': afterClearValues['points_balance']},
+          {'key': 'affiliate_balance', 'expected': '0', 'actual': afterClearValues['affiliate_balance']},
+          {'key': 'wishlist_count', 'expected': 0, 'actual': afterClearValues['wishlist_count']},
+          {'key': 'auction_bids_count', 'expected': 0, 'actual': afterClearValues['auction_bids_count']},
+        ];
+
+        bool allCleared = true;
+        for (var check in checkResults) {
+          bool isCleared;
+          if (check['expected'] == '') {
+            isCleared = check['actual'] == '' || check['actual'] == null;
+          } else {
+            isCleared = check['actual'] == check['expected'];
+          }
+          
+          steps.add({
+            'success': isCleared,
+            'message': '  ${check['key']}: ${check['actual']} ${isCleared ? '✓' : '✗'} (expected: ${check['expected']})',
+          });
+          
+          if (!isCleared) allCleared = false;
+        }
+
+        // Check app settings that should NOT be cleared
+        steps.add({
+          'success': true,
+          'message': 'Step 3: App settings (should NOT be cleared):',
+        });
+        steps.add({
+          'success': true,
+          'message': '  app_language: ${afterClearValues['app_language']}',
+        });
+        steps.add({
+          'success': true,
+          'message': '  wallet_system_status: ${afterClearValues['wallet_system_status']}',
+        });
+        steps.add({
+          'success': true,
+          'message': '  conversation_system_status: ${afterClearValues['conversation_system_status']}',
+        });
+        
+        // STEP 4: Reset local state
+        steps.add({
+          'success': true,
+          'message': 'Step 4: Resetting local state...',
+        });
+        
+        _resetState();
+        
+        steps.add({
+          'success': true,
+          'message': 'Step 4: Local state reset completed',
+        });
+        
+        // STEP 5: Show success toast
+        steps.add({
+          'success': true,
+          'message': 'Step 5: Showing success toast...',
+        });
+        
+        ToastComponent.showDialog(
+          "Logged out successfully",
+          gravity: ToastGravity.CENTER,
+          duration: Toast.LENGTH_SHORT,
+        );
+        
+        steps.add({
+          'success': true,
+          'message': 'Step 5: Success toast displayed',
+        });
+        
+        // STEP 6: Navigate to login screen
+        steps.add({
+          'success': true,
+          'message': 'Step 6: Navigating to login screen...',
+        });
+        
+        // Final values after all operations
+        final finalValues = _getAllSharedValues();
+        
+        // Build final debug report
+        final debugData = {
+          'success': allSuccess,
+          'message': allSuccess ? 'Logout completed successfully ✓' : 'Logout completed with issues ✗',
+          'steps': steps,
+          'finalValues': finalValues,
+        };
+        
+        // Show debug dialog
+        if (mounted) {
+          _showDebugLogoutDialog(context, debugData);
+        }
+        
+        // Navigate to login screen
+        if (mounted) {
+          context.go("/users/login");
+        }
+        
+      } catch (e, stackTrace) {
+        steps.add({
+          'success': false,
+          'message': 'ERROR: ${e.toString()}',
+        });
+        
+        steps.add({
+          'success': false,
+          'message': 'Stack trace: ${stackTrace.toString().substring(0, 200)}...',
+        });
+        
+        final debugData = {
+          'success': false,
+          'message': 'Logout failed with error: ${e.toString()}',
+          'steps': steps,
+          'finalValues': _getAllSharedValues(),
+        };
+        
+        if (mounted) {
+          _showDebugLogoutDialog(context, debugData);
+        }
       }
     }
   }
@@ -269,29 +642,7 @@ class _ProfileState extends State<Profile> {
           },
         ),
         actions: [
-          // Debug icon - only visible in debug mode
-          if (kDebugMode)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.bug_report, color: Colors.orange),
-              onSelected: (value) {
-                if (value == 'debug_api') {
-                  _debugShowApiResponse();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'debug_api',
-                  child: Row(
-                    children: [
-                      Icon(Icons.api, size: 18),
-                      SizedBox(width: 8),
-                      Text('Debug API Response'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          // Logout button - only show when logged in
+          // Logout button - always show when logged in
           if (is_logged_in.$)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -717,404 +1068,5 @@ class _ProfileState extends State<Profile> {
         ),
       ),
     );
-  }
-
-  // ============ DEBUG METHODS ============
-  Future<void> _debugShowApiResponse() async {
-    if (!kDebugMode) return;
-    
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-      
-      String url = "${AppConfig.BASE_URL}/customer/info";
-      String token = access_token.$ ?? "";
-      String appLanguage = app_language.$!;
-      
-      final startTime = DateTime.now();
-      
-      final response = await ApiRequest.get(
-        url: url,
-        headers: {
-          "Authorization": "Bearer $token", 
-          "App-Language": appLanguage
-        },
-      );
-      
-      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
-      
-      Navigator.pop(context);
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(
-                response.statusCode == 200 ? Icons.check_circle : Icons.error,
-                color: response.statusCode == 200 ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 10),
-              const Text('API Debug Info'),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxHeight: 550),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.wifi, size: 16, color: Colors.green[700]),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "✅ REACHED SERVER - Response received in ${responseTime}ms",
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green[700]),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: response.statusCode == 200 ? Colors.green[50] : Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              response.statusCode == 200 ? Icons.check_circle : Icons.error,
-                              size: 16,
-                              color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Status Code: ${response.statusCode}",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: response.statusCode == 200 ? Colors.green[800] : Colors.red[800],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          response.statusCode == 200 
-                              ? "✅ Success - API responded correctly"
-                              : response.statusCode == 401 
-                                  ? "🔐 Unauthorized - Token may be expired. Try logging out and back in."
-                                  : response.statusCode == 404
-                                      ? "📍 Not Found - Wrong API endpoint. Check BASE_URL."
-                                      : response.statusCode == 500
-                                          ? "⚠️ Server Error - Issue on server side"
-                                          : "⚠️ Error - Something went wrong",
-                          style: TextStyle(fontSize: 11, color: Colors.grey[700]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.link, size: 14),
-                            SizedBox(width: 6),
-                            Text(
-                              "Full Endpoint URL:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: SelectableText(
-                            url,
-                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.purple[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.purple[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.key, size: 14),
-                            SizedBox(width: 6),
-                            Text(
-                              "Access Token Used:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Token exists: ${token.isNotEmpty ? "✅ Yes" : "❌ No"}",
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                              if (token.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                const Text(
-                                  "Full Token:",
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                                SelectableText(
-                                  token,
-                                  style: const TextStyle(fontSize: 9, fontFamily: 'monospace'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Request Headers Sent:",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Authorization: Bearer ${token.isNotEmpty ? (token.length > 30 ? token.substring(0, 30) + "..." : token) : "None"}"),
-                              Text("App-Language: $appLanguage"),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.code, size: 14, color: Colors.white),
-                            SizedBox(width: 6),
-                            Text(
-                              "Raw Server Response:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: SingleChildScrollView(
-                            child: SelectableText(
-                              response.body.isNotEmpty ? response.body : "(Empty response body)",
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                                color: Colors.green,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                final debugInfo = """
-=== API DEBUG INFO ===
-Endpoint: $url
-Status Code: ${response.statusCode}
-Response Time: ${responseTime}ms
-Token Used: $token
-Headers: Authorization: Bearer $token, App-Language: $appLanguage
-Raw Response: ${response.body}
-""";
-                Clipboard.setData(ClipboardData(text: debugInfo));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Debug info copied to clipboard'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy All'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-      
-    } catch (e, stackTrace) {
-      Navigator.pop(context);
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.error, color: Colors.red),
-              SizedBox(width: 10),
-              Text('Network/Parse Error'),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            constraints: const BoxConstraints(maxHeight: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.wifi_off, size: 16, color: Colors.red),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "❌ FAILED TO REACH SERVER - Check your internet connection",
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Attempted Endpoint:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        "${AppConfig.BASE_URL}/customer/info",
-                        style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Error: ${e.toString()}",
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SelectableText(
-                    stackTrace.toString(),
-                    style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
