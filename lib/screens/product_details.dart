@@ -2437,8 +2437,8 @@ class _ProductDetailsState extends State<ProductDetails>
                 padding: const EdgeInsets.all(10.0),
                 child: Image.asset(
                   imagePath,
-                  height: 25,
-                  width: 25,
+                  height: 28,
+                  width: 28,
                   // color: Colors.black87,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
@@ -2448,19 +2448,19 @@ class _ProductDetailsState extends State<ProductDetails>
                     if (imagePath.contains('product_details')) {
                       return Icon(
                         Icons.info_outline,
-                        size: 24,
+                        size: 26,
                         color: Colors.black87,
                       );
                     } else if (imagePath.contains('bid_history')) {
                       return Icon(
                         Icons.history,
-                        size: 24,
+                        size: 26,
                         color: Colors.black87,
                       );
                     }
                     return Icon(
                       Icons.image_not_supported,
-                      size: 24,
+                      size: 26,
                       color: Colors.black87,
                     );
                   },
