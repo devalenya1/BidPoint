@@ -14,9 +14,9 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
 import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
-import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -337,16 +337,8 @@ class _ProductDetailsState extends State<ProductDetails>
             !_winnerModalShown) {
           _winnerData = response.winner;
           _winnerModalShown = true;
-          // Use a post-frame callback to avoid build-phase issues
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              // Add a small delay to ensure the build phase is complete
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (mounted) {
-                  _showWinnerModalDialog();
-                }
-              });
-            }
+            _showWinnerModalDialog();
           });
         }
 
@@ -414,11 +406,9 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _checkAndRefreshWishlist() {
     // Only refresh if product exists, user is logged in, and not currently loading
-    if (!mounted) return;
-    
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
       print('✅ Checking wishlist status on page focus...');
-      _fetchWishlistStatus();
+      _fetchWishlistStatus(); // ✅ Use dedicated endpoint
     } else {
       print('⏭️ Skipping wishlist refresh: product=${_product != null}, loggedIn=${is_logged_in.$}, loading=$_isLoading, processing=$_isProcessing');
     }
@@ -437,11 +427,9 @@ class _ProductDetailsState extends State<ProductDetails>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Use a post-frame callback with a flag to prevent multiple calls
+    // Refresh when dependencies change (like when coming back to the page)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _checkAndRefreshWishlist();
-      }
+      _checkAndRefreshWishlist();
     });
   }
 
@@ -713,11 +701,9 @@ class _ProductDetailsState extends State<ProductDetails>
   Future<void> _fetchWishlistStatus() async {
     // Don't check if user not logged in
     if (!is_logged_in.$) {
-      if (mounted) {
-        setState(() {
-          _isInWishlist = false;
-        });
-      }
+      setState(() {
+        _isInWishlist = false;
+      });
       return;
     }
     
@@ -732,7 +718,7 @@ class _ProductDetailsState extends State<ProductDetails>
       
       print('📡 Wishlist status response: $result');
       
-      if (mounted && result['success'] == true) {
+      if (result['success'] == true) {
         final newState = result['isInWishlist'] ?? false;
         if (_isInWishlist != newState) {
           setState(() {
@@ -863,9 +849,9 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-// ============================================
-// CONTACT SELLER - Redirect to Messenger List on Success
-// ============================================
+  // ============================================
+  // CONTACT SELLER - Redirect to Messenger List on Success
+  // ============================================
 
   Future<void> _contactSeller() async {
     if (!is_logged_in.$) {
@@ -889,10 +875,10 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response['success'] == true) {
         _showToast(response['message'] ?? 'Message sent to seller!');
         
-        // ✅ Fixed navigation with mounted check and proper delay
+        // ✅ Redirect to Messenger List page on success
         if (mounted) {
-          // Use a small delay to ensure the current context is stable
-          Future.delayed(const Duration(milliseconds: 500), () {
+          // Use a small delay to ensure the toast is visible and context is stable
+          Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
               Navigator.push(
                 context, 
@@ -1730,1361 +1716,688 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // // ============================================
-  // // MOBILE LAYOUT
-  // // ============================================
+  // ============================================
+  // MOBILE LAYOUT
+  // ============================================
 
-  // Widget _buildMobileLayout() {
-  //   final timeComponents = _getTimeComponents();
-  //   final screenHeight = MediaQuery.of(context).size.height;
-  //   final imageHeight = screenHeight * 0.65;
+  Widget _buildMobileLayout() {
+    final timeComponents = _getTimeComponents();
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageHeight = screenHeight * 0.65;
 
-  //   return Stack(
-  //     children: [
-  //       CustomScrollView(
-  //         controller: _mainScrollController,
-  //         physics: BouncingScrollPhysics(),
-  //         slivers: [
-  //           // Image Sliver - 65% of screen height
-  //           SliverAppBar(
-  //             expandedHeight: imageHeight,
-  //             pinned: true,
-  //             backgroundColor: Colors.black,
-  //             flexibleSpace: FlexibleSpaceBar(
-  //               background: Stack(
-  //                 children: [
-  //                   CarouselSlider(
-  //                     options: CarouselOptions(
-  //                       height: imageHeight,
-  //                       viewportFraction: 1,
-  //                       autoPlay: true,
-  //                       onPageChanged: (index, reason) {
-  //                         setState(() => _currentImageIndex = index);
-  //                       },
-  //                     ),
-  //                     items: _productImages.map((image) {
-  //                       return Builder(
-  //                         builder: (context) => GestureDetector(
-  //                           onTap: () => _showFullImage(image),
-  //                           child: Container(
-  //                             width: double.infinity,
-  //                             decoration: BoxDecoration(
-  //                               image: DecorationImage(
-  //                                 image: NetworkImage(image),
-  //                                 fit: BoxFit.cover,
-  //                               ),
-  //                             ),
-  //                           ),
-  //                         ),
-  //                       );
-  //                     }).toList(),
-  //                   ),
-  //                   // Gradient Overlay
-  //                   Container(
-  //                     decoration: BoxDecoration(
-  //                       gradient: LinearGradient(
-  //                         begin: Alignment.topCenter,
-  //                         end: Alignment.bottomCenter,
-  //                         stops: [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
-  //                         colors: [
-  //                           Colors.black.withOpacity(0.9),
-  //                           Colors.black.withOpacity(0.5),
-  //                           Colors.black.withOpacity(0.2),
-  //                           Colors.black.withOpacity(0.1),
-  //                           Colors.black.withOpacity(0.3),
-  //                           Colors.black.withOpacity(0.7),
-  //                           Colors.black.withOpacity(0.95),
-  //                         ],
-  //                       ),
-  //                     ),
-  //                   ),
-  //                   // ============================================
-  //                   // TOP RIGHT ICONS: More, Bid History, Product Details
-  //                   // ============================================
-  //                   Positioned(
-  //                     top: MediaQuery.of(context).padding.top + 8,
-  //                     right: 16,
-  //                     child: Column(
-  //                       mainAxisSize: MainAxisSize.min,
-  //                       children: [
-  //                         // 1. More Icon
-  //                         _buildIconCircle(
-  //                           icon: Icons.more_vert,
-  //                           onTap: () =>
-  //                               setState(() => _showMoreMenu = !_showMoreMenu),
-  //                           isLoading: _isProcessing,
-  //                         ),
-  //                         SizedBox(height: 12),
-  //                         // 2. Bid History Icon (using image)
-  //                         _buildIconCircleWithImage(
-  //                           imagePath: 'assets/bid_history.png',
-  //                           onTap: () {
-  //                             _openBidHistoryModal();
-  //                           },
-  //                           isLoading: _isProcessing,
-  //                         ),
-  //                         SizedBox(height: 12),
-  //                         // 3. Product Details Icon (using image)
-  //                         _buildIconCircleWithImage(
-  //                           imagePath: 'assets/product_details.png',
-  //                           onTap: () {
-  //                             _openTitleModal();
-  //                           },
-  //                           isLoading: _isProcessing,
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //                   // Left Icons - Back Button
-  //                   Positioned(
-  //                     top: MediaQuery.of(context).padding.top + 8,
-  //                     left: 16,
-  //                     child: _buildIconCircle(
-  //                       icon: Icons.arrow_back,
-  //                       onTap: () => Navigator.pop(context),
-  //                       isLoading: false,
-  //                     ),
-  //                   ),
-  //                   // ============================================
-  //                   // MORE MENU: Share, Save(Wishlist), Contact Seller
-  //                   // ============================================
-  //                   if (_showMoreMenu)
-  //                     Positioned(
-  //                       top: 80,
-  //                       right: 16,
-  //                       child: Material(
-  //                         elevation: 10,
-  //                         borderRadius: BorderRadius.circular(16),
-  //                         child: Container(
-  //                           width: 180,
-  //                           decoration: BoxDecoration(
-  //                             color: Colors.white.withOpacity(0.95),
-  //                             borderRadius: BorderRadius.circular(16),
-  //                             boxShadow: [
-  //                               BoxShadow(
-  //                                 color: Colors.black.withOpacity(0.2),
-  //                                 blurRadius: 10,
-  //                                 offset: Offset(0, 5),
-  //                               ),
-  //                             ],
-  //                           ),
-  //                           child: Column(
-  //                             mainAxisSize: MainAxisSize.min,
-  //                             children: [
-  //                               // 1. Share
-  //                               _buildMoreMenuItem(
-  //                                 icon: Icons.share,
-  //                                 text: 'Share',
-  //                                 onTap: () {
-  //                                   setState(() => _showMoreMenu = false);
-  //                                   _shareProduct();
-  //                                 },
-  //                               ),
-  //                               // 2. Save / Saved (Wishlist)
-  //                               _buildMoreMenuItem(
-  //                                 icon: _isInWishlist
-  //                                     ? Icons.favorite
-  //                                     : Icons.favorite_border,
-  //                                 text: _isInWishlist ? 'Saved' : 'Save',
-  //                                 onTap: () {
-  //                                   setState(() => _showMoreMenu = false);
-  //                                   _toggleWishlist();
-  //                                 },
-  //                               ),
-  //                               // 3. Contact Seller
-  //                               _buildMoreMenuItem(
-  //                                 icon: Icons.contact_mail,
-  //                                 text: _isProcessing ? 'Contacting...' : 'Contact Seller',
-  //                                 onTap: _isProcessing ? null : () {
-  //                                   setState(() => _showMoreMenu = false);
-  //                                   _contactSeller();
-  //                                 },
-  //                               ),
-  //                             ],
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   // Bottom Content Overlay
-  //                   Positioned(
-  //                     bottom: 0,
-  //                     left: 0,
-  //                     right: 0,
-  //                     child: Padding(
-  //                       padding: EdgeInsets.all(16),
-  //                       child: Column(
-  //                         crossAxisAlignment: CrossAxisAlignment.start,
-  //                         children: [
-  //                           // Comments Section - SHOW ALL COMMENTS
-  //                           Container(
-  //                             width: MediaQuery.of(context).size.width * 0.75,
-  //                             decoration: BoxDecoration(
-  //                               color: Colors.black.withOpacity(0.1),
-  //                               borderRadius: BorderRadius.circular(20),
-  //                               border: Border.all(
-  //                                   color: Colors.white.withOpacity(0.15)),
-  //                             ),
-  //                             padding: EdgeInsets.all(12),
-  //                             child: Column(
-  //                               crossAxisAlignment: CrossAxisAlignment.start,
-  //                               children: [
-  //                                 // Comment count header
-  //                                 Row(
-  //                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                                   children: [
-  //                                     // Text(
-  //                                     //   'Comments (${_comments.length})',
-  //                                     //   style: TextStyle(
-  //                                     //     color: Colors.white,
-  //                                     //     fontSize: 12,
-  //                                     //     fontWeight: FontWeight.w600,
-  //                                     //   ),
-  //                                     // ),
-  //                                     // Text(
-  //                                     //   'Recent',
-  //                                     //   style: TextStyle(
-  //                                     //     color: Colors.white70,
-  //                                     //     fontSize: 10,
-  //                                     //   ),
-  //                                     // ),
-  //                                   ],
-  //                                 ),
-  //                                 SizedBox(height: 6),
-  //                                 Container(
-  //                                   height: imageHeight * 0.4,
-  //                                   child: _comments.isEmpty
-  //                                       ? Center(
-  //                                           child: Text(
-  //                                             'No comments yet',
-  //                                             style: TextStyle(
-  //                                               color: Colors.white54,
-  //                                               fontSize: 11,
-  //                                             ),
-  //                                           ),
-  //                                         )
-  //                                       : ListView.builder(
-  //                                           shrinkWrap: true,
-  //                                           itemCount: _comments.length,
-  //                                           itemBuilder: (context, index) {
-  //                                             final comment = _comments[index];
-  //                                             return Padding(
-  //                                               padding:
-  //                                                   EdgeInsets.only(bottom: 8),
-  //                                               child: Row(
-  //                                                 crossAxisAlignment:
-  //                                                     CrossAxisAlignment.start,
-  //                                                 children: [
-  //                                                   CircleAvatar(
-  //                                                     radius: 18,
-  //                                                     backgroundImage:
-  //                                                         NetworkImage(comment
-  //                                                                 .userAvatar ??
-  //                                                             ''),
-  //                                                     child: comment
-  //                                                             .userAvatar ==
-  //                                                         null
-  //                                                         ? Icon(Icons.person,
-  //                                                             size: 16,
-  //                                                             color: Colors
-  //                                                                 .white54)
-  //                                                         : null,
-  //                                                   ),
-  //                                                   SizedBox(width: 10),
-  //                                                   Expanded(
-  //                                                     child: Column(
-  //                                                       crossAxisAlignment:
-  //                                                           CrossAxisAlignment
-  //                                                               .start,
-  //                                                       children: [
-  //                                                         Text(
-  //                                                           comment.userName ??
-  //                                                               'User',
-  //                                                           style: TextStyle(
-  //                                                             color: Colors
-  //                                                                 .white,
-  //                                                             fontSize: 13,
-  //                                                             fontWeight:
-  //                                                                 FontWeight
-  //                                                                     .w600,
-  //                                                           ),
-  //                                                         ),
-  //                                                         Text(
-  //                                                           comment.comment ??
-  //                                                               '',
-  //                                                           style: TextStyle(
-  //                                                             color: Colors
-  //                                                                 .white70,
-  //                                                             fontSize: 12,
-  //                                                           ),
-  //                                                         ),
-  //                                                         // Comment actions - Like & Reply
-  //                                                         Row(
-  //                                                           children: [
-  //                                                             GestureDetector(
-  //                                                               onTap: () =>
-  //                                                                   _likeComment(
-  //                                                                       comment
-  //                                                                           .id ??
-  //                                                                           0),
-  //                                                               child: Text(
-  //                                                                 '${comment.likesCount} Likes',
-  //                                                                 style: TextStyle(
-  //                                                                   color: Colors
-  //                                                                       .white54,
-  //                                                                   fontSize: 11,
-  //                                                                 ),
-  //                                                               ),
-  //                                                             ),
-  //                                                             SizedBox(width: 12),
-  //                                                             GestureDetector(
-  //                                                               onTap: () =>
-  //                                                                   _replyToComment(
-  //                                                                       comment
-  //                                                                           .userName ??
-  //                                                                       'User'),
-  //                                                               child: Text(
-  //                                                                 'Reply',
-  //                                                                 style: TextStyle(
-  //                                                                   color: Colors
-  //                                                                       .white54,
-  //                                                                   fontSize: 11,
-  //                                                                 ),
-  //                                                               ),
-  //                                                             ),
-  //                                                           ],
-  //                                                         ),
-  //                                                       ],
-  //                                                     ),
-  //                                                   ),
-  //                                                 ],
-  //                                               ),
-  //                                             );
-  //                                           },
-  //                                         ),
-  //                                 ),
-  //                                 SizedBox(height: 4),
-  //                                 Row(
-  //                                   children: [
-  //                                     Expanded(
-  //                                       child: Container(
-  //                                         decoration: BoxDecoration(
-  //                                           color: Colors.white
-  //                                               .withOpacity(0.15),
-  //                                           borderRadius:
-  //                                               BorderRadius.circular(12),
-  //                                         ),
-  //                                         child: TextField(
-  //                                           controller: _commentController,
-  //                                           style: TextStyle(
-  //                                               color: Colors.white,
-  //                                               fontSize: 11),
-  //                                           decoration: InputDecoration(
-  //                                             hintText: 'Add Comment...',
-  //                                             hintStyle: TextStyle(
-  //                                                 color: Colors.white54,
-  //                                                 fontSize: 11),
-  //                                             border: InputBorder.none,
-  //                                             contentPadding:
-  //                                                 EdgeInsets.symmetric(
-  //                                                     horizontal: 10,
-  //                                                     vertical: 6),
-  //                                           ),
-  //                                           onSubmitted: (value) =>
-  //                                               _sendComment(),
-  //                                         ),
-  //                                       ),
-  //                                     ),
-  //                                     SizedBox(width: 6),
-  //                                     GestureDetector(
-  //                                       onTap: _isProcessing ? null : _sendComment,
-  //                                       child: Container(
-  //                                         width: 28,
-  //                                         height: 28,
-  //                                         decoration: BoxDecoration(
-  //                                           color: MyTheme.accent_color,
-  //                                           shape: BoxShape.circle,
-  //                                         ),
-  //                                         child: _isProcessing
-  //                                             ? const SizedBox(
-  //                                                 height: 12,
-  //                                                 width: 12,
-  //                                                 child: CircularProgressIndicator(
-  //                                                   strokeWidth: 2,
-  //                                                   color: Colors.white,
-  //                                                 ),
-  //                                               )
-  //                                             : Icon(Icons.send,
-  //                                                 size: 14,
-  //                                                 color: Colors.white),
-  //                                       ),
-  //                                     ),
-  //                                   ],
-  //                                 ),
-  //                               ],
-  //                             ),
-  //                           ),
-  //                           SizedBox(height: 12),
-  //                           // Product name and description
-  //                           GestureDetector(
-  //                             onTap: _openTitleModal,
-  //                             child: Column(
-  //                               crossAxisAlignment: CrossAxisAlignment.start,
-  //                               children: [
-  //                                 Text(_product?.name ?? '',
-  //                                     style: TextStyle(
-  //                                         color: Colors.white,
-  //                                         fontSize: 22,
-  //                                         fontWeight: FontWeight.bold)),
-  //                                 SizedBox(height: 4),
-  //                                 Text(
-  //                                     _product?.description
-  //                                         ?.replaceAll(RegExp(r'<[^>]*>'),
-  //                                             '') ??
-  //                                         '',
-  //                                     style: TextStyle(
-  //                                         color: Colors.white70, fontSize: 14),
-  //                                     maxLines: 2,
-  //                                     overflow: TextOverflow.ellipsis),
-  //                               ],
-  //                             ),
-  //                           ),
-  //                           SizedBox(height: 16),
-  //                           // Timer and Price
-  //                           Row(
-  //                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                             children: [
-  //                               Column(
-  //                                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                                 children: [
-  //                                   Text('TIME LEFT',
-  //                                       style: TextStyle(
-  //                                           color: Colors.white70,
-  //                                           fontSize: 12)),
-  //                                   SizedBox(height: 4),
-  //                                   Row(
-  //                                     children: [
-  //                                       _buildTimerUnitBig(
-  //                                           timeComponents['days']!, 'days'),
-  //                                       _buildTimerUnitBig(
-  //                                           timeComponents['hours']!, 'hours'),
-  //                                       _buildTimerUnitBig(
-  //                                           timeComponents['minutes']!,
-  //                                           'minutes'),
-  //                                       _buildTimerUnitBig(
-  //                                           timeComponents['seconds']!,
-  //                                           'seconds'),
-  //                                     ],
-  //                                   ),
-  //                                 ],
-  //                               ),
-  //                               Container(
-  //                                 padding: EdgeInsets.symmetric(
-  //                                     horizontal: 20, vertical: 16),
-  //                                 decoration: BoxDecoration(
-  //                                   color: Colors.black.withOpacity(0.6),
-  //                                   borderRadius: BorderRadius.circular(16),
-  //                                   border: Border.all(
-  //                                       color: Colors.white.withOpacity(0.2)),
-  //                                 ),
-  //                                 child: Column(
-  //                                   crossAxisAlignment: CrossAxisAlignment.end,
-  //                                   children: [
-  //                                     Text('Current Bid',
-  //                                         style: TextStyle(
-  //                                             color: Colors.white70,
-  //                                             fontSize: 12)),
-  //                                     Text(_formatPrice(_currentHighestBid),
-  //                                         style: TextStyle(
-  //                                             color: Colors.white,
-  //                                             fontSize: 24,
-  //                                             fontWeight: FontWeight.bold)),
-  //                                   ],
-  //                                 ),
-  //                               ),
-  //                             ],
-  //                           ),
-  //                         ],
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ),
-  //           // Bid Info Section - Updated from polling data
-  //           SliverToBoxAdapter(
-  //             child: Material(
-  //               borderRadius: BorderRadius.circular(16),
-  //               child: Container(
-  //                 margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
-  //                 padding: EdgeInsets.all(16),
-  //                 decoration: BoxDecoration(
-  //                   color: Colors.white,
-  //                   borderRadius: BorderRadius.circular(16),
-  //                   border: Border.all(color: Colors.grey.shade200),
-  //                 ),
-  //                 child: Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Text('Bid Information',
-  //                         style: TextStyle(
-  //                             fontWeight: FontWeight.bold, fontSize: 16)),
-  //                     SizedBox(height: 12),
-  //                     GridView.count(
-  //                       shrinkWrap: true,
-  //                       physics: NeverScrollableScrollPhysics(),
-  //                       crossAxisCount: 2,
-  //                       crossAxisSpacing: 12,
-  //                       mainAxisSpacing: 12,
-  //                       childAspectRatio: 3,
-  //                       children: [
-  //                         _buildInfoItem('Starting bid',
-  //                             _formatPrice(_startingBid)),
-  //                         _buildInfoItem('Total bidders', '$_totalBids'),
-  //                         _buildInfoItem(
-  //                             'Highest bidder',
-  //                             _highestBidder.isNotEmpty
-  //                                 ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-  //                                 : 'No bids'),
-  //                         _buildInfoItem('Bid now at', '$_pointPerBid'),
-  //                       ],
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //           // Reviews Section
-  //           SliverToBoxAdapter(
-  //             child: GestureDetector(
-  //               onTap: _openReviewsModal,
-  //               child: Container(
-  //                 margin: EdgeInsets.symmetric(horizontal: 16),
-  //                 padding: EdgeInsets.all(16),
-  //                 decoration: BoxDecoration(
-  //                   color: Colors.white,
-  //                   borderRadius: BorderRadius.circular(16),
-  //                   border: Border.all(color: Colors.grey.shade200),
-  //                   boxShadow: [
-  //                     BoxShadow(
-  //                         color: Colors.black.withOpacity(0.05),
-  //                         blurRadius: 4,
-  //                         offset: Offset(0, 2)),
-  //                   ],
-  //                 ),
-  //                 child: Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Row(
-  //                       children: [
-  //                         Row(
-  //                           children: List.generate(5, (index) {
-  //                             return Icon(
-  //                               index < _rating.round()
-  //                                   ? Icons.star
-  //                                   : Icons.star_border,
-  //                               size: 16,
-  //                               color: Colors.amber,
-  //                             );
-  //                           }),
-  //                         ),
-  //                         SizedBox(width: 8),
-  //                         Text(_rating.toStringAsFixed(1),
-  //                             style: TextStyle(
-  //                                 fontSize: 18, fontWeight: FontWeight.bold)),
-  //                         SizedBox(width: 8),
-  //                         Container(
-  //                           padding: EdgeInsets.symmetric(
-  //                               horizontal: 8, vertical: 4),
-  //                           decoration: BoxDecoration(
-  //                             color: Colors.grey.shade100,
-  //                             borderRadius: BorderRadius.circular(20),
-  //                           ),
-  //                           child: Text('$_reviewsCount reviews',
-  //                               style: TextStyle(
-  //                                   fontSize: 12, color: Colors.grey)),
-  //                         ),
-  //                       ],
-  //                     ),
-  //                     Icon(Icons.arrow_forward_ios,
-  //                         size: 16, color: Colors.grey),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //           // Thumbnails
-  //           SliverToBoxAdapter(
-  //             child: Container(
-  //               height: 70,
-  //               margin: EdgeInsets.all(16),
-  //               child: ListView.builder(
-  //                 scrollDirection: Axis.horizontal,
-  //                 itemCount: _productImages.length,
-  //                 itemBuilder: (context, index) {
-  //                   return GestureDetector(
-  //                     onTap: () {
-  //                       setState(() => _currentImageIndex = index);
-  //                     },
-  //                     child: Container(
-  //                       width: 60,
-  //                       height: 60,
-  //                       margin: EdgeInsets.only(right: 8),
-  //                       decoration: BoxDecoration(
-  //                         borderRadius: BorderRadius.circular(12),
-  //                         border: Border.all(
-  //                           color: _currentImageIndex == index
-  //                               ? MyTheme.accent_color
-  //                               : Colors.grey.shade300,
-  //                           width: 2,
-  //                         ),
-  //                       ),
-  //                       child: ClipRRect(
-  //                         borderRadius: BorderRadius.circular(10),
-  //                         child: Image.network(
-  //                           _productImages[index],
-  //                           fit: BoxFit.cover,
-  //                           errorBuilder: (context, error, stackTrace) =>
-  //                               Icon(Icons.broken_image, color: Colors.grey),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   );
-  //                 },
-  //               ),
-  //             ),
-  //           ),
-  //           SliverToBoxAdapter(child: SizedBox(height: 80)),
-  //         ],
-  //       ),
-  //       // Bottom Bar
-  //       Positioned(
-  //         bottom: 0,
-  //         left: 0,
-  //         right: 0,
-  //         child: Container(
-  //           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  //           decoration: BoxDecoration(
-  //             color: Colors.white,
-  //             boxShadow: [
-  //               BoxShadow(
-  //                   color: Colors.black12,
-  //                   blurRadius: 8,
-  //                   offset: Offset(0, -2))
-  //             ],
-  //           ),
-  //           child: Row(
-  //             children: [
-  //               Expanded(
-  //                 child: OutlinedButton(
-  //                   onPressed: _showBidInputDialog,
-  //                   style: OutlinedButton.styleFrom(
-  //                     padding: EdgeInsets.symmetric(vertical: 14),
-  //                     shape: RoundedRectangleBorder(
-  //                         borderRadius: BorderRadius.circular(8)),
-  //                   ),
-  //                   child: Text('Custom'),
-  //                 ),
-  //               ),
-  //               SizedBox(width: 12),
-  //               Expanded(
-  //                 flex: 2,
-  //                 child: ElevatedButton(
-  //                   onPressed: _isProcessing ? null : _placeBidNow,
-  //                   style: ElevatedButton.styleFrom(
-  //                     backgroundColor: MyTheme.accent_color,
-  //                     padding: EdgeInsets.symmetric(vertical: 14),
-  //                     shape: RoundedRectangleBorder(
-  //                         borderRadius: BorderRadius.circular(8)),
-  //                   ),
-  //                   child: _isProcessing
-  //                       ? _buildButtonLoader()
-  //                       : Text(
-  //                           'Bid Now - ${_formatPrice(_minNextBidNow)}',
-  //                           style: TextStyle(color: Colors.white),
-  //                         ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-// ============================================
-// MOBILE LAYOUT - WITH OVERLAY THAT SCROLLS
-// ============================================
-
-Widget _buildMobileLayout() {
-  final timeComponents = _getTimeComponents();
-  final screenHeight = MediaQuery.of(context).size.height;
-  final imageHeight = screenHeight * 0.65;
-
-  return Scaffold(
-    body: RefreshIndicator(
-      key: _refreshIndicatorKey,
-      onRefresh: _fetchAllData,
-      child: CustomScrollView(
-        controller: _mainScrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          // ============================================
-          // IMAGE SLIVER - 65% of screen height
-          // ============================================
-          SliverAppBar(
-            expandedHeight: imageHeight,
-            pinned: true,
-            backgroundColor: Colors.black,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                children: [
-                  // Carousel
-                  CarouselSlider(
-                    options: CarouselOptions(
-                      height: imageHeight,
-                      viewportFraction: 1,
-                      autoPlay: true,
-                      onPageChanged: (index, reason) {
-                        setState(() => _currentImageIndex = index);
-                      },
-                    ),
-                    items: _productImages.map((image) {
-                      return Builder(
-                        builder: (context) => GestureDetector(
-                          onTap: () => _showFullImage(image),
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage(image),
-                                fit: BoxFit.cover,
+    return Stack(
+      children: [
+        CustomScrollView(
+          controller: _mainScrollController,
+          physics: BouncingScrollPhysics(),
+          slivers: [
+            // Image Sliver - 65% of screen height
+            SliverAppBar(
+              expandedHeight: imageHeight,
+              pinned: true,
+              backgroundColor: Colors.black,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  children: [
+                    CarouselSlider(
+                      options: CarouselOptions(
+                        height: imageHeight,
+                        viewportFraction: 1,
+                        autoPlay: true,
+                        onPageChanged: (index, reason) {
+                          setState(() => _currentImageIndex = index);
+                        },
+                      ),
+                      items: _productImages.map((image) {
+                        return Builder(
+                          builder: (context) => GestureDetector(
+                            onTap: () => _showFullImage(image),
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: NetworkImage(image),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                           ),
+                        );
+                      }).toList(),
+                    ),
+                    // Gradient Overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
+                          colors: [
+                            Colors.black.withOpacity(0.9),
+                            Colors.black.withOpacity(0.5),
+                            Colors.black.withOpacity(0.2),
+                            Colors.black.withOpacity(0.1),
+                            Colors.black.withOpacity(0.3),
+                            Colors.black.withOpacity(0.7),
+                            Colors.black.withOpacity(0.95),
+                          ],
                         ),
-                      );
-                    }).toList(),
-                  ),
-                  // Gradient Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
-                        colors: [
-                          Colors.black.withOpacity(0.9),
-                          Colors.black.withOpacity(0.5),
-                          Colors.black.withOpacity(0.2),
-                          Colors.black.withOpacity(0.1),
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.7),
-                          Colors.black.withOpacity(0.95),
+                      ),
+                    ),
+                    // ============================================
+                    // TOP RIGHT ICONS: More, Bid History, Product Details
+                    // ============================================
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 8,
+                      right: 16,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 1. More Icon
+                          _buildIconCircle(
+                            icon: Icons.more_vert,
+                            onTap: () =>
+                                setState(() => _showMoreMenu = !_showMoreMenu),
+                            isLoading: _isProcessing,
+                          ),
+                          SizedBox(height: 12),
+                          // 2. Bid History Icon (using image)
+                          _buildIconCircleWithImage(
+                            imagePath: 'assets/bid_history.png',
+                            onTap: () {
+                              _openBidHistoryModal();
+                            },
+                            isLoading: _isProcessing,
+                          ),
+                          SizedBox(height: 12),
+                          // 3. Product Details Icon (using image)
+                          _buildIconCircleWithImage(
+                            imagePath: 'assets/product_details.png',
+                            onTap: () {
+                              _openTitleModal();
+                            },
+                            isLoading: _isProcessing,
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                  // ============================================
-                  // TOP RIGHT ICONS: More, Bid History, Product Details
-                  // ============================================
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    right: 16,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildIconCircle(
-                          icon: Icons.more_vert,
-                          onTap: () =>
-                              setState(() => _showMoreMenu = !_showMoreMenu),
-                          isLoading: _isProcessing,
-                        ),
-                        SizedBox(height: 12),
-                        _buildIconCircleWithImage(
-                          imagePath: 'assets/bid_history.png',
-                          onTap: () {
-                            _openBidHistoryModal();
-                          },
-                          isLoading: _isProcessing,
-                        ),
-                        SizedBox(height: 12),
-                        _buildIconCircleWithImage(
-                          imagePath: 'assets/product_details.png',
-                          onTap: () {
-                            _openTitleModal();
-                          },
-                          isLoading: _isProcessing,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Left Icons - Back Button
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    left: 16,
-                    child: _buildIconCircle(
-                      icon: Icons.arrow_back,
-                      onTap: () => Navigator.pop(context),
-                      isLoading: false,
-                    ),
-                  ),
-                  // ============================================
-                  // MORE MENU: Share, Save(Wishlist), Contact Seller
-                  // ============================================
-                  if (_showMoreMenu)
+                    // Left Icons - Back Button
                     Positioned(
-                      top: 80,
-                      right: 16,
-                      child: Material(
-                        elevation: 10,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: 180,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 10,
-                                offset: Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildMoreMenuItem(
-                                icon: Icons.share,
-                                text: 'Share',
-                                onTap: () {
-                                  setState(() => _showMoreMenu = false);
-                                  _shareProduct();
-                                },
-                              ),
-                              _buildMoreMenuItem(
-                                icon: _isInWishlist
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                text: _isInWishlist ? 'Saved' : 'Save',
-                                onTap: () {
-                                  setState(() => _showMoreMenu = false);
-                                  _toggleWishlist();
-                                },
-                              ),
-                              _buildMoreMenuItem(
-                                icon: Icons.contact_mail,
-                                text: _isProcessing ? 'Contacting...' : 'Contact Seller',
-                                onTap: _isProcessing ? null : () {
-                                  setState(() => _showMoreMenu = false);
-                                  _contactSeller();
-                                },
-                              ),
-                            ],
+                      top: MediaQuery.of(context).padding.top + 8,
+                      left: 16,
+                      child: _buildIconCircle(
+                        icon: Icons.arrow_back,
+                        onTap: () => Navigator.pop(context),
+                        isLoading: false,
+                      ),
+                    ),
+                    // ============================================
+                    // MORE MENU: Share, Save(Wishlist), Contact Seller
+                    // ============================================
+                    if (_showMoreMenu)
+                      Positioned(
+                        top: 80,
+                        right: 16,
+                        child: Material(
+                          elevation: 10,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            width: 180,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 1. Share
+                                _buildMoreMenuItem(
+                                  icon: Icons.share,
+                                  text: 'Share',
+                                  onTap: () {
+                                    setState(() => _showMoreMenu = false);
+                                    _shareProduct();
+                                  },
+                                ),
+                                // 2. Save / Saved (Wishlist)
+                                _buildMoreMenuItem(
+                                  icon: _isInWishlist
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  text: _isInWishlist ? 'Saved' : 'Save',
+                                  onTap: () {
+                                    setState(() => _showMoreMenu = false);
+                                    _toggleWishlist();
+                                  },
+                                ),
+                                // 3. Contact Seller
+                                _buildMoreMenuItem(
+                                  icon: Icons.contact_mail,
+                                  text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+                                  onTap: _isProcessing ? null : () {
+                                    setState(() => _showMoreMenu = false);
+                                    _contactSeller();
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  // ============================================
-                  // BOTTOM CONTENT OVERLAY
-                  // ============================================
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Comments Section
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.75,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.15)),
-                            ),
-                            padding: EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: 6),
-                                Container(
-                                  height: imageHeight * 0.35,
-                                  child: _comments.isEmpty
-                                      ? Center(
-                                          child: Text(
-                                            'No comments yet',
-                                            style: TextStyle(
-                                              color: Colors.white54,
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        )
-                                      : ListView.builder(
-                                          shrinkWrap: true,
-                                          itemCount: _comments.length,
-                                          itemBuilder: (context, index) {
-                                            final comment = _comments[index];
-                                            return Padding(
-                                              padding:
-                                                  EdgeInsets.only(bottom: 8),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  CircleAvatar(
-                                                    radius: 18,
-                                                    backgroundImage:
-                                                        NetworkImage(comment
-                                                                .userAvatar ??
-                                                            ''),
-                                                    child: comment
-                                                            .userAvatar ==
-                                                        null
-                                                        ? Icon(Icons.person,
-                                                            size: 16,
-                                                            color: Colors
-                                                                .white54)
-                                                        : null,
-                                                  ),
-                                                  SizedBox(width: 10),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          comment.userName ??
-                                                              'User',
-                                                          style: TextStyle(
-                                                            color: Colors
-                                                                .white,
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w600,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          comment.comment ??
-                                                              '',
-                                                          style: TextStyle(
-                                                            color: Colors
-                                                                .white70,
-                                                            fontSize: 12,
-                                                          ),
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            GestureDetector(
-                                                              onTap: () =>
-                                                                  _likeComment(
-                                                                      comment
-                                                                          .id ??
-                                                                          0),
-                                                              child: Text(
-                                                                '${comment.likesCount} Likes',
-                                                                style: TextStyle(
-                                                                  color: Colors
-                                                                      .white54,
-                                                                  fontSize: 11,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 12),
-                                                            GestureDetector(
-                                                              onTap: () =>
-                                                                  _replyToComment(
-                                                                      comment
-                                                                          .userName ??
-                                                                      'User'),
-                                                              child: Text(
-                                                                'Reply',
-                                                                style: TextStyle(
-                                                                  color: Colors
-                                                                      .white54,
-                                                                  fontSize: 11,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                ),
-                                SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.white
-                                              .withOpacity(0.15),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: TextField(
-                                          controller: _commentController,
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 11),
-                                          decoration: InputDecoration(
-                                            hintText: 'Add Comment...',
-                                            hintStyle: TextStyle(
-                                                color: Colors.white54,
-                                                fontSize: 11),
-                                            border: InputBorder.none,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6),
-                                          ),
-                                          onSubmitted: (value) =>
-                                              _sendComment(),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 6),
-                                    GestureDetector(
-                                      onTap: _isProcessing ? null : _sendComment,
-                                      child: Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: MyTheme.accent_color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: _isProcessing
-                                            ? const SizedBox(
-                                                height: 12,
-                                                width: 12,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.white,
-                                                ),
-                                              )
-                                            : Icon(Icons.send,
-                                                size: 14,
-                                                color: Colors.white),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          // Product name and description
-                          GestureDetector(
-                            onTap: _openTitleModal,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(_product?.name ?? '',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold)),
-                                SizedBox(height: 4),
-                                Text(
-                                    _product?.description
-                                        ?.replaceAll(RegExp(r'<[^>]*>'),
-                                            '') ??
-                                        '',
-                                    style: TextStyle(
-                                        color: Colors.white70, fontSize: 14),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          // Timer and Price - MOVED UP
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
+                    // Bottom Content Overlay
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Comments Section - SHOW ALL COMMENTS
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.75,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: Colors.white.withOpacity(0.15)),
+                              ),
+                              padding: EdgeInsets.all(12),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('TIME LEFT',
-                                      style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12)),
+                                  // Comment count header
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Text(
+                                      //   'Comments (${_comments.length})',
+                                      //   style: TextStyle(
+                                      //     color: Colors.white,
+                                      //     fontSize: 12,
+                                      //     fontWeight: FontWeight.w600,
+                                      //   ),
+                                      // ),
+                                      // Text(
+                                      //   'Recent',
+                                      //   style: TextStyle(
+                                      //     color: Colors.white70,
+                                      //     fontSize: 10,
+                                      //   ),
+                                      // ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 6),
+                                  Container(
+                                    height: imageHeight * 0.4,
+                                    child: _comments.isEmpty
+                                        ? Center(
+                                            child: Text(
+                                              'No comments yet',
+                                              style: TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          )
+                                        : ListView.builder(
+                                            shrinkWrap: true,
+                                            itemCount: _comments.length,
+                                            itemBuilder: (context, index) {
+                                              final comment = _comments[index];
+                                              return Padding(
+                                                padding:
+                                                    EdgeInsets.only(bottom: 8),
+                                                child: Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    CircleAvatar(
+                                                      radius: 18,
+                                                      backgroundImage:
+                                                          NetworkImage(comment
+                                                                  .userAvatar ??
+                                                              ''),
+                                                      child: comment
+                                                              .userAvatar ==
+                                                          null
+                                                          ? Icon(Icons.person,
+                                                              size: 16,
+                                                              color: Colors
+                                                                  .white54)
+                                                          : null,
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            comment.userName ??
+                                                                'User',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white,
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            comment.comment ??
+                                                                '',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white70,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          // Comment actions - Like & Reply
+                                                          Row(
+                                                            children: [
+                                                              GestureDetector(
+                                                                onTap: () =>
+                                                                    _likeComment(
+                                                                        comment
+                                                                            .id ??
+                                                                            0),
+                                                                child: Text(
+                                                                  '${comment.likesCount} Likes',
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white54,
+                                                                    fontSize: 11,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              SizedBox(width: 12),
+                                                              GestureDetector(
+                                                                onTap: () =>
+                                                                    _replyToComment(
+                                                                        comment
+                                                                            .userName ??
+                                                                        'User'),
+                                                                child: Text(
+                                                                  'Reply',
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .white54,
+                                                                    fontSize: 11,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                  ),
                                   SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      _buildTimerUnitBig(
-                                          timeComponents['days']!, 'days'),
-                                      _buildTimerUnitBig(
-                                          timeComponents['hours']!, 'hours'),
-                                      _buildTimerUnitBig(
-                                          timeComponents['minutes']!,
-                                          'minutes'),
-                                      _buildTimerUnitBig(
-                                          timeComponents['seconds']!,
-                                          'seconds'),
+                                      Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white
+                                                .withOpacity(0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: TextField(
+                                            controller: _commentController,
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11),
+                                            decoration: InputDecoration(
+                                              hintText: 'Add Comment...',
+                                              hintStyle: TextStyle(
+                                                  color: Colors.white54,
+                                                  fontSize: 11),
+                                              border: InputBorder.none,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6),
+                                            ),
+                                            onSubmitted: (value) =>
+                                                _sendComment(),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 6),
+                                      GestureDetector(
+                                        onTap: _isProcessing ? null : _sendComment,
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: MyTheme.accent_color,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: _isProcessing
+                                              ? const SizedBox(
+                                                  height: 12,
+                                                  width: 12,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : Icon(Icons.send,
+                                                  size: 14,
+                                                  color: Colors.white),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.6),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.2)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                            ),
+                            SizedBox(height: 12),
+                            // Product name and description
+                            GestureDetector(
+                              onTap: _openTitleModal,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_product?.name ?? '',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(height: 4),
+                                  Text(
+                                      _product?.description
+                                          ?.replaceAll(RegExp(r'<[^>]*>'),
+                                              '') ??
+                                          '',
+                                      style: TextStyle(
+                                          color: Colors.white70, fontSize: 14),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            // Timer and Price
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Current Bid',
+                                    Text('TIME LEFT',
                                         style: TextStyle(
                                             color: Colors.white70,
                                             fontSize: 12)),
-                                    Text(_formatPrice(_currentHighestBid),
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold)),
+                                    SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        _buildTimerUnitBig(
+                                            timeComponents['days']!, 'days'),
+                                        _buildTimerUnitBig(
+                                            timeComponents['hours']!, 'hours'),
+                                        _buildTimerUnitBig(
+                                            timeComponents['minutes']!,
+                                            'minutes'),
+                                        _buildTimerUnitBig(
+                                            timeComponents['seconds']!,
+                                            'seconds'),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // ============================================
-          // BID INFORMATION - OVERLAY WITH NEGATIVE MARGIN
-          // This overlaps the image by -15 and scrolls with page
-          // ============================================
-          SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: Offset(0, -15), // This moves the widget up by 15px
-              child: Container(
-                // Remove the margin property
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Bid Information',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        SizedBox(height: 12),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 3,
-                          children: [
-                            _buildInfoItem('Starting bid',
-                                _formatPrice(_startingBid)),
-                            _buildInfoItem('Total bidders', '$_totalBids'),
-                            _buildInfoItem(
-                                'Highest bidder',
-                                _highestBidder.isNotEmpty
-                                    ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                    : 'No bids'),
-                            _buildInfoItem('Bid now at', '$_pointPerBid'),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                        color: Colors.white.withOpacity(0.2)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text('Current Bid',
+                                          style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12)),
+                                      Text(_formatPrice(_currentHighestBid),
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // ============================================
-          // REVIEWS SECTION
-          // ============================================
-          SliverToBoxAdapter(
-            child: GestureDetector(
-              onTap: _openReviewsModal,
-              child: Container(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: Offset(0, 2)),
-                    ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Row(
-                          children: List.generate(5, (index) {
-                            return Icon(
-                              index < _rating.round()
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              size: 16,
-                              color: Colors.amber,
-                            );
-                          }),
-                        ),
-                        SizedBox(width: 8),
-                        Text(_rating.toStringAsFixed(1),
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        SizedBox(width: 8),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text('$_reviewsCount reviews',
-                              style: TextStyle(
-                                  fontSize: 12, color: Colors.grey)),
-                        ),
-                      ],
-                    ),
-                    Icon(Icons.arrow_forward_ios,
-                        size: 16, color: Colors.grey),
                   ],
                 ),
               ),
             ),
-          ),
-          // ============================================
-          // THUMBNAILS
-          // ============================================
-          SliverToBoxAdapter(
-            child: Container(
-              height: 70,
-              margin: EdgeInsets.all(16),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _productImages.length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => _currentImageIndex = index);
-                    },
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      margin: EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _currentImageIndex == index
-                              ? MyTheme.accent_color
-                              : Colors.grey.shade300,
-                          width: 2,
+            // Bid Info Section - Updated from polling data
+            SliverToBoxAdapter(
+              child: Material(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Bid Information',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      SizedBox(height: 12),
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 3,
+                        children: [
+                          _buildInfoItem('Starting bid',
+                              _formatPrice(_startingBid)),
+                          _buildInfoItem('Total bidders', '$_totalBids'),
+                          _buildInfoItem(
+                              'Highest bidder',
+                              _highestBidder.isNotEmpty
+                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                  : 'No bids'),
+                          _buildInfoItem('Bid now at', '$_pointPerBid'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Reviews Section
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: _openReviewsModal,
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Row(
+                            children: List.generate(5, (index) {
+                              return Icon(
+                                index < _rating.round()
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                size: 16,
+                                color: Colors.amber,
+                              );
+                            }),
+                          ),
+                          SizedBox(width: 8),
+                          Text(_rating.toStringAsFixed(1),
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          SizedBox(width: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text('$_reviewsCount reviews',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
+                          ),
+                        ],
+                      ),
+                      Icon(Icons.arrow_forward_ios,
+                          size: 16, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Thumbnails
+            SliverToBoxAdapter(
+              child: Container(
+                height: 70,
+                margin: EdgeInsets.all(16),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _productImages.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _currentImageIndex = index);
+                      },
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        margin: EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _currentImageIndex == index
+                                ? MyTheme.accent_color
+                                : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            _productImages[index],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Icon(Icons.broken_image, color: Colors.grey),
+                          ),
                         ),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          _productImages[index],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.broken_image, color: Colors.grey),
-                        ),
-                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
+        ),
+        // Bottom Bar
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, -2))
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _showBidInputDialog,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
-      ),
-    ),
-    // ============================================
-    // BOTTOM BAR - Fixed at bottom
-    // ============================================
-    bottomNavigationBar: Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, -2))
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _showBidInputDialog,
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Text('Custom'),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : _placeBidNow,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyTheme.accent_color,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: _isProcessing
-                  ? _buildButtonLoader()
-                  : Text(
-                      'Bid Now - ${_formatPrice(_minNextBidNow)}',
-                      style: TextStyle(color: Colors.white),
+                    child: Text('Custom'),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _isProcessing ? null : _placeBidNow,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MyTheme.accent_color,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
+                    child: _isProcessing
+                        ? _buildButtonLoader()
+                        : Text(
+                            'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    ),
-  );
-}
+        ),
+      ],
+    );
+  }
 
   // ============================================
   // NEW: Icon Circle with Custom Image
