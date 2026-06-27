@@ -174,99 +174,109 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-  // ============ GET ALL SHARED VALUES FOR DEBUG ============
-  Map<String, dynamic> _getAllSharedValues() {
-    return {
-      // Auth values
-      'is_logged_in': is_logged_in.$,
-      'access_token': access_token.$ != null && access_token.$.isNotEmpty 
-          ? '${access_token.$.substring(0, 20)}...' 
-          : access_token.$,
-      'user_id': user_id.$,
-      'avatar_original': avatar_original.$,
-      
-      // User info
-      'user_name': user_name.$,
-      'user_email': user_email.$,
-      'user_phone': user_phone.$,
-      'user_address': user_address.$,
-      'user_country': user_country.$,
-      'user_state': user_state.$,
-      'user_city': user_city.$,
-      'user_postal_code': user_postal_code.$,
-      
-      // App settings (should NOT be cleared)
-      'app_language': app_language.$,
-      'app_mobile_language': app_mobile_language.$,
-      'system_currency': system_currency.$,
-      'app_language_rtl': app_language_rtl.$,
-      
-      // Points & Balance
-      'points_balance': points_balance.$,
-      
-      // Affiliate fields
-      'affiliate_id': affiliate_id.$,
-      'paypal_email': paypal_email.$,
-      'bank_name': bank_name.$,
-      'account_holder': account_holder.$,
-      'account_number': account_number.$,
-      'ifsc_code': ifsc_code.$,
-      'affiliate_balance': affiliate_balance.$,
-      'affiliate_status': affiliate_status.$,
-      'referral_code': referral_code.$,
-      'referral_link': referral_link.$,
-      'total_affiliate_earnings': total_affiliate_earnings.$,
-      
-      // Package fields
-      'customer_package_id': customer_package_id.$,
-      'customer_package_name': customer_package_name.$,
-      'remaining_uploads': remaining_uploads.$,
-      
-      // Notification counts
-      'unread_notifications_count': unread_notifications_count.$,
-      
-      // Wishlist
-      'wishlist_count': wishlist_count.$,
-      
-      // Auction bids
-      'auction_bids_count': auction_bids_count.$,
-      'distinct_auction_bids_count': distinct_auction_bids_count.$,
-      
-      // Withdrawal
-      'total_withdrawn_amount': total_withdrawn_amount.$,
-      'pending_withdraw_amount': pending_withdraw_amount.$,
-      
-      // Address counts
-      'address_count': address_count.$,
-      'default_address_count': default_address_count.$,
-      
-      // Package payments
-      'total_package_payments': total_package_payments.$,
-      
-      // Addons (should NOT be cleared)
-      'club_point_addon_installed': club_point_addon_installed.$,
-      'whole_sale_addon_installed': whole_sale_addon_installed.$,
-      'refund_addon_installed': refund_addon_installed.$,
-      'otp_addon_installed': otp_addon_installed.$,
-      'auction_addon_installed': auction_addon_installed.$,
-      
-      // Social login (should NOT be cleared)
-      'allow_google_login': allow_google_login.$,
-      'allow_facebook_login': allow_facebook_login.$,
-      'allow_twitter_login': allow_twitter_login.$,
-      'allow_apple_login': allow_apple_login.$,
-      
-      // Business settings (should NOT be cleared)
-      'pick_up_status': pick_up_status.$,
-      'carrier_base_shipping': carrier_base_shipping.$,
-      'google_recaptcha': google_recaptcha.$,
-      'wallet_system_status': wallet_system_status.$,
-      'mail_verification_status': mail_verification_status.$,
-      'conversation_system_status': conversation_system_status.$,
-      'vendor_system': vendor_system.$,
-      'classified_product_status': classified_product_status.$,
-    };
+// ============ GET ALL SHARED VALUES FOR DEBUG ============
+Map<String, dynamic> _getAllSharedValues() {
+  // Helper to safely truncate access token
+  String getAccessTokenDisplay() {
+    final token = access_token.$;
+    if (token == null || token.isEmpty) {
+      return token ?? '';
+    }
+    if (token.length > 20) {
+      return '${token.substring(0, 20)}...';
+    }
+    return token;
   }
+
+  return {
+    // Auth values
+    'is_logged_in': is_logged_in.$,
+    'access_token': getAccessTokenDisplay(),
+    'user_id': user_id.$,
+    'avatar_original': avatar_original.$,
+    
+    // User info
+    'user_name': user_name.$,
+    'user_email': user_email.$,
+    'user_phone': user_phone.$,
+    'user_address': user_address.$,
+    'user_country': user_country.$,
+    'user_state': user_state.$,
+    'user_city': user_city.$,
+    'user_postal_code': user_postal_code.$,
+    
+    // App settings (should NOT be cleared)
+    'app_language': app_language.$,
+    'app_mobile_language': app_mobile_language.$,
+    'system_currency': system_currency.$,
+    'app_language_rtl': app_language_rtl.$,
+    
+    // Points & Balance
+    'points_balance': points_balance.$,
+    
+    // Affiliate fields
+    'affiliate_id': affiliate_id.$,
+    'paypal_email': paypal_email.$,
+    'bank_name': bank_name.$,
+    'account_holder': account_holder.$,
+    'account_number': account_number.$,
+    'ifsc_code': ifsc_code.$,
+    'affiliate_balance': affiliate_balance.$,
+    'affiliate_status': affiliate_status.$,
+    'referral_code': referral_code.$,
+    'referral_link': referral_link.$,
+    'total_affiliate_earnings': total_affiliate_earnings.$,
+    
+    // Package fields
+    'customer_package_id': customer_package_id.$,
+    'customer_package_name': customer_package_name.$,
+    'remaining_uploads': remaining_uploads.$,
+    
+    // Notification counts
+    'unread_notifications_count': unread_notifications_count.$,
+    
+    // Wishlist
+    'wishlist_count': wishlist_count.$,
+    
+    // Auction bids
+    'auction_bids_count': auction_bids_count.$,
+    'distinct_auction_bids_count': distinct_auction_bids_count.$,
+    
+    // Withdrawal
+    'total_withdrawn_amount': total_withdrawn_amount.$,
+    'pending_withdraw_amount': pending_withdraw_amount.$,
+    
+    // Address counts
+    'address_count': address_count.$,
+    'default_address_count': default_address_count.$,
+    
+    // Package payments
+    'total_package_payments': total_package_payments.$,
+    
+    // Addons (should NOT be cleared)
+    'club_point_addon_installed': club_point_addon_installed.$,
+    'whole_sale_addon_installed': whole_sale_addon_installed.$,
+    'refund_addon_installed': refund_addon_installed.$,
+    'otp_addon_installed': otp_addon_installed.$,
+    'auction_addon_installed': auction_addon_installed.$,
+    
+    // Social login (should NOT be cleared)
+    'allow_google_login': allow_google_login.$,
+    'allow_facebook_login': allow_facebook_login.$,
+    'allow_twitter_login': allow_twitter_login.$,
+    'allow_apple_login': allow_apple_login.$,
+    
+    // Business settings (should NOT be cleared)
+    'pick_up_status': pick_up_status.$,
+    'carrier_base_shipping': carrier_base_shipping.$,
+    'google_recaptcha': google_recaptcha.$,
+    'wallet_system_status': wallet_system_status.$,
+    'mail_verification_status': mail_verification_status.$,
+    'conversation_system_status': conversation_system_status.$,
+    'vendor_system': vendor_system.$,
+    'classified_product_status': classified_product_status.$,
+  };
+}
 
   // ============ SHOW DEBUG LOGOUT DIALOG ============
   void _showDebugLogoutDialog(BuildContext context, Map<String, dynamic> steps) {
@@ -463,63 +473,53 @@ ${const JsonEncoder.withIndent('  ').convert(steps['finalValues'])}
         });
         
         // In _onTapLogout method, after clearing:
-        // STEP 3: Get all shared values after clearing
-        steps.add({
-          'success': true,
-          'message': 'Step 3: Checking shared values after clearing...',
-        });
+// STEP 3: Get all shared values after clearing
+steps.add({
+  'success': true,
+  'message': 'Step 3: Checking shared values after clearing...',
+});
 
-        final afterClearValues = _getAllSharedValues();
+final afterClearValues = _getAllSharedValues();
 
-        // Check each critical value
-        List<Map<String, dynamic>> checkResults = [
-          {'key': 'is_logged_in', 'expected': false, 'actual': afterClearValues['is_logged_in']},
-          {'key': 'access_token', 'expected': '', 'actual': afterClearValues['access_token']},
-          {'key': 'user_id', 'expected': 0, 'actual': afterClearValues['user_id']},
-          {'key': 'user_name', 'expected': '', 'actual': afterClearValues['user_name']},
-          {'key': 'user_email', 'expected': '', 'actual': afterClearValues['user_email']},
-          {'key': 'user_phone', 'expected': '', 'actual': afterClearValues['user_phone']},
-          {'key': 'avatar_original', 'expected': '', 'actual': afterClearValues['avatar_original']},
-          {'key': 'points_balance', 'expected': '0', 'actual': afterClearValues['points_balance']},
-          {'key': 'affiliate_balance', 'expected': '0', 'actual': afterClearValues['affiliate_balance']},
-          {'key': 'wishlist_count', 'expected': 0, 'actual': afterClearValues['wishlist_count']},
-          {'key': 'auction_bids_count', 'expected': 0, 'actual': afterClearValues['auction_bids_count']},
-        ];
+// Check each critical value
+List<Map<String, dynamic>> checkResults = [
+  {'key': 'is_logged_in', 'expected': false, 'actual': afterClearValues['is_logged_in']},
+  {'key': 'access_token', 'expected': '', 'actual': afterClearValues['access_token'] ?? ''},
+  {'key': 'user_id', 'expected': 0, 'actual': afterClearValues['user_id']},
+  {'key': 'user_name', 'expected': '', 'actual': afterClearValues['user_name'] ?? ''},
+  {'key': 'user_email', 'expected': '', 'actual': afterClearValues['user_email'] ?? ''},
+  {'key': 'user_phone', 'expected': '', 'actual': afterClearValues['user_phone'] ?? ''},
+  {'key': 'avatar_original', 'expected': '', 'actual': afterClearValues['avatar_original'] ?? ''},
+  {'key': 'points_balance', 'expected': '0', 'actual': afterClearValues['points_balance'] ?? '0'},
+  {'key': 'affiliate_balance', 'expected': '0', 'actual': afterClearValues['affiliate_balance'] ?? '0'},
+  {'key': 'wishlist_count', 'expected': 0, 'actual': afterClearValues['wishlist_count'] ?? 0},
+  {'key': 'auction_bids_count', 'expected': 0, 'actual': afterClearValues['auction_bids_count'] ?? 0},
+];
 
-        bool allCleared = true;
-        for (var check in checkResults) {
-          bool isCleared;
-          if (check['expected'] == '') {
-            isCleared = check['actual'] == '' || check['actual'] == null;
-          } else {
-            isCleared = check['actual'] == check['expected'];
-          }
-          
-          steps.add({
-            'success': isCleared,
-            'message': '  ${check['key']}: ${check['actual']} ${isCleared ? '✓' : '✗'} (expected: ${check['expected']})',
-          });
-          
-          if (!isCleared) allCleared = false;
-        }
-
-        // Check app settings that should NOT be cleared
-        steps.add({
-          'success': true,
-          'message': 'Step 3: App settings (should NOT be cleared):',
-        });
-        steps.add({
-          'success': true,
-          'message': '  app_language: ${afterClearValues['app_language']}',
-        });
-        steps.add({
-          'success': true,
-          'message': '  wallet_system_status: ${afterClearValues['wallet_system_status']}',
-        });
-        steps.add({
-          'success': true,
-          'message': '  conversation_system_status: ${afterClearValues['conversation_system_status']}',
-        });
+bool allCleared = true;
+for (var check in checkResults) {
+  bool isCleared;
+  final expected = check['expected'];
+  final actual = check['actual'];
+  
+  if (expected == '' || expected == 0) {
+    // For empty string or zero, check if actual is empty, null, or zero
+    if (expected == '') {
+      isCleared = actual == '' || actual == null;
+    } else {
+      isCleared = actual == 0 || actual == null;
+    }
+  } else {
+    isCleared = actual == expected;
+  }
+  
+  steps.add({
+    'success': isCleared,
+    'message': '  ${check['key']}: ${actual ?? 'null'} ${isCleared ? '✓' : '✗'} (expected: ${expected})',
+  });
+  
+  if (!isCleared) allCleared = false;
+}
         
         // STEP 4: Reset local state
         steps.add({

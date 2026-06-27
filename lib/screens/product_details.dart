@@ -2406,6 +2406,7 @@ class _ProductDetailsState extends State<ProductDetails>
     required String imagePath,
     required VoidCallback onTap,
     bool isLoading = false,
+    IconData? fallbackIcon,
   }) {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
