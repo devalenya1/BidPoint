@@ -2437,9 +2437,9 @@ class _ProductDetailsState extends State<ProductDetails>
                 padding: const EdgeInsets.all(10.0),
                 child: Image.asset(
                   imagePath,
-                  height: 24,
-                  width: 24,
-                  color: Colors.black87,
+                  height: 25,
+                  width: 25,
+                  // color: Colors.black87,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     // Show a fallback icon if image fails to load

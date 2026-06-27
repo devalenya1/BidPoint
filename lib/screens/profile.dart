@@ -542,8 +542,8 @@ for (var check in checkResults) {
         
         ToastComponent.showDialog(
           "Logged out successfully",
-          gravity: ToastGravity.CENTER,
-          duration: Toast.LENGTH_SHORT,
+          // gravity: ToastGravity.CENTER,
+          // duration: Toast.LENGTH_SHORT,
         );
         
         steps.add({
