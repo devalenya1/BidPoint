@@ -71,9 +71,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         affiliate_balance.$ = _userInfo?.affiliateBalance?.toString() ?? "0";
         affiliate_balance.save();
         
-        // if (_userInfo != null) {
-        //   UserDataHelper.saveUserData(_userInfo!);
-        // }
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
+        }
       }
     } catch (e) {
       print("Error loading user data: $e");

@@ -17,7 +17,7 @@ import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-// import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -103,9 +103,9 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         points_balance.$ = _userInfo?.balance?.toString() ?? "0";
         points_balance.save();
         
-        // if (_userInfo != null) {
-        //   UserDataHelper.saveUserData(_userInfo!);
-        // }
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
+        }
       }
     } catch (e) {
       print("Error loading user data: $e");

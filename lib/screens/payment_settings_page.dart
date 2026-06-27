@@ -3,7 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-// import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 
@@ -74,9 +74,9 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
         
         _loadPaymentDetailsFromUserInfo();
         
-        // if (_userInfo != null) {
-        //   UserDataHelper.saveUserData(_userInfo!);
-        // }
+        if (_userInfo != null) {
+          UserDataHelper.saveUserData(_userInfo!);
+        }
       }
     } catch (e) {
       print("Error loading user data: $e");
