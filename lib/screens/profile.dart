@@ -177,8 +177,8 @@ class _ProfileState extends State<Profile> {
 
 
   // ============ LOGOUT - EXACTLY MATCHING ORIGINAL ============
-  void _onTapLogout(BuildContext context) async {
-    // Show confirmation dialog matching original style
+  void _onTapLogout(BuildContext context) {
+    // Show confirmation dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

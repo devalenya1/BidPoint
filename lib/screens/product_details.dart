@@ -337,8 +337,11 @@ class _ProductDetailsState extends State<ProductDetails>
             !_winnerModalShown) {
           _winnerData = response.winner;
           _winnerModalShown = true;
+          // Use a post-frame callback to avoid build-phase issues
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showWinnerModalDialog();
+            if (mounted) {
+              _showWinnerModalDialog();
+            }
           });
         }
 
@@ -406,6 +409,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _checkAndRefreshWishlist() {
     // Only refresh if product exists, user is logged in, and not currently loading
+    if (!mounted) return;
+    
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
       print('✅ Checking wishlist status on page focus...');
       _fetchWishlistStatus(); // ✅ Use dedicated endpoint
@@ -427,10 +432,14 @@ class _ProductDetailsState extends State<ProductDetails>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh when dependencies change (like when coming back to the page)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndRefreshWishlist();
-    });
+    // Only check after the first frame is complete
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _checkAndRefreshWishlist();
+        }
+      });
+    }
   }
 
   void _startCountdown(DateTime endTime) {
@@ -875,9 +884,17 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response['success'] == true) {
         _showToast(response['message'] ?? 'Message sent to seller!');
         
-        // ✅ Redirect to Messenger List page on success
+        // ✅ Fixed navigation with mounted check
         if (mounted) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => MessengerList()));
+          // Use a small delay to ensure the current context is stable
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (context) => MessengerList())
+              );
+            }
+          });
         }
       } else {
         _showToast(response['message'] ?? 'Failed to contact seller');
