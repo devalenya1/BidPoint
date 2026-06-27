@@ -38,10 +38,14 @@ class AuthHelper {
     // ✅ Clear SystemConfig
     SystemConfig.systemUser = null;
     
-    // ✅ Clear ALL user data using UserDataHelper
+    // ============================================
+    // ✅ CLEAR USER DATA USING UserDataHelper
+    // ============================================
     UserDataHelper.clearUserData();
     
-    // ✅ Also clear auth-specific values
+    // ============================================
+    // ✅ CLEAR AUTH-SPECIFIC VALUES
+    // ============================================
     is_logged_in.$ = false;
     is_logged_in.save();
     
