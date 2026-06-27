@@ -176,7 +176,7 @@ class _ProfileState extends State<Profile> {
 
 
 
-  // ============ LOGOUT - EXACTLY MATCHING ORIGINAL ============
+  // ============ LOGOUT - WITH SUCCESS TOAST BEFORE REDIRECT ============
   void _onTapLogout(BuildContext context) {
     // Show confirmation dialog
     showDialog(
@@ -202,9 +202,23 @@ class _ProfileState extends State<Profile> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // ✅ EXACTLY MATCHING ORIGINAL LOGOUT FLOW
+              
+              // ✅ Clear user data first
               AuthHelper().clearUserData();
-              context.go("/");
+              
+              // ✅ Show success toast (like login)
+              ToastComponent.showDialog(
+                "Logged out successfully",
+                gravity: ToastGravity.CENTER,
+                duration: Toast.LENGTH_SHORT,
+              );
+              
+              // ✅ Redirect to home after a small delay to show toast
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) {
+                  context.go("/");
+                }
+              });
             },
             child: Text(
               AppLocalizations.of(context)!.yes_ucf,

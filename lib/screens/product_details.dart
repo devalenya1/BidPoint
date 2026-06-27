@@ -340,7 +340,12 @@ class _ProductDetailsState extends State<ProductDetails>
           // Use a post-frame callback to avoid build-phase issues
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              _showWinnerModalDialog();
+              // Add a small delay to ensure the build phase is complete
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) {
+                  _showWinnerModalDialog();
+                }
+              });
             }
           });
         }
@@ -413,7 +418,7 @@ class _ProductDetailsState extends State<ProductDetails>
     
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
       print('✅ Checking wishlist status on page focus...');
-      _fetchWishlistStatus(); // ✅ Use dedicated endpoint
+      _fetchWishlistStatus();
     } else {
       print('⏭️ Skipping wishlist refresh: product=${_product != null}, loggedIn=${is_logged_in.$}, loading=$_isLoading, processing=$_isProcessing');
     }
@@ -432,14 +437,12 @@ class _ProductDetailsState extends State<ProductDetails>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Only check after the first frame is complete
-    if (mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _checkAndRefreshWishlist();
-        }
-      });
-    }
+    // Use a post-frame callback with a flag to prevent multiple calls
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkAndRefreshWishlist();
+      }
+    });
   }
 
   void _startCountdown(DateTime endTime) {
@@ -710,9 +713,11 @@ class _ProductDetailsState extends State<ProductDetails>
   Future<void> _fetchWishlistStatus() async {
     // Don't check if user not logged in
     if (!is_logged_in.$) {
-      setState(() {
-        _isInWishlist = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isInWishlist = false;
+        });
+      }
       return;
     }
     
@@ -727,7 +732,7 @@ class _ProductDetailsState extends State<ProductDetails>
       
       print('📡 Wishlist status response: $result');
       
-      if (result['success'] == true) {
+      if (mounted && result['success'] == true) {
         final newState = result['isInWishlist'] ?? false;
         if (_isInWishlist != newState) {
           setState(() {
@@ -884,10 +889,10 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response['success'] == true) {
         _showToast(response['message'] ?? 'Message sent to seller!');
         
-        // ✅ Fixed navigation with mounted check
+        // ✅ Fixed navigation with mounted check and proper delay
         if (mounted) {
           // Use a small delay to ensure the current context is stable
-          Future.delayed(const Duration(milliseconds: 100), () {
+          Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted) {
               Navigator.push(
                 context, 
