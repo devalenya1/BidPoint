@@ -164,7 +164,7 @@ class _ProfileState extends State<Profile> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      context.go("/");
+      context.push("/");
     }
   }
 
@@ -174,10 +174,10 @@ class _ProfileState extends State<Profile> {
     });
   }
 
-  // ============ LOGOUT - EXACTLY MATCHING ORIGINAL ============
+  // ============ LOGOUT - WITH AWAIT FOR COMPLETE CLEARANCE ============
   void _onTapLogout(BuildContext context) async {
     // Show confirmation dialog
-    showDialog(
+    bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
@@ -191,7 +191,7 @@ class _ProfileState extends State<Profile> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(context, false);
             },
             child: Text(
               AppLocalizations.of(context)!.no_ucf,
@@ -199,10 +199,7 @@ class _ProfileState extends State<Profile> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              // ✅ EXACTLY MATCHING ORIGINAL LOGOUT FLOW
-              AuthHelper().clearUserData();
-              context.go("/");
+              Navigator.pop(context, true);
             },
             child: Text(
               AppLocalizations.of(context)!.yes_ucf,
@@ -211,6 +208,26 @@ class _ProfileState extends State<Profile> {
         ],
       ),
     );
+    
+    if (confirm == true) {
+      // ✅ Clear user data with await to ensure it completes
+      await AuthHelper().clearUserData();
+      
+      // ✅ Show success toast
+      ToastComponent.showDialog(
+        "Logged out successfully",
+        gravity: ToastGravity.CENTER,
+        duration: Toast.LENGTH_SHORT,
+      );
+      
+      // ✅ Reset local state
+      _resetState();
+      
+      // ✅ Navigate to login screen
+      if (mounted) {
+        context.go("/users/login");
+      }
+    }
   }
 
   void _showLoginWarning() {

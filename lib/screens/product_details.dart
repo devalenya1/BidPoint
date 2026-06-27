@@ -2400,7 +2400,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // NEW: Icon Circle with Custom Image
+  // Icon Circle with Custom Image
   // ============================================
 
   Widget _buildIconCircleWithImage({
@@ -2437,9 +2437,9 @@ class _ProductDetailsState extends State<ProductDetails>
                 padding: const EdgeInsets.all(12.0),
                 child: Image.asset(
                   imagePath,
-                  color: Colors.black87,
                   height: 22,
                   width: 22,
+                  color: Colors.black87,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(
