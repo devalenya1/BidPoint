@@ -241,7 +241,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       return null;
     }
   }
-  
+
   String _getProductNameForBid(AuctionBid bid) {
     final product = _getProductInfoForBid(bid);
     if (product != null && product.productName != null && product.productName!.isNotEmpty) {
@@ -252,7 +252,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
     return AppLocalizations.of(context)!.unknown_product;
   }
-  
+
   String? _getProductImageForBid(AuctionBid bid) {
     final product = _getProductInfoForBid(bid);
     if (product != null && product.productImage != null && product.productImage!.isNotEmpty) {
@@ -263,24 +263,37 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
     return null;
   }
-  
-  // FIXED: Get product slug from DistinctAuctionBid
-  String? _getProductSlugForBid(AuctionBid bid) {
+
+  // ✅ FIXED: Get product slug - now properly gets from bid like Wishlist does
+  String _getProductSlugForBid(AuctionBid bid) {
+
+    if (bid.productSlug != null && bid.productSlug!.isNotEmpty) {
+      return bid.productSlug!;
+    }
+    
+    // First try to get slug from the bid directly (like Wishlist uses item.slug)
+    if (bid.slug != null && bid.slug!.isNotEmpty) {
+      return bid.slug!;
+    }
+
+    // If not available in bid, try from distinct product info
     final product = _getProductInfoForBid(bid);
     if (product != null && product.productSlug != null && product.productSlug!.isNotEmpty) {
-      return product.productSlug;
+      return product.productSlug!;
     }
-    return null;
+    
+    // Return empty string if no slug found (matches Wishlist pattern)
+    return '';
   }
-  
+
   double _getCurrentBidForProduct(int productId) {
-    final product = _getProductInfoForBid(AuctionBid(productId: productId));
+    final product = _getProductInfoById(productId);
     if (product != null) {
       return product.amount ?? 0.0;
     }
     return 0.0;
   }
-  
+
   double _getUserHighestBidForProduct(int productId) {
     if (_userInfo?.auctionBids == null) return 0.0;
     
@@ -289,7 +302,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     return userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
   }
-  
+
   int _getPointPerBidForProduct(int productId) {
     if (_userInfo?.auctionBids == null) return 10;
     
@@ -298,7 +311,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     return userBids.first.pointPerBid ?? 10;
   }
-  
+
   // Helper to get product info by product ID (overload)
   DistinctAuctionBid? _getProductInfoById(int productId) {
     if (_userInfo?.distinctAuctionBids == null) return null;
@@ -312,7 +325,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       return null;
     }
   }
-  
+
   double _getCurrentBidById(int productId) {
     final product = _getProductInfoById(productId);
     if (product != null) {
@@ -335,17 +348,20 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   }
   
   // ============ NAVIGATION HELPERS ============
-  void _navigateToProductDetails(String slug) {
-    if (slug.isNotEmpty) {
+  // ✅ FIXED: Same navigation pattern as Wishlist page
+  void _navigateToProductDetails(String productSlug) {
+    if (productSlug.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ProductDetails(slug: slug),
+          builder: (context) => ProductDetails(slug: productSlug),
         ),
       );
     } else {
       ToastComponent.showDialog(
-        AppLocalizations.of(context)!.product_details_not_available
+        AppLocalizations.of(context)!.product_details_not_available,
+        gravity: Toast.center,
+        duration: Toast.lengthShort,
       );
     }
   }
@@ -568,7 +584,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final productId = activity.productId ?? 0;
     final productName = _getProductNameForBid(activity);
     final productImage = _getProductImageForBid(activity);
-    final productSlug = _getProductSlugForBid(activity);
+    final productSlug = _getProductSlugForBid(activity); ;
     final userHighestBid = _getUserHighestBidForProduct(productId);
     final currentBid = _getCurrentBidById(productId);
     final pointPerBid = _getPointPerBidForProduct(productId);
@@ -610,7 +626,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           // Product Image - Clickable
           GestureDetector(
             onTap: () {
-              if (productSlug != null && productSlug.isNotEmpty) {
+              if (productSlug.isNotEmpty) {  // Now checking String, not String?
                 _navigateToProductDetails(productSlug);
               }
             },
