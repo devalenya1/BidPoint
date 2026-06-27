@@ -2856,46 +2856,49 @@ Widget _buildMobileLayout() {
           // This overlaps the image by -15 and scrolls with page
           // ============================================
           SliverToBoxAdapter(
-            child: Container(
-              margin: EdgeInsets.only(top: -15), // Overlaps image by 15px
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.white,
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Bid Information',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      SizedBox(height: 12),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 3,
-                        children: [
-                          _buildInfoItem('Starting bid',
-                              _formatPrice(_startingBid)),
-                          _buildInfoItem('Total bidders', '$_totalBids'),
-                          _buildInfoItem(
-                              'Highest bidder',
-                              _highestBidder.isNotEmpty
-                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                  : 'No bids'),
-                          _buildInfoItem('Bid now at', '$_pointPerBid'),
-                        ],
-                      ),
-                    ],
+            child: Transform.translate(
+              offset: Offset(0, -15), // This moves the widget up by 15px
+              child: Container(
+                // Remove the margin property
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Bid Information',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        SizedBox(height: 12),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 3,
+                          children: [
+                            _buildInfoItem('Starting bid',
+                                _formatPrice(_startingBid)),
+                            _buildInfoItem('Total bidders', '$_totalBids'),
+                            _buildInfoItem(
+                                'Highest bidder',
+                                _highestBidder.isNotEmpty
+                                    ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                    : 'No bids'),
+                            _buildInfoItem('Bid now at', '$_pointPerBid'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
