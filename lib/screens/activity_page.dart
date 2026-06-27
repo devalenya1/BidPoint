@@ -267,14 +267,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   // ✅ FIXED: Get product slug - now properly gets from bid like Wishlist does
   String _getProductSlugForBid(AuctionBid bid) {
 
-    if (bid.productSlug != null && bid.productSlug!.isNotEmpty) {
-      return bid.productSlug!;
-    }
-    
-    // First try to get slug from the bid directly (like Wishlist uses item.slug)
-    if (bid.slug != null && bid.slug!.isNotEmpty) {
-      return bid.slug!;
-    }
+    // if (bid.productSlug != null && bid.productSlug!.isNotEmpty) {
+    //   return bid.productSlug!;
+    // }
 
     // If not available in bid, try from distinct product info
     final product = _getProductInfoForBid(bid);
@@ -360,8 +355,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     } else {
       ToastComponent.showDialog(
         AppLocalizations.of(context)!.product_details_not_available,
-        gravity: Toast.center,
-        duration: Toast.lengthShort,
+        // gravity: Toast.center,
+        // duration: Toast.lengthShort,
       );
     }
   }
@@ -584,7 +579,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final productId = activity.productId ?? 0;
     final productName = _getProductNameForBid(activity);
     final productImage = _getProductImageForBid(activity);
-    final productSlug = _getProductSlugForBid(activity); ;
+    final productSlug = _getProductSlugForBid(activity);
     final userHighestBid = _getUserHighestBidForProduct(productId);
     final currentBid = _getCurrentBidById(productId);
     final pointPerBid = _getPointPerBidForProduct(productId);
@@ -771,10 +766,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildBidAgainButton(String? productSlug) {
+  Widget _buildBidAgainButton(String productSlug) {
     return GestureDetector(
       onTap: () {
-        if (productSlug != null && productSlug.isNotEmpty) {
+        if (productSlug.isNotEmpty) {
           _navigateToProductDetails(productSlug);
         } else {
           ToastComponent.showDialog(
@@ -802,10 +797,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildViewDetailsButton(String? productSlug) {
+  Widget _buildViewDetailsButton(String productSlug) {
     return GestureDetector(
       onTap: () {
-        if (productSlug != null && productSlug.isNotEmpty) {
+        if (productSlug.isNotEmpty) {
           _navigateToProductDetails(productSlug);
         } else {
           ToastComponent.showDialog(
