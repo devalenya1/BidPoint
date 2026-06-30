@@ -43,6 +43,8 @@ import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_value/shared_value.dart';
+// ✅ ADD THIS IMPORT
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'app_config.dart';
 import 'lang_config.dart';
@@ -68,7 +70,15 @@ main() async {
 
   runApp(
     SharedValue.wrapApp(
-      MyApp(),
+      // ✅ WRAP WITH SCREEN UTIL INIT
+      ScreenUtilInit(
+        designSize: const Size(375, 812), // iPhone 13/14 design size
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return MyApp();
+        },
+      ),
     ),
   );
 }
@@ -84,21 +94,6 @@ var routes = GoRouter(
         pageBuilder: (BuildContext context, GoRouterState state) =>
             MaterialPage(child: Index()),
         routes: [
-          // GoRoute(
-          //     path: "customer_products",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: MyClassifiedAds())),
-          // GoRoute(
-          //     path: "customer-products",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: ClassifiedAds())),
-          // GoRoute(
-          //     path: "customer-product/:slug",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: ClassifiedAdsDetails(
-          //           slug: getParameter(state, "slug"),
-          //         ))),
           GoRoute(
               path: "product/:slug",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -110,11 +105,6 @@ var routes = GoRouter(
               path: "customer-packages",
               pageBuilder: (BuildContext context, GoRouterState state) =>
                   MaterialPage(child: UpdatePackage())),
-          // GoRoute(
-          //     path: "auction_product_bids",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: AuthMiddleware(AuctionBiddedProducts()).next())),
           GoRoute(
               path: "users/login",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -128,10 +118,6 @@ var routes = GoRouter(
               name: "Profile",
               pageBuilder: (BuildContext context, GoRouterState state) =>
                   AIZRoute.rightTransition(Profile())),
-          // GoRoute(
-          //     path: "auction-products",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: AuctionProducts())),
           GoRoute(
               path: "auction-product/:slug",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -139,11 +125,6 @@ var routes = GoRouter(
                       child: AuctionProductsDetails(
                     slug: getParameter(state, "slug"),
                   ))),
-          // GoRoute(
-          //     path: "auction/purchase_history",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: AuthMiddleware(AuctionPurchaseHistory()).next())),
           GoRoute(
               path: "brand/:slug",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -159,10 +140,6 @@ var routes = GoRouter(
                       child: Filter(
                     selected_filter: "brands",
                   ))),
-          // GoRoute(
-          //     path: "cart",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: AuthMiddleware(Cart()).next())),
           GoRoute(
               path: "categories",
               pageBuilder: (BuildContext context, GoRouterState state) =>
@@ -177,61 +154,11 @@ var routes = GoRouter(
                       child: (CategoryProducts(
                     slug: getParameter(state, "slug"),
                   )))),
-          // GoRoute(
-          //     path: "flash-deals",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: (FlashDealList()))),
-          // GoRoute(
-          //     path: "flash-deal/:slug",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: (FlashDealProducts(
-          //           slug: getParameter(state, "slug"),
-          //         )))),
-          // GoRoute(
-          //     path: "followed-seller",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: (FollowedSellers()))),
-          // GoRoute(
-          //     path: "purchase_history",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: (OrderList()))),
-          // GoRoute(
-          //     path: "purchase_history/details/:id",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: (OrderDetails(
-          //           id: int.parse(getParameter(state, "id")),
-          //         )))),
-          // GoRoute(
-          //     path: "sellers",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: (Filter(
-          //           selected_filter: "sellers",
-          //         )))),
-          // GoRoute(
-          //     path: "shop/:slug",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(
-          //             child: (SellerDetails(
-          //           slug: getParameter(state, "slug"),
-          //         )))),
-          // GoRoute(
-          //     path: "todays-deal",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: (TodaysDealProducts()))),
-          // GoRoute(
-          //     path: "coupons",
-          //     pageBuilder: (BuildContext context, GoRouterState state) =>
-          //         MaterialPage(child: (Coupons()))),
         ])
   ],
 );
 
 class MyApp extends StatefulWidget {
-  // This widget is the root of your application.
-
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -239,38 +166,20 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   void deactivate() {
-    // print("deactivate");
-    // TODO: implement deactivate
     super.deactivate();
   }
 
   @override
   void didChangeDependencies() {
-    // TODO: implement didChangeDependencies
-    // print("didChangeDependencies");
     super.didChangeDependencies();
   }
 
   @override
   void initState() {
-    routes.routerDelegate.addListener(() {
-      // print("objectobject");
-    });
+    routes.routerDelegate.addListener(() {});
 
-    /*bc = Widget Function(context,Container(),onGenerateRoute: (route){
-      print("data ${route.name}");
-      return MaterialPageRoute(builder:(context)=> Container());
-    },onUnknownRoute: (route){
-      print("data2 ${route.name}");
-      return MaterialPageRoute(builder:(context)=> Container());
-    },
-      initialRoute: "/"
-    );*/
-    routes.routeInformationProvider.addListener(() {
-      // print("123123");
-    });
+    routes.routeInformationProvider.addListener(() {});
     super.initState();
-    //print("Type of ${bc.runtimeType}");
     Future.delayed(Duration.zero).then(
       (value) async {
         Firebase.initializeApp().then((value) {
@@ -286,7 +195,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => LocaleProvider()),
@@ -300,7 +208,6 @@ class _MyAppState extends State<MyApp> {
               child,
               onGenerateRoute: (route) {
                 return MaterialPageRoute(builder: (context2) {
-                  // OneContext().context = context2;
                   return Scaffold(
                     resizeToAvoidBottomInset: false,
                     body: Builder(
@@ -325,14 +232,7 @@ class _MyAppState extends State<MyApp> {
               scaffoldBackgroundColor: MyTheme.white,
               visualDensity: VisualDensity.adaptivePlatformDensity,
               fontFamily: "PublicSansSerif",
-              /*textTheme: TextTheme(
-              bodyText1: TextStyle(),
-              bodyText2: TextStyle(fontSize: 12.0),
-            )*/
-              //
-              // the below code is getting fonts from http
               textTheme: MyTheme.textTheme1,
-              // textTheme: TextTheme()
               fontFamilyFallback: ['NotoSans'],
             ),
             localizationsDelegates: [
@@ -349,9 +249,6 @@ class _MyAppState extends State<MyApp> {
               }
               return const Locale('en');
             },
-
-            // home: SplashScreen(),
-            // home: Splash(),
           );
         }));
   }
