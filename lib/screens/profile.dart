@@ -42,6 +42,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../repositories/auth_repository.dart';
 import '../data_model/user_info_response.dart';
@@ -180,22 +181,29 @@ class _ProfileState extends State<Profile> {
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
           AppLocalizations.of(context)!.logout_ucf,
-          style: TextStyle(fontSize: 15, color: MyTheme.dark_font_grey),
+          style: TextStyle(fontSize: 15.sp, color: MyTheme.dark_font_grey),
         ),
         content: Text(
           AppLocalizations.of(context)!.are_you_sure_you_want_to_sign_out,
-          style: TextStyle(fontSize: 13, color: MyTheme.dark_font_grey),
+          style: TextStyle(fontSize: 13.sp, color: MyTheme.dark_font_grey),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.no_ucf),
+            child: Text(
+              AppLocalizations.of(context)!.no_ucf,
+              style: TextStyle(fontSize: 14.sp),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(AppLocalizations.of(context)!.yes_ucf),
+            child: Text(
+              AppLocalizations.of(context)!.yes_ucf,
+              style: TextStyle(fontSize: 14.sp),
+            ),
           )
         ],
       ),
@@ -236,9 +244,9 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildDivider() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Divider(height: 1, thickness: 1),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Divider(height: 1.h, thickness: 1.w),
     );
   }
 
@@ -249,14 +257,15 @@ class _ProfileState extends State<Profile> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.profile_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
@@ -269,22 +278,23 @@ class _ProfileState extends State<Profile> {
           // Logout button - always show when logged in
           if (is_logged_in.$)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: 8.w),
               child: IconButton(
-                icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
+                icon: Icon(Icons.logout, size: 24.sp, color: const Color(0xFFDC2626)),
                 onPressed: () => _onTapLogout(context),
               ),
             )
           else
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: 8.w),
               child: TextButton(
                 onPressed: () {
                   context.push("/users/login");
                 },
                 child: Text(
                   AppLocalizations.of(context)!.login_ucf,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: MyTheme.accent_color,
                     fontWeight: FontWeight.w600,
                   ),
@@ -307,15 +317,15 @@ class _ProfileState extends State<Profile> {
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
+      padding: EdgeInsets.fromLTRB(13.w, 13.h, 13.w, 27.h),
       child: Column(
         children: [
           Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
+            margin: EdgeInsets.all(16.w),
+            padding: EdgeInsets.all(20.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF6F6F6),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
             ),
             child: Row(
               children: [
@@ -323,32 +333,32 @@ class _ProfileState extends State<Profile> {
                   flex: 2,
                   child: Row(
                     children: [
-                      ShimmerHelper().buildBasicShimmer(height: 45, width: 45, radius: 45),
-                      const SizedBox(width: 16),
+                      ShimmerHelper().buildBasicShimmer(height: 45.w, width: 45.w, radius: 45.r),
+                      SizedBox(width: 16.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ShimmerHelper().buildBasicShimmer(height: 16, width: 120),
-                            const SizedBox(height: 8),
-                            ShimmerHelper().buildBasicShimmer(height: 12, width: 100),
+                            ShimmerHelper().buildBasicShimmer(height: 16.h, width: 120.w),
+                            SizedBox(height: 8.h),
+                            ShimmerHelper().buildBasicShimmer(height: 12.h, width: 100.w),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                ShimmerHelper().buildBasicShimmer(height: 50, width: 80, radius: 20),
+                ShimmerHelper().buildBasicShimmer(height: 50.h, width: 80.w, radius: 20.r),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: List.generate(6, (index) => 
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ShimmerHelper().buildBasicShimmer(height: 60, radius: 16),
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: ShimmerHelper().buildBasicShimmer(height: 60.h, radius: 16.r),
                 )
               ),
             ),
@@ -361,7 +371,7 @@ class _ProfileState extends State<Profile> {
   Widget _buildBody() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 27),
+      padding: EdgeInsets.fromLTRB(13.w, 13.h, 13.w, 27.h),
       child: Column(
         children: [
           _buildProfileCard(),
@@ -373,11 +383,11 @@ class _ProfileState extends State<Profile> {
   
   Widget _buildProfileCard() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -387,14 +397,14 @@ class _ProfileState extends State<Profile> {
             child: Row(
               children: [
                 Container(
-                  width: 45,
-                  height: 45,
+                  width: 45.w,
+                  height: 45.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
                     border: Border.all(
                       color: Colors.white.withOpacity(0.3),
-                      width: 3,
+                      width: 3.w,
                     ),
                   ),
                   child: ClipOval(
@@ -403,38 +413,40 @@ class _ProfileState extends State<Profile> {
                             _userInfo!.avatar!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.person,
-                                size: 40,
-                                color: Color(0xFF94A3B8),
+                                size: 40.sp,
+                                color: const Color(0xFF94A3B8),
                               );
                             },
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.person,
-                            size: 40,
-                            color: Color(0xFF94A3B8),
+                            size: 40.sp,
+                            color: const Color(0xFF94A3B8),
                           ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
                           color: Colors.black,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8.h),
                       Text(
                         '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.w700,
                           color: MyTheme.accent_color,
                         ),
@@ -446,10 +458,10 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
+            padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(20.r),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,32 +470,32 @@ class _ProfileState extends State<Profile> {
                   children: [
                     Text(
                       AppLocalizations.of(context)!.referral_point,
-                      style: const TextStyle(
-                        fontSize: 8,
+                      style: TextStyle(
+                        fontSize: 8.sp,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF64748B),
+                        color: const Color(0xFF64748B),
                       ),
                     ),
-                    const SizedBox(width: 7),
+                    SizedBox(width: 7.w),
                     GestureDetector(
                       onTap: _togglePointsVisibility,
                       child: Container(
-                        width: 27,
-                        height: 27,
+                        width: 27.w,
+                        height: 27.w,
                         decoration: BoxDecoration(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Icon(
                           _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                          size: 16,
+                          size: 16.sp,
                           color: MyTheme.accent_color,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -491,17 +503,17 @@ class _ProfileState extends State<Profile> {
                       _pointsVisible 
                           ? (_userInfo?.balance?.toInt() ?? 0).toString() 
                           : '****',
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.w800,
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4.w),
                     Text(
                       AppLocalizations.of(context)!.points_ucf,
-                      style: const TextStyle(
-                        fontSize: 10,
+                      style: TextStyle(
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
@@ -518,16 +530,16 @@ class _ProfileState extends State<Profile> {
   
   Widget _buildMenuSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeading(AppLocalizations.of(context)!.my_account),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF9F9F9),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
             ),
             child: Column(
               children: [
@@ -542,7 +554,7 @@ class _ProfileState extends State<Profile> {
                     }
                   },
                 ),
-                const Divider(height: 0, color: Color(0xFFEEF2F8)),
+                Divider(height: 0, color: const Color(0xFFEEF2F8)),
                 _buildMenuItem(
                   icon: Icons.payment,
                   label: AppLocalizations.of(context)!.payment_settings,
@@ -554,7 +566,7 @@ class _ProfileState extends State<Profile> {
                     }
                   },
                 ),
-                const Divider(height: 0, color: Color(0xFFEEF2F8)),
+                Divider(height: 0, color: const Color(0xFFEEF2F8)),
                 _buildMenuItem(
                   icon: Icons.history,
                   label: AppLocalizations.of(context)!.invite_history,
@@ -570,14 +582,14 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           
           _buildSectionHeading(AppLocalizations.of(context)!.security),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF9F9F9),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
             ),
             child: Column(
               children: [
@@ -592,7 +604,7 @@ class _ProfileState extends State<Profile> {
                     }
                   },
                 ),
-                const Divider(height: 0, color: Color(0xFFEEF2F8)),
+                Divider(height: 0, color: const Color(0xFFEEF2F8)),
                 _buildMenuItem(
                   icon: Icons.notifications_none,
                   label: AppLocalizations.of(context)!.notification_ucf,
@@ -604,7 +616,7 @@ class _ProfileState extends State<Profile> {
                     }
                   },
                 ),
-                const Divider(height: 0, color: Color(0xFFEEF2F8)),
+                Divider(height: 0, color: const Color(0xFFEEF2F8)),
                 _buildMenuItem(
                   icon: Icons.language,
                   label: AppLocalizations.of(context)!.language_ucf,
@@ -612,7 +624,7 @@ class _ProfileState extends State<Profile> {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => ChangeLanguage()));
                   },
                 ),
-                const Divider(height: 0, color: Color(0xFFEEF2F8)),
+                Divider(height: 0, color: const Color(0xFFEEF2F8)),
                 _buildMenuItem(
                   icon: Icons.description_outlined,
                   label: AppLocalizations.of(context)!.terms_conditions,
@@ -624,7 +636,7 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           
-          const SizedBox(height: 30),
+          SizedBox(height: 30.h),
         ],
       ),
     );
@@ -632,13 +644,13 @@ class _ProfileState extends State<Profile> {
   
   Widget _buildSectionHeading(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 12),
+      padding: EdgeInsets.only(left: 8.w, bottom: 12.h),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: 14.sp,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF000417),
+          color: const Color(0xFF000417),
         ),
       ),
     );
@@ -653,39 +665,41 @@ class _ProfileState extends State<Profile> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 36.w,
+              height: 36.w,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 18,
+                size: 18.sp,
                 color: const Color(0xFF000417),
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14.w),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                   color: isActive ? MyTheme.accent_color : const Color(0xFF334155),
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
-            const Text(
+            Text(
               '›',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 24.sp,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF334155),
+                color: const Color(0xFF334155),
               ),
             ),
           ],

@@ -18,6 +18,7 @@ import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -248,16 +249,17 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Points History',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -268,7 +270,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         child: _isLoading
             ? _buildShimmer()  // Show shimmer while loading
             : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -286,50 +288,53 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+      padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile card shimmer
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: ShimmerHelper().buildBasicShimmer(height: 87, radius: 20),
+            padding: EdgeInsets.all(16.w),
+            child: ShimmerHelper().buildBasicShimmer(height: 87.h, radius: 20.r),
           ),
           // Filter tabs shimmer
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: List.generate(4, (index) => 
                   Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 60,
-                    height: 34,
+                    margin: EdgeInsets.only(right: 8.w),
+                    width: 60.w,
+                    height: 34.h,
                     decoration: BoxDecoration(
                       color: MyTheme.shimmer_base,
-                      borderRadius: BorderRadius.circular(50),
+                      borderRadius: BorderRadius.circular(50.r),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           // Points History header shimmer
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Points History'),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Text(
+              'Points History',
+              style: TextStyle(fontSize: 16.sp),
+            ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           // History cards shimmer
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: List.generate(3, (index) => 
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: ShimmerHelper().buildBasicShimmer(height: 100, radius: 14),
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: ShimmerHelper().buildBasicShimmer(height: 100.h, radius: 14.r),
                 ),
               ),
             ),
@@ -341,24 +346,24 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildProfileCard() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
       ),
       child: Row(
         children: [
           // Avatar
           Container(
-            width: 55,
-            height: 55,
+            width: 55.w,
+            height: 55.w,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
               border: Border.all(
                 color: Colors.white.withOpacity(0.3),
-                width: 2,
+                width: 2.w,
               ),
             ),
             child: ClipOval(
@@ -367,21 +372,21 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                       _userAvatar,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
+                        return Icon(
                           Icons.person,
-                          size: 30,
-                          color: Color(0xFF94A3B8),
+                          size: 30.sp,
+                          color: const Color(0xFF94A3B8),
                         );
                       },
                     )
-                  : const Icon(
+                  : Icon(
                       Icons.person,
-                      size: 30,
-                      color: Color(0xFF94A3B8),
+                      size: 30.sp,
+                      color: const Color(0xFF94A3B8),
                     ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           // User Info
           Expanded(
             child: Column(
@@ -389,30 +394,32 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               children: [
                 Text(
                   _userName.isNotEmpty ? _userName : 'User',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
                     color: Colors.black,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Points Balance',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF64748B),
+                        color: const Color(0xFF64748B),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                     Text(
                       '$_pointsBalance points',
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0092AC),
+                        color: const Color(0xFF0092AC),
                       ),
                     ),
                   ],
@@ -429,8 +436,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     final filters = ['All', 'Today', '7', '30'];
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      margin: EdgeInsets.only(bottom: 16.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -444,16 +451,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 });
               },
               child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: EdgeInsets.only(right: 8.w),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 decoration: BoxDecoration(
                   color: isActive ? const Color(0xFF0092AC) : const Color(0xFFF6F6F6),
-                  borderRadius: BorderRadius.circular(50),
+                  borderRadius: BorderRadius.circular(50.r),
                 ),
                 child: Text(
                   filter == '7' ? '7 days' : (filter == '30' ? '30 days' : filter),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -468,19 +475,19 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildPointsHistorySection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Points History',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           
           if (_filteredPointsLogs.isEmpty)
             _buildEmptyState()
@@ -501,12 +508,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     final isEarned = amountValue > 0;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Column(
         children: [
@@ -536,16 +543,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     Color? highlightColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 6.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF666666),
+              color: const Color(0xFF666666),
             ),
           ),
           Expanded(
@@ -553,12 +560,14 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               value,
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
                 color: isHighlighted 
                     ? (highlightColor ?? const Color(0xFF10B981))
                     : const Color(0xFF333333),
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
         ],
@@ -568,32 +577,32 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.r),
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             '⭐',
-            style: TextStyle(fontSize: 32),
+            style: TextStyle(fontSize: 32.sp),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8.h),
+          Text(
             'No points history found',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
+              color: const Color(0xFF334155),
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6.h),
+          Text(
             'Share your referral link to earn points',
             style: TextStyle(
-              fontSize: 11,
-              color: Color(0xFF94A3B8),
+              fontSize: 11.sp,
+              color: const Color(0xFF94A3B8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -607,19 +616,19 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     final monthPoints = _monthlyPoints[selectedMonth] ?? 0;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Monthly Points Balance',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           
           // Month Selection Tabs
           SingleChildScrollView(
@@ -634,16 +643,16 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     });
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    margin: EdgeInsets.only(right: 6.w),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18.r),
                     ),
                     child: Text(
                       _months[index],
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w500,
                         color: isActive ? Colors.white : const Color(0xFF666666),
                       ),
@@ -654,47 +663,47 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
           ),
           
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           
           // Summary Card for selected month
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FC),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEF2F8)),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Net Points',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF666666),
+                    color: const Color(0xFF666666),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   '$monthPoints points',
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: TextStyle(
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0092AC),
+                    color: const Color(0xFF0092AC),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   monthPoints >= 0 ? 'Earned this month' : 'Spent this month',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF94A3B8),
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color: const Color(0xFF94A3B8),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
         ],
       ),
     );

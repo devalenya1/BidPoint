@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -234,19 +235,22 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
           AppLocalizations.of(context)!.disconnect_bank,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
         ),
         content: Text(
           AppLocalizations.of(context)!.disconnect_bank_confirmation,
-          style: const TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: 14.sp),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel_ucf),
+            child: Text(
+              AppLocalizations.of(context)!.cancel_ucf,
+              style: TextStyle(fontSize: 14.sp),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -254,7 +258,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: Text(AppLocalizations.of(context)!.disconnect_ucf),
+            child: Text(
+              AppLocalizations.of(context)!.disconnect_ucf,
+              style: TextStyle(fontSize: 14.sp),
+            ),
           ),
         ],
       ),
@@ -302,19 +309,22 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
           AppLocalizations.of(context)!.disconnect_paypal,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
         ),
         content: Text(
           AppLocalizations.of(context)!.disconnect_paypal_confirmation,
-          style: const TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: 14.sp),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel_ucf),
+            child: Text(
+              AppLocalizations.of(context)!.cancel_ucf,
+              style: TextStyle(fontSize: 14.sp),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -322,7 +332,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: Text(AppLocalizations.of(context)!.disconnect_ucf),
+            child: Text(
+              AppLocalizations.of(context)!.disconnect_ucf,
+              style: TextStyle(fontSize: 14.sp),
+            ),
           ),
         ],
       ),
@@ -407,14 +420,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.payment_settings,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -428,7 +442,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                 children: [
                   SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                    padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
                     child: Column(
                       children: [
                         _buildPaymentCard(
@@ -439,7 +453,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                           onTap: _openBankModal,
                           onDisconnect: _bankConnected ? _disconnectBank : null,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         
                         _buildPaymentCard(
                           icon: Icons.payment,
@@ -468,12 +482,12 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
       child: Column(
         children: [
-          ShimmerHelper().buildBasicShimmer(height: 80, radius: 7),
-          const SizedBox(height: 8),
-          ShimmerHelper().buildBasicShimmer(height: 80, radius: 7),
+          ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 7.r),
+          SizedBox(height: 8.h),
+          ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 7.r),
         ],
       ),
     );
@@ -489,53 +503,57 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   }) {
     return InkWell(
       onTap: onTap,  // Whole card is now tappable
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(7.r),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: const Color(0xFFEEF2F8)),
+          borderRadius: BorderRadius.circular(7.r),
+          border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           child: Row(
             children: [
               Expanded(
                 child: Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 40.w,
+                      height: 40.w,
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F6F6),
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(7.r),
                       ),
                       child: Icon(
                         icon,
-                        size: 20,
+                        size: 20.sp,
                         color: MyTheme.accent_color,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
+                              color: const Color(0xFF0F172A),
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2.h),
                           Text(
                             description,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: const Color(0xFF64748B),
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
                         ],
                       ),
@@ -549,28 +567,28 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     GestureDetector(
                       onTap: onDisconnect,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        child: const Icon(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                        child: Icon(
                           Icons.delete_outline,
-                          size: 18,
-                          color: Color(0xFFEF4444),
+                          size: 18.sp,
+                          color: const Color(0xFFEF4444),
                         ),
                       ),
                     ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: isConnected
                           ? const Color(0xFF10B981).withOpacity(0.1)
                           : const Color(0xFFEF4444).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(20.r),
                     ),
                     child: Text(
                       isConnected
                           ? AppLocalizations.of(context)!.connected
                           : AppLocalizations.of(context)!.not_connected,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w500,
                         color: isConnected
                             ? const Color(0xFF10B981)
@@ -578,11 +596,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(
+                  SizedBox(width: 8.w),
+                  Icon(
                     Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Color(0xFF94A3B8),
+                    size: 14.sp,
+                    color: const Color(0xFF94A3B8),
                   ),
                 ],
               ),
@@ -603,20 +621,20 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
             onTap: () {},
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 450,
-                maxHeight: 550,
+                maxWidth: 450.w,
+                maxHeight: 550.h,
               ),
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
                       decoration: const BoxDecoration(
                         border: Border(
                           bottom: BorderSide(color: Color(0xFFEEF2F8)),
@@ -625,27 +643,32 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.bank_details,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context)!.bank_details,
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
+                          SizedBox(width: 12.w),
                           GestureDetector(
                             onTap: _closeBankModal,
                             child: Container(
-                              width: 32,
-                              height: 32,
+                              width: 32.w,
+                              height: 32.w,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF6F6F6),
-                                borderRadius: BorderRadius.circular(50),
+                                borderRadius: BorderRadius.circular(50.r),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.close,
-                                size: 16,
-                                color: Color(0xFF64748B),
+                                size: 16.sp,
+                                color: const Color(0xFF64748B),
                               ),
                             ),
                           ),
@@ -655,7 +678,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsets.all(20.w),
                         child: Column(
                           children: [
                             _buildFormField(
@@ -663,20 +686,20 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                               hint: AppLocalizations.of(context)!.enter_bank_name,
                               controller: _bankNameController,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             _buildFormField(
                               label: AppLocalizations.of(context)!.account_holder_name,
                               hint: AppLocalizations.of(context)!.enter_account_holder_name,
                               controller: _accountHolderController,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             _buildFormField(
                               label: AppLocalizations.of(context)!.account_number,
                               hint: AppLocalizations.of(context)!.enter_account_number,
                               controller: _accountNumberController,
                               keyboardType: TextInputType.number,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             _buildFormField(
                               label: AppLocalizations.of(context)!.ifsc_code,
                               hint: AppLocalizations.of(context)!.enter_ifsc_code,
@@ -688,7 +711,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     ),
                     
                     Container(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
                       decoration: const BoxDecoration(
                         border: Border(
                           top: BorderSide(color: Color(0xFFEEF2F8)),
@@ -700,47 +723,47 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             child: GestureDetector(
                               onTap: _closeBankModal,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF6F6F6),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: Text(
                                   AppLocalizations.of(context)!.cancel_ucf,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF64748B),
+                                    color: const Color(0xFF64748B),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: GestureDetector(
                               onTap: _isSaving ? null : _saveBankDetails,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
                                 decoration: BoxDecoration(
                                   color: MyTheme.accent_color,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: _isSaving
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
+                                    ? SizedBox(
+                                        height: 20.w,
+                                        width: 20.w,
                                         child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                                          strokeWidth: 2.w,
                                           color: Colors.white,
                                         ),
                                       )
                                     : Text(
                                         AppLocalizations.of(context)!.save_ucf,
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
                                         ),
@@ -771,20 +794,20 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
             onTap: () {},
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 450,
-                maxHeight: 380,
+                maxWidth: 450.w,
+                maxHeight: 380.h,
               ),
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.9,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
                       decoration: const BoxDecoration(
                         border: Border(
                           bottom: BorderSide(color: Color(0xFFEEF2F8)),
@@ -793,27 +816,32 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.paypal_details,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context)!.paypal_details,
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
+                          SizedBox(width: 12.w),
                           GestureDetector(
                             onTap: _closePaypalModal,
                             child: Container(
-                              width: 32,
-                              height: 32,
+                              width: 32.w,
+                              height: 32.w,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF6F6F6),
-                                borderRadius: BorderRadius.circular(50),
+                                borderRadius: BorderRadius.circular(50.r),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.close,
-                                size: 16,
-                                color: Color(0xFF64748B),
+                                size: 16.sp,
+                                color: const Color(0xFF64748B),
                               ),
                             ),
                           ),
@@ -823,7 +851,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsets.all(20.w),
                         child: _buildFormField(
                           label: AppLocalizations.of(context)!.paypal_email,
                           hint: AppLocalizations.of(context)!.enter_paypal_email,
@@ -834,7 +862,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     ),
                     
                     Container(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
                       decoration: const BoxDecoration(
                         border: Border(
                           top: BorderSide(color: Color(0xFFEEF2F8)),
@@ -846,47 +874,47 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                             child: GestureDetector(
                               onTap: _closePaypalModal,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF6F6F6),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: Text(
                                   AppLocalizations.of(context)!.cancel_ucf,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF64748B),
+                                    color: const Color(0xFF64748B),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: GestureDetector(
                               onTap: _isSaving ? null : _savePaypalDetails,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
                                 decoration: BoxDecoration(
                                   color: MyTheme.accent_color,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: _isSaving
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
+                                    ? SizedBox(
+                                        height: 20.w,
+                                        width: 20.w,
                                         child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                                          strokeWidth: 2.w,
                                           color: Colors.white,
                                         ),
                                       )
                                     : Text(
                                         AppLocalizations.of(context)!.save_ucf,
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 14,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
                                         ),
@@ -918,35 +946,35 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 13,
+          style: TextStyle(
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF0F172A),
+            color: const Color(0xFF0F172A),
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6.h),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF94A3B8),
+            hintStyle: TextStyle(
+              fontSize: 14.sp,
+              color: const Color(0xFF94A3B8),
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: MyTheme.accent_color),
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: MyTheme.accent_color, width: 1.5.w),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
           ),
         ),
       ],

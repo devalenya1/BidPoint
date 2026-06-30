@@ -22,6 +22,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:toast/toast.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class ProfileEdit extends StatefulWidget {
   @override
@@ -501,17 +502,17 @@ class _ProfileEditState extends State<ProfileEdit> {
               ? _buildShimmer()
               : SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 30),
+                  padding: EdgeInsets.only(bottom: 30.h),
                   child: Column(
                     children: [
                       _buildProfileImageSection(),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.h),
                       _buildBasicInfoCard(),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.h),
                       _buildChangePasswordCard(),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.h),
                       _buildChangeEmailCard(),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.h),
                       _buildAddressCard(),
                     ],
                   ),
@@ -526,13 +527,14 @@ class _ProfileEditState extends State<ProfileEdit> {
       backgroundColor: Colors.white,
       elevation: 0,
       centerTitle: true,
+      toolbarHeight: 60.h,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        icon: Icon(Icons.arrow_back, size: 24.sp, color: Colors.black),
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
         AppLocalizations.of(context)!.edit_profile_ucf,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -540,18 +542,18 @@ class _ProfileEditState extends State<ProfileEdit> {
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.w),
       child: Column(
         children: [
-          ShimmerHelper().buildBasicShimmer(height: 120, width: 120, radius: 60),
-          const SizedBox(height: 20),
-          ShimmerHelper().buildBasicShimmer(height: 200, radius: 16),
-          const SizedBox(height: 16),
-          ShimmerHelper().buildBasicShimmer(height: 200, radius: 16),
-          const SizedBox(height: 16),
-          ShimmerHelper().buildBasicShimmer(height: 200, radius: 16),
-          const SizedBox(height: 16),
-          ShimmerHelper().buildBasicShimmer(height: 300, radius: 16),
+          ShimmerHelper().buildBasicShimmer(height: 120.w, width: 120.w, radius: 60.r),
+          SizedBox(height: 20.h),
+          ShimmerHelper().buildBasicShimmer(height: 200.h, radius: 16.r),
+          SizedBox(height: 16.h),
+          ShimmerHelper().buildBasicShimmer(height: 200.h, radius: 16.r),
+          SizedBox(height: 16.h),
+          ShimmerHelper().buildBasicShimmer(height: 200.h, radius: 16.r),
+          SizedBox(height: 16.h),
+          ShimmerHelper().buildBasicShimmer(height: 300.h, radius: 16.r),
         ],
       ),
     );
@@ -565,11 +567,11 @@ class _ProfileEditState extends State<ProfileEdit> {
       child: Stack(
         children: [
           Container(
-            width: 100,
-            height: 100,
+            width: 100.w,
+            height: 100.w,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: MyTheme.accent_color, width: 2),
+              border: Border.all(color: MyTheme.accent_color, width: 2.w),
             ),
             child: ClipOval(
               child: hasAvatar
@@ -577,10 +579,10 @@ class _ProfileEditState extends State<ProfileEdit> {
                       avatarPath,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.person, size: 50, color: Colors.grey);
+                        return Icon(Icons.person, size: 50.sp, color: Colors.grey);
                       },
                     )
-                  : const Icon(Icons.person, size: 50, color: Colors.grey),
+                  : Icon(Icons.person, size: 50.sp, color: Colors.grey),
             ),
           ),
           Positioned(
@@ -589,12 +591,12 @@ class _ProfileEditState extends State<ProfileEdit> {
             child: GestureDetector(
               onTap: _chooseAndUploadImage,
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
                   color: MyTheme.accent_color,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                child: Icon(Icons.camera_alt, size: 16.sp, color: Colors.white),
               ),
             ),
           ),
@@ -605,36 +607,36 @@ class _ProfileEditState extends State<ProfileEdit> {
 
   Widget _buildBasicInfoCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
                     color: MyTheme.accent_color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(Icons.person_outline, size: 20, color: MyTheme.accent_color),
+                  child: Icon(Icons.person_outline, size: 20.sp, color: MyTheme.accent_color),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Text(
                   AppLocalizations.of(context)!.basic_info,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: [
                 _buildTextField(
@@ -642,14 +644,14 @@ class _ProfileEditState extends State<ProfileEdit> {
                   controller: _nameController,
                   hint: "John Doe",
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 _buildTextField(
                   label: AppLocalizations.of(context)!.phone_ucf,
                   controller: _phoneController,
                   hint: "+1234567890",
                   keyboardType: TextInputType.phone,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -657,20 +659,23 @@ class _ProfileEditState extends State<ProfileEdit> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                     ),
                     child: _isSaving
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(AppLocalizations.of(context)!.update_profile_ucf),
+                        ? SizedBox(height: 20.w, width: 20.w, child: CircularProgressIndicator(strokeWidth: 2.w, color: Colors.white))
+                        : Text(
+                            AppLocalizations.of(context)!.update_profile_ucf,
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
         ],
       ),
     );
@@ -678,36 +683,36 @@ class _ProfileEditState extends State<ProfileEdit> {
 
   Widget _buildChangePasswordCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
                     color: MyTheme.accent_color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(Icons.lock_outline, size: 20, color: MyTheme.accent_color),
+                  child: Icon(Icons.lock_outline, size: 20.sp, color: MyTheme.accent_color),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Text(
                   AppLocalizations.of(context)!.change_password,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: [
                 _buildPasswordField(
@@ -716,14 +721,14 @@ class _ProfileEditState extends State<ProfileEdit> {
                   showPassword: _showPassword,
                   onToggle: () => setState(() => _showPassword = !_showPassword),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 _buildPasswordField(
                   label: AppLocalizations.of(context)!.retype_password_ucf,
                   controller: _passwordConfirmController,
                   showPassword: _showConfirmPassword,
                   onToggle: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -731,20 +736,23 @@ class _ProfileEditState extends State<ProfileEdit> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                     ),
                     child: _isSaving
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(AppLocalizations.of(context)!.update_password_ucf),
+                        ? SizedBox(height: 20.w, width: 20.w, child: CircularProgressIndicator(strokeWidth: 2.w, color: Colors.white))
+                        : Text(
+                            AppLocalizations.of(context)!.update_password_ucf,
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
         ],
       ),
     );
@@ -752,36 +760,36 @@ class _ProfileEditState extends State<ProfileEdit> {
 
   Widget _buildChangeEmailCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
                     color: MyTheme.accent_color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(Icons.email_outlined, size: 20, color: MyTheme.accent_color),
+                  child: Icon(Icons.email_outlined, size: 20.sp, color: MyTheme.accent_color),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Text(
                   AppLocalizations.of(context)!.change_email,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: [
                 _buildTextField(
@@ -790,7 +798,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                   hint: "example@email.com",
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Row(
                   children: [
                     Expanded(
@@ -801,24 +809,27 @@ class _ProfileEditState extends State<ProfileEdit> {
                         keyboardType: TextInputType.number,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     ElevatedButton(
                       onPressed: _isSaving ? null : _sendEmailVerification,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[200],
                         foregroundColor: MyTheme.accent_color,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10.r),
                         ),
                       ),
                       child: _isSaving
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: MyTheme.accent_color))
-                          : Text(AppLocalizations.of(context)!.verify_ucf),
+                          ? SizedBox(height: 20.w, width: 20.w, child: CircularProgressIndicator(strokeWidth: 2.w, color: MyTheme.accent_color))
+                          : Text(
+                              AppLocalizations.of(context)!.verify_ucf,
+                              style: TextStyle(fontSize: 14.sp),
+                            ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.h),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -826,20 +837,23 @@ class _ProfileEditState extends State<ProfileEdit> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
                     ),
                     child: _isSaving
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(AppLocalizations.of(context)!.update_email_ucf),
+                        ? SizedBox(height: 20.w, width: 20.w, child: CircularProgressIndicator(strokeWidth: 2.w, color: Colors.white))
+                        : Text(
+                            AppLocalizations.of(context)!.update_email_ucf,
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
         ],
       ),
     );
@@ -847,48 +861,51 @@ class _ProfileEditState extends State<ProfileEdit> {
 
   Widget _buildAddressCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
                     color: MyTheme.accent_color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(Icons.location_on_outlined, size: 20, color: MyTheme.accent_color),
+                  child: Icon(Icons.location_on_outlined, size: 20.sp, color: MyTheme.accent_color),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Text(
                   AppLocalizations.of(context)!.addresses,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
           if (_isAddressInitial)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
+            Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2.w)),
             )
           else if (_addressList.isEmpty)
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.w),
               child: Center(
                 child: Column(
                   children: [
-                    const Icon(Icons.location_off, size: 48, color: Colors.grey),
-                    const SizedBox(height: 8),
-                    Text(AppLocalizations.of(context)!.no_address_found),
+                    Icon(Icons.location_off, size: 48.sp, color: Colors.grey),
+                    SizedBox(height: 8.h),
+                    Text(
+                      AppLocalizations.of(context)!.no_address_found,
+                      style: TextStyle(fontSize: 14.sp),
+                    ),
                   ],
                 ),
               ),
@@ -904,49 +921,61 @@ class _ProfileEditState extends State<ProfileEdit> {
                 return GestureDetector(
                   onDoubleTap: () => _setDefaultAddress(address.id),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(12),
+                    margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                    padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       border: Border.all(
                         color: isDefault ? MyTheme.accent_color : Colors.grey[200]!,
-                        width: isDefault ? 1.5 : 1,
+                        width: isDefault ? 1.5.w : 1.w,
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(address.address ?? "", style: const TextStyle(fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 4),
-                        Text("${address.city_name ?? ""}, ${address.state_name ?? ""}, ${address.country_name ?? ""}"),
-                        const SizedBox(height: 4),
-                        Text("${AppLocalizations.of(context)!.phone_ucf}: ${address.phone ?? ""}"),
+                        Text(
+                          address.address ?? "",
+                          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          "${address.city_name ?? ""}, ${address.state_name ?? ""}, ${address.country_name ?? ""}",
+                          style: TextStyle(fontSize: 12.sp),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          "${AppLocalizations.of(context)!.phone_ucf}: ${address.phone ?? ""}",
+                          style: TextStyle(fontSize: 12.sp),
+                        ),
                         if (address.postal_code != null && address.postal_code!.isNotEmpty)
-                          Text("${AppLocalizations.of(context)!.postal_code}: ${address.postal_code}"),
+                          Text(
+                            "${AppLocalizations.of(context)!.postal_code}: ${address.postal_code}",
+                            style: TextStyle(fontSize: 12.sp),
+                          ),
                         if (isDefault)
                           Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            margin: EdgeInsets.only(top: 8.h),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
                               color: MyTheme.accent_color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(4.r),
                             ),
                             child: Text(
                               AppLocalizations.of(context)!.default_ucf,
-                              style: TextStyle(fontSize: 10, color: MyTheme.accent_color),
+                              style: TextStyle(fontSize: 10.sp, color: MyTheme.accent_color),
                             ),
                           ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.h),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, size: 18),
+                              icon: Icon(Icons.edit, size: 18.sp),
                               onPressed: () => _showEditAddressDialog(index, address.id),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                              icon: Icon(Icons.delete, size: 18.sp, color: Colors.red),
                               onPressed: () => _deleteAddress(address.id),
                             ),
                           ],
@@ -958,22 +987,25 @@ class _ProfileEditState extends State<ProfileEdit> {
               },
             ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: OutlinedButton.icon(
               onPressed: _showAddAddressDialog,
-              icon: const Icon(Icons.add),
-              label: Text(AppLocalizations.of(context)!.add_new_address),
+              icon: Icon(Icons.add, size: 20.sp),
+              label: Text(
+                AppLocalizations.of(context)!.add_new_address,
+                style: TextStyle(fontSize: 14.sp),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: MyTheme.accent_color,
-                side: BorderSide(color: MyTheme.accent_color),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: BorderSide(color: MyTheme.accent_color, width: 1.w),
+                padding: EdgeInsets.symmetric(vertical: 12.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
         ],
       ),
     );
@@ -989,22 +1021,25 @@ class _ProfileEditState extends State<ProfileEdit> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 4.h),
         TextField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+            hintStyle: TextStyle(fontSize: 14.sp, color: Colors.grey),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10.r),
               borderSide: BorderSide.none,
             ),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           ),
         ),
       ],
@@ -1020,23 +1055,29 @@ class _ProfileEditState extends State<ProfileEdit> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 4.h),
         TextField(
           controller: controller,
           obscureText: !showPassword,
           decoration: InputDecoration(
             hintText: "••••••••",
-            hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+            hintStyle: TextStyle(fontSize: 14.sp, color: Colors.grey),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10.r),
               borderSide: BorderSide.none,
             ),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             suffixIcon: IconButton(
-              icon: Icon(showPassword ? Icons.visibility_off : Icons.visibility, size: 18),
+              icon: Icon(
+                showPassword ? Icons.visibility_off : Icons.visibility,
+                size: 18.sp,
+              ),
               onPressed: onToggle,
             ),
           ),
@@ -1052,8 +1093,11 @@ class _ProfileEditState extends State<ProfileEdit> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(AppLocalizations.of(context)!.add_new_address),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+            title: Text(
+              AppLocalizations.of(context)!.add_new_address,
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1063,7 +1107,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                     controller: _addressController,
                     hint: "Enter address",
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildTypeAheadField(
                     label: AppLocalizations.of(context)!.country_ucf,
                     controller: _countryController,
@@ -1073,7 +1117,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       return response.countries ?? [];
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildTypeAheadField(
                     label: AppLocalizations.of(context)!.state_ucf,
                     controller: _stateController,
@@ -1088,7 +1132,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       return response.states ?? [];
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildTypeAheadField(
                     label: AppLocalizations.of(context)!.city_ucf,
                     controller: _cityController,
@@ -1103,13 +1147,13 @@ class _ProfileEditState extends State<ProfileEdit> {
                       return response.cities ?? [];
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.postal_code,
                     controller: _postalCodeController,
                     hint: "Enter postal code",
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.phone_ucf,
                     controller: _addressPhoneController,
@@ -1122,7 +1166,10 @@ class _ProfileEditState extends State<ProfileEdit> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context)!.cancel_ucf),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel_ucf,
+                  style: TextStyle(fontSize: 14.sp),
+                ),
               ),
               ElevatedButton(
                 onPressed: _isSaving ? null : _addAddress,
@@ -1131,8 +1178,11 @@ class _ProfileEditState extends State<ProfileEdit> {
                   foregroundColor: Colors.white,
                 ),
                 child: _isSaving
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(AppLocalizations.of(context)!.save_ucf),
+                    ? SizedBox(height: 20.w, width: 20.w, child: CircularProgressIndicator(strokeWidth: 2.w, color: Colors.white))
+                    : Text(
+                        AppLocalizations.of(context)!.save_ucf,
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
               ),
             ],
           );
@@ -1147,8 +1197,11 @@ class _ProfileEditState extends State<ProfileEdit> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(AppLocalizations.of(context)!.edit_address),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+            title: Text(
+              AppLocalizations.of(context)!.edit_address,
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1158,7 +1211,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                     controller: _updateAddressControllers[index],
                     hint: "Enter address",
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildTypeAheadField(
                     label: AppLocalizations.of(context)!.country_ucf,
                     controller: _updateCountryControllers[index],
@@ -1178,7 +1231,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       return response.countries ?? [];
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildTypeAheadField(
                     label: AppLocalizations.of(context)!.state_ucf,
                     controller: _updateStateControllers[index],
@@ -1200,7 +1253,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       return response.states ?? [];
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildTypeAheadField(
                     label: AppLocalizations.of(context)!.city_ucf,
                     controller: _updateCityControllers[index],
@@ -1220,13 +1273,13 @@ class _ProfileEditState extends State<ProfileEdit> {
                       return response.cities ?? [];
                     },
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.postal_code,
                     controller: _updatePostalCodeControllers[index],
                     hint: "Enter postal code",
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.phone_ucf,
                     controller: _updatePhoneControllers[index],
@@ -1239,7 +1292,10 @@ class _ProfileEditState extends State<ProfileEdit> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context)!.cancel_ucf),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel_ucf,
+                  style: TextStyle(fontSize: 14.sp),
+                ),
               ),
               ElevatedButton(
                 onPressed: _isSaving ? null : () => _updateAddress(index, addressId),
@@ -1248,8 +1304,11 @@ class _ProfileEditState extends State<ProfileEdit> {
                   foregroundColor: Colors.white,
                 ),
                 child: _isSaving
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(AppLocalizations.of(context)!.update_ucf),
+                    ? SizedBox(height: 20.w, width: 20.w, child: CircularProgressIndicator(strokeWidth: 2.w, color: Colors.white))
+                    : Text(
+                        AppLocalizations.of(context)!.update_ucf,
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
               ),
             ],
           );
@@ -1267,17 +1326,21 @@ class _ProfileEditState extends State<ProfileEdit> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 4.h),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(fontSize: 14.sp),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
           ),
         ),
       ],
@@ -1299,12 +1362,20 @@ class _ProfileEditState extends State<ProfileEdit> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
+        ),
+        SizedBox(height: 4.h),
         TypeAheadField(
           suggestionsCallback: suggestionsCallback,
           itemBuilder: (context, suggestion) {
-            return ListTile(title: Text(suggestion.name ?? ""));
+            return ListTile(
+              title: Text(
+                suggestion.name ?? "",
+                style: TextStyle(fontSize: 14.sp),
+              ),
+            );
           },
           onSuggestionSelected: onSuggestionSelected,
           textFieldConfiguration: TextFieldConfiguration(
@@ -1312,10 +1383,11 @@ class _ProfileEditState extends State<ProfileEdit> {
             enabled: enabled,
             decoration: InputDecoration(
               hintText: "Select $label",
+              hintStyle: TextStyle(fontSize: 14.sp),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.r),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
             ),
           ),
         ),

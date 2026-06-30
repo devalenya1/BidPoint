@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'dart:convert';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -150,45 +151,45 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
           builder: (context, setModalState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(24.r),
               ),
               title: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8.w),
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Icon(
                       Icons.request_quote,
                       color: MyTheme.accent_color,
-                      size: 24,
+                      size: 24.sp,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context)!.withdraw_request,
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
+                        color: const Color(0xFF0F172A),
                       ),
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(4.w),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F6F6),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
-                        size: 18,
-                        color: Color(0xFF64748B),
+                        size: 18.sp,
+                        color: const Color(0xFF64748B),
                       ),
                     ),
                   ),
@@ -196,68 +197,68 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
               ),
               content: Container(
                 width: double.maxFinite,
-                constraints: const BoxConstraints(maxWidth: 450),
+                constraints: BoxConstraints(maxWidth: 450.w),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Available Balance Display
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F6F6),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Column(
                         children: [
                           Text(
                             AppLocalizations.of(context)!.available_balance,
-                            style: const TextStyle(
-                              fontSize: 12,
+                            style: TextStyle(
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF64748B),
+                              color: const Color(0xFF64748B),
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6.h),
                           Text(
                             FormatHelper.formatPrice(_availableBalance),
-                            style: const TextStyle(
-                              fontSize: 28,
+                            style: TextStyle(
+                              fontSize: 28.sp,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0092AC),
+                              color: const Color(0xFF0092AC),
                             ),
                           ),
                         ],
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     
                     // Withdrawal Amount Field
                     Text(
                       AppLocalizations.of(context)!.withdrawal_amount,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF334155),
+                        color: const Color(0xFF334155),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5.w),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            padding: EdgeInsets.symmetric(horizontal: 14.w),
                             child: Text(
                               _getCurrencySymbol(),
-                              style: const TextStyle(
-                                fontSize: 18,
+                              style: TextStyle(
+                                fontSize: 18.sp,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
+                                color: const Color(0xFF64748B),
                               ),
                             ),
                           ),
@@ -265,20 +266,20 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                             child: TextField(
                               controller: _amountController,
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(
-                                fontSize: 18,
+                              style: TextStyle(
+                                fontSize: 18.sp,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF0F172A),
+                                color: const Color(0xFF0F172A),
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: '0.00',
                                 hintStyle: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 18.sp,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF94A3B8),
+                                  color: const Color(0xFF94A3B8),
                                 ),
                                 border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                                contentPadding: EdgeInsets.symmetric(vertical: 14.h),
                               ),
                               onChanged: (value) {
                                 setModalState(() {
@@ -293,22 +294,22 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                     
                     // Min/Max Hint
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.only(top: 8.h),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             '${AppLocalizations.of(context)!.min_ucf}: ${FormatHelper.formatPrice(_minimumWithdrawAmount)}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF94A3B8),
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: const Color(0xFF94A3B8),
                             ),
                           ),
                           Text(
                             '${AppLocalizations.of(context)!.max_ucf}: ${FormatHelper.formatPrice(_availableBalance)}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF94A3B8),
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: const Color(0xFF94A3B8),
                             ),
                           ),
                         ],
@@ -318,7 +319,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                     // Quick Amount Buttons
                     if (_availableBalance > 0)
                       Padding(
-                        padding: const EdgeInsets.only(top: 16),
+                        padding: EdgeInsets.only(top: 16.h),
                         child: Row(
                           children: [
                             _buildQuickAmountButton(
@@ -327,17 +328,17 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                                   : _availableBalance,
                               setModalState: setModalState,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             _buildQuickAmountButton(
                               amount: (25.0 < _availableBalance) ? 25.0 : _availableBalance,
                               setModalState: setModalState,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             _buildQuickAmountButton(
                               amount: (50.0 < _availableBalance) ? 50.0 : _availableBalance,
                               setModalState: setModalState,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             _buildQuickAmountButton(
                               amount: _availableBalance,
                               label: AppLocalizations.of(context)!.max_ucf,
@@ -353,14 +354,14 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.cancel_ucf,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
+                      color: const Color(0xFF64748B),
                     ),
                   ),
                 ),
@@ -369,24 +370,24 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: MyTheme.accent_color,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                      ? SizedBox(
+                          height: 20.w,
+                          width: 20.w,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: 2.w,
                             color: Colors.white,
                           ),
                         )
                       : Text(
                           AppLocalizations.of(context)!.confirm_withdrawal,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -413,19 +414,19 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: 8.h),
           decoration: BoxDecoration(
             color: const Color(0xFFF6F6F6),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.w),
+            borderRadius: BorderRadius.circular(30.r),
           ),
           child: Text(
             label ?? '${_getCurrencySymbol()}${amount.toStringAsFixed(2)}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF475569),
+              color: const Color(0xFF475569),
             ),
           ),
         ),
@@ -460,14 +461,14 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(20.r),
           ),
           title: Text(
             AppLocalizations.of(context)!.confirm_withdrawal,
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: 18.sp,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
+              color: const Color(0xFF0F172A),
             ),
           ),
           content: Column(
@@ -475,22 +476,22 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF6F6F6),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       AppLocalizations.of(context)!.amount_ucf,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14.sp),
                     ),
                     Text(
                       FormatHelper.formatPrice(_withdrawAmount),
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: MyTheme.accent_color,
                       ),
@@ -505,7 +506,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 AppLocalizations.of(context)!.cancel_ucf,
-                style: const TextStyle(color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
               ),
             ),
             ElevatedButton(
@@ -519,10 +520,13 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                 backgroundColor: MyTheme.accent_color,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
               ),
-              child: Text(AppLocalizations.of(context)!.confirm_ucf),
+              child: Text(
+                AppLocalizations.of(context)!.confirm_ucf,
+                style: TextStyle(fontSize: 14.sp),
+              ),
             ),
           ],
         );
@@ -579,14 +583,15 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.affiliate_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -598,7 +603,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
             ? _buildShimmer()
             : SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -608,80 +613,84 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                         // Affiliate Balance Card
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+                            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
                             decoration: BoxDecoration(
                               color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16.r),
                             ),
                             child: Column(
                               children: [
                                 Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: const Icon(
+                                  margin: EdgeInsets.only(bottom: 12.h),
+                                  child: Icon(
                                     Icons.attach_money,
-                                    size: 28,
+                                    size: 28.sp,
                                     color: Colors.white,
                                   ),
                                 ),
                                 Text(
                                   AppLocalizations.of(context)!.affiliate_balance,
-                                  style: const TextStyle(
-                                    fontSize: 11,
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
                                     fontWeight: FontWeight.w500,
                                     color: Colors.white70,
                                   ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 6),
+                                SizedBox(height: 6.h),
                                 Text(
                                   FormatHelper.formatPrice(_availableBalance),
-                                  style: const TextStyle(
-                                    fontSize: 20,
+                                  style: TextStyle(
+                                    fontSize: 20.sp,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 15),
+                        SizedBox(width: 15.w),
                         // Withdraw Request Card
                         Expanded(
                           child: GestureDetector(
                             onTap: _showWithdrawModal,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+                              padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF8F9FC),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFEEF2F8)),
+                                borderRadius: BorderRadius.circular(16.r),
+                                border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
                               ),
                               child: Column(
                                 children: [
                                   Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    child: const Icon(
+                                    margin: EdgeInsets.only(bottom: 12.h),
+                                    child: Icon(
                                       Icons.add_circle_outline,
-                                      size: 28,
-                                      color: Color(0xFF64748B),
+                                      size: 28.sp,
+                                      color: const Color(0xFF64748B),
                                     ),
                                   ),
                                   Text(
                                     AppLocalizations.of(context)!.withdraw_request,
-                                    style: const TextStyle(
-                                      fontSize: 11,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF666666),
+                                      color: const Color(0xFF666666),
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: 6.h),
                                   Text(
                                     AppLocalizations.of(context)!.withdraw_ucf,
-                                    style: const TextStyle(
-                                      fontSize: 20,
+                                    style: TextStyle(
+                                      fontSize: 20.sp,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.black,
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ],
                               ),
@@ -691,18 +700,18 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                       ],
                     ),
                     
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     
                     // Withdraw Request History Section
                     Text(
                       AppLocalizations.of(context)!.withdraw_request_history,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     
                     // History List
                     if (_withdrawalHistory.isEmpty)
@@ -712,69 +721,74 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: _withdrawalHistory.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) => SizedBox(height: 12.h),
                         itemBuilder: (context, index) {
                           final withdrawal = _withdrawalHistory[index];
                           final date = withdrawal.createdAt;
                           return Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(16.w),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8F9FC),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 40,
-                                      child: Text(
-                                        '#${(index + 1).toString().padLeft(2, '0')}',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF666666),
+                                Flexible(
+                                  flex: 3,
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 40.w,
+                                        child: Text(
+                                          '#${(index + 1).toString().padLeft(2, '0')}',
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF666666),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          date != null ? _formatDate(date) : 'Unknown date',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Color(0xFF666666),
+                                      SizedBox(width: 16.w),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            date != null ? _formatDate(date) : 'Unknown date',
+                                            style: TextStyle(
+                                              fontSize: 12.sp,
+                                              color: const Color(0xFF666666),
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          FormatHelper.formatPrice(withdrawal.amount ?? 0),
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFF0092AC),
+                                          SizedBox(height: 4.h),
+                                          Text(
+                                            FormatHelper.formatPrice(withdrawal.amount ?? 0),
+                                            style: TextStyle(
+                                              fontSize: 16.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF0092AC),
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusBackgroundColor(withdrawal.status ?? 0),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    _getStatusText(withdrawal.status ?? 0),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: _getStatusColor(withdrawal.status ?? 0),
+                                Flexible(
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusBackgroundColor(withdrawal.status ?? 0),
+                                      borderRadius: BorderRadius.circular(20.r),
+                                    ),
+                                    child: Text(
+                                      _getStatusText(withdrawal.status ?? 0),
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: _getStatusColor(withdrawal.status ?? 0),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -792,20 +806,21 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
       child: Column(
         children: [
-          const Text(
+          Text(
             '💰',
-            style: TextStyle(fontSize: 48),
+            style: TextStyle(fontSize: 48.sp),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Text(
             AppLocalizations.of(context)!.no_withdrawal_requests_found,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF999999),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: const Color(0xFF999999),
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -816,27 +831,27 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 16)),
-              const SizedBox(width: 15),
-              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 16)),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120.h, radius: 16.r)),
+              SizedBox(width: 15.w),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 120.h, radius: 16.r)),
             ],
           ),
-          const SizedBox(height: 24),
-          ShimmerHelper().buildBasicShimmer(height: 20, width: 180),
-          const SizedBox(height: 16),
+          SizedBox(height: 24.h),
+          ShimmerHelper().buildBasicShimmer(height: 20.h, width: 180.w),
+          SizedBox(height: 16.h),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: 5,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            separatorBuilder: (context, index) => SizedBox(height: 12.h),
             itemBuilder: (context, index) => 
-                ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
+                ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 12.r),
           ),
         ],
       ),
