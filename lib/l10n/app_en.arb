@@ -812,6 +812,7 @@
   "login_screen_or_create_new_account": "or, create a new account ?",
   "login_screen_sign_up": "Sign up",
   "login_screen_login_with": "Login with",
+  "register_screen_sign_up_with": "Sign up with",
   "location_not_available": "Location not available",
   "login_to": "Login to",
   "enter_your_name": "Enter your name",

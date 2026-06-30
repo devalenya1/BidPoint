@@ -18,6 +18,13 @@ import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'package:active_ecommerce_flutter/ui_elements/auth_ui.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:active_ecommerce_flutter/social_config.dart';
+import 'package:crypto/crypto.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:twitter_login/twitter_login.dart';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -254,6 +261,176 @@ class _RegistrationState extends State<Registration> {
       //     return Login();
       //   }));
       // }
+    }
+  }
+
+
+  onPressedFacebookLogin() async {
+    try {
+      final facebookLogin = await FacebookAuth.instance
+          .login(loginBehavior: LoginBehavior.webOnly);
+
+      if (facebookLogin.status == LoginStatus.success) {
+        final userData = await FacebookAuth.instance.getUserData();
+        var loginResponse = await AuthRepository().getSocialLoginResponse(
+            "facebook",
+            userData['name'].toString(),
+            userData['email'].toString(),
+            userData['id'].toString(),
+            access_token: facebookLogin.accessToken!.token);
+        print("..........................${loginResponse.toString()}");
+        
+        if (loginResponse.result == false) {
+          ToastComponent.showDialog(loginResponse.message!,
+              gravity: Toast.center, duration: Toast.lengthLong);
+        } else {
+          ToastComponent.showDialog(loginResponse.message!,
+              gravity: Toast.center, duration: Toast.lengthLong);
+
+          await AuthHelper().setUserData(loginResponse);
+          // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return const Main();
+          }));
+          FacebookAuth.instance.logOut();
+        }
+      } else {
+        print("....Facebook auth Failed.........");
+        print(facebookLogin.status);
+        print(facebookLogin.message);
+      }
+    } on Exception catch (e) {
+      print(e);
+    }
+  }
+
+  onPressedGoogleLogin() async {
+    try {
+      final GoogleSignInAccount googleUser = (await GoogleSignIn().signIn())!;
+
+      print(googleUser.toString());
+
+      GoogleSignInAuthentication googleSignInAuthentication =
+          await googleUser.authentication;
+      String? accessToken = googleSignInAuthentication.accessToken;
+
+      print("displayName ${googleUser.displayName}");
+      print("email ${googleUser.email}");
+      print("googleUser.id ${googleUser.id}");
+
+      var loginResponse = await AuthRepository().getSocialLoginResponse(
+          "google", googleUser.displayName, googleUser.email, googleUser.id,
+          access_token: accessToken);
+
+      if (loginResponse.result == false) {
+        ToastComponent.showDialog(loginResponse.message!,
+            gravity: Toast.center, duration: Toast.lengthLong);
+      } else {
+        ToastComponent.showDialog(loginResponse.message!,
+            gravity: Toast.center, duration: Toast.lengthLong);
+        await AuthHelper().setUserData(loginResponse);
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
+      }
+      GoogleSignIn().disconnect();
+    } on Exception catch (e) {
+      print("error is ....... $e");
+    }
+  }
+
+  onPressedTwitterLogin() async {
+    try {
+      final twitterLogin = new TwitterLogin(
+          apiKey: SocialConfig().twitter_consumer_key,
+          apiSecretKey: SocialConfig().twitter_consumer_secret,
+          redirectURI: 'activeecommerceflutterapp://');
+      // Trigger the sign-in flow
+
+      final authResult = await twitterLogin.login();
+
+      print("authResult");
+
+      var loginResponse = await AuthRepository().getSocialLoginResponse(
+          "twitter",
+          authResult.user!.name,
+          authResult.user!.email,
+          authResult.user!.id.toString(),
+          access_token: authResult.authToken,
+          secret_token: authResult.authTokenSecret);
+
+      if (loginResponse.result == false) {
+        ToastComponent.showDialog(loginResponse.message!,
+            gravity: Toast.center, duration: Toast.lengthLong);
+      } else {
+        ToastComponent.showDialog(loginResponse.message!,
+            gravity: Toast.center, duration: Toast.lengthLong);
+        await AuthHelper().setUserData(loginResponse);
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
+      }
+    } on Exception catch (e) {
+      print("error is ....... $e");
+    }
+  }
+
+  String generateNonce([int length = 32]) {
+    final charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  /// Returns the sha256 hash of [input] in hex notation.
+  String sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  signInWithApple() async {
+    // To prevent replay attacks with the credential returned from Apple, we
+    // include a nonce in the credential request. When signing in with
+    // Firebase, the nonce in the id token returned by Apple, is expected to
+    // match the sha256 hash of `rawNonce`.
+    final rawNonce = generateNonce();
+    final nonce = sha256ofString(rawNonce);
+
+    // Request credential for the currently signed in Apple account.
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+
+      var loginResponse = await AuthRepository().getSocialLoginResponse(
+          "apple",
+          appleCredential.givenName,
+          appleCredential.email,
+          appleCredential.userIdentifier,
+          access_token: appleCredential.identityToken);
+
+      if (loginResponse.result == false) {
+        ToastComponent.showDialog(loginResponse.message!,
+            gravity: Toast.center, duration: Toast.lengthLong);
+      } else {
+        ToastComponent.showDialog(loginResponse.message!,
+            gravity: Toast.center, duration: Toast.lengthLong);
+        await AuthHelper().setUserData(loginResponse);
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
+      }
+    } on Exception catch (e) {
+      print(e);
     }
   }
 
@@ -604,7 +781,7 @@ class _RegistrationState extends State<Registration> {
                             }
                           : null,
                     ),
-                  ),
+                  ), 
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 20.0),
@@ -637,6 +814,81 @@ class _RegistrationState extends State<Registration> {
                     ],
                   ),
                 ),
+
+
+                if (Platform.isIOS)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: SignInWithAppleButton(
+                      onPressed: () async {
+                        signInWithApple();
+                      },
+                    ),
+                  ),
+                Visibility(
+                  visible: allow_google_login.$ || allow_facebook_login.$,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: Center(
+                        child: Text(
+                      AppLocalizations.of(context)!.register_screen_sign_up_with,
+                      style: TextStyle(color: MyTheme.font_grey, fontSize: 12),
+                    )),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 15.0),
+                  child: Center(
+                    child: Container(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Visibility(
+                            visible: allow_google_login.$,
+                            child: InkWell(
+                              onTap: () {
+                                onPressedGoogleLogin();
+                              },
+                              child: Container(
+                                width: 28,
+                                child: Image.asset("assets/google_logo.png"),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 15.0),
+                            child: Visibility(
+                              visible: allow_facebook_login.$,
+                              child: InkWell(
+                                onTap: () {
+                                  onPressedFacebookLogin();
+                                },
+                                child: Container(
+                                  width: 28,
+                                  child: Image.asset("assets/facebook_logo.png"),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (allow_twitter_login.$)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 15.0),
+                              child: InkWell(
+                                onTap: () {
+                                  onPressedTwitterLogin();
+                                },
+                                child: Container(
+                                  width: 28,
+                                  child: Image.asset("assets/twitter_logo.png"),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
               ],
             ),
           )
