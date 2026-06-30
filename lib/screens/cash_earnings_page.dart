@@ -15,6 +15,7 @@ import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../repositories/auth_repository.dart';
 
 // Import the data model
@@ -225,14 +226,15 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.cash_earnings,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -244,7 +246,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             ? _buildShimmer()
             : SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -262,26 +264,29 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 30),
+      padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: ShimmerHelper().buildBasicShimmer(height: 87, radius: 20),
+            padding: EdgeInsets.all(16.w),
+            child: ShimmerHelper().buildBasicShimmer(height: 87.h, radius: 20.r),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Cash History'),
-          ),
-          const SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Text(
+              'Cash History',
+              style: TextStyle(fontSize: 16.sp),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: List.generate(3, (index) => 
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: ShimmerHelper().buildBasicShimmer(height: 120, radius: 14),
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: ShimmerHelper().buildBasicShimmer(height: 120.h, radius: 14.r),
                 ),
               ),
             ),
@@ -293,23 +298,23 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   
   Widget _buildProfileCard() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
       ),
       child: Row(
         children: [
           Container(
-            width: 55,
-            height: 55,
+            width: 55.w,
+            height: 55.w,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
               border: Border.all(
                 color: Colors.white.withOpacity(0.3),
-                width: 2,
+                width: 2.w,
               ),
             ),
             child: ClipOval(
@@ -318,49 +323,51 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                       _userAvatar,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
+                        return Icon(
                           Icons.person,
-                          size: 30,
-                          color: Color(0xFF94A3B8),
+                          size: 30.sp,
+                          color: const Color(0xFF94A3B8),
                         );
                       },
                     )
-                  : const Icon(
+                  : Icon(
                       Icons.person,
-                      size: 30,
-                      color: Color(0xFF94A3B8),
+                      size: 30.sp,
+                      color: const Color(0xFF94A3B8),
                     ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.user_ucf,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
                     color: Colors.black,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Row(
                   children: [
                     Text(
                       AppLocalizations.of(context)!.cash_earnings,
-                      style: const TextStyle(
-                        fontSize: 10,
+                      style: TextStyle(
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF64748B),
+                        color: const Color(0xFF64748B),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8.w),
                     Text(
                       FormatHelper.formatPrice(_cashEarnings),
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF10B981),
                       ),
@@ -377,20 +384,20 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     
   Widget _buildCashHistorySection(List<Map<String, dynamic>> logs) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             AppLocalizations.of(context)!.cash_history,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           
           if (logs.isEmpty)
             _buildEmptyState()
@@ -410,12 +417,12 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     final isWithdrawal = log['type'] == 'withdrawal';
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Column(
         children: [
@@ -458,16 +465,16 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     Color? statusColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 6.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF666666),
+              color: const Color(0xFF666666),
             ),
           ),
           Expanded(
@@ -475,12 +482,14 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
               value,
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
                 color: isHighlighted 
                     ? (highlightColor ?? const Color(0xFF10B981))
                     : (statusColor ?? const Color(0xFF333333)),
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
         ],
@@ -490,32 +499,33 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.r),
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             '💰',
-            style: TextStyle(fontSize: 32),
+            style: TextStyle(fontSize: 32.sp),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             AppLocalizations.of(context)!.no_cash_earnings_yet,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
+              color: const Color(0xFF334155),
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           Text(
             AppLocalizations.of(context)!.share_referral_link_to_earn_cash,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF94A3B8),
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: const Color(0xFF94A3B8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -529,19 +539,19 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     final monthCash = _monthlyCash[selectedMonth] ?? 0.0;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             AppLocalizations.of(context)!.monthly_cash_summary,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           
           // Month Selection Tabs
           SingleChildScrollView(
@@ -556,16 +566,16 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     });
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    margin: EdgeInsets.only(right: 6.w),
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18.r),
                     ),
                     child: Text(
                       _months[index],
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w500,
                         color: isActive ? Colors.white : const Color(0xFF666666),
                       ),
@@ -576,49 +586,49 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             ),
           ),
           
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           
           // Summary Card for selected month
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FC),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEF2F8)),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
             ),
             child: Column(
               children: [
                 Text(
                   AppLocalizations.of(context)!.net_cash,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF666666),
+                    color: const Color(0xFF666666),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Text(
                   FormatHelper.formatPrice(monthCash.abs()),
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
                     color: monthCash >= 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   monthCash >= 0 
                       ? AppLocalizations.of(context)!.net_earned_this_month 
                       : AppLocalizations.of(context)!.net_withdrawn_this_month,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Color(0xFF94A3B8),
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color: const Color(0xFF94A3B8),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
         ],
       ),
     );

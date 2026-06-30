@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -87,7 +88,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     if (_referralCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.referral_code_not_available),
+          content: Text(
+            AppLocalizations.of(context)!.referral_code_not_available,
+            style: TextStyle(fontSize: 14.sp),
+          ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 2),
         ),
@@ -98,7 +102,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     Clipboard.setData(ClipboardData(text: _referralLink));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context)!.copied_to_clipboard),
+        content: Text(
+          AppLocalizations.of(context)!.copied_to_clipboard,
+          style: TextStyle(fontSize: 14.sp),
+        ),
         backgroundColor: MyTheme.accent_color,
         duration: const Duration(seconds: 2),
       ),
@@ -130,14 +137,15 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.invite_history,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -149,13 +157,13 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             ? _buildShimmer()
             : SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
                 child: Column(
                   children: [
                     _buildStatsRow(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     _buildReferralSection(),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     _buildHistorySection(),
                   ],
                 ),
@@ -167,28 +175,28 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
       child: Column(
         children: [
           Row(
             children: [
-              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
-              const SizedBox(width: 12),
-              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
-              const SizedBox(width: 12),
-              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90, radius: 16)),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90.h, radius: 16.r)),
+              SizedBox(width: 12.w),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90.h, radius: 16.r)),
+              SizedBox(width: 12.w),
+              Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90.h, radius: 16.r)),
             ],
           ),
-          const SizedBox(height: 24),
-          ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
-          const SizedBox(height: 24),
-          ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
-          const SizedBox(height: 16),
+          SizedBox(height: 24.h),
+          ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 12.r),
+          SizedBox(height: 24.h),
+          ShimmerHelper().buildBasicShimmer(height: 20.h, width: 150.w),
+          SizedBox(height: 16.h),
           Column(
             children: List.generate(5, (index) => 
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ShimmerHelper().buildBasicShimmer(height: 50, radius: 8),
+                padding: EdgeInsets.only(bottom: 12.h),
+                child: ShimmerHelper().buildBasicShimmer(height: 50.h, radius: 8.r),
               ),
             ),
           ),
@@ -204,13 +212,13 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           label: AppLocalizations.of(context)!.referrals_ucf,
           value: '$_totalReferrals',
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         _buildStatCard(
           label: AppLocalizations.of(context)!.points_ucf,
           value: '$_totalPoints',
           unit: 'pts',
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         _buildStatCard(
           label: AppLocalizations.of(context)!.earnings_ucf,
           value: FormatHelper.formatPrice(_totalEarnings),
@@ -226,43 +234,43 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 8.w),
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFEEF2F8)),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
         ),
         child: Column(
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 11,
+              style: TextStyle(
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
+                color: const Color(0xFF64748B),
                 letterSpacing: 0.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
                     text: value,
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                   ),
                   if (unit != null)
                     TextSpan(
                       text: ' $unit',
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w400,
-                        color: Color(0xFF64748B),
+                        color: const Color(0xFF64748B),
                       ),
                     ),
                 ],
@@ -284,31 +292,31 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       children: [
         Text(
           AppLocalizations.of(context)!.your_referral_link,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF64748B),
+            color: const Color(0xFF64748B),
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFEEF2F8)),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
           ),
           child: Row(
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                   child: Text(
                     displayLink,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: 12.sp,
                       fontFamily: 'monospace',
-                      color: Color(0xFF1A1A2E),
+                      color: const Color(0xFF1A1A2E),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -318,25 +326,25 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 GestureDetector(
                   onTap: _copyToClipboard,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
-                      borderRadius: const BorderRadius.horizontal(
-                        right: Radius.circular(11),
+                      borderRadius: BorderRadius.horizontal(
+                        right: Radius.circular(11.r),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.copy,
-                          size: 14,
+                          size: 14.sp,
                           color: Colors.white,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6.w),
                         Text(
                           AppLocalizations.of(context)!.copy_ucf,
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: TextStyle(
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.w500,
                             color: Colors.white,
                           ),
@@ -358,12 +366,12 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: EdgeInsets.symmetric(vertical: 14.h),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
                 color: const Color(0xFFEEF2F8),
-                width: 1,
+                width: 1.w,
               ),
             ),
           ),
@@ -373,10 +381,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 flex: 2,
                 child: Text(
                   AppLocalizations.of(context)!.referral_name,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: const Color(0xFF64748B),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -386,10 +394,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 child: Text(
                   AppLocalizations.of(context)!.points_ucf,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: const Color(0xFF64748B),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -399,10 +407,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 child: Text(
                   AppLocalizations.of(context)!.date_ucf,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: const Color(0xFF64748B),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -415,7 +423,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           _buildEmptyState()
         else
           Container(
-            constraints: const BoxConstraints(maxHeight: 500),
+            constraints: BoxConstraints(maxHeight: 500.h),
             child: ListView.separated(
               shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
@@ -442,17 +450,17 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     final isEarned = (item.amount ?? 0) > 0;
     
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: 16.h),
       child: Row(
         children: [
           Expanded(
             flex: 2,
             child: Text(
               _getReferralName(item),
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF1A1A2E),
+                color: const Color(0xFF1A1A2E),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -464,7 +472,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
               '${isEarned ? '+' : ''}$pointsValue',
               textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: isEarned ? const Color(0xFF0092AC) : const Color(0xFFEF4444),
               ),
@@ -475,9 +483,9 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             child: Text(
               item.createdAt != null ? _formatDate(item.createdAt!) : AppLocalizations.of(context)!.unknown,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: const Color(0xFF64748B),
               ),
             ),
           ),
@@ -488,28 +496,29 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+      padding: EdgeInsets.symmetric(vertical: 48.h, horizontal: 16.w),
       child: Column(
         children: [
-          const Text(
+          Text(
             '📋',
-            style: TextStyle(fontSize: 48),
+            style: TextStyle(fontSize: 48.sp),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             AppLocalizations.of(context)!.no_referral_history_yet,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A2E),
+              color: const Color(0xFF1A1A2E),
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Text(
             AppLocalizations.of(context)!.share_referral_link_to_start_earning,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF64748B),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: const Color(0xFF64748B),
             ),
             textAlign: TextAlign.center,
           ),
@@ -523,22 +532,22 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     final totalPages = (history.length / 10).ceil();
     
     return Container(
-      margin: const EdgeInsets.only(top: 24),
+      margin: EdgeInsets.only(top: 24.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(totalPages > 5 ? 5 : totalPages, (index) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: EdgeInsets.symmetric(horizontal: 4.w),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: index == 0 ? MyTheme.accent_color : Colors.white,
-              border: Border.all(color: const Color(0xFFEEF2F8)),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(
               '${index + 1}',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.sp,
                 color: index == 0 ? Colors.white : const Color(0xFF1A1A2E),
               ),
             ),

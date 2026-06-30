@@ -10,6 +10,7 @@ import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -264,20 +265,11 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return null;
   }
 
-  // ✅ FIXED: Get product slug - now properly gets from bid like Wishlist does
   String _getProductSlugForBid(AuctionBid bid) {
-
-    // if (bid.productSlug != null && bid.productSlug!.isNotEmpty) {
-    //   return bid.productSlug!;
-    // }
-
-    // If not available in bid, try from distinct product info
     final product = _getProductInfoForBid(bid);
     if (product != null && product.productSlug != null && product.productSlug!.isNotEmpty) {
       return product.productSlug!;
     }
-    
-    // Return empty string if no slug found (matches Wishlist pattern)
     return '';
   }
 
@@ -307,7 +299,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return userBids.first.pointPerBid ?? 10;
   }
 
-  // Helper to get product info by product ID (overload)
   DistinctAuctionBid? _getProductInfoById(int productId) {
     if (_userInfo?.distinctAuctionBids == null) return null;
     
@@ -343,7 +334,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   }
   
   // ============ NAVIGATION HELPERS ============
-  // ✅ FIXED: Same navigation pattern as Wishlist page
   void _navigateToProductDetails(String productSlug) {
     if (productSlug.isNotEmpty) {
       Navigator.push(
@@ -355,8 +345,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     } else {
       ToastComponent.showDialog(
         AppLocalizations.of(context)!.product_details_not_available,
-        // gravity: Toast.center,
-        // duration: Toast.lengthShort,
       );
     }
   }
@@ -369,14 +357,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.activity_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
@@ -406,17 +395,17 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          margin: const EdgeInsets.only(bottom: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          margin: EdgeInsets.only(bottom: 16.h),
           child: Row(
             children: List.generate(4, (index) => 
               Expanded(
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  height: 42,
+                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                  height: 42.h,
                   decoration: BoxDecoration(
                     color: MyTheme.shimmer_base,
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: BorderRadius.circular(7.r),
                   ),
                 ),
               ),
@@ -426,12 +415,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         Expanded(
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: List.generate(3, (index) => 
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: ShimmerHelper().buildBasicShimmer(height: 140, radius: 16),
+                  padding: EdgeInsets.only(bottom: 16.h),
+                  child: ShimmerHelper().buildBasicShimmer(height: 140.h, radius: 16.r),
                 ),
               ),
             ),
@@ -450,10 +439,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         Expanded(
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: [
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 if (currentActivities.isEmpty)
                   _buildEmptyState(_selectedTab)
                 else
@@ -462,7 +451,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       _buildActivityCard(activity)
                     ).toList(),
                   ),
-                const SizedBox(height: 30),
+                SizedBox(height: 30.h),
               ],
             ),
           ),
@@ -480,8 +469,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     ];
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      margin: EdgeInsets.only(bottom: 16.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -494,16 +483,16 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                margin: EdgeInsets.only(right: 4.w),
+                padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(7.r),
                 ),
                 child: Text(
                   tabNames[index],
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -544,29 +533,30 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+      padding: EdgeInsets.symmetric(vertical: 60.h, horizontal: 20.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 48)),
-          const SizedBox(height: 12),
+          Text(icon, style: TextStyle(fontSize: 48.sp)),
+          SizedBox(height: 12.h),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
+              color: const Color(0xFF334155),
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.h),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF94A3B8),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: const Color(0xFF94A3B8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -608,12 +598,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final timeLeft = _timeLeft[productId] ?? AppLocalizations.of(context)!.loading;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F1F1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,43 +611,43 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           // Product Image - Clickable
           GestureDetector(
             onTap: () {
-              if (productSlug.isNotEmpty) {  // Now checking String, not String?
+              if (productSlug.isNotEmpty) {
                 _navigateToProductDetails(productSlug);
               }
             },
             child: Container(
-              width: 120,
-              height: 140,
-              margin: const EdgeInsets.only(right: 12),
+              width: 120.w,
+              height: 140.h,
+              margin: EdgeInsets.only(right: 12.w),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 child: productImage != null && productImage.isNotEmpty
                     ? Image.network(
                         productImage,
                         fit: BoxFit.cover,
-                        width: 120,
-                        height: 140,
+                        width: 120.w,
+                        height: 140.h,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: const Color(0xFFE2E8F0),
-                            child: const Icon(
+                            child: Icon(
                               Icons.inventory_2,
-                              size: 50,
-                              color: Color(0xFF94A3B8),
+                              size: 50.sp,
+                              color: const Color(0xFF94A3B8),
                             ),
                           );
                         },
                       )
                     : Container(
                         color: const Color(0xFFE2E8F0),
-                        child: const Icon(
+                        child: Icon(
                           Icons.inventory_2,
-                          size: 50,
-                          color: Color(0xFF94A3B8),
+                          size: 50.sp,
+                          color: const Color(0xFF94A3B8),
                         ),
                       ),
               ),
@@ -671,79 +661,82 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 Text(
                   statusText, 
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
                     color: statusColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 
                 // Product Name - Clickable
                 GestureDetector(
                   onTap: () {
-                    if (productSlug != null && productSlug.isNotEmpty) {
+                    if (productSlug.isNotEmpty) {
                       _navigateToProductDetails(productSlug);
                     }
                   },
                   child: Text(
                     productName,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF1A202C),
+                      color: const Color(0xFF1A202C),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 
                 // Current Bid Label
                 Text(
                   isEnded 
                       ? AppLocalizations.of(context)!.final_bid
                       : AppLocalizations.of(context)!.current_bid,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF80818B),
+                    color: const Color(0xFF80818B),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 
                 // Bid Amount and Points
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _formatPrice(currentBid),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: MyTheme.dark_font_grey,
+                    Flexible(
+                      child: Text(
+                        _formatPrice(currentBid),
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w800,
+                          color: MyTheme.dark_font_grey,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.r),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time,
-                            size: 12,
-                            color: Color(0xFF0092AC),
+                            size: 12.sp,
+                            color: const Color(0xFF0092AC),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4.w),
                           Text(
                             '1 Bid = $pointPerBid',
-                            style: const TextStyle(
-                              fontSize: 11,
+                            style: TextStyle(
+                              fontSize: 11.sp,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF0092AC),
+                              color: const Color(0xFF0092AC),
                             ),
                           ),
                         ],
@@ -751,9 +744,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 
-                // Action Button - Both use the same navigation
+                // Action Button
                 if (isOutbid && !isEnded)
                   _buildBidAgainButton(productSlug)
                 else
@@ -779,16 +772,16 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
           color: MyTheme.accent_color,
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
           AppLocalizations.of(context)!.bid_again,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 12.sp,
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
@@ -810,17 +803,17 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
           color: Colors.transparent,
-          border: Border.all(color: MyTheme.accent_color, width: 1),
-          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: MyTheme.accent_color, width: 1.w),
+          borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
           AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 12.sp,
             fontWeight: FontWeight.w600,
             color: MyTheme.accent_color,
           ),

@@ -28,6 +28,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../data_model/auction_models.dart';
 
 import 'package:active_ecommerce_flutter/app_config.dart';
@@ -171,7 +172,6 @@ class _ProductDetailsState extends State<ProductDetails>
         _rating = (_product!.rating ?? 0).toDouble();
         _isWishlisted = false;
         
-        // ✅ Set default wishlist state (will be updated by dedicated endpoint)
         _isInWishlist = false;
         
         _endingSeconds = _product!.swipeLeft ?? 10;
@@ -179,7 +179,6 @@ class _ProductDetailsState extends State<ProductDetails>
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
 
-        // Parse time left
         if (_product!.getAuctionEndDateTime() != null) {
           final endTime = _product!.getAuctionEndDateTime()!;
           final now = DateTime.now();
@@ -192,8 +191,6 @@ class _ProductDetailsState extends State<ProductDetails>
       await _fetchComments();
       await _fetchReviews();
       await _fetchBidHistory();
-      
-      // ✅ Fetch wishlist status from dedicated endpoint
       await _fetchWishlistStatus();
 
       setState(() => _isLoading = false);
@@ -255,46 +252,37 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
-        // ============================================
-        // UPDATE BID DATA FROM POLL RESPONSE
-        // ============================================
-        
-        // 1. Starting bid
+        // Update bid data
         if (response.startingBid != null) {
           setState(() {
             _startingBid = response.startingBid!;
           });
         }
 
-        // 2. Current highest bid
         if (response.highestBid != null) {
           final oldHighestBid = _currentHighestBid;
           setState(() {
             _currentHighestBid = response.highestBid!;
           });
           
-          // Play sound if new bid is higher
           if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
             _playBidSound();
             _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
           }
         }
 
-        // 3. Total bidders
         if (response.totalBids != null) {
           setState(() {
             _totalBids = response.totalBids!;
           });
         }
 
-        // 4. Highest bidder (last_bidder_name)
         if (response.lastBidderName != null && response.lastBidderName!.isNotEmpty) {
           setState(() {
             _highestBidder = response.lastBidderName!;
           });
         }
 
-        // 5. Point per bid
         if (response.pointPerBid != null) {
           setState(() {
             _pointPerBid = response.pointPerBid!;
@@ -306,15 +294,10 @@ class _ProductDetailsState extends State<ProductDetails>
           });
         }
 
-        // Calculate min next bid
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
-        // ❌ REMOVED: _isWishlisted = false; _isInWishlist = false;
         setState(() {});
 
-        // ============================================
-        // UPDATE AUCTION END DATE
-        // ============================================
         if (response.auctionEndDate != null) {
           try {
             final newEndTime = DateTime.parse(response.auctionEndDate!);
@@ -329,9 +312,6 @@ class _ProductDetailsState extends State<ProductDetails>
           }
         }
 
-        // ============================================
-        // CHECK AUCTION ENDED & SHOW WINNER
-        // ============================================
         if (response.auctionEnded == true &&
             response.winner != null &&
             !_winnerModalShown) {
@@ -342,9 +322,6 @@ class _ProductDetailsState extends State<ProductDetails>
           });
         }
 
-        // ============================================
-        // UPDATE ENDING SOON STATUS
-        // ============================================
         if (response.isEndingSoon == true &&
             response.remainingSeconds != null) {
           if (!_isEndingSoon &&
@@ -358,9 +335,6 @@ class _ProductDetailsState extends State<ProductDetails>
           if (_isEndingSoon) setState(() => _isEndingSoon = false);
         }
 
-        // ============================================
-        // UPDATE RATING & REVIEWS COUNT
-        // ============================================
         if (response.rating != null) {
           setState(() => _rating = response.rating!);
         }
@@ -368,24 +342,15 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() => _reviewsCount = response.reviewsCount!);
         }
 
-        // ============================================
-        // UPDATE COMMENTS (ALL COMMENTS)
-        // ============================================
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() => _comments = response.comments!);
         }
 
-        // ============================================
-        // UPDATE REVIEWS
-        // ============================================
         if (response.reviews != null && response.reviews!.isNotEmpty) {
           setState(() => _reviews = response.reviews!);
           _reviewsCount = _reviews.length;
         }
 
-        // ============================================
-        // UPDATE BID HISTORY
-        // ============================================
         if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
           final List<BidHistory> convertedBids = response.bidHistory!.map((item) {
             return BidHistory(
@@ -405,29 +370,23 @@ class _ProductDetailsState extends State<ProductDetails>
 
 
   void _checkAndRefreshWishlist() {
-    // Only refresh if product exists, user is logged in, and not currently loading
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
       print('✅ Checking wishlist status on page focus...');
-      _fetchWishlistStatus(); // ✅ Use dedicated endpoint
+      _fetchWishlistStatus();
     } else {
       print('⏭️ Skipping wishlist refresh: product=${_product != null}, loggedIn=${is_logged_in.$}, loading=$_isLoading, processing=$_isProcessing');
     }
   }
 
   void _setupLoginStateListener() {
-    // Listen to login state changes
     if (!_isListening) {
       _isListening = true;
-      // This will be called when is_logged_in changes
-      // You can use a ValueNotifier or a custom listener
-      // For now, we'll use a simple check on page resume
     }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh when dependencies change (like when coming back to the page)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndRefreshWishlist();
     });
@@ -459,8 +418,6 @@ class _ProductDetailsState extends State<ProductDetails>
     });
   }
 
-  // Add these methods to your state class
-
   Future<void> _likeComment(int commentId) async {
     if (!is_logged_in.$) {
       _showLoginRequired();
@@ -470,7 +427,6 @@ class _ProductDetailsState extends State<ProductDetails>
     try {
       final response = await _productRepository.likeProductComment(commentId);
       if (response['success'] == true) {
-        // Update the comment likes in the list
         setState(() {
           final index = _comments.indexWhere((c) => c.id == commentId);
           if (index != -1) {
@@ -488,6 +444,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _commentController.text = '@$userName ';
     FocusScope.of(context).requestFocus(FocusNode());
   }
+
   // ============================================
   // BID ACTIONS
   // ============================================
@@ -699,7 +656,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   Future<void> _fetchWishlistStatus() async {
-    // Don't check if user not logged in
     if (!is_logged_in.$) {
       setState(() {
         _isInWishlist = false;
@@ -707,7 +663,6 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
     
-    // Don't check if product is null
     if (_product == null) {
       return;
     }
@@ -746,10 +701,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
 
-    // Save current state
     final wasInWishlist = _isInWishlist;
     
-    // Optimistically update UI
     setState(() {
       _isProcessing = true;
       _isInWishlist = !wasInWishlist;
@@ -759,11 +712,9 @@ class _ProductDetailsState extends State<ProductDetails>
       late WishlistResponse response;
       
       if (wasInWishlist) {
-        // ✅ PRODUCT IS IN WISHLIST - REMOVE IT
         print('🗑️ Removing from wishlist...');
         response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
       } else {
-        // ✅ PRODUCT IS NOT IN WISHLIST - ADD IT
         print('❤️ Adding to wishlist...');
         response = await _productRepository.addToWishlist(_product!.id ?? 0);
       }
@@ -772,7 +723,6 @@ class _ProductDetailsState extends State<ProductDetails>
       print('📡 Response message: ${response.message}');
 
       if (response.success == true) {
-        // Success - UI already updated
         if (wasInWishlist) {
           _playCommentSound();
           _showToast('Removed from wishlist');
@@ -781,24 +731,18 @@ class _ProductDetailsState extends State<ProductDetails>
           _showToast('Added to wishlist');
         }
         
-        // ✅ Refresh wishlist status from dedicated endpoint to confirm
         await _fetchWishlistStatus();
       } else {
-        // ❌ Failed - revert UI
         setState(() {
           _isInWishlist = wasInWishlist;
         });
         
-        // 🔥 FIX: Don't show "already in wishlist" message
-        // Just show a generic error and refresh the status
         print('❌ Wishlist operation failed: ${response.message}');
         _showToast('Wishlist update failed. Please try again.');
         
-        // Refresh status to make sure UI matches server
         await _fetchWishlistStatus();
       }
     } catch (e) {
-      // ❌ Error - revert UI
       print('❌ Wishlist error: $e');
       setState(() {
         _isInWishlist = wasInWishlist;
@@ -814,7 +758,6 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Future<void> _refreshWishlistStatus() async {
-    // Don't refresh if no product or user not logged in
     if (_product == null) {
       print('⏭️ Cannot refresh wishlist: product is null');
       return;
@@ -875,9 +818,7 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response['success'] == true) {
         _showToast(response['message'] ?? 'Message sent to seller!');
         
-        // ✅ Redirect to Messenger List page on success
         if (mounted) {
-          // Use a small delay to ensure the toast is visible and context is stable
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
               Navigator.push(
@@ -978,13 +919,12 @@ class _ProductDetailsState extends State<ProductDetails>
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
-  // Button loader widget matching HotAuctionCard style
   Widget _buildButtonLoader() {
-    return const SizedBox(
-      height: 16,
-      width: 16,
+    return SizedBox(
+      height: 16.w,
+      width: 16.w,
       child: CircularProgressIndicator(
-        strokeWidth: 2,
+        strokeWidth: 2.w,
         color: Colors.white,
       ),
     );
@@ -1004,56 +944,56 @@ class _ProductDetailsState extends State<ProductDetails>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Center title
             Text(
               'Enter Your Bid',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 4),
-            // Center subtitle
+            SizedBox(height: 4.h),
             Text(
               '1 Bid = $_pointPerBidCustom',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 12.h),
             TextField(
               controller: _bidController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: 'Min: ${_formatPrice(_minNextBidNow)}',
+                hintStyle: TextStyle(fontSize: 14.sp),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
                 filled: true,
                 fillColor: Colors.grey.shade50,
               ),
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       backgroundColor: Colors.grey.shade200,
                     ),
-                    child: Text('Cancel',
-                        style: TextStyle(color: Colors.grey.shade600)),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
+                    ),
                   ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _isProcessing
@@ -1064,9 +1004,9 @@ class _ProductDetailsState extends State<ProductDetails>
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                     child: _isProcessing
@@ -1074,7 +1014,10 @@ class _ProductDetailsState extends State<ProductDetails>
                         : Text(
                             'Place Bid',
                             style: TextStyle(
-                                color: Colors.white, fontWeight: FontWeight.w600),
+                              fontSize: 14.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   ),
                 ),
@@ -1124,36 +1067,38 @@ class _ProductDetailsState extends State<ProductDetails>
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.8,
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Product Details',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Product Details',
+                    style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                  ),
                   IconButton(
-                    icon: Icon(Icons.close),
+                    icon: Icon(Icons.close, size: 24.sp),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-              Divider(),
+              Divider(height: 1.h),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_product?.name ?? '',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
-                      SizedBox(height: 12),
+                      Text(
+                        _product?.name ?? '',
+                        style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 12.h),
                       Html(data: _product?.description ?? ''),
                     ],
                   ),
@@ -1172,26 +1117,26 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
             child: Container(
               width: MediaQuery.of(context).size.width * 0.8,
               height: MediaQuery.of(context).size.height * 0.8,
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.w),
                     decoration: BoxDecoration(
-                      border:
-                          Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('All Reviews ($_reviewsCount)',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(
+                          'All Reviews ($_reviewsCount)',
+                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                        ),
                         IconButton(
-                          icon: Icon(Icons.close),
+                          icon: Icon(Icons.close, size: 24.sp),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -1199,18 +1144,16 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   Expanded(
                     child: _reviews.isEmpty
-                        ? Center(child: Text('No reviews yet'))
+                        ? Center(child: Text('No reviews yet', style: TextStyle(fontSize: 14.sp)))
                         : ListView.builder(
-                            padding: EdgeInsets.all(16),
+                            padding: EdgeInsets.all(16.w),
                             itemCount: _reviews.length,
                             itemBuilder: (context, index) {
                               final review = _reviews[index];
                               return Container(
-                                padding: EdgeInsets.symmetric(vertical: 12),
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
                                 decoration: BoxDecoration(
-                                  border: Border(
-                                      bottom: BorderSide(
-                                          color: Colors.grey.shade100)),
+                                  border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1218,31 +1161,33 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Row(
                                       children: [
                                         Row(
-                                          children: List.generate(5,
-                                              (starIndex) {
+                                          children: List.generate(5, (starIndex) {
                                             return Icon(
                                               starIndex < (review.rating ?? 0)
                                                   ? Icons.star
                                                   : Icons.star_border,
-                                              size: 14,
+                                              size: 14.sp,
                                               color: Colors.amber,
                                             );
                                           }),
                                         ),
-                                        SizedBox(width: 8),
-                                        Text(_formatDate(review.createdAt),
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey)),
+                                        SizedBox(width: 8.w),
+                                        Text(
+                                          _formatDate(review.createdAt),
+                                          style: TextStyle(fontSize: 11.sp, color: Colors.grey),
+                                        ),
                                       ],
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(review.comment ?? '',
-                                        style: TextStyle(fontSize: 14)),
-                                    SizedBox(height: 4),
-                                    Text(review.userName ?? 'User',
-                                        style: TextStyle(
-                                            fontSize: 12, color: Colors.grey)),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      review.comment ?? '',
+                                      style: TextStyle(fontSize: 14.sp),
+                                    ),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      review.userName ?? 'User',
+                                      style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                                    ),
                                   ],
                                 ),
                               );
@@ -1250,10 +1195,9 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.w),
                     decoration: BoxDecoration(
-                      border:
-                          Border(top: BorderSide(color: Colors.grey.shade200)),
+                      border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                     ),
                     child: ElevatedButton(
                       onPressed: _isProcessing
@@ -1264,16 +1208,15 @@ class _ProductDetailsState extends State<ProductDetails>
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
                         minimumSize: Size(double.infinity, 0),
                       ),
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
                               'Write a Review',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(fontSize: 14.sp, color: Colors.white),
                             ),
                     ),
                   ),
@@ -1295,11 +1238,11 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
             child: Container(
               width: MediaQuery.of(context).size.width * 0.8,
               height: MediaQuery.of(context).size.height * 0.8,
-              padding: EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.w),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1307,25 +1250,26 @@ class _ProductDetailsState extends State<ProductDetails>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Write a Review',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Write a Review',
+                        style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                      ),
                       IconButton(
-                        icon: Icon(Icons.close),
+                        icon: Icon(Icons.close, size: 24.sp),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
-                  Text('Rating', style: TextStyle(fontWeight: FontWeight.w500)),
-                  SizedBox(height: 8),
+                  SizedBox(height: 16.h),
+                  Text('Rating', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+                  SizedBox(height: 8.h),
                   RatingBar.builder(
                     initialRating: 0,
                     minRating: 1,
                     direction: Axis.horizontal,
                     allowHalfRating: false,
                     itemCount: 5,
-                    itemSize: 30,
+                    itemSize: 30.w,
                     itemBuilder: (context, _) =>
                         Icon(Icons.star, color: Colors.amber),
                     onRatingUpdate: (rating) {
@@ -1333,18 +1277,21 @@ class _ProductDetailsState extends State<ProductDetails>
                       setModalState(() {});
                     },
                   ),
-                  SizedBox(height: 16),
-                  Text('Review', style: TextStyle(fontWeight: FontWeight.w500)),
-                  SizedBox(height: 8),
+                  SizedBox(height: 16.h),
+                  Text('Review', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+                  SizedBox(height: 8.h),
                   TextField(
                     controller: tempController,
                     maxLines: 5,
                     decoration: InputDecoration(
                       hintText: 'Share your experience with this product...',
-                      border: OutlineInputBorder(),
+                      hintStyle: TextStyle(fontSize: 14.sp),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
                     ),
                   ),
-                  SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   ElevatedButton(
                     onPressed: _isProcessing
                         ? null
@@ -1389,16 +1336,15 @@ class _ProductDetailsState extends State<ProductDetails>
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
                       minimumSize: Size(double.infinity, 0),
                     ),
                     child: _isProcessing
                         ? _buildButtonLoader()
                         : Text(
                             'Submit Review',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(fontSize: 14.sp, color: Colors.white),
                           ),
                   ),
                 ],
@@ -1414,89 +1360,95 @@ class _ProductDetailsState extends State<ProductDetails>
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           height: MediaQuery.of(context).size.height * 0.8,
           child: Column(
             children: [
               Container(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Bid History',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Bid History',
+                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                    ),
                     IconButton(
-                      icon: Icon(Icons.close),
+                      icon: Icon(Icons.close, size: 24.sp),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                 color: Colors.grey.shade100,
                 child: Row(
                   children: [
                     Expanded(
                         flex: 2,
-                        child: Text('Bidder',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 12))),
+                        child: Text(
+                          'Bidder',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+                        )),
                     Expanded(
                         flex: 1,
-                        child: Text('Amount',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 12))),
+                        child: Text(
+                          'Amount',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+                        )),
                     Expanded(
                         flex: 1,
-                        child: Text('Date & Time',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 12),
-                            textAlign: TextAlign.end)),
+                        child: Text(
+                          'Date & Time',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
+                          textAlign: TextAlign.end,
+                        )),
                   ],
                 ),
               ),
               Expanded(
                 child: _bidHistory.isEmpty
-                    ? Center(child: Text('No bids yet'))
+                    ? Center(child: Text('No bids yet', style: TextStyle(fontSize: 14.sp)))
                     : ListView.builder(
                         itemCount: _bidHistory.length,
                         itemBuilder: (context, index) {
                           final bid = _bidHistory[index];
                           return Container(
-                            padding:
-                                EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                             decoration: BoxDecoration(
-                              border: Border(
-                                  bottom: BorderSide(
-                                      color: Colors.grey.shade100)),
+                              border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
                             ),
                             child: Row(
                               children: [
                                 Expanded(
                                     flex: 2,
-                                    child: Text(bid.userName ?? 'User',
-                                        style: TextStyle(fontSize: 13))),
-                                Expanded(
-                                    flex: 1,
-                                    child: Text(_formatPrice(bid.amount ?? 0),
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: MyTheme.accent_color))),
+                                    child: Text(
+                                      bid.userName ?? 'User',
+                                      style: TextStyle(fontSize: 13.sp),
+                                    )),
                                 Expanded(
                                     flex: 1,
                                     child: Text(
-                                        _formatDateTime(bid.createdAt),
-                                        style: TextStyle(
-                                            fontSize: 11, color: Colors.grey),
-                                        textAlign: TextAlign.end)),
+                                      _formatPrice(bid.amount ?? 0),
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: MyTheme.accent_color,
+                                      ),
+                                    )),
+                                Expanded(
+                                    flex: 1,
+                                    child: Text(
+                                      _formatDateTime(bid.createdAt),
+                                      style: TextStyle(fontSize: 11.sp, color: Colors.grey),
+                                      textAlign: TextAlign.end,
+                                    )),
                               ],
                             ),
                           );
@@ -1519,54 +1471,68 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          padding: EdgeInsets.all(24),
+          padding: EdgeInsets.all(24.w),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Color(0xFF667eea), Color(0xFF764ba2)]),
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(32.r),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🏆', style: TextStyle(fontSize: 48)),
-              SizedBox(height: 8),
-              Text('Auction Ended!',
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              SizedBox(height: 16),
+              Text('🏆', style: TextStyle(fontSize: 48.sp)),
+              SizedBox(height: 8.h),
+              Text(
+                'Auction Ended!',
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 16.h),
               CircleAvatar(
-                radius: 50,
+                radius: 50.w,
                 backgroundImage: NetworkImage(_winnerData!.avatar ?? ''),
                 child: _winnerData!.avatar == null
-                    ? Icon(Icons.person, size: 40)
+                    ? Icon(Icons.person, size: 40.sp)
                     : null,
               ),
-              SizedBox(height: 12),
-              Text(_winnerData!.userName ?? 'Winner',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              SizedBox(height: 4),
-              Text(_formatPrice(_winnerData!.amount ?? 0),
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber)),
-              SizedBox(height: 12),
-              Text('Congratulations to the winner!',
-                  style: TextStyle(color: Colors.white70)),
-              SizedBox(height: 20),
+              SizedBox(height: 12.h),
+              Text(
+                _winnerData!.userName ?? 'Winner',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                _formatPrice(_winnerData!.amount ?? 0),
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                'Congratulations to the winner!',
+                style: TextStyle(fontSize: 14.sp, color: Colors.white70),
+              ),
+              SizedBox(height: 20.h),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30.r),
+                  ),
                 ),
-                child: Text('Close',
-                    style: TextStyle(color: MyTheme.accent_color)),
+                child: Text(
+                  'Close',
+                  style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
+                ),
               ),
             ],
           ),
@@ -1589,17 +1555,17 @@ class _ProductDetailsState extends State<ProductDetails>
                 backgroundDecoration: BoxDecoration(color: Colors.black),
               ),
               Positioned(
-                top: 40,
-                right: 16,
+                top: 40.h,
+                right: 16.w,
                 child: GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
-                    padding: EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8.w),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, color: Colors.white),
+                    child: Icon(Icons.close, size: 24.sp, color: Colors.white),
                   ),
                 ),
               ),
@@ -1642,25 +1608,13 @@ class _ProductDetailsState extends State<ProductDetails>
 
   String _formatDateTime(String? dateTime) {
     if (dateTime == null || dateTime.isEmpty) return '';
-    // The API already returns formatted dates like "01 Jun 2026, 06:12 AM"
-    // Just return it as-is
     return dateTime;
   }
 
   String _getMonthName(int month) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return months[month - 1];
   }
@@ -1694,20 +1648,20 @@ class _ProductDetailsState extends State<ProductDetails>
     return SingleChildScrollView(
       child: Column(
         children: [
-          ShimmerHelper().buildBasicShimmer(height: 375),
-          SizedBox(height: 10),
+          ShimmerHelper().buildBasicShimmer(height: 375.h),
+          SizedBox(height: 10.h),
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Column(
               children: [
                 ShimmerHelper().buildBasicShimmer(
-                    height: 30, width: double.infinity),
-                SizedBox(height: 10),
-                ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
-                SizedBox(height: 10),
-                ShimmerHelper().buildBasicShimmer(height: 50),
-                SizedBox(height: 10),
-                ShimmerHelper().buildBasicShimmer(height: 50),
+                    height: 30.h, width: double.infinity),
+                SizedBox(height: 10.h),
+                ShimmerHelper().buildBasicShimmer(height: 20.h, width: 150.w),
+                SizedBox(height: 10.h),
+                ShimmerHelper().buildBasicShimmer(height: 50.h),
+                SizedBox(height: 10.h),
+                ShimmerHelper().buildBasicShimmer(height: 50.h),
               ],
             ),
           ),
@@ -1785,32 +1739,28 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     // ============================================
-                    // TOP RIGHT ICONS: More, Bid History, Product Details
+                    // TOP RIGHT ICONS
                     // ============================================
                     Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
-                      right: 16,
+                      top: MediaQuery.of(context).padding.top + 8.h,
+                      right: 16.w,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 1. More Icon
                           _buildIconCircle(
                             icon: Icons.more_vert,
                             onTap: () =>
                                 setState(() => _showMoreMenu = !_showMoreMenu),
                             isLoading: _isProcessing,
                           ),
-                          SizedBox(height: 12),
-                          // 2. Bid History Icon (using image)
+                          SizedBox(height: 12.h),
                           _buildIconCircleWithImage(
                             imagePath: 'assets/bid_history.png',
                             onTap: _openBidHistoryModal,
                             isLoading: _isProcessing,
-                            // Add a fallback icon in case the image doesn't load
                             fallbackIcon: Icons.history,
                           ),
-                          SizedBox(height: 12),
-                          // 3. Product Details Icon (using image)
+                          SizedBox(height: 12.h),
                           _buildIconCircleWithImage(
                             imagePath: 'assets/product_details.png',
                             onTap: _openTitleModal,
@@ -1822,8 +1772,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     ),
                     // Left Icons - Back Button
                     Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
-                      left: 16,
+                      top: MediaQuery.of(context).padding.top + 8.h,
+                      left: 16.w,
                       child: _buildIconCircle(
                         icon: Icons.arrow_back,
                         onTap: () => Navigator.pop(context),
@@ -1831,32 +1781,31 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     // ============================================
-                    // MORE MENU: Share, Save(Wishlist), Contact Seller
+                    // MORE MENU
                     // ============================================
                     if (_showMoreMenu)
                       Positioned(
-                        top: 80,
-                        right: 16,
+                        top: 80.h,
+                        right: 16.w,
                         child: Material(
                           elevation: 10,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.r),
                           child: Container(
-                            width: 180,
+                            width: 180.w,
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.95),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16.r),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 5),
+                                  blurRadius: 10.r,
+                                  offset: Offset(0, 5.h),
                                 ),
                               ],
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // 1. Share
                                 _buildMoreMenuItem(
                                   icon: Icons.share,
                                   text: 'Share',
@@ -1865,7 +1814,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _shareProduct();
                                   },
                                 ),
-                                // 2. Save / Saved (Wishlist)
                                 _buildMoreMenuItem(
                                   icon: _isInWishlist
                                       ? Icons.favorite
@@ -1876,7 +1824,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _toggleWishlist();
                                   },
                                 ),
-                                // 3. Contact Seller
                                 _buildMoreMenuItem(
                                   icon: Icons.contact_mail,
                                   text: _isProcessing ? 'Contacting...' : 'Contact Seller',
@@ -1896,45 +1843,24 @@ class _ProductDetailsState extends State<ProductDetails>
                       left: 0,
                       right: 0,
                       child: Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.w),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments Section - SHOW ALL COMMENTS
+                            // Comments Section
                             Container(
                               width: MediaQuery.of(context).size.width * 0.75,
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(20.r),
                                 border: Border.all(
-                                    color: Colors.white.withOpacity(0.15)),
+                                    color: Colors.white.withOpacity(0.15), width: 1.w),
                               ),
-                              padding: EdgeInsets.all(12),
+                              padding: EdgeInsets.all(12.w),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Comment count header
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Text(
-                                      //   'Comments (${_comments.length})',
-                                      //   style: TextStyle(
-                                      //     color: Colors.white,
-                                      //     fontSize: 12,
-                                      //     fontWeight: FontWeight.w600,
-                                      //   ),
-                                      // ),
-                                      // Text(
-                                      //   'Recent',
-                                      //   style: TextStyle(
-                                      //     color: Colors.white70,
-                                      //     fontSize: 10,
-                                      //   ),
-                                      // ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 6),
+                                  SizedBox(height: 6.h),
                                   Container(
                                     height: imageHeight * 0.4,
                                     child: _comments.isEmpty
@@ -1943,7 +1869,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                               'No comments yet',
                                               style: TextStyle(
                                                 color: Colors.white54,
-                                                fontSize: 11,
+                                                fontSize: 11.sp,
                                               ),
                                             ),
                                           )
@@ -1953,14 +1879,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                             itemBuilder: (context, index) {
                                               final comment = _comments[index];
                                               return Padding(
-                                                padding:
-                                                    EdgeInsets.only(bottom: 8),
+                                                padding: EdgeInsets.only(bottom: 8.h),
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     CircleAvatar(
-                                                      radius: 18,
+                                                      radius: 18.w,
                                                       backgroundImage:
                                                           NetworkImage(comment
                                                                   .userAvatar ??
@@ -1969,12 +1894,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               .userAvatar ==
                                                           null
                                                           ? Icon(Icons.person,
-                                                              size: 16,
+                                                              size: 16.sp,
                                                               color: Colors
                                                                   .white54)
                                                           : null,
                                                     ),
-                                                    SizedBox(width: 10),
+                                                    SizedBox(width: 10.w),
                                                     Expanded(
                                                       child: Column(
                                                         crossAxisAlignment:
@@ -1987,7 +1912,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
-                                                              fontSize: 13,
+                                                              fontSize: 13.sp,
                                                               fontWeight:
                                                                   FontWeight
                                                                       .w600,
@@ -1999,10 +1924,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white70,
-                                                              fontSize: 12,
+                                                              fontSize: 12.sp,
                                                             ),
                                                           ),
-                                                          // Comment actions - Like & Reply
                                                           Row(
                                                             children: [
                                                               GestureDetector(
@@ -2016,11 +1940,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                                                   style: TextStyle(
                                                                     color: Colors
                                                                         .white54,
-                                                                    fontSize: 11,
+                                                                    fontSize: 11.sp,
                                                                   ),
                                                                 ),
                                                               ),
-                                                              SizedBox(width: 12),
+                                                              SizedBox(width: 12.w),
                                                               GestureDetector(
                                                                 onTap: () =>
                                                                     _replyToComment(
@@ -2032,7 +1956,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                                   style: TextStyle(
                                                                     color: Colors
                                                                         .white54,
-                                                                    fontSize: 11,
+                                                                    fontSize: 11.sp,
                                                                   ),
                                                                 ),
                                                               ),
@@ -2047,7 +1971,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             },
                                           ),
                                   ),
-                                  SizedBox(height: 4),
+                                  SizedBox(height: 4.h),
                                   Row(
                                     children: [
                                       Expanded(
@@ -2056,50 +1980,50 @@ class _ProductDetailsState extends State<ProductDetails>
                                             color: Colors.white
                                                 .withOpacity(0.15),
                                             borderRadius:
-                                                BorderRadius.circular(12),
+                                                BorderRadius.circular(12.r),
                                           ),
                                           child: TextField(
                                             controller: _commentController,
                                             style: TextStyle(
                                                 color: Colors.white,
-                                                fontSize: 11),
+                                                fontSize: 11.sp),
                                             decoration: InputDecoration(
                                               hintText: 'Add Comment...',
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
-                                                  fontSize: 11),
+                                                  fontSize: 11.sp),
                                               border: InputBorder.none,
                                               contentPadding:
                                                   EdgeInsets.symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6),
+                                                      horizontal: 10.w,
+                                                      vertical: 6.h),
                                             ),
                                             onSubmitted: (value) =>
                                                 _sendComment(),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 6),
+                                      SizedBox(width: 6.w),
                                       GestureDetector(
                                         onTap: _isProcessing ? null : _sendComment,
                                         child: Container(
-                                          width: 28,
-                                          height: 28,
+                                          width: 28.w,
+                                          height: 28.w,
                                           decoration: BoxDecoration(
                                             color: MyTheme.accent_color,
                                             shape: BoxShape.circle,
                                           ),
                                           child: _isProcessing
-                                              ? const SizedBox(
-                                                  height: 12,
-                                                  width: 12,
+                                              ? SizedBox(
+                                                  height: 12.w,
+                                                  width: 12.w,
                                                   child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
+                                                    strokeWidth: 2.w,
                                                     color: Colors.white,
                                                   ),
                                                 )
                                               : Icon(Icons.send,
-                                                  size: 14,
+                                                  size: 14.sp,
                                                   color: Colors.white),
                                         ),
                                       ),
@@ -2108,7 +2032,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ],
                               ),
                             ),
-                            SizedBox(height: 12),
+                            SizedBox(height: 12.h),
                             // Product name and description
                             GestureDetector(
                               onTap: _openTitleModal,
@@ -2118,22 +2042,22 @@ class _ProductDetailsState extends State<ProductDetails>
                                   Text(_product?.name ?? '',
                                       style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 22,
+                                          fontSize: 22.sp,
                                           fontWeight: FontWeight.bold)),
-                                  SizedBox(height: 4),
+                                  SizedBox(height: 4.h),
                                   Text(
                                       _product?.description
                                           ?.replaceAll(RegExp(r'<[^>]*>'),
                                               '') ??
                                           '',
                                       style: TextStyle(
-                                          color: Colors.white70, fontSize: 14),
+                                          color: Colors.white70, fontSize: 14.sp),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis),
                                 ],
                               ),
                             ),
-                            SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             // Timer and Price
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2144,8 +2068,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Text('TIME LEFT',
                                         style: TextStyle(
                                             color: Colors.white70,
-                                            fontSize: 12)),
-                                    SizedBox(height: 4),
+                                            fontSize: 12.sp)),
+                                    SizedBox(height: 4.h),
                                     Row(
                                       children: [
                                         _buildTimerUnitBig(
@@ -2164,12 +2088,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 16),
+                                      horizontal: 20.w, vertical: 16.h),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(16.r),
                                     border: Border.all(
-                                        color: Colors.white.withOpacity(0.2)),
+                                        color: Colors.white.withOpacity(0.2), width: 1.w),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -2177,11 +2101,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                       Text('Current Bid',
                                           style: TextStyle(
                                               color: Colors.white70,
-                                              fontSize: 12)),
+                                              fontSize: 12.sp)),
                                       Text(_formatPrice(_currentHighestBid),
                                           style: TextStyle(
                                               color: Colors.white,
-                                              fontSize: 24,
+                                              fontSize: 24.sp,
                                               fontWeight: FontWeight.bold)),
                                     ],
                                   ),
@@ -2196,31 +2120,31 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Bid Info Section - Updated from polling data
+            // Bid Info Section
             SliverToBoxAdapter(
               child: Material(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 child: Container(
-                  margin: EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  padding: EdgeInsets.all(16),
+                  margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
+                  padding: EdgeInsets.all(16.w),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(color: Colors.grey.shade200, width: 1.w),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Bid Information',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      SizedBox(height: 12),
+                              fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                      SizedBox(height: 12.h),
                       GridView.count(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),
                         crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12.w,
+                        mainAxisSpacing: 12.h,
                         childAspectRatio: 3,
                         children: [
                           _buildInfoItem('Starting bid',
@@ -2244,17 +2168,17 @@ class _ProductDetailsState extends State<ProductDetails>
               child: GestureDetector(
                 onTap: _openReviewsModal,
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 16),
-                  padding: EdgeInsets.all(16),
+                  margin: EdgeInsets.symmetric(horizontal: 16.w),
+                  padding: EdgeInsets.all(16.w),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(color: Colors.grey.shade200, width: 1.w),
                     boxShadow: [
                       BoxShadow(
                           color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: Offset(0, 2)),
+                          blurRadius: 4.r,
+                          offset: Offset(0, 2.h)),
                     ],
                   ),
                   child: Row(
@@ -2268,31 +2192,31 @@ class _ProductDetailsState extends State<ProductDetails>
                                 index < _rating.round()
                                     ? Icons.star
                                     : Icons.star_border,
-                                size: 16,
+                                size: 16.sp,
                                 color: Colors.amber,
                               );
                             }),
                           ),
-                          SizedBox(width: 8),
+                          SizedBox(width: 8.w),
                           Text(_rating.toStringAsFixed(1),
                               style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          SizedBox(width: 8),
+                                  fontSize: 18.sp, fontWeight: FontWeight.bold)),
+                          SizedBox(width: 8.w),
                           Container(
                             padding: EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                                horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(20.r),
                             ),
                             child: Text('$_reviewsCount reviews',
                                 style: TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
+                                    fontSize: 12.sp, color: Colors.grey)),
                           ),
                         ],
                       ),
                       Icon(Icons.arrow_forward_ios,
-                          size: 16, color: Colors.grey),
+                          size: 16.sp, color: Colors.grey),
                     ],
                   ),
                 ),
@@ -2301,8 +2225,8 @@ class _ProductDetailsState extends State<ProductDetails>
             // Thumbnails
             SliverToBoxAdapter(
               child: Container(
-                height: 70,
-                margin: EdgeInsets.all(16),
+                height: 70.h,
+                margin: EdgeInsets.all(16.w),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: _productImages.length,
@@ -2312,20 +2236,20 @@ class _ProductDetailsState extends State<ProductDetails>
                         setState(() => _currentImageIndex = index);
                       },
                       child: Container(
-                        width: 60,
-                        height: 60,
-                        margin: EdgeInsets.only(right: 8),
+                        width: 60.w,
+                        height: 60.w,
+                        margin: EdgeInsets.only(right: 8.w),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                           border: Border.all(
                             color: _currentImageIndex == index
                                 ? MyTheme.accent_color
                                 : Colors.grey.shade300,
-                            width: 2,
+                            width: 2.w,
                           ),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10.r),
                           child: Image.network(
                             _productImages[index],
                             fit: BoxFit.cover,
@@ -2339,7 +2263,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: 80)),
+            SliverToBoxAdapter(child: SizedBox(height: 80.h)),
           ],
         ),
         // Bottom Bar
@@ -2348,14 +2272,14 @@ class _ProductDetailsState extends State<ProductDetails>
           left: 0,
           right: 0,
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
                     color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, -2))
+                    blurRadius: 8.r,
+                    offset: Offset(0, -2.h))
               ],
             ),
             child: Row(
@@ -2364,29 +2288,29 @@ class _ProductDetailsState extends State<ProductDetails>
                   child: OutlinedButton(
                     onPressed: _showBidInputDialog,
                     style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8.r)),
                     ),
-                    child: Text('Custom'),
+                    child: Text('Custom', style: TextStyle(fontSize: 14.sp)),
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   flex: 2,
                   child: ElevatedButton(
                     onPressed: _isProcessing ? null : _placeBidNow,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8.r)),
                     ),
                     child: _isProcessing
                         ? _buildButtonLoader()
                         : Text(
                             'Bid Now - ${_formatPrice(_minNextBidNow)}',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(fontSize: 14.sp, color: Colors.white),
                           ),
                   ),
                 ),
@@ -2411,72 +2335,66 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 48.w,
+        height: 48.w,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              blurRadius: 8.r,
+              offset: Offset(0, 2.h),
             ),
           ],
         ),
         child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
+            ? SizedBox(
+                height: 20.w,
+                width: 20.w,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 2.w,
                   color: MyTheme.accent_color,
                 ),
               )
             : Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding: EdgeInsets.all(10.w),
                 child: Image.asset(
                   imagePath,
-                  height: 28,
-                  width: 28,
-                  // color: Colors.black87,
+                  height: 28.w,
+                  width: 28.w,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    // Show a fallback icon if image fails to load
-                    // Since you said bid_history uses image, we'll use appropriate icons
-                    String fallbackIcon = Icons.history.toString();
                     if (imagePath.contains('product_details')) {
                       return Icon(
                         Icons.info_outline,
-                        size: 26,
+                        size: 26.sp,
                         color: Colors.black87,
                       );
                     } else if (imagePath.contains('bid_history')) {
                       return Icon(
                         Icons.history,
-                        size: 26,
+                        size: 26.sp,
                         color: Colors.black87,
                       );
                     }
                     return Icon(
                       Icons.image_not_supported,
-                      size: 26,
+                      size: 26.sp,
                       color: Colors.black87,
                     );
                   },
-                  // Add frame builder for better loading experience
                   frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                     if (wasSynchronouslyLoaded) {
                       return child;
                     }
-                    // Show loader while image loads
                     return frame == null
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
+                        ? SizedBox(
+                            height: 24.w,
+                            width: 24.w,
                             child: Center(
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                                strokeWidth: 2.w,
                                 color: MyTheme.accent_color,
                               ),
                             ),
@@ -2502,32 +2420,32 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 48.w,
+        height: 48.w,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              blurRadius: 8.r,
+              offset: Offset(0, 2.h),
             ),
           ],
         ),
         child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
+            ? SizedBox(
+                height: 20.w,
+                width: 20.w,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 2.w,
                   color: MyTheme.accent_color,
                 ),
               )
             : Icon(
                 icon,
                 color: isActive ? MyTheme.accent_color : Colors.black87,
-                size: 22,
+                size: 22.sp,
               ),
       ),
     );
@@ -2541,16 +2459,16 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: Colors.grey.shade700),
-            SizedBox(width: 12),
+            Icon(icon, size: 18.sp, color: Colors.grey.shade700),
+            SizedBox(width: 12.w),
             Text(text,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade800)),
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade800)),
           ],
         ),
       ),
@@ -2559,49 +2477,24 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildTimerUnitBig(String value, String label) {
     return Container(
-      margin: EdgeInsets.only(right: 8),
+      margin: EdgeInsets.only(right: 8.w),
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(10.r),
             ),
             child: Text(value,
                 style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold)),
           ),
-          SizedBox(height: 2),
+          SizedBox(height: 2.h),
           Text(label,
-              style: TextStyle(color: Colors.white70, fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimerUnit(String value, String label) {
-    return Container(
-      margin: EdgeInsets.only(right: 8),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(value,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
-          ),
-          SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(color: Colors.white70, fontSize: 10)),
+              style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
         ],
       ),
     );
@@ -2609,19 +2502,19 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildInfoItem(String label, String value) {
     return Container(
-      padding: EdgeInsets.all(8),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-          SizedBox(height: 4),
+              style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600)),
+          SizedBox(height: 4.h),
           Text(value,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -2637,7 +2530,7 @@ class _ProductDetailsState extends State<ProductDetails>
     return SingleChildScrollView(
       physics: BouncingScrollPhysics(),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.w),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2645,44 +2538,44 @@ class _ProductDetailsState extends State<ProductDetails>
             Expanded(
               flex: 2,
               child: Container(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20.r),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: Offset(0, 2))
+                        blurRadius: 4.r,
+                        offset: Offset(0, 2.h))
                   ],
                 ),
                 child: Column(
                   children: [
                     Container(
-                      height: 400,
+                      height: 400.h,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                         color: Colors.grey.shade100,
                       ),
                       child: GestureDetector(
                         onTap: () => _showFullImage(
                             _productImages[_currentImageIndex]),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.r),
                           child: Image.network(
                             _productImages[_currentImageIndex],
                             fit: BoxFit.contain,
                             width: double.infinity,
                             errorBuilder: (context, error, stackTrace) =>
                                 Icon(Icons.broken_image,
-                                    size: 80, color: Colors.grey),
+                                    size: 80.sp, color: Colors.grey),
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     SizedBox(
-                      height: 80,
+                      height: 80.h,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _productImages.length,
@@ -2691,20 +2584,20 @@ class _ProductDetailsState extends State<ProductDetails>
                             onTap: () =>
                                 setState(() => _currentImageIndex = index),
                             child: Container(
-                              width: 70,
-                              height: 70,
-                              margin: EdgeInsets.only(right: 8),
+                              width: 70.w,
+                              height: 70.w,
+                              margin: EdgeInsets.only(right: 8.w),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(12.r),
                                 border: Border.all(
                                   color: _currentImageIndex == index
                                       ? MyTheme.accent_color
                                       : Colors.grey.shade300,
-                                  width: 2,
+                                  width: 2.w,
                                 ),
                               ),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10.r),
                                 child: Image.network(
                                   _productImages[index],
                                   fit: BoxFit.cover,
@@ -2722,46 +2615,45 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            SizedBox(width: 16),
+            SizedBox(width: 16.w),
             // Column 2: Chat Section
             Expanded(
               flex: 2,
               child: Container(
-                height: MediaQuery.of(context).size.height - 120,
+                height: MediaQuery.of(context).size.height - 120.h,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(color: Colors.grey.shade200, width: 1.w),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: Offset(0, 2))
+                        blurRadius: 4.r,
+                        offset: Offset(0, 2.h))
                   ],
                 ),
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
-                        border:
-                            Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                        border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Comments',
                               style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                                  fontSize: 16.sp, fontWeight: FontWeight.bold)),
                           Text('Ask questions about this product',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey)),
+                                  fontSize: 12.sp, color: Colors.grey)),
                         ],
                       ),
                     ),
                     Expanded(
                       child: ListView.builder(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.w),
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
@@ -2770,7 +2662,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               comment.userId == int.tryParse(userIdStr);
 
                           return Padding(
-                            padding: EdgeInsets.only(bottom: 16),
+                            padding: EdgeInsets.only(bottom: 16.h),
                             child: Row(
                               mainAxisAlignment: isOwn
                                   ? MainAxisAlignment.end
@@ -2779,33 +2671,33 @@ class _ProductDetailsState extends State<ProductDetails>
                               children: [
                                 if (!isOwn) ...[
                                   CircleAvatar(
-                                    radius: 16,
+                                    radius: 16.w,
                                     backgroundImage: NetworkImage(
                                         comment.userAvatar ?? ''),
                                     child: comment.userAvatar == null
-                                        ? Icon(Icons.person, size: 16,
+                                        ? Icon(Icons.person, size: 16.sp,
                                             color: Colors.grey)
                                         : null,
                                   ),
-                                  SizedBox(width: 8),
+                                  SizedBox(width: 8.w),
                                 ],
                                 Flexible(
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 8),
+                                        horizontal: 12.w, vertical: 8.h),
                                     decoration: BoxDecoration(
                                       color: isOwn
                                           ? MyTheme.accent_color
                                           : Colors.grey.shade100,
                                       borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(12),
-                                        topRight: Radius.circular(12),
+                                        topLeft: Radius.circular(12.r),
+                                        topRight: Radius.circular(12.r),
                                         bottomLeft: isOwn
-                                            ? Radius.circular(12)
-                                            : Radius.circular(4),
+                                            ? Radius.circular(12.r)
+                                            : Radius.circular(4.r),
                                         bottomRight: isOwn
-                                            ? Radius.circular(4)
-                                            : Radius.circular(12),
+                                            ? Radius.circular(4.r)
+                                            : Radius.circular(12.r),
                                       ),
                                     ),
                                     child: Column(
@@ -2815,7 +2707,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         if (!isOwn)
                                           Text(comment.userName ?? 'User',
                                               style: TextStyle(
-                                                  fontSize: 11,
+                                                  fontSize: 11.sp,
                                                   fontWeight: FontWeight.w600,
                                                   color: Colors.grey
                                                       .shade600)),
@@ -2824,13 +2716,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                                 color: isOwn
                                                     ? Colors.white
                                                     : Colors.black87,
-                                                fontSize: 13)),
+                                                fontSize: 13.sp)),
                                         Align(
                                           alignment: Alignment.bottomRight,
                                           child: Text(
                                             _formatTime(comment.createdAt),
                                             style: TextStyle(
-                                                fontSize: 9,
+                                                fontSize: 9.sp,
                                                 color: isOwn
                                                     ? Colors.white70
                                                     : Colors.grey),
@@ -2840,7 +2732,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ),
                                 ),
-                                if (isOwn) SizedBox(width: 8),
+                                if (isOwn) SizedBox(width: 8.w),
                               ],
                             ),
                           );
@@ -2848,10 +2740,9 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
-                        border:
-                            Border(top: BorderSide(color: Colors.grey.shade200)),
+                        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                       ),
                       child: Row(
                         children: [
@@ -2859,47 +2750,47 @@ class _ProductDetailsState extends State<ProductDetails>
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(24.r),
                                 border: Border.all(
-                                    color: Colors.grey.shade200),
+                                    color: Colors.grey.shade200, width: 1.w),
                               ),
                               child: TextField(
                                 controller: _commentController,
                                 maxLines: null,
-                                style: TextStyle(fontSize: 14),
+                                style: TextStyle(fontSize: 14.sp),
                                 decoration: InputDecoration(
                                   hintText: 'Type a message...',
                                   hintStyle:
-                                      TextStyle(fontSize: 14, color: Colors.grey),
+                                      TextStyle(fontSize: 14.sp, color: Colors.grey),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
+                                      horizontal: 16.w, vertical: 12.h),
                                 ),
                                 onSubmitted: (value) => _sendComment(),
                               ),
                             ),
                           ),
-                          SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           GestureDetector(
                             onTap: _isProcessing ? null : _sendComment,
                             child: Container(
-                              width: 44,
-                              height: 44,
+                              width: 44.w,
+                              height: 44.w,
                               decoration: BoxDecoration(
                                 color: MyTheme.accent_color,
                                 shape: BoxShape.circle,
                               ),
                               child: _isProcessing
-                                  ? const SizedBox(
-                                      height: 16,
-                                      width: 16,
+                                  ? SizedBox(
+                                      height: 16.w,
+                                      width: 16.w,
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2,
+                                        strokeWidth: 2.w,
                                         color: Colors.white,
                                       ),
                                     )
                                   : Icon(Icons.send,
-                                      color: Colors.white, size: 20),
+                                      color: Colors.white, size: 20.sp),
                             ),
                           ),
                         ],
@@ -2909,25 +2800,25 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            SizedBox(width: 16),
+            SizedBox(width: 16.w),
             // Column 3: Bidding & Details
             Expanded(
               flex: 1,
               child: Container(
-                width: 320,
+                width: 320.w,
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
                         boxShadow: [
                           BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: Offset(0, 2))
+                              blurRadius: 4.r,
+                              offset: Offset(0, 2.h))
                         ],
                       ),
                       child: Column(
@@ -2937,24 +2828,24 @@ class _ProductDetailsState extends State<ProductDetails>
                             onTap: _openTitleModal,
                             child: Text(_product?.name ?? '',
                                 style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 18.sp,
                                     fontWeight: FontWeight.bold)),
                           ),
-                          SizedBox(height: 8),
+                          SizedBox(height: 8.h),
                           GestureDetector(
                             onTap: _openTitleModal,
                             child: Text(
                               _product?.description
                                       ?.replaceAll(RegExp(r'<[^>]*>'), '') ??
                                   '',
-                              style: TextStyle(fontSize: 13, color: Colors.grey),
+                              style: TextStyle(fontSize: 13.sp, color: Colors.grey),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          SizedBox(height: 16),
+                          SizedBox(height: 16.h),
                           Wrap(
-                            spacing: 8,
+                            spacing: 8.w,
                             children: [
                               _buildDesktopIconButton(
                                 icon: Icons.share,
@@ -2980,15 +2871,15 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                           if (_showDesktopMoreMenu)
                             Container(
-                              margin: EdgeInsets.only(top: 8),
+                              margin: EdgeInsets.only(top: 8.h),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(12.r),
                                 boxShadow: [
                                   BoxShadow(
                                       color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 2))
+                                      blurRadius: 8.r,
+                                      offset: Offset(0, 2.h))
                                 ],
                               ),
                               child: Column(
@@ -3024,13 +2915,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ],
                               ),
                             ),
-                          SizedBox(height: 16),
+                          SizedBox(height: 16.h),
                           // Timer & Price
                           Container(
-                            padding: EdgeInsets.all(12),
+                            padding: EdgeInsets.all(12.w),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
                             child: Column(
                               children: [
@@ -3040,7 +2931,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   children: [
                                     Text('TIME LEFT',
                                         style: TextStyle(
-                                            fontSize: 10,
+                                            fontSize: 10.sp,
                                             color: Colors.grey,
                                             fontWeight: FontWeight.w500)),
                                     Row(
@@ -3057,17 +2948,17 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 12),
+                                SizedBox(height: 12.h),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text('Current Bid',
                                         style: TextStyle(
-                                            fontSize: 11, color: Colors.grey)),
+                                            fontSize: 11.sp, color: Colors.grey)),
                                     Text(_formatPrice(_currentHighestBid),
                                         style: TextStyle(
-                                            fontSize: 24,
+                                            fontSize: 24.sp,
                                             fontWeight: FontWeight.bold,
                                             color: MyTheme.accent_color)),
                                   ],
@@ -3078,19 +2969,19 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     // Bid Information Card
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
                         boxShadow: [
                           BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: Offset(0, 2))
+                              blurRadius: 4.r,
+                              offset: Offset(0, 2.h))
                         ],
                       ),
                       child: Column(
@@ -3098,14 +2989,14 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           Text('Bid Information',
                               style: TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 12),
+                                  fontSize: 14.sp, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 12.h),
                           GridView.count(
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12.w,
+                            mainAxisSpacing: 12.h,
                             childAspectRatio: 2.5,
                             children: [
                               _buildDesktopInfoItem('Starting bid',
@@ -3124,19 +3015,19 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     // Custom Bid Input
                     Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
                         boxShadow: [
                           BoxShadow(
                               color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: Offset(0, 2))
+                              blurRadius: 4.r,
+                              offset: Offset(0, 2.h))
                         ],
                       ),
                       child: Column(
@@ -3144,8 +3035,8 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           Text(
                               'Enter your bid amount (1 Bid = $_pointPerBidCustom)',
-                              style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          SizedBox(height: 8),
+                              style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                          SizedBox(height: 8.h),
                           Row(
                             children: [
                               Expanded(
@@ -3154,41 +3045,42 @@ class _ProductDetailsState extends State<ProductDetails>
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     hintText: 'Enter amount',
+                                    hintStyle: TextStyle(fontSize: 14.sp),
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(8.r),
                                     ),
                                     contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 12),
+                                        horizontal: 12.w, vertical: 12.h),
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 8),
+                              SizedBox(width: 8.w),
                               ElevatedButton(
                                 onPressed: _isProcessing ? null : _submitCustomBid,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: MyTheme.accent_color,
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
+                                      horizontal: 16.w, vertical: 12.h),
                                 ),
                                 child: _isProcessing
                                     ? _buildButtonLoader()
                                     : Text('Place Bid',
-                                        style: TextStyle(color: Colors.white)),
+                                        style: TextStyle(fontSize: 14.sp, color: Colors.white)),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     // Bid Now Button
                     ElevatedButton(
                       onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8.r)),
                         minimumSize: Size(double.infinity, 0),
                       ),
                       child: _isProcessing
@@ -3196,24 +3088,26 @@ class _ProductDetailsState extends State<ProductDetails>
                           : Text(
                               'Bid Now - ${_formatPrice(_minNextBidNow)}',
                               style: TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.bold),
+                                  fontSize: 14.sp,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
                             ),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     // Reviews Section
                     GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16.w),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(16.r),
+                          border: Border.all(color: Colors.grey.shade200, width: 1.w),
                           boxShadow: [
                             BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: Offset(0, 2))
+                                blurRadius: 4.r,
+                                offset: Offset(0, 2.h))
                           ],
                         ),
                         child: Row(
@@ -3227,24 +3121,24 @@ class _ProductDetailsState extends State<ProductDetails>
                                       index < _rating.round()
                                           ? Icons.star
                                           : Icons.star_border,
-                                      size: 14,
+                                      size: 14.sp,
                                       color: Colors.amber,
                                     );
                                   }),
                                 ),
-                                SizedBox(width: 8),
+                                SizedBox(width: 8.w),
                                 Text(_rating.toStringAsFixed(1),
                                     style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 16.sp,
                                         fontWeight: FontWeight.bold)),
-                                SizedBox(width: 4),
+                                SizedBox(width: 4.w),
                                 Text('($_reviewsCount reviews)',
                                     style: TextStyle(
-                                        fontSize: 12, color: Colors.grey)),
+                                        fontSize: 12.sp, color: Colors.grey)),
                               ],
                             ),
                             Icon(Icons.arrow_forward_ios,
-                                size: 14, color: Colors.grey),
+                                size: 14.sp, color: Colors.grey),
                           ],
                         ),
                       ),
@@ -3272,22 +3166,22 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
         decoration: BoxDecoration(
           color: isActive ? MyTheme.accent_color : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(color: Colors.grey.shade200, width: 1.w),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
-                size: 14,
+                size: 14.sp,
                 color: isActive ? Colors.white : Colors.grey.shade600),
-            SizedBox(width: 4),
+            SizedBox(width: 4.w),
             Text(label,
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: isActive ? Colors.white : Colors.grey.shade600)),
           ],
         ),
@@ -3303,16 +3197,16 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: Colors.grey.shade600),
-            SizedBox(width: 12),
+            Icon(icon, size: 16.sp, color: Colors.grey.shade600),
+            SizedBox(width: 12.w),
             Text(text,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+                style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade800)),
           ],
         ),
       ),
@@ -3321,24 +3215,24 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildDesktopTimerUnit(String value, String label) {
     return Container(
-      margin: EdgeInsets.only(left: 8),
+      margin: EdgeInsets.only(left: 8.w),
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
             decoration: BoxDecoration(
               color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(6.r),
             ),
             child: Text(value,
                 style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.bold)),
           ),
-          SizedBox(height: 2),
+          SizedBox(height: 2.h),
           Text(label,
-              style: TextStyle(fontSize: 9, color: Colors.grey)),
+              style: TextStyle(fontSize: 9.sp, color: Colors.grey)),
         ],
       ),
     );
@@ -3346,18 +3240,18 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildDesktopInfoItem(String label, String value) {
     return Container(
-      padding: EdgeInsets.all(8),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
       ),
       child: Column(
         children: [
           Text(label,
-              style: TextStyle(fontSize: 10, color: Colors.grey)),
-          SizedBox(height: 4),
+              style: TextStyle(fontSize: 10.sp, color: Colors.grey)),
+          SizedBox(height: 4.h),
           Text(value,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
         ],
       ),
     );

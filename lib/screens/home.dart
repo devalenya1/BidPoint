@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -125,7 +126,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         child: SafeArea(
           child: Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(50),
+              preferredSize: Size.fromHeight(60.h),
               child: buildAppBar(),
             ),
             body: ListenableBuilder(
@@ -148,7 +149,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverList(
                         delegate: SliverChildListDelegate([
                           buildHomeCarouselSlider(),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8.h),
                         ]),
                       ),
                       
@@ -156,13 +157,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverList(
                         delegate: SliverChildListDelegate([
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(18.0, 12.0, 18.0, 8.0),
+                            padding: EdgeInsets.fromLTRB(18.w, 12.h, 18.w, 8.h),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   AppLocalizations.of(context)!.featured_categories_ucf,
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
                                 ),
                               ],
                             ),
@@ -171,13 +172,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       ),
                       SliverToBoxAdapter(
                         child: SizedBox(
-                          height: 50,
+                          height: 50.h,
                           child: buildHomeFeaturedCategories(),
                         ),
                       ),
                       
                       // Extra space between Featured Categories and Hot Auction
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(child: SizedBox(height: 16.h)),
                       
                       // Hot Auctions Section
                       SliverToBoxAdapter(
@@ -195,7 +196,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       ),
 
                       
-                      const SliverToBoxAdapter(child: SizedBox(height: 30)),
+                      SliverToBoxAdapter(child: SizedBox(height: 30.h)),
                     ],
                   ),
                 );
@@ -214,13 +215,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 AppLocalizations.of(context)!.hot_auctions_ucf,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
                 onTap: () {
@@ -229,23 +230,29 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   }));
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3)),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                  child: Text(
+                    'View All',
+                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         if (homeData.hotAuctionProductList.isEmpty)
           Container(
-            height: 50,
+            height: 50.h,
             child: Center(
-              child: Text('No hot auctions available'),
+              child: Text(
+                'No hot auctions available',
+                style: TextStyle(fontSize: 14.sp),
+              ),
             ),
           )
         else
@@ -270,7 +277,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               );
             },
           ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
       ],
     );
   }
@@ -282,13 +289,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 AppLocalizations.of(context)!.upcoming_auctions_ucf,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
                 onTap: () {
@@ -297,23 +304,29 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   }));
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3)),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                  child: Text(
+                    'View All',
+                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         if (homeData.upcomingProductList.isEmpty)
           Container(
-            height: 50,
+            height: 50.h,
             child: Center(
-              child: Text('No upcoming auctions'),
+              child: Text(
+                'No upcoming auctions',
+                style: TextStyle(fontSize: 14.sp),
+              ),
             ),
           )
         else
@@ -343,7 +356,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               );
             },
           ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
       ],
     );
   }
@@ -362,34 +375,34 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         if (constraints.maxWidth >= 1024) {
           // Desktop: Show 6 items
           itemsToShow = 6;
-          cardWidth = (constraints.maxWidth - 16 * 7) / 6;
+          cardWidth = (constraints.maxWidth - 16.w * 7) / 6;
         } else if (constraints.maxWidth >= 768) {
           // Tablet: Show 4 items
           itemsToShow = 4;
-          cardWidth = (constraints.maxWidth - 16 * 5) / 4;
+          cardWidth = (constraints.maxWidth - 16.w * 5) / 4;
         } else {
           // Mobile: Show 2 items
           itemsToShow = 2;
-          cardWidth = (constraints.maxWidth - 16 * 3) / 2;
+          cardWidth = (constraints.maxWidth - 16.w * 3) / 2;
         }
         
-        cardWidth = cardWidth.clamp(120.0, double.infinity);
+        cardWidth = cardWidth.clamp(120.w, double.infinity);
         
         // Show only up to itemsToShow products
         final displayProducts = products.take(itemsToShow).toList();
         
         // Use Row with Expanded or flexible children - NO SCROLLING
         return SizedBox(
-          height: 350,
+          height: 350.h,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Row(
               children: displayProducts.asMap().entries.map((entry) {
                 int index = entry.key;
                 var product = entry.value;
                 return Container(
                   width: cardWidth,
-                  margin: EdgeInsets.only(right: index < displayProducts.length - 1 ? 12 : 0),
+                  margin: EdgeInsets.only(right: index < displayProducts.length - 1 ? 12.w : 0),
                   child: cardBuilder(context, product),
                 );
               }).toList(),
@@ -407,13 +420,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 AppLocalizations.of(context)!.ending_soon_ucf,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
               ),
               GestureDetector(
                 onTap: () {
@@ -422,28 +435,34 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   }));
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3)),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: const Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF80818B))),
+                  child: Text(
+                    'View All',
+                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         if (homeData.endingSoonProductList.isEmpty)
           Container(
-            height: 50,
+            height: 50.h,
             child: Center(
-              child: Text('No ending soon auctions'),
+              child: Text(
+                'No ending soon auctions',
+                style: TextStyle(fontSize: 14.sp),
+              ),
             ),
           )
         else
           _buildEndingSoonGrid(),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
       ],
     );
   }
@@ -485,7 +504,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         print('Screen width: ${constraints.maxWidth}, Grids to show: $gridsToShow');
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: List.generate(gridsToShow, (gridIndex) {
@@ -518,7 +537,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               children: [
                 if (product1 != null)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: 8.h),
                     child: EndingSoonCard(
                       id: product1.id ?? 0,
                       slug: product1.slug ?? '',
@@ -554,7 +573,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
           // Right side - 1/3 width
           Expanded(
             flex: 1,
@@ -589,17 +608,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Widget buildHomeFeaturedCategories() {
     if (homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
       return ShimmerHelper().buildHorizontalGridShimmerWithAxisCount(
-        crossAxisSpacing: 12.0,
+        crossAxisSpacing: 12.w,
         mainAxisSpacing: 0,
         item_count: 6,
-        mainAxisExtent: 160.0,
+        mainAxisExtent: 160.w,
         controller: homeData.featuredCategoryScrollController,
       );
     } else if (homeData.featuredCategoryList.isNotEmpty) {
       return SizedBox(
-        height: 50,
+        height: 50.h,
         child: ListView.builder(
-          padding: const EdgeInsets.only(left: 16, right: 16),
+          padding: EdgeInsets.only(left: 16.w, right: 16.w),
           scrollDirection: Axis.horizontal,
           controller: homeData.featuredCategoryScrollController,
           physics: const BouncingScrollPhysics(),
@@ -616,39 +635,39 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 }
               },
               child: Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 8),
+                width: 160.w,
+                margin: EdgeInsets.only(right: 8.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color.fromRGBO(237, 242, 247, 1), width: 1),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: const Color.fromRGBO(237, 242, 247, 1), width: 1.w),
                 ),
                 child: Row(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+                      borderRadius: BorderRadius.horizontal(left: Radius.circular(8.r)),
                       child: FadeInImage.assetNetwork(
                         placeholder: 'assets/placeholder.png',
                         image: category.banner ?? '',
                         fit: BoxFit.cover,
-                        width: 50,
-                        height: 50,
+                        width: 50.w,
+                        height: 50.h,
                         imageErrorBuilder: (context, error, stackTrace) {
                           return Container(
-                            width: 50,
-                            height: 50,
+                            width: 50.w,
+                            height: 50.h,
                             color: const Color.fromRGBO(245, 247, 250, 1),
-                            child: const Icon(Icons.category, size: 25, color: Color.fromRGBO(107, 115, 119, 1)),
+                            child: Icon(Icons.category, size: 25.sp, color: const Color.fromRGBO(107, 115, 119, 1)),
                           );
                         },
                       ),
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w),
                         child: Text(
                           category.name ?? '',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color.fromRGBO(0, 0, 0, 1)),
+                          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color.fromRGBO(0, 0, 0, 1)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -663,29 +682,29 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       );
     } else if (!homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
       return Container(
-        height: 60,
+        height: 60.h,
         child: Center(
           child: Text(
             AppLocalizations.of(context)!.no_category_found,
-            style: TextStyle(color: MyTheme.font_grey),
+            style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
           ),
         ),
       );
     } else {
-      return const SizedBox(height: 60);
+      return SizedBox(height: 60.h);
     }
   }
 
   Widget buildHomeCarouselSlider() {
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.only(left: 18, right: 18, top: 0, bottom: 20),
-        child: ShimmerHelper().buildBasicShimmer(height: 200), // Increased from 120 to 200
+        padding: EdgeInsets.only(left: 18.w, right: 18.w, top: 0, bottom: 20.h),
+        child: ShimmerHelper().buildBasicShimmer(height: 200.h),
       );
     } else if (homeData.carouselImageList.isNotEmpty) {
       return CarouselSlider(
         options: CarouselOptions(
-          aspectRatio: 338 / 200, // Changed from 338/140 to 338/200
+          aspectRatio: 338 / 200,
           viewportFraction: 1,
           initialPage: 0,
           enableInfiniteScroll: true,
@@ -704,12 +723,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           return Builder(
             builder: (BuildContext context) {
               return Padding(
-                padding: const EdgeInsets.only(left: 18, right: 18, top: 0, bottom: 20),
+                padding: EdgeInsets.only(left: 18.w, right: 18.w, top: 0, bottom: 20.h),
                 child: Stack(
                   children: <Widget>[
                     Container(
                       width: double.infinity,
-                      height: 200, // Increased from 140 to 200
+                      height: 200.h,
                       child: InkWell(
                         onTap: () {
                           if (i.url != null) {
@@ -720,10 +739,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           }
                         },
                         child: i.photo != null
-                            ? AIZImage.radiusImage(i.photo!, 6)
+                            ? AIZImage.radiusImage(i.photo!, 6.r)
                             : Container(
                                 color: Colors.grey[300],
-                                child: const Center(child: Icon(Icons.image, size: 50)),
+                                child: Center(child: Icon(Icons.image, size: 50.sp)),
                               ),
                       ),
                     ),
@@ -734,9 +753,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         children: homeData.carouselImageList.map((url) {
                           int index = homeData.carouselImageList.indexOf(url);
                           return Container(
-                            width: 7.0,
-                            height: 7.0,
-                            margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+                            width: 7.w,
+                            height: 7.h,
+                            margin: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: homeData.current_slider == index ? MyTheme.white : const Color.fromRGBO(112, 112, 112, .3),
@@ -754,16 +773,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       );
     } else if (!homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Container(
-        height: 100,
+        height: 100.h,
         child: Center(
           child: Text(
             AppLocalizations.of(context)!.no_carousel_image_found,
-            style: TextStyle(color: MyTheme.font_grey),
+            style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
           ),
         ),
       );
     } else {
-      return const SizedBox(height: 100);
+      return SizedBox(height: 100.h);
     }
   }
 
@@ -773,15 +792,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       backgroundColor: Colors.white,
       centerTitle: false,
       elevation: 0,
+      toolbarHeight: 60.h,
       titleSpacing: 0,
       title: Container(
-        padding: const EdgeInsets.only(left: 16, right: 16),
+        padding: EdgeInsets.only(left: 16.w, right: 16.w),
         child: Row(
           children: [
             Expanded(child: buildHomeSearchBox()),
             // Notification Icon
             Padding(
-              padding: const EdgeInsets.only(left: 12),
+              padding: EdgeInsets.only(left: 12.w),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {
@@ -794,30 +814,30 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   }
                 },
                 child: Container(
-                  width: 35,
-                  height: 35,
-                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                  width: 35.w,
+                  height: 35.w,
+                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
                   child: Stack(
                     children: [
                       Center(
                         child: Image.asset(
                           'assets/notification.png',
-                          height: 22,
-                          width: 22,
+                          height: 22.w,
+                          width: 22.w,
                           color: MyTheme.dark_grey,
                         ),
                       ),
                       if (_showNotificationBadge)
                         Positioned(
-                          top: 2,
-                          right: 2,
+                          top: 2.h,
+                          right: 2.w,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10)),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10.r)),
+                            constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.h),
                             child: Text(
                               _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
-                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: TextStyle(fontSize: 9.sp, fontWeight: FontWeight.bold, color: Colors.white),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -829,7 +849,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
             // Chat Icon
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: EdgeInsets.only(left: 8.w),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {
@@ -839,23 +859,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   }
                 },
                 child: Container(
-                  width: 35,
-                  height: 35,
-                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                  width: 35.w,
+                  height: 35.w,
+                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
                   child: Stack(
                     children: [
-                      Center(child: Image.asset('assets/message.png', height: 22, width: 22)),
+                      Center(child: Image.asset('assets/message.png', height: 22.w, width: 22.w)),
                       if (_showMessageBadge)
                         Positioned(
-                          top: 2,
-                          right: 2,
+                          top: 2.h,
+                          right: 2.w,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10)),
-                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10.r)),
+                            constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.h),
                             child: Text(
                               _unreadMessageCount > 99 ? '99+' : '$_unreadMessageCount',
-                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: TextStyle(fontSize: 9.sp, fontWeight: FontWeight.bold, color: Colors.white),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -867,7 +887,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             ),
             // Affiliate Icon
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: EdgeInsets.only(left: 8.w),
               child: GestureDetector(
                 onTap: () {
                   if (is_logged_in.$) {
@@ -877,11 +897,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   }
                 },
                 child: Container(
-                  width: 35,
-                  height: 35,
-                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8)),
+                  width: 35.w,
+                  height: 35.w,
+                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
                   child: Center(
-                    child: Image.asset('assets/affiliate.png', height: 22, width: 22, color: MyTheme.dark_grey),
+                    child: Image.asset('assets/affiliate.png', height: 22.w, width: 22.w, color: MyTheme.dark_grey),
                   ),
                 ),
               ),
@@ -898,19 +918,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         Navigator.push(context, MaterialPageRoute(builder: (context) => Filter()));
       },
       child: Container(
-        height: 40,
+        height: 40.h,
         decoration: BoxDecorations.buildBoxDecoration_1(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 AppLocalizations.of(context)!.search_anything,
-                style: TextStyle(fontSize: 13.0, color: MyTheme.textfield_grey),
+                style: TextStyle(fontSize: 13.sp, color: MyTheme.textfield_grey),
               ),
-              Image.asset('assets/search.png', height: 16, color: MyTheme.dark_grey),
+              Image.asset('assets/search.png', height: 16.w, color: MyTheme.dark_grey),
             ],
           ),
         ),
