@@ -765,19 +765,31 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                         child: Icon(
                                           Icons.broken_image,
                                           size: 50.sp,
-                                          color: Colors.grey[600],
+                                          // color: Colors.grey[600],
+                                          colors: [
+                                            Colors.black.withOpacity(0.4),
+                                            Colors.transparent,
+                                          ],
                                         ),
                                       ),
                                     );
                                   },
                                 )
                               : Container(
-                                  color: Colors.grey[300],
+                                  // color: Colors.grey[300],
+                                  colors: [
+                                    Colors.black.withOpacity(0.4),
+                                    Colors.transparent,
+                                  ],
                                   child: Center(
                                     child: Icon(
                                       Icons.image,
                                       size: 50.sp,
-                                      color: Colors.grey[600],
+                                      // color: Colors.grey[600],
+                                      colors: [
+                                        Colors.black.withOpacity(0.4),
+                                        Colors.transparent,
+                                      ],
                                     ),
                                   ),
                                 ),

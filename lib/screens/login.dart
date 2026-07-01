@@ -30,7 +30,6 @@ import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:toast/toast.dart';
 import 'package:twitter_login/twitter_login.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../custom/loading.dart';
 import '../repositories/address_repository.dart';
@@ -57,9 +56,6 @@ class _LoginState extends State<Login> {
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
 
-  // ✅ Add this to track if redirect has been performed
-  bool _hasRedirected = false;
-
   @override
   void initState() {
     //on Splash Screen hide statusbar
@@ -67,22 +63,6 @@ class _LoginState extends State<Login> {
         overlays: [SystemUiOverlay.bottom]);
     super.initState();
     fetch_country();
-    
-    // ✅ Check if user is already logged in
-    _checkIfLoggedIn();
-  }
-
-  // ✅ Check if user is already logged in and redirect to home
-  void _checkIfLoggedIn() {
-    if (is_logged_in.$ == true && !_hasRedirected) {
-      _hasRedirected = true;
-      // Use WidgetsBinding to ensure the redirect happens after the build is complete
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          context.go("/");
-        }
-      });
-    }
   }
 
   fetch_country() async {
@@ -163,8 +143,9 @@ class _LoginState extends State<Login> {
         }
       }
 
-      // ✅ Use pushReplacement to remove login from stack
-      context.pushReplacement("/");
+      // ✅ MATCHES ORIGINAL: Use context.push("/") 
+      // This pushes the home page onto the navigation stack
+      context.push("/");
     }
   }
 
@@ -191,8 +172,10 @@ class _LoginState extends State<Login> {
               gravity: Toast.center, duration: Toast.lengthLong);
 
           await AuthHelper().setUserData(loginResponse);
-          // ✅ Use pushReplacement to remove login from stack
-          context.pushReplacement("/");
+          // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return const Main();
+          }));
           FacebookAuth.instance.logOut();
         }
       } else {
@@ -230,8 +213,10 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ Use pushReplacement to remove login from stack
-        context.pushReplacement("/");
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
       }
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
@@ -266,8 +251,10 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ Use pushReplacement to remove login from stack
-        context.pushReplacement("/");
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
       }
     } on Exception catch (e) {
       print("error is ....... $e");
@@ -321,8 +308,10 @@ class _LoginState extends State<Login> {
         ToastComponent.showDialog(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ Use pushReplacement to remove login from stack
-        context.pushReplacement("/");
+        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return const Main();
+        }));
       }
     } on Exception catch (e) {
       print(e);
