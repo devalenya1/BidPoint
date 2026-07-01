@@ -766,10 +766,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                           Icons.broken_image,
                                           size: 50.sp,
                                           // color: Colors.grey[600],
-                                          colors: [
-                                            Colors.black.withOpacity(0.4),
-                                            Colors.transparent,
-                                          ],
+                                          color: Colors.transparent,
                                         ),
                                       ),
                                     );
@@ -777,19 +774,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                 )
                               : Container(
                                   // color: Colors.grey[300],
-                                  colors: [
-                                    Colors.black.withOpacity(0.4),
-                                    Colors.transparent,
-                                  ],
+                                  color: Colors.transparent,
                                   child: Center(
                                     child: Icon(
                                       Icons.image,
                                       size: 50.sp,
                                       // color: Colors.grey[600],
-                                      colors: [
-                                        Colors.black.withOpacity(0.4),
-                                        Colors.transparent,
-                                      ],
+                                      color: Colors.transparent,
                                     ),
                                   ),
                                 ),
