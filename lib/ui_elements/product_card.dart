@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
 class ProductCard extends StatefulWidget {
@@ -59,7 +60,6 @@ class _ProductCardState extends State<ProductCard> {
   @override
   void initState() {
     super.initState();
-    // Fixed: Always start timer if auctionEndDate exists, regardless of isAuctionActive
     if (widget.auctionEndDate != null) {
       _startTimer();
     }
@@ -88,7 +88,6 @@ class _ProductCardState extends State<ProductCard> {
       return;
     }
 
-    // Handle "Ended" string case
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
         setState(() {
@@ -99,7 +98,6 @@ class _ProductCardState extends State<ProductCard> {
       return;
     }
 
-    // Handle "Upcoming" string case
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
       if (mounted) {
         setState(() {
@@ -118,7 +116,6 @@ class _ProductCardState extends State<ProductCard> {
       return;
     }
 
-    // Check if endDate is valid (greater than 0)
     if (endDate <= 0) {
       if (mounted) {
         setState(() {
@@ -165,31 +162,26 @@ class _ProductCardState extends State<ProductCard> {
     }
   }
 
-  // ============ PRICE HELPERS (Same pattern as Product model) ============
+  // ============ PRICE HELPERS ============
   
-  /// Parse a price string to double (handles both "10.24" and "$10.24")
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
     if (price is int) return price.toDouble();
     if (price is String) {
-      // Remove any currency symbols or non-numeric characters except dot
       final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
       return double.tryParse(cleaned) ?? 0.0;
     }
     return 0.0;
   }
   
-  /// Format price with currency symbol
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
     final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
     return '$symbol${doubleValue.toStringAsFixed(2)}';
   }
 
-  /// Get the display bid value as double
   double _getDisplayBid() {
-    // Try highest bid first, then starting bid
     if (widget.currentBid != null) {
       final parsed = _parsePrice(widget.currentBid);
       if (parsed > 0) return parsed;
@@ -213,19 +205,18 @@ class _ProductCardState extends State<ProductCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    // Fixed: Show timer for all statuses except "No Timer"
-    // Show "Upcoming" in orange, "Ended" in red, timer in green
     final showTimer = _timeLeft != "No Timer";
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Fixed: Changed to white like other cards
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
+        // ✅ Changed to #F2F2F3
+        color: const Color(0xFFF2F2F3),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
-            blurRadius: 3,
+            blurRadius: 3.r,
             offset: const Offset(0, 1),
           ),
         ],
@@ -241,7 +232,7 @@ class _ProductCardState extends State<ProductCard> {
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(10.r)),
                     child: widget.image != null && widget.image!.isNotEmpty
                         ? Image.network(
                             widget.image!,
@@ -249,35 +240,34 @@ class _ProductCardState extends State<ProductCard> {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey[200],
-                                child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                                child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
                               );
                             },
                           )
                         : Container(
                             color: Colors.grey[200],
-                            child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                            child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
                           ),
                   ),
                 ),
               ),
-              // Fixed: Timer shows for all statuses with appropriate colors
               if (showTimer)
                 Positioned(
-                  top: 6,
-                  right: 6,
+                  top: 6.h,
+                  right: 6.w,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                     decoration: BoxDecoration(
                       color: _timeLeft == "Ended" 
                           ? Colors.red 
                           : (_timeLeft == "Upcoming" 
                               ? Colors.orange 
                               : const Color(0xFF009572)),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(30.r),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
+                          blurRadius: 4.r,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -291,14 +281,14 @@ class _ProductCardState extends State<ProductCard> {
                               : (_timeLeft == "Upcoming"
                                   ? Icons.schedule
                                   : Icons.access_time),
-                          size: 10, 
+                          size: 10.sp, 
                           color: Colors.white,
                         ),
-                        const SizedBox(width: 3),
+                        SizedBox(width: 3.w),
                         Text(
                           _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
+                          style: TextStyle(
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -312,18 +302,17 @@ class _ProductCardState extends State<ProductCard> {
           
           // Product Details
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name - Larger
+                // Product Name
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Text(
-                    // widget.slug,
                     widget.name ?? 'Product',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -331,68 +320,68 @@ class _ProductCardState extends State<ProductCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 
-                // Description - Below title
+                // Description
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Text(
                     widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF8F9AA7),
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: const Color(0xFF8F9AA7),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
                 
                 // Current Bid and Points Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Current Bid - Larger
+                    // Current Bid
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           _timeLeft == "Upcoming" ? 'Starting Bid' : 'Current Bid',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            color: Color(0xFF80818B),
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            color: const Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
                         ),
                       ],
                     ),
-                    // Points Badge with USD icon
+                    // Points Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(30.r),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time,
-                            size: 12,
-                            color: Color(0xFF0092AC),
+                            size: 12.sp,
+                            color: const Color(0xFF0092AC),
                           ),
-                          const SizedBox(width: 2),
+                          SizedBox(width: 2.w),
                           Text(
                             '1 Bid = ${widget.pointPerBid ?? 0}',
                             style: TextStyle(
-                              fontSize: 9,
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w600,
                               color: MyTheme.accent_color,
                             ),
@@ -402,34 +391,34 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 
-                // View Product Button - Rectangle with border-radius 7px
+                // View Product Button
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Container(
                     width: double.infinity,
-                    height: 40,
+                    height: 40.h,
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(7),
+                      borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _timeLeft == "Upcoming" ? 'View Product' : 'View Product',
-                            style: const TextStyle(
-                              fontSize: 11,
+                            'View Product',
+                            style: TextStyle(
+                              fontSize: 11.sp,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
+                          SizedBox(width: 4.w),
+                          Icon(
                             Icons.arrow_forward,
-                            size: 12,
+                            size: 12.sp,
                             color: Colors.white,
                           ),
                         ],

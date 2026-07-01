@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
 class EndingSoonCard extends StatefulWidget {
@@ -52,7 +53,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   @override
   void initState() {
     super.initState();
-    // ✅ Timer starts if auctionEndDate exists
     if (widget.auctionEndDate != null) {
       _startTimer();
     }
@@ -81,7 +81,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       return;
     }
 
-    // Handle "Ended" string case
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
         setState(() {
@@ -92,7 +91,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       return;
     }
 
-    // Handle "Upcoming" string case
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
       if (mounted) {
         setState(() {
@@ -249,7 +247,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
         ToastComponent.showDialog(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
         );
-        // ✅ Navigate to correct product using widget.slug
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -269,7 +266,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     }
   }
 
-  // ✅ Correct navigation using widget.slug
   void _navigateToProductDetails() {
     Navigator.push(
       context,
@@ -283,12 +279,22 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Login Required'),
-        content: const Text('Please login to place a bid'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
+          'Login Required',
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Please login to place a bid',
+          style: TextStyle(fontSize: 14.sp),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -298,7 +304,10 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 MaterialPageRoute(builder: (context) => Login()),
               );
             },
-            child: const Text('Login'),
+            child: Text(
+              'Login',
+              style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
+            ),
           ),
         ],
       ),
@@ -321,13 +330,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   Widget _buildLeftCard(double displayBid, bool showTimer) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
+        // ✅ Changed to #F2F2F3
+        color: const Color(0xFFF2F2F3),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
-            blurRadius: 3,
+            blurRadius: 3.r,
             offset: const Offset(0, 1),
           ),
         ],
@@ -340,10 +350,10 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               GestureDetector(
                 onTap: _navigateToProductDetails,
                 child: SizedBox(
-                  width: 100,
-                  height: 100,
+                  width: 100.w,
+                  height: 100.h,
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+                    borderRadius: BorderRadius.horizontal(left: Radius.circular(10.r)),
                     child: widget.image != null && widget.image!.isNotEmpty
                         ? Image.network(
                             widget.image!,
@@ -351,32 +361,32 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey[200],
-                                child: const Icon(Icons.image, size: 30, color: Colors.grey),
+                                child: Icon(Icons.image, size: 30.sp, color: Colors.grey),
                               );
                             },
                           )
                         : Container(
                             color: Colors.grey[200],
-                            child: const Icon(Icons.image, size: 30, color: Colors.grey),
+                            child: Icon(Icons.image, size: 30.sp, color: Colors.grey),
                           ),
                   ),
                 ),
               ),
               if (showTimer)
                 Positioned(
-                  top: 4,
-                  right: 4,
+                  top: 4.h,
+                  right: 4.w,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                     decoration: BoxDecoration(
                       color: _timeLeft == "Ended" 
                           ? Colors.red 
                           : const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(30.r),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
+                          blurRadius: 4.r,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -388,14 +398,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           _timeLeft == "Ended" 
                               ? Icons.cancel 
                               : Icons.access_time,
-                          size: 10, 
+                          size: 10.sp, 
                           color: Colors.white,
                         ),
-                        const SizedBox(width: 3),
+                        SizedBox(width: 3.w),
                         Text(
                           _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
+                          style: TextStyle(
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -410,7 +420,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           // Product Info
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -418,8 +428,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     onTap: _navigateToProductDetails,
                     child: Text(
                       widget.name ?? 'Product',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
                       ),
@@ -427,37 +437,24 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  GestureDetector(
-                    onTap: _navigateToProductDetails,
-                    child: Text(
-                      widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        color: Color(0xFF8F9AA7),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Current Bid',
                             style: TextStyle(
-                              fontSize: 8,
-                              color: Color(0xFF80818B),
+                              fontSize: 8.sp,
+                              color: const Color(0xFF80818B),
                             ),
                           ),
                           Text(
                             _formatPrice(displayBid),
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),
@@ -465,24 +462,24 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                         decoration: BoxDecoration(
                           color: const Color(0xFFB5E7F5),
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(30.r),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.access_time,
-                              size: 10,
-                              color: Color(0xFF0092AC),
+                              size: 10.sp,
+                              color: const Color(0xFF0092AC),
                             ),
-                            const SizedBox(width: 2),
+                            SizedBox(width: 2.w),
                             Text(
                               '1 Bid = ${widget.pointPerBid ?? 0}',
                               style: TextStyle(
-                                fontSize: 8,
+                                fontSize: 8.sp,
                                 fontWeight: FontWeight.w600,
                                 color: MyTheme.accent_color,
                               ),
@@ -492,7 +489,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   // Swipe to Bid Button
                   GestureDetector(
                     onPanStart: _onPanStart,
@@ -501,36 +498,36 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     onTap: _navigateToProductDetails,
                     child: Container(
                       width: double.infinity,
-                      height: 32,
+                      height: 32.h,
                       decoration: BoxDecoration(
                         color: MyTheme.accent_color,
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(7.r),
                       ),
                       child: Stack(
                         children: [
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 50),
-                            width: 20 + (_swipeAmount),
-                            height: 32,
+                            width: 20.w + (_swipeAmount),
+                            height: 32.h,
                             decoration: BoxDecoration(
                               color: _swipeAmount > 20 ? Colors.green : Colors.white,
-                              borderRadius: BorderRadius.circular(7),
+                              borderRadius: BorderRadius.circular(7.r),
                             ),
                             child: Center(
                               child: Icon(
                                 Icons.arrow_forward_ios,
-                                size: 12,
+                                size: 12.sp,
                                 color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
                               ),
                             ),
                           ),
                           Center(
                             child: _isProcessing
-                                ? const SizedBox(
-                                    height: 14,
-                                    width: 14,
+                                ? SizedBox(
+                                    height: 14.w,
+                                    width: 14.w,
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                                      strokeWidth: 2.w,
                                       color: Colors.white,
                                     ),
                                   )
@@ -538,20 +535,20 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       if (_swipeAmount < 20) ...[
-                                        const SizedBox(width: 20),
-                                        const Text(
+                                        SizedBox(width: 20.w),
+                                        Text(
                                           'Swipe to Bid',
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: 9.sp,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
                                         ),
                                       ] else ...[
-                                        const Text(
+                                        Text(
                                           'Quick Bid',
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: 9.sp,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
@@ -575,15 +572,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
 
   Widget _buildRightCard(double displayBid, bool showTimer) {
     return Container(
-      // Remove fixed height - let it expand
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
+        // ✅ Changed to #F2F2F3
+        color: const Color(0xFFF2F2F3),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
-            blurRadius: 3,
+            blurRadius: 3.r,
             offset: const Offset(0, 1),
           ),
         ],
@@ -591,15 +588,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image section - fixed height
+          // Image section
           Stack(
             children: [
               GestureDetector(
                 onTap: _navigateToProductDetails,
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(10.r)),
                   child: Container(
-                    height: 100,
+                    height: 100.h,
                     width: double.infinity,
                     child: widget.image != null && widget.image!.isNotEmpty
                         ? Image.network(
@@ -608,32 +605,32 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey[200],
-                                child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                                child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
                               );
                             },
                           )
                         : Container(
                             color: Colors.grey[200],
-                            child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                            child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
                           ),
                   ),
                 ),
               ),
               if (showTimer)
                 Positioned(
-                  top: 6,
-                  right: 6,
+                  top: 6.h,
+                  right: 6.w,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                     decoration: BoxDecoration(
                       color: _timeLeft == "Ended" 
                           ? Colors.red 
                           : const Color(0xFF009572),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(30.r),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
+                          blurRadius: 4.r,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -645,14 +642,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           _timeLeft == "Ended" 
                               ? Icons.cancel 
                               : Icons.access_time,
-                          size: 10, 
+                          size: 10.sp, 
                           color: Colors.white,
                         ),
-                        const SizedBox(width: 3),
+                        SizedBox(width: 3.w),
                         Text(
                           _timeLeft,
-                          style: const TextStyle(
-                            fontSize: 9,
+                          style: TextStyle(
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -664,10 +661,10 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
             ],
           ),
           
-          // Product Info - Use Expanded to fill remaining space
+          // Product Info
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -679,8 +676,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                         onTap: _navigateToProductDetails,
                         child: Text(
                           widget.name ?? 'Product',
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w700,
                             color: Colors.black,
                           ),
@@ -688,53 +685,48 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      GestureDetector(
-                        onTap: _navigateToProductDetails,
-                        child: Text(
-                          widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF8F9AA7),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      SizedBox(height: 4.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB5E7F5),
+                          borderRadius: BorderRadius.circular(30.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 10.sp,
+                              color: const Color(0xFF0092AC),
+                            ),
+                            SizedBox(width: 2.w),
+                            Text(
+                              '1 Bid = ${widget.pointPerBid ?? 0}',
+                              style: TextStyle(
+                                fontSize: 8.sp,
+                                fontWeight: FontWeight.w600,
+                                color: MyTheme.accent_color,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            size: 12,
-                            color: Color(0xFF718096),
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '1 Bid = ${widget.pointPerBid ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF718096),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Current Bid',
                             style: TextStyle(
-                              fontSize: 9,
-                              color: Color(0xFF80818B),
+                              fontSize: 9.sp,
+                              color: const Color(0xFF80818B),
                             ),
                           ),
                           Text(
                             _formatPrice(displayBid),
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),
@@ -751,36 +743,36 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     onTap: _navigateToProductDetails,
                     child: Container(
                       width: double.infinity,
-                      height: 35,
+                      height: 35.h,
                       decoration: BoxDecoration(
                         color: MyTheme.accent_color,
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(7.r),
                       ),
                       child: Stack(
                         children: [
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 50),
-                            width: 20 + (_swipeAmount),
-                            height: 35,
+                            width: 20.w + (_swipeAmount),
+                            height: 35.h,
                             decoration: BoxDecoration(
                               color: _swipeAmount > 20 ? Colors.green : Colors.white,
-                              borderRadius: BorderRadius.circular(7),
+                              borderRadius: BorderRadius.circular(7.r),
                             ),
                             child: Center(
                               child: Icon(
                                 Icons.arrow_forward_ios,
-                                size: 12,
+                                size: 12.sp,
                                 color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
                               ),
                             ),
                           ),
                           Center(
                             child: _isProcessing
-                                ? const SizedBox(
-                                    height: 14,
-                                    width: 14,
+                                ? SizedBox(
+                                    height: 14.w,
+                                    width: 14.w,
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                                      strokeWidth: 2.w,
                                       color: Colors.white,
                                     ),
                                   )
@@ -788,20 +780,20 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       if (_swipeAmount < 20) ...[
-                                        const SizedBox(width: 20),
-                                        const Text(
+                                        SizedBox(width: 20.w),
+                                        Text(
                                           'Swipe to Bid',
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: 9.sp,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
                                         ),
                                       ] else ...[
-                                        const Text(
+                                        Text(
                                           'Quick Bid',
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: 9.sp,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
@@ -822,5 +814,4 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       ),
     );
   }
-
 }

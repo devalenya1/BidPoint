@@ -414,7 +414,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           ),
         ),
         
-        // Bottom Drawer - Fixed above bottom navigation bar
+        // Bottom Drawer - Responsive height
         if (_isDrawerOpen || _isDrawerAnimating)
           AnimatedBuilder(
             animation: _drawerAnimationController,
@@ -429,13 +429,14 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     ),
                   ),
                   
-                  // Drawer - Fixed above bottom navigation bar
+                  // Drawer - Responsive height
                   Transform.translate(
                     offset: Offset(0, MediaQuery.of(context).size.height * _drawerSlideAnimation.value),
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
-                        height: MediaQuery.of(context).size.height * 0.35,
+                        // ✅ FIX: Dynamic height based on content
+                        height: MediaQuery.of(context).size.height * 0.45, // Increased from 0.35
                         width: double.infinity,
                         padding: EdgeInsets.only(bottom: 70.h),
                         decoration: const BoxDecoration(
@@ -493,7 +494,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                               ),
                             ),
                             
-                            // Horizontal scrollable packages
+                            // ✅ FIX: Responsive package slider with flexible height
                             Expanded(
                               child: _buildPackageSlider(),
                             ),
@@ -551,31 +552,45 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       onNotification: (scrollInfo) {
         return false;
       },
-      child: SingleChildScrollView(
-        controller: _packageScrollController,
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: _packages.asMap().entries.map((entry) {
-            final index = entry.key;
-            final package = entry.value;
-            final isSelected = _selectedPackage?.id == package.id;
-            final packagePrice = _getPackagePrice(package);
-            final packagePoints = _getPackagePoints(package);
-            
-            return Container(
-              width: MediaQuery.of(context).size.width * 0.69,
-              margin: EdgeInsets.only(right: index != _packages.length - 1 ? 12.w : 0),
-              child: _buildPackageCard(
-                package: package,
-                isSelected: isSelected,
-                packagePoints: packagePoints,
-                packagePrice: packagePrice,
-              ),
-            );
-          }).toList(),
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate responsive card size based on available space
+          final availableHeight = constraints.maxHeight;
+          final availableWidth = constraints.maxWidth;
+          
+          // Responsive card height - use percentage of available height
+          final cardHeight = availableHeight * 0.85; // 85% of available height
+          final cardWidth = availableWidth * 0.75; // 75% of available width
+          
+          return SingleChildScrollView(
+            controller: _packageScrollController,
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: _packages.asMap().entries.map((entry) {
+                final index = entry.key;
+                final package = entry.value;
+                final isSelected = _selectedPackage?.id == package.id;
+                final packagePrice = _getPackagePrice(package);
+                final packagePoints = _getPackagePoints(package);
+                
+                return Container(
+                  width: cardWidth.clamp(200.w, 400.w),
+                  height: cardHeight.clamp(120.h, 300.h),
+                  margin: EdgeInsets.only(right: index != _packages.length - 1 ? 12.w : 0),
+                  child: _buildPackageCard(
+                    package: package,
+                    isSelected: isSelected,
+                    packagePoints: packagePoints,
+                    packagePrice: packagePrice,
+                    cardHeight: cardHeight.clamp(120.h, 300.h),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        },
       ),
     );
   }
@@ -585,11 +600,16 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     required bool isSelected,
     required int packagePoints,
     required double packagePrice,
+    double? cardHeight,
   }) {
+    final height = cardHeight ?? 150.h;
+    final imageSize = height * 0.45; // Image size relative to card height
+    
     return GestureDetector(
       onTap: () => _selectPackage(package),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        height: height,
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected ? MyTheme.accent_color : const Color(0xFFEEF2F8),
@@ -605,11 +625,12 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         child: Row(
           children: [
             // Left side - Package info
             Expanded(
+              flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -617,7 +638,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     package.name ?? AppLocalizations.of(context)!.package_ucf,
                     style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: (height * 0.09).clamp(12.sp, 16.sp),
                       fontWeight: FontWeight.w500,
                       color: isSelected ? Colors.white : const Color(0xFFA5A5BA),
                     ),
@@ -628,7 +649,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                     style: TextStyle(
-                      fontSize: 20.sp,
+                      fontSize: (height * 0.13).clamp(16.sp, 22.sp),
                       fontWeight: FontWeight.w700,
                       color: isSelected ? Colors.white : const Color(0xFF000417),
                     ),
@@ -641,7 +662,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         ? AppLocalizations.of(context)!.free_ucf 
                         : _formatPrice(packagePrice),
                     style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: (height * 0.09).clamp(11.sp, 15.sp),
                       fontWeight: FontWeight.w400,
                       color: isSelected ? Colors.white : const Color(0xFF80818B),
                     ),
@@ -652,14 +673,14 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             
             // Right side - Package image
             Container(
-              width: 70.w,
-              height: 70.w,
+              width: imageSize.clamp(40.w, 80.w),
+              height: imageSize.clamp(40.h, 80.h),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: package.logo != null && package.logo!.isNotEmpty
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16.r),
+                      borderRadius: BorderRadius.circular(12.r),
                       child: Image.network(
                         package.logo!,
                         fit: BoxFit.contain,
@@ -667,9 +688,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(16.r),
+                              borderRadius: BorderRadius.circular(12.r),
                             ),
-                            child: Icon(Icons.card_giftcard, size: 40.sp, color: Colors.grey),
+                            child: Icon(
+                              Icons.card_giftcard, 
+                              size: imageSize.clamp(20.sp, 45.sp), 
+                              color: Colors.grey,
+                            ),
                           );
                         },
                       ),
@@ -677,9 +702,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   : Container(
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(16.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: Icon(Icons.card_giftcard, size: 40.sp, color: Colors.grey),
+                      child: Icon(
+                        Icons.card_giftcard, 
+                        size: imageSize.clamp(20.sp, 45.sp), 
+                        color: Colors.grey,
+                      ),
                     ),
             ),
           ],

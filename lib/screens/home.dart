@@ -391,12 +391,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         // Show only up to itemsToShow products
         final displayProducts = products.take(itemsToShow).toList();
         
-        // Use Row with Expanded or flexible children - NO SCROLLING
-        return SizedBox(
-          height: 350.h,
+        // ✅ FIX: Use IntrinsicHeight to let cards determine their own height
+        // This removes the empty space below the button
+        return IntrinsicHeight(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: displayProducts.asMap().entries.map((entry) {
                 int index = entry.key;
                 var product = entry.value;
@@ -696,15 +697,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget buildHomeCarouselSlider() {
+    // Get screen width for responsive sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate height based on screen width with aspect ratio 338/200
+    // This ensures the image always shows fully
+    final double carouselHeight = screenWidth * (200 / 338);
+    
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Padding(
         padding: EdgeInsets.only(left: 18.w, right: 18.w, top: 0, bottom: 20.h),
-        child: ShimmerHelper().buildBasicShimmer(height: 200.h),
+        child: ShimmerHelper().buildBasicShimmer(height: carouselHeight),
       );
     } else if (homeData.carouselImageList.isNotEmpty) {
       return CarouselSlider(
         options: CarouselOptions(
-          aspectRatio: 338 / 200,
+          height: carouselHeight, // Dynamic height based on screen width
           viewportFraction: 1,
           initialPage: 0,
           enableInfiniteScroll: true,
@@ -723,12 +731,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           return Builder(
             builder: (BuildContext context) {
               return Padding(
-                padding: EdgeInsets.only(left: 18.w, right: 18.w, top: 0, bottom: 20.h),
+                padding: EdgeInsets.only(left: 0, right: 0, top: 0, bottom: 0), // No padding for full width
                 child: Stack(
                   children: <Widget>[
                     Container(
                       width: double.infinity,
-                      height: 200.h,
+                      height: carouselHeight,
                       child: InkWell(
                         onTap: () {
                           if (i.url != null) {
@@ -739,29 +747,80 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           }
                         },
                         child: i.photo != null
-                            ? AIZImage.radiusImage(i.photo!, 6.r)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.zero, // No border radius for full image
+                                child: Image.network(
+                                  i.photo!,
+                                  fit: BoxFit.cover, // Cover to fill the container
+                                  width: double.infinity,
+                                  height: carouselHeight,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          size: 50.sp,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              )
                             : Container(
                                 color: Colors.grey[300],
-                                child: Center(child: Icon(Icons.image, size: 50.sp)),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image,
+                                    size: 50.sp,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
                               ),
                       ),
                     ),
+                    // Gradient overlay for better visibility of dots
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 40.h,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.4),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Dot indicators
                     Align(
                       alignment: Alignment.bottomCenter,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: homeData.carouselImageList.map((url) {
-                          int index = homeData.carouselImageList.indexOf(url);
-                          return Container(
-                            width: 7.w,
-                            height: 7.h,
-                            margin: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: homeData.current_slider == index ? MyTheme.white : const Color.fromRGBO(112, 112, 112, .3),
-                            ),
-                          );
-                        }).toList(),
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 8.h),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: homeData.carouselImageList.map((url) {
+                            int index = homeData.carouselImageList.indexOf(url);
+                            return Container(
+                              width: 8.w,
+                              height: 8.w,
+                              margin: EdgeInsets.symmetric(horizontal: 4.w),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: homeData.current_slider == index 
+                                    ? MyTheme.white 
+                                    : Colors.white.withOpacity(0.5),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                   ],
@@ -773,7 +832,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       );
     } else if (!homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Container(
-        height: 100.h,
+        height: carouselHeight,
         child: Center(
           child: Text(
             AppLocalizations.of(context)!.no_carousel_image_found,
@@ -782,7 +841,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         ),
       );
     } else {
-      return SizedBox(height: 100.h);
+      return SizedBox(height: carouselHeight);
     }
   }
 

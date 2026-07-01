@@ -764,73 +764,78 @@ class _FilterState extends State<Filter> {
               ),
             ],
           ),
+          // ✅ FIX: Products count and Sort/Filter in same row
           SizedBox(height: 12.h),
-          // Products count
-          Text(
-            '$_totalProductsFound ${AppLocalizations.of(context)!.products_found}',
-            style: TextStyle(
-              fontSize: 13.sp,
-              color: Colors.grey,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          // Sort and Filter buttons row - Sort first, then Filter
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Sort Button
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.3,
-                child: GestureDetector(
-                  onTap: _showSortDialog,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300, width: 1.w),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.swap_vert, size: 16.sp, color: const Color(0xFF64748B)),
-                        SizedBox(width: 6.w),
-                        Expanded(
-                          child: Text(
+              // Products count - Left side
+              Text(
+                '$_totalProductsFound ${AppLocalizations.of(context)!.products_found}',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: Colors.grey,
+                ),
+              ),
+              // Sort and Filter buttons - Right side
+              Row(
+                children: [
+                  // Sort Button
+                  GestureDetector(
+                    onTap: _showSortDialog,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300, width: 1.w),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.swap_vert, size: 14.sp, color: const Color(0xFF64748B)),
+                          SizedBox(width: 4.w),
+                          Text(
                             _selectedSortLabel.isNotEmpty ? _selectedSortLabel : AppLocalizations.of(context)!.sort_ucf,
                             style: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF334155),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              // Filter Button
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.1,
-                child: GestureDetector(
-                  onTap: _openFilterDrawer,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.filter_alt, size: 20.sp, color: Colors.white),
-                      ],
+                  SizedBox(width: 8.w),
+                  // Filter Button
+                  GestureDetector(
+                    onTap: _openFilterDrawer,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+                      decoration: BoxDecoration(
+                        color: MyTheme.accent_color,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.filter_alt, size: 16.sp, color: Colors.white),
+                          SizedBox(width: 4.w),
+                          // Text(
+                          //   AppLocalizations.of(context)!.filter_ucf,
+                          //   style: TextStyle(
+                          //     fontSize: 12.sp,
+                          //     fontWeight: FontWeight.w500,
+                          //     color: Colors.white,
+                          //   ),
+                          // ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

@@ -177,7 +177,6 @@ class _ProfileState extends State<Profile> {
 
   // ============ LOGOUT ============
   void _onTapLogout(BuildContext context) async {
-    // Show confirmation dialog
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -211,26 +210,14 @@ class _ProfileState extends State<Profile> {
     
     if (confirm == true) {
       try {
-        // Clear user data
         await AuthHelper().clearUserData();
-        
-        // Reset local state
         _resetState();
-        
-        // Show success toast
-        ToastComponent.showDialog(
-          "Logged out successfully",
-        );
-        
-        // Navigate to login screen
+        ToastComponent.showDialog("Logged out successfully");
         if (mounted) {
           context.go("/users/login");
         }
-        
       } catch (e) {
-        ToastComponent.showDialog(
-          "Logout failed: ${e.toString()}",
-        );
+        ToastComponent.showDialog("Logout failed: ${e.toString()}");
       }
     }
   }
@@ -252,6 +239,10 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if we're on a large screen for responsive layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 600;
+    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -275,7 +266,6 @@ class _ProfileState extends State<Profile> {
           },
         ),
         actions: [
-          // Logout button - always show when logged in
           if (is_logged_in.$)
             Padding(
               padding: EdgeInsets.only(right: 8.w),
@@ -309,11 +299,14 @@ class _ProfileState extends State<Profile> {
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : _buildBody(),
+            : isLargeScreen 
+                ? _buildDesktopTabletBody() 
+                : _buildBody(),
       ),
     );
   }
 
+  // ============ SHIMMER LOADING ============
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -368,6 +361,7 @@ class _ProfileState extends State<Profile> {
     );
   }
   
+  // ============ MOBILE BODY ============
   Widget _buildBody() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -381,145 +375,19 @@ class _ProfileState extends State<Profile> {
     );
   }
   
-  Widget _buildProfileCard() {
-    return Container(
-      margin: EdgeInsets.all(16.w),
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+  // ============ TABLET/DESKTOP BODY ============
+  Widget _buildDesktopTabletBody() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(40.w, 20.h, 40.w, 27.h),
+      child: Column(
         children: [
-          Expanded(
-            flex: 2,
-            child: Row(
-              children: [
-                Container(
-                  width: 45.w,
-                  height: 45.w,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 3.w,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: _userInfo?.avatar != null && _userInfo!.avatar!.isNotEmpty
-                        ? Image.network(
-                            _userInfo!.avatar!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.person,
-                                size: 40.sp,
-                                color: const Color(0xFF94A3B8),
-                              );
-                            },
-                          )
-                        : Icon(
-                            Icons.person,
-                            size: 40.sp,
-                            color: const Color(0xFF94A3B8),
-                          ),
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w700,
-                          color: MyTheme.accent_color,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20.r),
-            ),
+          SizedBox(
+            width: 800.w,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.referral_point,
-                      style: TextStyle(
-                        fontSize: 8.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF64748B),
-                      ),
-                    ),
-                    SizedBox(width: 7.w),
-                    GestureDetector(
-                      onTap: _togglePointsVisibility,
-                      child: Container(
-                        width: 27.w,
-                        height: 27.w,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Icon(
-                          _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                          size: 16.sp,
-                          color: MyTheme.accent_color,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4.h),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _pointsVisible 
-                          ? (_userInfo?.balance?.toInt() ?? 0).toString() 
-                          : '****',
-                      style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      AppLocalizations.of(context)!.points_ucf,
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildProfileCard(),
+                _buildMenuSection(),
               ],
             ),
           ),
@@ -528,7 +396,313 @@ class _ProfileState extends State<Profile> {
     );
   }
   
+  // ============ PROFILE CARD ============
+  Widget _buildProfileCard() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
+    return Container(
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: isSmallScreen 
+          ? _buildProfileCardSmall() 
+          : _buildProfileCardRegular(),
+    );
+  }
+
+  Widget _buildProfileCardSmall() {
+    return Column(
+      children: [
+        // Avatar and name in a row
+        Row(
+          children: [
+            Container(
+              width: 45.w,
+              height: 45.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 3.w,
+                ),
+              ),
+              child: ClipOval(
+                child: _userInfo?.avatar != null && _userInfo!.avatar!.isNotEmpty
+                    ? Image.network(
+                        _userInfo!.avatar!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person,
+                            size: 40.sp,
+                            color: const Color(0xFF94A3B8),
+                          );
+                        },
+                      )
+                    : Icon(
+                        Icons.person,
+                        size: 40.sp,
+                        color: const Color(0xFF94A3B8),
+                      ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w700,
+                      color: MyTheme.accent_color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12.h),
+        // Points section full width
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.referral_point,
+                    style: TextStyle(
+                      fontSize: 8.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(width: 7.w),
+                  GestureDetector(
+                    onTap: _togglePointsVisibility,
+                    child: Container(
+                      width: 27.w,
+                      height: 27.w,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Icon(
+                        _pointsVisible ? Icons.visibility : Icons.visibility_off,
+                        size: 16.sp,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _pointsVisible 
+                        ? (_userInfo?.balance?.toInt() ?? 0).toString() 
+                        : '****',
+                    style: TextStyle(
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    AppLocalizations.of(context)!.points_ucf,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileCardRegular() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Row(
+            children: [
+              Container(
+                width: 45.w,
+                height: 45.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 3.w,
+                  ),
+                ),
+                child: ClipOval(
+                  child: _userInfo?.avatar != null && _userInfo!.avatar!.isNotEmpty
+                      ? Image.network(
+                          _userInfo!.avatar!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.person,
+                              size: 40.sp,
+                              color: const Color(0xFF94A3B8),
+                            );
+                          },
+                        )
+                      : Icon(
+                          Icons.person,
+                          size: 40.sp,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.referral_point,
+                    style: TextStyle(
+                      fontSize: 8.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(width: 7.w),
+                  GestureDetector(
+                    onTap: _togglePointsVisibility,
+                    child: Container(
+                      width: 27.w,
+                      height: 27.w,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Icon(
+                        _pointsVisible ? Icons.visibility : Icons.visibility_off,
+                        size: 16.sp,
+                        color: MyTheme.accent_color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4.h),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _pointsVisible 
+                        ? (_userInfo?.balance?.toInt() ?? 0).toString() 
+                        : '****',
+                    style: TextStyle(
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    AppLocalizations.of(context)!.points_ucf,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // ============ MENU SECTION ============
   Widget _buildMenuSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600 && screenWidth < 1024;
+    final isDesktop = screenWidth >= 1024;
+    
+    // For tablet/desktop, show menus in a grid
+    if (isTablet || isDesktop) {
+      return _buildDesktopMenuSection();
+    }
+    
+    // Mobile menu
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
@@ -641,7 +815,135 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+
+  // ============ DESKTOP MENU ============
+  Widget _buildDesktopMenuSection() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // My Account Column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeading(AppLocalizations.of(context)!.my_account),
+                Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9F9F9),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMenuItem(
+                        icon: Icons.favorite_border,
+                        label: AppLocalizations.of(context)!.all_favorite,
+                        onTap: () {
+                          if (is_logged_in.$) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => Wishlist()));
+                          } else {
+                            _showLoginWarning();
+                          }
+                        },
+                      ),
+                      Divider(height: 0, color: const Color(0xFFEEF2F8)),
+                      _buildMenuItem(
+                        icon: Icons.payment,
+                        label: AppLocalizations.of(context)!.payment_settings,
+                        onTap: () {
+                          if (is_logged_in.$) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const PaymentSettingsPage()));
+                          } else {
+                            _showLoginWarning();
+                          }
+                        },
+                      ),
+                      Divider(height: 0, color: const Color(0xFFEEF2F8)),
+                      _buildMenuItem(
+                        icon: Icons.history,
+                        label: AppLocalizations.of(context)!.invite_history,
+                        onTap: () {
+                          if (is_logged_in.$) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const InviteHistoryPage()));
+                          } else {
+                            _showLoginWarning();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 16.w),
+          // Security Column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeading(AppLocalizations.of(context)!.security),
+                Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9F9F9),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMenuItem(
+                        icon: Icons.person_outline,
+                        label: AppLocalizations.of(context)!.update_profile,
+                        onTap: () {
+                          if (is_logged_in.$) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileEdit()));
+                          } else {
+                            _showLoginWarning();
+                          }
+                        },
+                      ),
+                      Divider(height: 0, color: const Color(0xFFEEF2F8)),
+                      _buildMenuItem(
+                        icon: Icons.notifications_none,
+                        label: AppLocalizations.of(context)!.notification_ucf,
+                        onTap: () {
+                          if (is_logged_in.$) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationSettingsPage()));
+                          } else {
+                            _showLoginWarning();
+                          }
+                        },
+                      ),
+                      Divider(height: 0, color: const Color(0xFFEEF2F8)),
+                      _buildMenuItem(
+                        icon: Icons.language,
+                        label: AppLocalizations.of(context)!.language_ucf,
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => ChangeLanguage()));
+                        },
+                      ),
+                      Divider(height: 0, color: const Color(0xFFEEF2F8)),
+                      _buildMenuItem(
+                        icon: Icons.description_outlined,
+                        label: AppLocalizations.of(context)!.terms_conditions,
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsConditionsPage()));
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   
+  // ============ SECTION HEADING ============
   Widget _buildSectionHeading(String title) {
     return Padding(
       padding: EdgeInsets.only(left: 8.w, bottom: 12.h),
@@ -656,28 +958,32 @@ class _ProfileState extends State<Profile> {
     );
   }
   
+  // ============ MENU ITEM ============
   Widget _buildMenuItem({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
     bool isActive = false,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1024;
+    
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
+        padding: EdgeInsets.symmetric(vertical: isDesktop ? 14.h : 12.h, horizontal: 8.w),
         child: Row(
           children: [
             Container(
-              width: 36.w,
-              height: 36.w,
+              width: isDesktop ? 40.w : 36.w,
+              height: isDesktop ? 40.w : 36.w,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 18.sp,
+                size: isDesktop ? 20.sp : 18.sp,
                 color: const Color(0xFF000417),
               ),
             ),
@@ -686,7 +992,7 @@ class _ProfileState extends State<Profile> {
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: isDesktop ? 16.sp : 14.sp,
                   fontWeight: FontWeight.w500,
                   color: isActive ? MyTheme.accent_color : const Color(0xFF334155),
                 ),
@@ -697,7 +1003,7 @@ class _ProfileState extends State<Profile> {
             Text(
               '›',
               style: TextStyle(
-                fontSize: 24.sp,
+                fontSize: isDesktop ? 28.sp : 24.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF334155),
               ),

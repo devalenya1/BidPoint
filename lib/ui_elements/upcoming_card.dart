@@ -6,6 +6,7 @@ import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
 class UpcomingCard extends StatefulWidget {
@@ -219,12 +220,22 @@ class _UpcomingCardState extends State<UpcomingCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Login Required'),
-        content: const Text('Please login to set notification'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
+          'Login Required',
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Please login to set notification',
+          style: TextStyle(fontSize: 14.sp),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -234,7 +245,10 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 MaterialPageRoute(builder: (context) => Login()),
               );
             },
-            child: const Text('Login'),
+            child: Text(
+              'Login',
+              style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
+            ),
           ),
         ],
       ),
@@ -244,18 +258,18 @@ class _UpcomingCardState extends State<UpcomingCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    // Fixed: Show timer for Upcoming status as well
     final showTimer = _timeLeft != "Ended" && _timeLeft != "No Timer" && _timeLeft != "Upcoming";
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Changed to white like product_card
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
+        // ✅ Changed to #F2F2F3
+        color: const Color(0xFFF2F2F3),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
-            blurRadius: 3,
+            blurRadius: 3.r,
             offset: const Offset(0, 1),
           ),
         ],
@@ -271,7 +285,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(10.r)),
                     child: widget.image != null && widget.image!.isNotEmpty
                         ? Image.network(
                             widget.image!,
@@ -279,34 +293,34 @@ class _UpcomingCardState extends State<UpcomingCard> {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey[200],
-                                child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                                child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
                               );
                             },
                           )
                         : Container(
                             color: Colors.grey[200],
-                            child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                            child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
                           ),
                   ),
                 ),
               ),
-              // Fixed: Show "Upcoming" or timer or "Ended"
+              // Timer/Status Badge
               Positioned(
-                top: 6,
-                right: 6,
+                top: 6.h,
+                right: 6.w,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                   decoration: BoxDecoration(
                     color: _timeLeft == "Ended" 
                         ? Colors.red 
                         : (_timeLeft == "Upcoming" 
                             ? Colors.orange 
                             : const Color(0xFF009572)),
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(30.r),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
+                        blurRadius: 4.r,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -320,14 +334,14 @@ class _UpcomingCardState extends State<UpcomingCard> {
                             : (_timeLeft == "Upcoming"
                                 ? Icons.schedule
                                 : Icons.access_time),
-                        size: 10, 
+                        size: 10.sp, 
                         color: Colors.white,
                       ),
-                      const SizedBox(width: 3),
+                      SizedBox(width: 3.w),
                       Text(
                         _timeLeft,
-                        style: const TextStyle(
-                          fontSize: 9,
+                        style: TextStyle(
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -339,9 +353,9 @@ class _UpcomingCardState extends State<UpcomingCard> {
             ],
           ),
           
-          // Product Details - Same as product_card
+          // Product Details
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -350,8 +364,8 @@ class _UpcomingCardState extends State<UpcomingCard> {
                   onTap: _navigateToProductDetails,
                   child: Text(
                     widget.name ?? 'Product',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -359,22 +373,22 @@ class _UpcomingCardState extends State<UpcomingCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.h),
                 
                 // Description
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
                     widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF8F9AA7),
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: const Color(0xFF8F9AA7),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
                 
                 // Current Bid and Points Row
                 Row(
@@ -383,17 +397,17 @@ class _UpcomingCardState extends State<UpcomingCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Starting Bid',
                           style: TextStyle(
-                            fontSize: 9,
-                            color: Color(0xFF80818B),
+                            fontSize: 9.sp,
+                            color: const Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
@@ -401,24 +415,24 @@ class _UpcomingCardState extends State<UpcomingCard> {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(30.r),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time,
-                            size: 12,
-                            color: Color(0xFF0092AC),
+                            size: 12.sp,
+                            color: const Color(0xFF0092AC),
                           ),
-                          const SizedBox(width: 2),
+                          SizedBox(width: 2.w),
                           Text(
                             '1 Bid = ${widget.pointPerBid ?? 0}',
                             style: TextStyle(
-                              fontSize: 9,
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w600,
                               color: MyTheme.accent_color,
                             ),
@@ -428,43 +442,43 @@ class _UpcomingCardState extends State<UpcomingCard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 
-                // Notify Me Button - Same height as product_card (40)
+                // Notify Me Button
                 GestureDetector(
                   onTap: _notifyMe,
                   child: Container(
                     width: double.infinity,
-                    height: 40, // Fixed: Same height as product_card
+                    height: 40.h,
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(7),
+                      borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Center(
                       child: _isProcessing
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
+                          ? SizedBox(
+                              height: 16.w,
+                              width: 16.w,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                                strokeWidth: 2.w,
                                 color: Colors.white,
                               ),
                             )
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text(
+                                Text(
                                   'Notify Me',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 11.sp,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(width: 4),
-                                const Icon(
+                                SizedBox(width: 4.w),
+                                Icon(
                                   Icons.arrow_forward,
-                                  size: 12,
+                                  size: 12.sp,
                                   color: Colors.white,
                                 ),
                               ],

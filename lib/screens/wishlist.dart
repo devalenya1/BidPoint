@@ -300,6 +300,10 @@ class _WishlistState extends State<Wishlist> {
   // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
+    // Check if we're on a large screen
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 600;
+    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -323,13 +327,19 @@ class _WishlistState extends State<Wishlist> {
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : _buildBody(),
+            : isLargeScreen 
+                ? _buildDesktopTabletBody()
+                : _buildBody(),
       ),
     );
   }
   
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+    final shimmerCount = isTablet ? 6 : 3;
+    
     return Column(
       children: [
         Container(
@@ -341,8 +351,8 @@ class _WishlistState extends State<Wishlist> {
               children: List.generate(4, (index) => 
                 Container(
                   margin: EdgeInsets.only(right: 4.w),
-                  width: 100.w,
-                  height: 42.h,
+                  width: isTablet ? 120.w : 100.w,
+                  height: isTablet ? 48.h : 42.h,
                   decoration: BoxDecoration(
                     color: MyTheme.shimmer_base,
                     borderRadius: BorderRadius.circular(7.r),
@@ -354,22 +364,36 @@ class _WishlistState extends State<Wishlist> {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Column(
-              children: List.generate(3, (index) => 
-                Padding(
-                  padding: EdgeInsets.only(bottom: 16.h),
-                  child: ShimmerHelper().buildBasicShimmer(height: 140.h, radius: 16.r),
-                ),
-              ),
-            ),
+            padding: EdgeInsets.symmetric(horizontal: isTablet ? 32.w : 16.w),
+            child: isTablet
+                ? Wrap(
+                    spacing: 16.w,
+                    runSpacing: 16.h,
+                    children: List.generate(shimmerCount, (index) => 
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 80.w) / 2,
+                        child: ShimmerHelper().buildBasicShimmer(
+                          height: 180.h, 
+                          radius: 16.r,
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: List.generate(shimmerCount, (index) => 
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 16.h),
+                        child: ShimmerHelper().buildBasicShimmer(height: 140.h, radius: 16.r),
+                      ),
+                    ),
+                  ),
           ),
         ),
       ],
     );
   }
   
-  // ============ MAIN BODY ============
+  // ============ MOBILE BODY ============
   Widget _buildBody() {
     final currentItems = _getCurrentItems();
     
@@ -400,6 +424,44 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
+  // ============ TABLET/DESKTOP BODY ============
+  Widget _buildDesktopTabletBody() {
+    final currentItems = _getCurrentItems();
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    return Column(
+      children: [
+        _buildTabs(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                SizedBox(height: 16.h),
+                if (currentItems.isEmpty)
+                  _buildEmptyState()
+                else
+                  Wrap(
+                    spacing: 16.w,
+                    runSpacing: 16.h,
+                    children: currentItems.map((item) => 
+                      SizedBox(
+                        width: (screenWidth - 80.w) / 2,
+                        child: _buildWishlistCard(item),
+                      ),
+                    ).toList(),
+                  ),
+                SizedBox(height: 30.h),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // ============ TABS ============
   Widget _buildTabs() {
     final tabs = [
       '${AppLocalizations.of(context)!.all_ucf} (${_wishlistItems.length})',
@@ -408,8 +470,11 @@ class _WishlistState extends State<Wishlist> {
       '${AppLocalizations.of(context)!.outbid_ucf} (${_outbidItems.length})',
     ];
     
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+    
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      padding: EdgeInsets.symmetric(horizontal: isTablet ? 32.w : 16.w),
       margin: EdgeInsets.only(bottom: 16.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -424,7 +489,10 @@ class _WishlistState extends State<Wishlist> {
               },
               child: Container(
                 margin: EdgeInsets.only(right: 4.w),
-                padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 10.h),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 32.w : 28.w, 
+                  vertical: isTablet ? 12.h : 10.h,
+                ),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -432,7 +500,7 @@ class _WishlistState extends State<Wishlist> {
                 child: Text(
                   tabs[index],
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: isTablet ? 16.sp : 14.sp,
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -445,6 +513,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
+  // ============ WISHLIST CARD ============
   Widget _buildWishlistCard(WishlistItem item) {
     final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
     final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
@@ -475,9 +544,14 @@ class _WishlistState extends State<Wishlist> {
     final bool isAuctionProduct = item.isAuction ?? false;
     final String productSlug = item.slug ?? '';
     
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+    final imageSize = isTablet ? 140.w : 120.w;
+    final imageHeight = isTablet ? 160.h : 140.h;
+    
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(16.r),
@@ -502,8 +576,8 @@ class _WishlistState extends State<Wishlist> {
             child: Stack(
               children: [
                 Container(
-                  width: 120.w,
-                  height: 140.h,
+                  width: imageSize,
+                  height: imageHeight,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12.r),
@@ -514,8 +588,8 @@ class _WishlistState extends State<Wishlist> {
                         ? Image.network(
                             item.productImage!,
                             fit: BoxFit.cover,
-                            width: 120.w,
-                            height: 140.h,
+                            width: imageSize,
+                            height: imageHeight,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: const Color(0xFFE2E8F0),
@@ -537,15 +611,15 @@ class _WishlistState extends State<Wishlist> {
                           ),
                   ),
                 ),
-                // Remove from wishlist - Same as product details page (border heart icon)
+                // Remove from wishlist
                 Positioned(
                   top: 0,
                   right: 0,
                   child: GestureDetector(
                     onTap: () => _removeFromWishlist(item.productId!),
                     child: Container(
-                      width: 32.w,
-                      height: 32.w,
+                      width: isTablet ? 36.w : 32.w,
+                      height: isTablet ? 36.w : 32.w,
                       margin: EdgeInsets.all(4.w),
                       decoration: const BoxDecoration(
                         color: Colors.white,
@@ -560,7 +634,7 @@ class _WishlistState extends State<Wishlist> {
                       ),
                       child: Icon(
                         Icons.favorite_border,
-                        size: 16.sp,
+                        size: isTablet ? 18.sp : 16.sp,
                         color: Colors.black87,
                       ),
                     ),
@@ -590,7 +664,7 @@ class _WishlistState extends State<Wishlist> {
               ],
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: isTablet ? 16.w : 12.w),
           // Content
           Expanded(
             child: Column(
@@ -608,7 +682,7 @@ class _WishlistState extends State<Wishlist> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: isTablet ? 16.sp : 14.sp,
                       fontWeight: FontWeight.w800,
                       color: Colors.black,
                     ),
@@ -619,7 +693,7 @@ class _WishlistState extends State<Wishlist> {
                 Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: isTablet ? 13.sp : 12.sp,
                     fontWeight: FontWeight.w500,
                     color: statusColor,
                   ),
@@ -629,7 +703,7 @@ class _WishlistState extends State<Wishlist> {
                 Text(
                   AppLocalizations.of(context)!.current_bid,
                   style: TextStyle(
-                    fontSize: 10.sp,
+                    fontSize: isTablet ? 11.sp : 10.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF94A3B8),
                     letterSpacing: 0.3,
@@ -644,7 +718,7 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                         style: TextStyle(
-                          fontSize: 18.sp,
+                          fontSize: isTablet ? 20.sp : 18.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
                         ),
@@ -660,7 +734,7 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         AppLocalizations.of(context)!.bid_points(pointPerBid),
                         style: TextStyle(
-                          fontSize: 10.sp,
+                          fontSize: isTablet ? 11.sp : 10.sp,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF0092AC),
                         ),
@@ -684,7 +758,7 @@ class _WishlistState extends State<Wishlist> {
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: 10.h),
+                    padding: EdgeInsets.symmetric(vertical: isTablet ? 12.h : 10.h),
                     decoration: BoxDecoration(
                       color: isAuctionProduct ? MyTheme.accent_color : Colors.white,
                       border: Border.all(color: MyTheme.accent_color, width: 1.w),
@@ -696,7 +770,7 @@ class _WishlistState extends State<Wishlist> {
                           : AppLocalizations.of(context)!.view_details,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12.sp,
+                        fontSize: isTablet ? 13.sp : 12.sp,
                         fontWeight: FontWeight.w600,
                         color: isAuctionProduct ? Colors.white : MyTheme.accent_color,
                       ),
@@ -711,6 +785,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
+  // ============ EMPTY STATE ============
   Widget _buildEmptyState() {
     String icon;
     String text;
@@ -738,16 +813,19 @@ class _WishlistState extends State<Wishlist> {
         subtext = AppLocalizations.of(context)!.no_items_in_wishlist_subtext;
     }
     
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+    
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 60.h, horizontal: 20.w),
+      padding: EdgeInsets.symmetric(vertical: isTablet ? 80.h : 60.h, horizontal: 20.w),
       child: Column(
         children: [
-          Text(icon, style: TextStyle(fontSize: 48.sp)),
+          Text(icon, style: TextStyle(fontSize: isTablet ? 64.sp : 48.sp)),
           SizedBox(height: 16.h),
           Text(
             text,
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: isTablet ? 18.sp : 14.sp,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF334155),
             ),
@@ -757,7 +835,7 @@ class _WishlistState extends State<Wishlist> {
           Text(
             subtext,
             style: TextStyle(
-              fontSize: 12.sp,
+              fontSize: isTablet ? 14.sp : 12.sp,
               color: const Color(0xFF94A3B8),
             ),
             textAlign: TextAlign.center,
