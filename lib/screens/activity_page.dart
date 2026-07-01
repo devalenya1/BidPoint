@@ -481,8 +481,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 4.w), // ✅ Closer tabs
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h), // ✅ Reduced padding
+                margin: EdgeInsets.only(right: 4.w),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -490,7 +490,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 child: Text(
                   tabNames[index],
                   style: TextStyle(
-                    fontSize: 13.sp, // ✅ Slightly smaller font
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -577,9 +577,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final isWinning = userHighestBid >= currentBid && userHighestBid > 0;
     final isEnded = false;
     
-    // ✅ All status text in BLACK (no colored text)
+    // All status text in BLACK
     String statusText;
-    Color statusColor = Colors.black; // ✅ All black
+    Color statusColor = Colors.black;
     
     if (isOutbid && !isEnded) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
@@ -595,18 +595,18 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       statusColor = Colors.black;
     }
     
-    // ✅ Description text based on status (matches HTML)
+    // ✅ Updated: Product name shown separately, then description
     String descriptionText;
     if (isOutbid && !isEnded) {
-      descriptionText = 'Someone placed a higher bid on $productName';
+      descriptionText = 'Someone placed a higher bid on';
     } else if (isWinning && !isEnded) {
-      descriptionText = 'Your bid is currently the highest on $productName';
+      descriptionText = 'Your bid is currently the highest on';
     } else if (isEnded && isWinning) {
-      descriptionText = 'Congratulations! You won $productName';
+      descriptionText = 'Congratulations! You won';
     } else if (isEnded && !isWinning) {
-      descriptionText = 'You didn\'t win $productName';
+      descriptionText = 'You didn\'t win';
     } else {
-      descriptionText = productName;
+      descriptionText = '';
     }
     
     final timeLeft = _timeLeft[productId] ?? AppLocalizations.of(context)!.loading;
@@ -630,8 +630,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               }
             },
             child: Container(
-              width: 100.w, // ✅ Smaller width
-              height: 120.h, // ✅ Smaller height
+              width: 100.w,
+              height: 120.h,
               margin: EdgeInsets.only(right: 12.w),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
@@ -677,22 +677,36 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
-                    color: Colors.black, // ✅ Always black
+                    color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h),
                 
-                // ✅ Description Text (matches HTML)
+                // ✅ Product Name (shown before description)
                 Text(
-                  descriptionText,
+                  productName,
                   style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF80818B),
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                SizedBox(height: 2.h),
+                
+                // ✅ Description Text (without product name)
+                if (descriptionText.isNotEmpty)
+                  Text(
+                    descriptionText,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF80818B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 SizedBox(height: 6.h),
                 
                 // Current Bid Label
@@ -716,7 +730,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       child: Text(
                         _formatPrice(currentBid),
                         style: TextStyle(
-                          fontSize: 16.sp, // ✅ Slightly smaller
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w800,
                           color: MyTheme.dark_font_grey,
                         ),
@@ -732,7 +746,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       child: Text(
                         '1 Bid = $pointPerBid',
                         style: TextStyle(
-                          fontSize: 9.sp, // ✅ Smaller font
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF0092AC),
                         ),
@@ -742,7 +756,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 10.h),
                 
-                // Action Button - All with accent color background and white text
+                // Action Button
                 if (isOutbid && !isEnded)
                   _buildBidAgainButton(productSlug)
                 else if (isWinning && !isEnded)
@@ -750,7 +764,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 else if (isEnded && isWinning)
                   _buildViewDetailsButton(productSlug, isWinning: true)
                 else if (isEnded && !isWinning)
-                  Container() // No button for ended/outbid
+                  Container()
                 else
                   _buildViewDetailsButton(productSlug, isWinning: false),
               ],
@@ -776,7 +790,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
-          color: MyTheme.accent_color, // ✅ Accent color background
+          color: MyTheme.accent_color,
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
@@ -785,7 +799,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: Colors.white, // ✅ White text
+            color: Colors.white,
           ),
         ),
       ),
@@ -807,7 +821,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
-          color: MyTheme.accent_color, // ✅ Accent color background
+          color: MyTheme.accent_color,
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
@@ -816,7 +830,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: Colors.white, // ✅ White text
+            color: Colors.white,
           ),
         ),
       ),

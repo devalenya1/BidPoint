@@ -695,7 +695,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       return SizedBox(height: 60.h);
     }
   }
-
+    
   Widget buildHomeCarouselSlider() {
     // Get screen width for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
@@ -739,13 +739,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       height: carouselHeight,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8.r,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        // ✅ REMOVED: boxShadow removed
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12.r),
@@ -761,7 +755,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           child: i.photo != null
                               ? Image.network(
                                   i.photo!,
-                                  // ✅ Fixed: Use BoxFit.contain to show full image without cropping
                                   fit: BoxFit.contain,
                                   width: double.infinity,
                                   height: carouselHeight,
