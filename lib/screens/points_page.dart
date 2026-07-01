@@ -603,7 +603,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     double? cardHeight,
   }) {
     final height = cardHeight ?? 150.h;
-    final imageSize = height * 0.45; // Image size relative to card height
+    final imageSize = height * 0.40; // Slightly smaller image to allow more text space
     
     return GestureDetector(
       onTap: () => _selectPackage(package),
@@ -625,7 +625,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
         child: Row(
           children: [
             // Left side - Package info
@@ -635,36 +635,46 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Package Name - 1.4x larger
                   Text(
                     package.name ?? AppLocalizations.of(context)!.package_ucf,
                     style: TextStyle(
-                      fontSize: (height * 0.09).clamp(12.sp, 16.sp),
-                      fontWeight: FontWeight.w500,
+                      fontSize: (height * 0.11).clamp(16.sp, 22.sp),
+                      fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : const Color(0xFFA5A5BA),
+                      height: 1.3, // Line height for readability
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  SizedBox(height: 2.h),
+                  // Vertical spacing
+                  SizedBox(height: height * 0.04), // Dynamic spacing
+                  
+                  // Points - 1.4x larger
                   Text(
                     '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                     style: TextStyle(
-                      fontSize: (height * 0.13).clamp(16.sp, 22.sp),
-                      fontWeight: FontWeight.w700,
+                      fontSize: (height * 0.16).clamp(20.sp, 28.sp),
+                      fontWeight: FontWeight.w800,
                       color: isSelected ? Colors.white : const Color(0xFF000417),
+                      height: 1.2, // Tighter line height for numbers
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  SizedBox(height: 2.h),
+                  // Vertical spacing
+                  SizedBox(height: height * 0.03),
+                  
+                  // Price - 1.4x larger
                   Text(
                     packagePrice == 0 
                         ? AppLocalizations.of(context)!.free_ucf 
                         : _formatPrice(packagePrice),
                     style: TextStyle(
-                      fontSize: (height * 0.09).clamp(11.sp, 15.sp),
-                      fontWeight: FontWeight.w400,
+                      fontSize: (height * 0.10).clamp(14.sp, 18.sp),
+                      fontWeight: FontWeight.w500,
                       color: isSelected ? Colors.white : const Color(0xFF80818B),
+                      height: 1.4, // More line height for price
                     ),
                   ),
                 ],
@@ -673,14 +683,14 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             
             // Right side - Package image
             Container(
-              width: imageSize.clamp(40.w, 80.w),
-              height: imageSize.clamp(40.h, 80.h),
+              width: imageSize.clamp(50.w, 90.w),
+              height: imageSize.clamp(50.h, 90.h),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: BorderRadius.circular(14.r),
               ),
               child: package.logo != null && package.logo!.isNotEmpty
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12.r),
+                      borderRadius: BorderRadius.circular(14.r),
                       child: Image.network(
                         package.logo!,
                         fit: BoxFit.contain,
@@ -688,11 +698,11 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12.r),
+                              borderRadius: BorderRadius.circular(14.r),
                             ),
                             child: Icon(
                               Icons.card_giftcard, 
-                              size: imageSize.clamp(20.sp, 45.sp), 
+                              size: imageSize.clamp(28.sp, 52.sp), 
                               color: Colors.grey,
                             ),
                           );
@@ -702,11 +712,11 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   : Container(
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12.r),
+                        borderRadius: BorderRadius.circular(14.r),
                       ),
                       child: Icon(
                         Icons.card_giftcard, 
-                        size: imageSize.clamp(20.sp, 45.sp), 
+                        size: imageSize.clamp(28.sp, 52.sp), 
                         color: Colors.grey,
                       ),
                     ),

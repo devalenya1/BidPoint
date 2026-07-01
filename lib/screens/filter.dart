@@ -1118,7 +1118,8 @@ class _FilterState extends State<Filter> {
           controller: _productScrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 180.h,
+            // ✅ FIXED: Reduced from 180.h to 120.h to remove large gap
+            top: MediaQuery.of(context).padding.top + 120.h,
             bottom: 70.h,
           ),
           child: MasonryGridView.count(

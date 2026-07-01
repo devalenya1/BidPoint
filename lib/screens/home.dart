@@ -701,7 +701,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Calculate height based on screen width with aspect ratio 338/200
-    // This ensures the image always shows fully
     final double carouselHeight = screenWidth * (200 / 338);
     
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
@@ -712,7 +711,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     } else if (homeData.carouselImageList.isNotEmpty) {
       return CarouselSlider(
         options: CarouselOptions(
-          height: carouselHeight, // Dynamic height based on screen width
+          height: carouselHeight,
           viewportFraction: 1,
           initialPage: 0,
           enableInfiniteScroll: true,
@@ -731,27 +730,38 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           return Builder(
             builder: (BuildContext context) {
               return Padding(
-                padding: EdgeInsets.only(left: 0, right: 0, top: 0, bottom: 0), // No padding for full width
+                // ✅ FIXED: Left and right padding (18.w each)
+                padding: EdgeInsets.symmetric(horizontal: 18.w),
                 child: Stack(
                   children: <Widget>[
                     Container(
                       width: double.infinity,
                       height: carouselHeight,
-                      child: InkWell(
-                        onTap: () {
-                          if (i.url != null) {
-                            var url = i.url!.split(AppConfig.DOMAIN_PATH).last ?? "";
-                            if (url.isNotEmpty) {
-                              GoRouter.of(context).go(url);
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8.r,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12.r),
+                        child: InkWell(
+                          onTap: () {
+                            if (i.url != null) {
+                              var url = i.url!.split(AppConfig.DOMAIN_PATH).last ?? "";
+                              if (url.isNotEmpty) {
+                                GoRouter.of(context).go(url);
+                              }
                             }
-                          }
-                        },
-                        child: i.photo != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.zero, // No border radius for full image
-                                child: Image.network(
+                          },
+                          child: i.photo != null
+                              ? Image.network(
                                   i.photo!,
-                                  fit: BoxFit.cover, // Cover to fill the container
+                                  fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: carouselHeight,
                                   errorBuilder: (context, error, stackTrace) {
@@ -766,21 +776,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                       ),
                                     );
                                   },
-                                ),
-                              )
-                            : Container(
-                                color: Colors.grey[300],
-                                child: Center(
-                                  child: Icon(
-                                    Icons.image,
-                                    size: 50.sp,
-                                    color: Colors.grey[600],
+                                )
+                              : Container(
+                                  color: Colors.grey[300],
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.image,
+                                      size: 50.sp,
+                                      color: Colors.grey[600],
+                                    ),
                                   ),
                                 ),
-                              ),
+                        ),
                       ),
                     ),
-                    // Gradient overlay for better visibility of dots
+                    // ✅ Gradient overlay for better visibility of dots
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -788,6 +798,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       child: Container(
                         height: 40.h,
                         decoration: BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(12.r),
+                            bottomRight: Radius.circular(12.r),
+                          ),
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
@@ -799,11 +813,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    // Dot indicators
+                    // ✅ Dot indicators
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Padding(
-                        padding: EdgeInsets.only(bottom: 8.h),
+                        padding: EdgeInsets.only(bottom: 12.h),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: homeData.carouselImageList.map((url) {
@@ -833,6 +847,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     } else if (!homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Container(
         height: carouselHeight,
+        margin: EdgeInsets.symmetric(horizontal: 18.w),
         child: Center(
           child: Text(
             AppLocalizations.of(context)!.no_carousel_image_found,
@@ -841,7 +856,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         ),
       );
     } else {
-      return SizedBox(height: carouselHeight);
+      return SizedBox(
+        height: carouselHeight,
+        child: Container(
+          margin: EdgeInsets.symmetric(horizontal: 18.w),
+          color: Colors.grey[200],
+          child: Center(
+            child: Text(
+              'No images available',
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+            ),
+          ),
+        ),
+      );
     }
   }
 

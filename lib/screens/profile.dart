@@ -810,7 +810,7 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           
-          SizedBox(height: 30.h),
+          SizedBox(height: 40.h),
         ],
       ),
     );
