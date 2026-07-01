@@ -454,7 +454,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           Text(
                             _formatPrice(displayBid),
                             style: TextStyle(
-                              fontSize: 14.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),
@@ -726,7 +726,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           Text(
                             _formatPrice(displayBid),
                             style: TextStyle(
-                              fontSize: 16.sp,
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),

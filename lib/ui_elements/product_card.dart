@@ -355,7 +355,7 @@ class _ProductCardState extends State<ProductCard> {
                         Text(
                           _formatPrice(displayBid),
                           style: TextStyle(
-                            fontSize: 18.sp,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
