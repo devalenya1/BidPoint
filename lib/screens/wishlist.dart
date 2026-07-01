@@ -642,26 +642,26 @@ class _WishlistState extends State<Wishlist> {
                   ),
                 ),
                 // Auction badge
-                if (isAuctionProduct)
-                  Positioned(
-                    bottom: 8.h,
-                    left: 8.w,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                      decoration: BoxDecoration(
-                        color: MyTheme.accent_color.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.auction_ucf,
-                        style: TextStyle(
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
+                // if (isAuctionProduct)
+                  // Positioned(
+                  //   bottom: 8.h,
+                  //   left: 8.w,
+                  //   child: Container(
+                  //     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  //     decoration: BoxDecoration(
+                  //       color: MyTheme.accent_color.withOpacity(0.9),
+                  //       borderRadius: BorderRadius.circular(12.r),
+                  //     ),
+                  //     child: Text(
+                  //       AppLocalizations.of(context)!.auction_ucf,
+                  //       style: TextStyle(
+                  //         fontSize: 9.sp,
+                  //         fontWeight: FontWeight.w600,
+                  //         color: Colors.white,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
               ],
             ),
           ),
