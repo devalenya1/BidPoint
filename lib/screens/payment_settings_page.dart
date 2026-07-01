@@ -563,18 +563,18 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
               ),
               Row(
                 children: [
-                  if (onDisconnect != null)
-                    GestureDetector(
-                      onTap: onDisconnect,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                        child: Icon(
-                          Icons.delete_outline,
-                          size: 18.sp,
-                          color: const Color(0xFFEF4444),
-                        ),
-                      ),
-                    ),
+                  // if (onDisconnect != null)
+                  //   GestureDetector(
+                  //     onTap: onDisconnect,
+                  //     child: Container(
+                  //       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  //       child: Icon(
+                  //         Icons.delete_outline,
+                  //         size: 18.sp,
+                  //         color: const Color(0xFFEF4444),
+                  //       ),
+                  //     ),
+                  //   ),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                     decoration: BoxDecoration(

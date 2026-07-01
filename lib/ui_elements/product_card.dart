@@ -355,7 +355,7 @@ class _ProductCardState extends State<ProductCard> {
                         Text(
                           _formatPrice(displayBid),
                           style: TextStyle(
-                            fontSize: 16.sp,
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
@@ -374,14 +374,14 @@ class _ProductCardState extends State<ProductCard> {
                         children: [
                           Icon(
                             Icons.access_time,
-                            size: 12.sp,
+                            size: 10.sp,
                             color: const Color(0xFF0092AC),
                           ),
                           SizedBox(width: 2.w),
                           Text(
                             '1 Bid = ${widget.pointPerBid ?? 0}',
                             style: TextStyle(
-                              fontSize: 9.sp,
+                              fontSize: 7.sp,
                               fontWeight: FontWeight.w600,
                               color: MyTheme.accent_color,
                             ),

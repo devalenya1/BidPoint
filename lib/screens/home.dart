@@ -617,7 +617,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       );
     } else if (homeData.featuredCategoryList.isNotEmpty) {
       return SizedBox(
-        height: 50.h,
+        height: 40.h,
         child: ListView.builder(
           padding: EdgeInsets.only(left: 16.w, right: 16.w),
           scrollDirection: Axis.horizontal,
@@ -640,23 +640,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 margin: EdgeInsets.only(right: 8.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(8.r),
+                  borderRadius: BorderRadius.circular(10.r),
                   border: Border.all(color: const Color.fromRGBO(237, 242, 247, 1), width: 1.w),
                 ),
                 child: Row(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.horizontal(left: Radius.circular(8.r)),
+                      borderRadius: BorderRadius.horizontal(left: Radius.circular(10.r)),
                       child: FadeInImage.assetNetwork(
                         placeholder: 'assets/placeholder.png',
                         image: category.banner ?? '',
                         fit: BoxFit.cover,
-                        width: 50.w,
-                        height: 50.h,
+                        width: 40.w,
+                        height: 40.h,
                         imageErrorBuilder: (context, error, stackTrace) {
                           return Container(
-                            width: 50.w,
-                            height: 50.h,
+                            width: 40.w,
+                            height: 40.h,
                             color: const Color.fromRGBO(245, 247, 250, 1),
                             child: Icon(Icons.category, size: 25.sp, color: const Color.fromRGBO(107, 115, 119, 1)),
                           );
@@ -700,8 +700,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     // Get screen width for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
     
-    // Calculate height based on screen width with aspect ratio 338/200
-    final double carouselHeight = screenWidth * (200 / 338);
+    // ✅ Fixed: Use the actual banner dimensions 350x167
+    // Calculate height based on the banner's aspect ratio (350/167)
+    final double carouselHeight = screenWidth * (167 / 350);
     
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
       return Padding(
@@ -730,7 +731,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           return Builder(
             builder: (BuildContext context) {
               return Padding(
-                // ✅ FIXED: Left and right padding (18.w each)
                 padding: EdgeInsets.symmetric(horizontal: 18.w),
                 child: Stack(
                   children: <Widget>[
@@ -761,7 +761,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           child: i.photo != null
                               ? Image.network(
                                   i.photo!,
-                                  fit: BoxFit.cover,
+                                  // ✅ Fixed: Use BoxFit.contain to show full image without cropping
+                                  fit: BoxFit.contain,
                                   width: double.infinity,
                                   height: carouselHeight,
                                   errorBuilder: (context, error, stackTrace) {
@@ -790,7 +791,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    // ✅ Gradient overlay for better visibility of dots
+                    // Gradient overlay for better visibility of dots
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -813,7 +814,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    // ✅ Dot indicators
+                    // Dot indicators
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Padding(

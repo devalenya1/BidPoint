@@ -106,7 +106,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final auctionBids = _userInfo!.auctionBids ?? [];
     final distinctAuctionBids = _userInfo!.distinctAuctionBids ?? [];
     
-    // Create a map of product info by product ID
     final Map<int, DistinctAuctionBid> productInfoMap = {};
     for (var product in distinctAuctionBids) {
       if (product.productId != null) {
@@ -114,7 +113,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     }
     
-    // Group bids by product
     final Map<int, List<AuctionBid>> bidsByProduct = {};
     for (var bid in auctionBids) {
       if (bid.productId != null) {
@@ -444,7 +442,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               children: [
                 SizedBox(height: 16.h),
                 if (currentActivities.isEmpty)
-                  _buildEmptyState(_selectedTab) // ✅ Will have same width as cards
+                  _buildEmptyState(_selectedTab)
                 else
                   Column(
                     children: currentActivities.map((activity) => 
@@ -483,8 +481,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 4.w),
-                padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 10.h),
+                margin: EdgeInsets.only(right: 4.w), // ✅ Closer tabs
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h), // ✅ Reduced padding
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -492,7 +490,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 child: Text(
                   tabNames[index],
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 13.sp, // ✅ Slightly smaller font
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -533,8 +531,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
     
     return Container(
-      width: double.infinity, // ✅ Fill the parent container width
-      padding: EdgeInsets.symmetric(vertical: 60.h), // ✅ Only vertical padding
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 60.h),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(16.r),
@@ -579,21 +577,36 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final isWinning = userHighestBid >= currentBid && userHighestBid > 0;
     final isEnded = false;
     
+    // ✅ All status text in BLACK (no colored text)
     String statusText;
-    Color statusColor = MyTheme.dark_font_grey;
+    Color statusColor = Colors.black; // ✅ All black
     
     if (isOutbid && !isEnded) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
-      statusColor = const Color(0xFFDC2626);
+      statusColor = Colors.black;
     } else if (isWinning && !isEnded) {
       statusText = AppLocalizations.of(context)!.currently_winning;
-      statusColor = const Color(0xFF10B981);
+      statusColor = Colors.black;
     } else if (isEnded && isWinning) {
       statusText = AppLocalizations.of(context)!.you_won_auction;
-      statusColor = const Color(0xFF10B981);
+      statusColor = Colors.black;
     } else {
       statusText = AppLocalizations.of(context)!.auction_ended;
-      statusColor = const Color(0xFF64748B);
+      statusColor = Colors.black;
+    }
+    
+    // ✅ Description text based on status (matches HTML)
+    String descriptionText;
+    if (isOutbid && !isEnded) {
+      descriptionText = 'Someone placed a higher bid on $productName';
+    } else if (isWinning && !isEnded) {
+      descriptionText = 'Your bid is currently the highest on $productName';
+    } else if (isEnded && isWinning) {
+      descriptionText = 'Congratulations! You won $productName';
+    } else if (isEnded && !isWinning) {
+      descriptionText = 'You didn\'t win $productName';
+    } else {
+      descriptionText = productName;
     }
     
     final timeLeft = _timeLeft[productId] ?? AppLocalizations.of(context)!.loading;
@@ -617,8 +630,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               }
             },
             child: Container(
-              width: 120.w,
-              height: 140.h,
+              width: 100.w, // ✅ Smaller width
+              height: 120.h, // ✅ Smaller height
               margin: EdgeInsets.only(right: 12.w),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
@@ -630,14 +643,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                     ? Image.network(
                         productImage,
                         fit: BoxFit.cover,
-                        width: 120.w,
-                        height: 140.h,
+                        width: 100.w,
+                        height: 120.h,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: const Color(0xFFE2E8F0),
                             child: Icon(
                               Icons.inventory_2,
-                              size: 50.sp,
+                              size: 40.sp,
                               color: const Color(0xFF94A3B8),
                             ),
                           );
@@ -647,7 +660,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                         color: const Color(0xFFE2E8F0),
                         child: Icon(
                           Icons.inventory_2,
-                          size: 50.sp,
+                          size: 40.sp,
                           color: const Color(0xFF94A3B8),
                         ),
                       ),
@@ -658,36 +671,29 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status Text
+                // Status Text - Black
                 Text(
                   statusText, 
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
-                    color: statusColor,
+                    color: Colors.black, // ✅ Always black
                   ),
                 ),
                 SizedBox(height: 4.h),
                 
-                // Product Name - Clickable
-                GestureDetector(
-                  onTap: () {
-                    if (productSlug.isNotEmpty) {
-                      _navigateToProductDetails(productSlug);
-                    }
-                  },
-                  child: Text(
-                    productName,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF1A202C),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                // ✅ Description Text (matches HTML)
+                Text(
+                  descriptionText,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF80818B),
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 8.h),
+                SizedBox(height: 6.h),
                 
                 // Current Bid Label
                 Text(
@@ -695,12 +701,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       ? AppLocalizations.of(context)!.final_bid
                       : AppLocalizations.of(context)!.current_bid,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF80818B),
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h),
                 
                 // Bid Amount and Points
                 Row(
@@ -710,7 +716,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       child: Text(
                         _formatPrice(currentBid),
                         style: TextStyle(
-                          fontSize: 18.sp,
+                          fontSize: 16.sp, // ✅ Slightly smaller
                           fontWeight: FontWeight.w800,
                           color: MyTheme.dark_font_grey,
                         ),
@@ -718,40 +724,35 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(14.r),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 12.sp,
-                            color: const Color(0xFF0092AC),
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            '1 Bid = $pointPerBid',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF0092AC),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        '1 Bid = $pointPerBid',
+                        style: TextStyle(
+                          fontSize: 9.sp, // ✅ Smaller font
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0092AC),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 10.h),
                 
-                // Action Button
+                // Action Button - All with accent color background and white text
                 if (isOutbid && !isEnded)
                   _buildBidAgainButton(productSlug)
+                else if (isWinning && !isEnded)
+                  _buildViewDetailsButton(productSlug, isWinning: true)
+                else if (isEnded && isWinning)
+                  _buildViewDetailsButton(productSlug, isWinning: true)
+                else if (isEnded && !isWinning)
+                  Container() // No button for ended/outbid
                 else
-                  _buildViewDetailsButton(productSlug),
+                  _buildViewDetailsButton(productSlug, isWinning: false),
               ],
             ),
           ),
@@ -775,7 +776,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
-          color: MyTheme.accent_color,
+          color: MyTheme.accent_color, // ✅ Accent color background
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
@@ -784,14 +785,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: Colors.white, // ✅ White text
           ),
         ),
       ),
     );
   }
   
-  Widget _buildViewDetailsButton(String productSlug) {
+  Widget _buildViewDetailsButton(String productSlug, {bool isWinning = false}) {
     return GestureDetector(
       onTap: () {
         if (productSlug.isNotEmpty) {
@@ -806,17 +807,16 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 10.h),
         decoration: BoxDecoration(
-          color: Colors.transparent,
-          border: Border.all(color: MyTheme.accent_color, width: 1.w),
+          color: MyTheme.accent_color, // ✅ Accent color background
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          AppLocalizations.of(context)!.view_details,
+          isWinning ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
-            color: MyTheme.accent_color,
+            color: Colors.white, // ✅ White text
           ),
         ),
       ),

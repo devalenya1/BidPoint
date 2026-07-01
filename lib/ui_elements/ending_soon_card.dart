@@ -472,14 +472,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           children: [
                             Icon(
                               Icons.access_time,
-                              size: 10.sp,
+                              size: 8.sp,
                               color: const Color(0xFF0092AC),
                             ),
                             SizedBox(width: 2.w),
                             Text(
                               '1 Bid = ${widget.pointPerBid ?? 0}',
                               style: TextStyle(
-                                fontSize: 8.sp,
+                                fontSize: 6.sp,
                                 fontWeight: FontWeight.w600,
                                 color: MyTheme.accent_color,
                               ),
@@ -697,14 +697,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           children: [
                             Icon(
                               Icons.access_time,
-                              size: 10.sp,
+                              size: 8.sp,
                               color: const Color(0xFF0092AC),
                             ),
                             SizedBox(width: 2.w),
                             Text(
                               '1 Bid = ${widget.pointPerBid ?? 0}',
                               style: TextStyle(
-                                fontSize: 8.sp,
+                                fontSize: 6.sp,
                                 fontWeight: FontWeight.w600,
                                 color: MyTheme.accent_color,
                               ),

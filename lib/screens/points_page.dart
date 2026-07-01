@@ -603,7 +603,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     double? cardHeight,
   }) {
     final height = cardHeight ?? 150.h;
-    final imageSize = height * 0.40; // Slightly smaller image to allow more text space
+    final imageSize = height * 0.50; // Slightly smaller image to allow more text space
     
     return GestureDetector(
       onTap: () => _selectPackage(package),
@@ -639,10 +639,10 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     package.name ?? AppLocalizations.of(context)!.package_ucf,
                     style: TextStyle(
-                      fontSize: (height * 0.11).clamp(16.sp, 22.sp),
+                      fontSize: (height * 0.12).clamp(16.sp, 22.sp),
                       fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : const Color(0xFFA5A5BA),
-                      height: 1.3, // Line height for readability
+                      height: 1.4, // Line height for readability
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -654,10 +654,10 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                     style: TextStyle(
-                      fontSize: (height * 0.16).clamp(20.sp, 28.sp),
+                      fontSize: (height * 0.19).clamp(20.sp, 28.sp),
                       fontWeight: FontWeight.w800,
                       color: isSelected ? Colors.white : const Color(0xFF000417),
-                      height: 1.2, // Tighter line height for numbers
+                      height: 1.3, // Tighter line height for numbers
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -671,7 +671,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         ? AppLocalizations.of(context)!.free_ucf 
                         : _formatPrice(packagePrice),
                     style: TextStyle(
-                      fontSize: (height * 0.10).clamp(14.sp, 18.sp),
+                      fontSize: (height * 0.12).clamp(14.sp, 18.sp),
                       fontWeight: FontWeight.w500,
                       color: isSelected ? Colors.white : const Color(0xFF80818B),
                       height: 1.4, // More line height for price

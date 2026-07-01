@@ -300,7 +300,6 @@ class _WishlistState extends State<Wishlist> {
   // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
-    // Check if we're on a large screen
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= 600;
     
@@ -408,7 +407,7 @@ class _WishlistState extends State<Wishlist> {
               children: [
                 SizedBox(height: 16.h),
                 if (currentItems.isEmpty)
-                  _buildEmptyState() // ✅ Will have same width as cards
+                  _buildEmptyState()
                 else
                   Column(
                     children: currentItems.map((item) => 
@@ -440,7 +439,7 @@ class _WishlistState extends State<Wishlist> {
               children: [
                 SizedBox(height: 16.h),
                 if (currentItems.isEmpty)
-                  _buildEmptyState() // ✅ Will have same width as cards
+                  _buildEmptyState()
                 else
                   Wrap(
                     spacing: 16.w,
@@ -490,7 +489,7 @@ class _WishlistState extends State<Wishlist> {
               child: Container(
                 margin: EdgeInsets.only(right: 4.w),
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 32.w : 28.w, 
+                  horizontal: isTablet ? 24.w : 20.w, // ✅ Reduced padding
                   vertical: isTablet ? 12.h : 10.h,
                 ),
                 decoration: BoxDecoration(
@@ -500,7 +499,7 @@ class _WishlistState extends State<Wishlist> {
                 child: Text(
                   tabs[index],
                   style: TextStyle(
-                    fontSize: isTablet ? 16.sp : 14.sp,
+                    fontSize: isTablet ? 15.sp : 13.sp, // ✅ Slightly smaller
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -518,27 +517,29 @@ class _WishlistState extends State<Wishlist> {
     final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
     final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
     
+    // ✅ Get pointPerBid from API data (item already has it from the model)
     final int pointPerBid = item.pointPerBid ?? 10;
     
     final isEnded = false;
     final isOutbid = false;
     final isWinning = !isEnded && !isOutbid;
     
+    // ✅ All status text in BLACK
     String statusText;
-    Color statusColor;
+    Color statusColor = Colors.black;
     
     if (isEnded) {
       statusText = AppLocalizations.of(context)!.auction_has_ended;
-      statusColor = const Color(0xFF64748B);
+      statusColor = Colors.black;
     } else if (isOutbid) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
-      statusColor = const Color(0xFFDC2626);
+      statusColor = Colors.black;
     } else if (isWinning) {
       statusText = AppLocalizations.of(context)!.currently_winning;
-      statusColor = const Color(0xFF10B981);
+      statusColor = Colors.black;
     } else {
       statusText = AppLocalizations.of(context)!.place_your_bid_now;
-      statusColor = const Color(0xFFF59E0B);
+      statusColor = Colors.black;
     }
     
     final bool isAuctionProduct = item.isAuction ?? false;
@@ -546,16 +547,16 @@ class _WishlistState extends State<Wishlist> {
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-    final imageSize = isTablet ? 140.w : 120.w;
-    final imageHeight = isTablet ? 160.h : 140.h;
+    final imageSize = isTablet ? 120.w : 100.w; // ✅ Smaller
+    final imageHeight = isTablet ? 140.h : 120.h; // ✅ Smaller
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
+      padding: EdgeInsets.all(isTablet ? 14.w : 10.w), // ✅ Smaller padding
       decoration: BoxDecoration(
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
+        border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,7 +596,7 @@ class _WishlistState extends State<Wishlist> {
                                 color: const Color(0xFFE2E8F0),
                                 child: Icon(
                                   Icons.inventory_2,
-                                  size: 50.sp,
+                                  size: 40.sp,
                                   color: const Color(0xFF94A3B8),
                                 ),
                               );
@@ -605,21 +606,21 @@ class _WishlistState extends State<Wishlist> {
                             color: const Color(0xFFE2E8F0),
                             child: Icon(
                               Icons.inventory_2,
-                              size: 50.sp,
+                              size: 40.sp,
                               color: const Color(0xFF94A3B8),
                             ),
                           ),
                   ),
                 ),
-                // Remove from wishlist
+                // ✅ Remove from wishlist - FULL HEART (black)
                 Positioned(
                   top: 0,
                   right: 0,
                   child: GestureDetector(
                     onTap: () => _removeFromWishlist(item.productId!),
                     child: Container(
-                      width: isTablet ? 36.w : 32.w,
-                      height: isTablet ? 36.w : 32.w,
+                      width: isTablet ? 32.w : 28.w,
+                      height: isTablet ? 32.w : 28.w,
                       margin: EdgeInsets.all(4.w),
                       decoration: const BoxDecoration(
                         color: Colors.white,
@@ -633,9 +634,9 @@ class _WishlistState extends State<Wishlist> {
                         ],
                       ),
                       child: Icon(
-                        Icons.favorite_border,
-                        size: isTablet ? 18.sp : 16.sp,
-                        color: Colors.black87,
+                        Icons.favorite, // ✅ Full heart (not border)
+                        size: isTablet ? 16.sp : 14.sp,
+                        color: Colors.black, // ✅ Black
                       ),
                     ),
                   ),
@@ -664,7 +665,7 @@ class _WishlistState extends State<Wishlist> {
               ],
             ),
           ),
-          SizedBox(width: isTablet ? 16.w : 12.w),
+          SizedBox(width: isTablet ? 14.w : 10.w),
           // Content
           Expanded(
             child: Column(
@@ -682,34 +683,33 @@ class _WishlistState extends State<Wishlist> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: isTablet ? 16.sp : 14.sp,
-                      fontWeight: FontWeight.w800,
+                      fontSize: isTablet ? 15.sp : 13.sp, // ✅ Smaller
+                      fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
                   ),
                 ),
-                SizedBox(height: 6.h),
-                // Status Text
+                SizedBox(height: 4.h),
+                // Status Text - Black
                 Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: isTablet ? 13.sp : 12.sp,
+                    fontSize: isTablet ? 12.sp : 11.sp,
                     fontWeight: FontWeight.w500,
-                    color: statusColor,
+                    color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 8.h),
+                SizedBox(height: 6.h),
                 // Bid Label
                 Text(
                   AppLocalizations.of(context)!.current_bid,
                   style: TextStyle(
-                    fontSize: isTablet ? 11.sp : 10.sp,
+                    fontSize: isTablet ? 10.sp : 9.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF94A3B8),
-                    letterSpacing: 0.3,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h),
                 // Bid Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -718,7 +718,7 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                         style: TextStyle(
-                          fontSize: isTablet ? 20.sp : 18.sp,
+                          fontSize: isTablet ? 18.sp : 16.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
                         ),
@@ -726,7 +726,7 @@ class _WishlistState extends State<Wishlist> {
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(14.r),
@@ -734,7 +734,7 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         AppLocalizations.of(context)!.bid_points(pointPerBid),
                         style: TextStyle(
-                          fontSize: isTablet ? 11.sp : 10.sp,
+                          fontSize: isTablet ? 10.sp : 9.sp, // ✅ Smaller
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF0092AC),
                         ),
@@ -742,8 +742,8 @@ class _WishlistState extends State<Wishlist> {
                     ),
                   ],
                 ),
-                SizedBox(height: 12.h),
-                // Action Button
+                SizedBox(height: 10.h),
+                // ✅ Action Button - White with accent border and text
                 GestureDetector(
                   onTap: () {
                     if (productSlug.isNotEmpty) {
@@ -758,11 +758,11 @@ class _WishlistState extends State<Wishlist> {
                   },
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: isTablet ? 12.h : 10.h),
+                    padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
                     decoration: BoxDecoration(
-                      color: isAuctionProduct ? MyTheme.accent_color : Colors.white,
+                      color: Colors.white, // ✅ White background
                       border: Border.all(color: MyTheme.accent_color, width: 1.w),
-                      borderRadius: BorderRadius.circular(8.r),
+                      borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Text(
                       isAuctionProduct 
@@ -770,9 +770,9 @@ class _WishlistState extends State<Wishlist> {
                           : AppLocalizations.of(context)!.view_details,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: isTablet ? 13.sp : 12.sp,
+                        fontSize: isTablet ? 12.sp : 11.sp,
                         fontWeight: FontWeight.w600,
-                        color: isAuctionProduct ? Colors.white : MyTheme.accent_color,
+                        color: MyTheme.accent_color, // ✅ Accent color text
                       ),
                     ),
                   ),
@@ -817,8 +817,8 @@ class _WishlistState extends State<Wishlist> {
     final isTablet = screenWidth >= 600;
     
     return Container(
-      width: double.infinity, // ✅ Fill the parent container width
-      padding: EdgeInsets.symmetric(vertical: isTablet ? 80.h : 60.h), // ✅ Only vertical padding
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: isTablet ? 80.h : 60.h),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(16.r),
