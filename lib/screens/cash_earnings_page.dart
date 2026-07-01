@@ -384,6 +384,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     
   Widget _buildCashHistorySection(List<Map<String, dynamic>> logs) {
     return Container(
+      // ✅ Keep the padding so empty state matches history cards
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +401,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           SizedBox(height: 12.h),
           
           if (logs.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState() // ✅ Will have same width as history cards
           else
             Column(
               children: logs.map((log) => _buildHistoryCard(log)).toList(),
@@ -499,7 +500,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 40.h),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(14.r),
@@ -590,6 +592,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           
           // Summary Card for selected month
           Container(
+            width: double.infinity,
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FC),

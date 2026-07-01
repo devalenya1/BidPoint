@@ -408,7 +408,7 @@ class _WishlistState extends State<Wishlist> {
               children: [
                 SizedBox(height: 16.h),
                 if (currentItems.isEmpty)
-                  _buildEmptyState()
+                  _buildEmptyState() // ✅ Will have same width as cards
                 else
                   Column(
                     children: currentItems.map((item) => 
@@ -440,7 +440,7 @@ class _WishlistState extends State<Wishlist> {
               children: [
                 SizedBox(height: 16.h),
                 if (currentItems.isEmpty)
-                  _buildEmptyState()
+                  _buildEmptyState() // ✅ Will have same width as cards
                 else
                   Wrap(
                     spacing: 16.w,
@@ -817,7 +817,12 @@ class _WishlistState extends State<Wishlist> {
     final isTablet = screenWidth >= 600;
     
     return Container(
-      padding: EdgeInsets.symmetric(vertical: isTablet ? 80.h : 60.h, horizontal: 20.w),
+      width: double.infinity, // ✅ Fill the parent container width
+      padding: EdgeInsets.symmetric(vertical: isTablet ? 80.h : 60.h), // ✅ Only vertical padding
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
       child: Column(
         children: [
           Text(icon, style: TextStyle(fontSize: isTablet ? 64.sp : 48.sp)),

@@ -475,6 +475,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildPointsHistorySection() {
     return Container(
+      // ✅ Keep the padding so empty state matches history cards
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +491,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           SizedBox(height: 12.h),
           
           if (_filteredPointsLogs.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState() // ✅ Will have same width as history cards
           else
             Column(
               children: _filteredPointsLogs.map((log) => _buildHistoryCard(log)).toList(),
@@ -577,7 +578,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
+      width: double.infinity, // ✅ Fill the parent container width
+      padding: EdgeInsets.symmetric(vertical: 40.h), // ✅ Only vertical padding
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(14.r),
@@ -596,6 +598,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               fontWeight: FontWeight.w600,
               color: const Color(0xFF334155),
             ),
+            textAlign: TextAlign.center,
           ),
           SizedBox(height: 6.h),
           Text(
@@ -616,6 +619,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     final monthPoints = _monthlyPoints[selectedMonth] ?? 0;
     
     return Container(
+      // ✅ Keep the padding so net points card matches history cards
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,8 +669,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           
           SizedBox(height: 16.h),
           
-          // Summary Card for selected month
+          // ✅ Net Points Card - Same width as history cards
           Container(
+            width: double.infinity, // ✅ Fill the parent container width
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FC),

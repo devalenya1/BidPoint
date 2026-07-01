@@ -444,7 +444,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               children: [
                 SizedBox(height: 16.h),
                 if (currentActivities.isEmpty)
-                  _buildEmptyState(_selectedTab)
+                  _buildEmptyState(_selectedTab) // ✅ Will have same width as cards
                 else
                   Column(
                     children: currentActivities.map((activity) => 
@@ -533,7 +533,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     }
     
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 60.h, horizontal: 20.w),
+      width: double.infinity, // ✅ Fill the parent container width
+      padding: EdgeInsets.symmetric(vertical: 60.h), // ✅ Only vertical padding
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(16.r),
