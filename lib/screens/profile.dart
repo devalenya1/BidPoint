@@ -124,6 +124,7 @@ class _ProfileState extends State<Profile> {
       }
     } catch (e) {
       print("Error loading user data: $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_profile_data);
       _loadFromSharedPreferences();
     } finally {
       setState(() {
@@ -212,18 +213,18 @@ class _ProfileState extends State<Profile> {
       try {
         await AuthHelper().clearUserData();
         _resetState();
-        ToastComponent.showDialog("Logged out successfully");
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.logged_out_successfully);
         if (mounted) {
           context.go("/users/login");
         }
       } catch (e) {
-        ToastComponent.showDialog("Logout failed: ${e.toString()}");
+        ToastComponent.showError('${AppLocalizations.of(context)!.logout_failed}: ${e.toString()}');
       }
     }
   }
 
   void _showLoginWarning() {
-    ToastComponent.showDialog(
+    ToastComponent.showWarning(
       AppLocalizations.of(context)!.you_need_to_log_in,
       gravity: ToastGravity.CENTER,
       duration: Toast.LENGTH_LONG,

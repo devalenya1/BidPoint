@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/withdrawal_page.dart';
 import 'package:active_ecommerce_flutter/helpers/auth_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
@@ -9,7 +10,6 @@ import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
@@ -81,7 +81,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_affiliate_data);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_affiliate_data);
     } finally {
       setState(() {
         _isLoading = false;
@@ -113,12 +113,12 @@ class _AffiliatePageState extends State<AffiliatePage> {
   
   void _copyToClipboard(String text, String type) {
     Clipboard.setData(ClipboardData(text: text));
-    ToastComponent.showDialog(AppLocalizations.of(context)!.copied_to_clipboard);
+    ToastComponent.showSuccess(AppLocalizations.of(context)!.copied_to_clipboard);
   }
   
   void _shareReferralLink() async {
     if (_referralCode.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.referral_code_not_available);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.referral_code_not_available);
       return;
     }
     

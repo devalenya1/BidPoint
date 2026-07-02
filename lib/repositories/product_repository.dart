@@ -11,6 +11,55 @@ import '../data_model/variant_price_response.dart';
 import '../data_model/auction_models.dart';
 import '../helpers/main_helpers.dart';
 import 'package:active_ecommerce_flutter/middlewares/banned_user.dart';
+import 'package:flutter/material.dart';
+
+// Helper class to handle localization without context
+class LocalizedMessages {
+  // Default messages (English fallback)
+  static const Map<String, String> _defaultMessages = {
+    'failed_to_load_product_details': 'Failed to load product details',
+    'failed_to_load_products': 'Failed to load products',
+    'failed_to_load_wishlist': 'Failed to load wishlist',
+    'failed_to_load_activities': 'Failed to load activities',
+    'failed_to_load_comments': 'Failed to load comments',
+    'failed_to_load_reviews': 'Failed to load reviews',
+    'failed_to_load_bid_history': 'Failed to load bid history',
+    'failed_to_add_to_wishlist': 'Failed to add to wishlist',
+    'failed_to_remove_from_wishlist': 'Failed to remove from wishlist',
+    'wishlist_update_failed': 'Wishlist update failed',
+    'bid_placed_successfully': 'Bid placed successfully',
+    'bid_placed_successfully_with_amount': 'Bid placed! Amount: {amount}',
+    'bid_placed': 'Bid placed!',
+    'failed_to_place_bid': 'Failed to place bid',
+    'auction_time_extended': '⏰ Auction time extended!',
+    'comment_added_successfully': 'Comment added successfully',
+    'failed_to_add_comment': 'Failed to add comment',
+    'review_submitted_successfully': 'Review submitted successfully',
+    'failed_to_submit_review': 'Failed to submit review',
+    'notify_me_success': 'You will be notified when this auction starts',
+    'notify_me_failed': 'Failed to set notification',
+    'message_sent_to_seller': 'Message sent to seller!',
+    'failed_to_contact_seller': 'Failed to contact seller',
+    'network_error': 'Network error. Please try again.',
+    'something_went_wrong': 'Something went wrong',
+    'remove_from_wishlist_success': 'Removed from wishlist successfully!',
+    'add_to_wishlist_success': 'Added to wishlist successfully!',
+  };
+
+  static String getMessage(String key, [Map<String, String>? params]) {
+    // Try to get from default messages, fallback to key
+    String message = _defaultMessages[key] ?? key;
+    
+    // Replace parameters if provided
+    if (params != null) {
+      params.forEach((key, value) {
+        message = message.replaceAll('{$key}', value);
+      });
+    }
+    
+    return message;
+  }
+}
 
 class ProductRepository {
   Future<CatResponse> getCategoryRes() async {
@@ -118,7 +167,6 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Get product details with proper endpoint
   Future<ProductDetailsResponse> getProductDetails({String? slug = ""}) async {
     String url = ("${AppConfig.BASE_URL}/products/details/" + slug.toString());
     print("Product Url: $url");
@@ -250,7 +298,6 @@ class ProductRepository {
 
   // ============ AUCTION BIDDING METHODS ============
   
-  // ✅ FIXED: Poll product data
   Future<PollDataResponse> pollProductData(int productId) async {
     String url = ("${AppConfig.BASE_URL}/auction/product-poll/$productId");
     final response = await ApiRequest.get(
@@ -263,7 +310,6 @@ class ProductRepository {
     return pollDataResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Place bid
   Future<BidResponse> placeBid(String productId, String amount, {String type = "custom"}) async {
     String url = ("${AppConfig.BASE_URL}/auction_product_bids/store");
     var postBody = jsonEncode({
@@ -283,7 +329,6 @@ class ProductRepository {
     return bidResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Quick bid
   Future<BidResponse> quickBid(String productId, String amount, {String type = "quick"}) async {
     String url = ("${AppConfig.BASE_URL}/auction/quick-bid");
     var postBody = jsonEncode({
@@ -305,7 +350,6 @@ class ProductRepository {
 
   // ============ COMMENTS ============
   
-  // ✅ FIXED: Get comments
   Future<CommentResponse> getProductComments(int productId) async {
     String url = ("${AppConfig.BASE_URL}/auction/comments/$productId");
     final response = await ApiRequest.get(
@@ -317,7 +361,6 @@ class ProductRepository {
     return commentResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Add comment
   Future<AddCommentResponse> addProductComment(int productId, String comment) async {
     String url = ("${AppConfig.BASE_URL}/auction/add-comment");
     var postBody = jsonEncode({
@@ -336,7 +379,6 @@ class ProductRepository {
     return addCommentResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Like comment
   Future<Map<String, dynamic>> likeProductComment(int commentId) async {
     String url = ("${AppConfig.BASE_URL}/auction/like-comment");
     var postBody = jsonEncode({
@@ -356,7 +398,6 @@ class ProductRepository {
 
   // ============ REVIEWS ============
   
-  // ✅ FIXED: Get reviews
   Future<ReviewResponse> getProductReviews(int productId) async {
     String url = ("${AppConfig.BASE_URL}/auction/reviews/$productId");
     final response = await ApiRequest.get(
@@ -368,7 +409,6 @@ class ProductRepository {
     return reviewResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Add review
   Future<AddReviewResponse> addProductReview(int productId, int rating, String comment) async {
     String url = ("${AppConfig.BASE_URL}/auction/add-review");
     var postBody = jsonEncode({
@@ -390,7 +430,6 @@ class ProductRepository {
 
   // ============ BID HISTORY ============
   
-  // ✅ FIXED: Get bid history
   Future<BidHistoryResponse> getProductBidHistory(int productId) async {
     String url = ("${AppConfig.BASE_URL}/auction/bid-history/$productId");
     final response = await ApiRequest.get(
@@ -404,7 +443,6 @@ class ProductRepository {
 
   // ============ WISHLIST ============
   
-  // ✅ FIXED: Add to wishlist
   Future<WishlistResponse> addToWishlist(int productId) async {
     String url = ("${AppConfig.BASE_URL}/wishlist/add");
     var postBody = jsonEncode({
@@ -422,7 +460,6 @@ class ProductRepository {
     return wishlistResponseFromJson(response.body);
   }
 
-  // ✅ FIXED: Remove from wishlist
   Future<WishlistResponse> removeFromWishlist(int productId) async {
     String url = ("${AppConfig.BASE_URL}/wishlist/remove");
     var postBody = jsonEncode({
@@ -465,7 +502,7 @@ class ProductRepository {
         return {
           'success': false,
           'isInWishlist': false,
-          'message': 'Failed to get wishlist status',
+          'message': LocalizedMessages.getMessage('failed_to_load_wishlist'),
         };
       }
     } catch (e) {
@@ -473,12 +510,12 @@ class ProductRepository {
       return {
         'success': false,
         'isInWishlist': false,
-        'message': 'Network error',
+        'message': LocalizedMessages.getMessage('network_error'),
       };
     }
   }
 
-  // ✅ Get wishlist status for multiple products (for batch checking)
+  // Get wishlist status for multiple products (for batch checking)
   Future<Map<String, bool>> getWishlistStatusBatch(List<int> productIds) async {
     String url = "${AppConfig.BASE_URL}/wishlist/status-batch";
     
@@ -508,7 +545,6 @@ class ProductRepository {
     }
   }
 
-  // In product_repository.dart
   Future<WishlistResponse> toggleWishlist(int productId) async {
     String url = "${AppConfig.BASE_URL}/wishlist/toggle";
     var postBody = jsonEncode({
@@ -528,7 +564,6 @@ class ProductRepository {
 
   // ============ NOTIFY ME ============
   
-  // ✅ FIXED: Notify me for auction
   Future<Map<String, dynamic>> notifyMeForAuction(int productId) async {
     String url = "${AppConfig.BASE_URL}/auction/notify-me";
     
@@ -549,13 +584,13 @@ class ProductRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? "You will be notified when this auction starts",
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('notify_me_success'),
           'status': response.statusCode,
         };
       } else {
         return {
           'success': false,
-          'message': "Failed to set notification",
+          'message': LocalizedMessages.getMessage('notify_me_failed'),
           'status': response.statusCode,
         };
       }
@@ -563,13 +598,13 @@ class ProductRepository {
       print("Error in notifyMeForAuction: $e");
       return {
         'success': false,
-        'message': "Network error. Please try again.",
+        'message': LocalizedMessages.getMessage('network_error'),
         'status': 500,
       };
     }
   }
 
-  // ✅ FIXED: Contact seller
+  // Contact seller
   Future<Map<String, dynamic>> contactSeller(int productId) async {
     String url = "${AppConfig.BASE_URL}/product/contact-store";
     
@@ -590,13 +625,13 @@ class ProductRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? "Message sent to seller!",
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('message_sent_to_seller'),
           'status': response.statusCode,
         };
       } else {
         return {
           'success': false,
-          'message': "Failed to contact seller",
+          'message': LocalizedMessages.getMessage('failed_to_contact_seller'),
           'status': response.statusCode,
         };
       }
@@ -604,7 +639,7 @@ class ProductRepository {
       print("Error in contactSeller: $e");
       return {
         'success': false,
-        'message': "Network error. Please try again.",
+        'message': LocalizedMessages.getMessage('network_error'),
         'status': 500,
       };
     }

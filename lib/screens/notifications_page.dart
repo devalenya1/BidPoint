@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model with a prefix to avoid naming conflict
 import '../data_model/user_info_response.dart' as model;
@@ -46,7 +47,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  // ============ FETCH DATA FROM API (Like ProductDetails) ============
+  // ============ FETCH DATA FROM API ============
   Future<void> _fetchNotifications() async {
     try {
       setState(() {
@@ -85,7 +86,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       }
     } catch (e) {
       print("Error loading notifications: $e");
-      ToastComponent.showDialog('Failed to load notifications');
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notifications);
     } finally {
       setState(() {
         _isLoading = false;
@@ -94,7 +95,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  // ============ PROCESS NOTIFICATIONS (Extract from stored user info) ============
+  // ============ PROCESS NOTIFICATIONS ============
   void _processNotifications() {
     if (_userInfo == null) return;
 
@@ -221,7 +222,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     _sendMarkAllAsReadRequest();
   }
 
-  // In notifications_page.dart
   void _sendMarkAllAsReadRequest() async {
     try {
       // This runs in background - no UI blocking
@@ -235,11 +235,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
         print('✅ All notifications marked as read in background');
       } else {
         print('❌ Failed to mark all notifications as read: ${response['message']}');
+        ToastComponent.showWarning(response['message'] ?? AppLocalizations.of(context)!.failed_to_mark_notifications_read);
         // If failed, revert the optimistic update by fetching fresh data
         await _fetchNotifications();
       }
     } catch (e) {
       print('❌ Failed to mark all notifications as read: $e');
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_mark_notifications_read);
       setState(() {
         _isMarkingAllAsRead = false;
       });
@@ -379,19 +381,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.notification_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              // Go to home if can't pop
               context.go("/");
             }
           },
@@ -409,7 +411,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
                         child: Column(
                           children: [
                             if (currentNotifications.isEmpty)
@@ -420,7 +422,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   _buildNotificationItem(notification)
                                 ).toList(),
                               ),
-                            const SizedBox(height: 20),
+                            SizedBox(height: 20.h),
                           ],
                         ),
                       ),
@@ -438,19 +440,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
       children: [
         // Tabs shimmer
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          margin: const EdgeInsets.only(bottom: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          margin: EdgeInsets.only(bottom: 16.h),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: List.generate(4, (index) =>
                 Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  width: 100,
-                  height: 42,
+                  margin: EdgeInsets.only(right: 4.w),
+                  width: 100.w,
+                  height: 42.h,
                   decoration: BoxDecoration(
                     color: MyTheme.shimmer_base,
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: BorderRadius.circular(7.r),
                   ),
                 ),
               ),
@@ -460,13 +462,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
         // Notification items shimmer
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               children: [
                 for (int i = 0; i < 5; i++)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: ShimmerHelper().buildBasicShimmer(height: 80, radius: 12),
+                    padding: EdgeInsets.only(bottom: 16.h),
+                    child: ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 12.r),
                   ),
               ],
             ),
@@ -485,8 +487,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      margin: EdgeInsets.only(bottom: 16.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -499,16 +501,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 });
               },
               child: Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                margin: EdgeInsets.only(right: 4.w),
+                padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(7.r),
                 ),
                 child: Text(
                   tabs[index],
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -526,12 +528,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final isRead = notification.isRead ?? false;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: 16.h),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
             color: const Color(0xFFF0F0F0),
-            width: 1,
+            width: 1.w,
           ),
         ),
       ),
@@ -540,19 +542,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
         children: [
           // Notification Icon
           Container(
-            width: 44,
-            height: 44,
+            width: 44.w,
+            height: 44.w,
             decoration: BoxDecoration(
               color: _getIconBackgroundColor(type),
               shape: BoxShape.circle,
             ),
             child: Icon(
               _getIconData(type),
-              size: 20,
+              size: 20.sp,
               color: _getIconColor(type),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14.w),
 
           // Notification Content
           Expanded(
@@ -561,46 +563,46 @@ class _NotificationsPageState extends State<NotificationsPage> {
               children: [
                 Text(
                   notification.title ?? '',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
                     color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   notification.message ?? '',
-                  style: const TextStyle(
-                    fontSize: 13.6,
-                    color: Color(0xFF666666),
+                  style: TextStyle(
+                    fontSize: 13.6.sp,
+                    color: const Color(0xFF666666),
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6.h),
                 Text(
                   notification.createdAt != null
                       ? _formatDate(notification.createdAt!)
                       : '',
-                  style: const TextStyle(
-                    fontSize: 11.2,
-                    color: Color(0xFF999999),
+                  style: TextStyle(
+                    fontSize: 11.2.sp,
+                    color: const Color(0xFF999999),
                   ),
                 ),
               ],
             ),
           ),
 
-          // New Badge - Since all are marked as read on load, this will not show
+          // New Badge
           if (!isRead)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: const Color(0xFFFF3B30),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
               ),
               child: Text(
                 AppLocalizations.of(context)!.new_ucf,
-                style: const TextStyle(
-                  fontSize: 10.4,
+                style: TextStyle(
+                  fontSize: 10.4.sp,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -634,20 +636,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 60.h, horizontal: 20.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
       child: Column(
         children: [
           Text(
             icon,
-            style: const TextStyle(fontSize: 48),
+            style: TextStyle(fontSize: 48.sp),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF999999),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: const Color(0xFF999999),
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

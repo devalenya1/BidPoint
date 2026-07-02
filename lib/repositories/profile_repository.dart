@@ -16,7 +16,8 @@ import 'package:flutter/foundation.dart';
 import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
 import 'package:flutter/material.dart'; 
 import 'package:flutter/foundation.dart' show kDebugMode;
-
+// ✅ Add this import for localization
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ProfileRepository {
 
@@ -146,13 +147,13 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? 'Notification settings saved successfully',
+          'message': responseData['message'] ?? AppLocalizations.of(context!)!.notification_settings_saved,
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': 'Failed to save notification settings',
+          'message': AppLocalizations.of(context!)!.failed_to_save_notification_settings,
           'status': response.statusCode,
         };
       }
@@ -160,7 +161,7 @@ class ProfileRepository {
       print("Error updating notification settings: $e");
       return {
         'success': false,
-        'message': 'Network error. Please try again.',
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -186,13 +187,13 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? 'Removed from wishlist successfully!',
+          'message': responseData['message'] ?? AppLocalizations.of(context!)!.removed_from_wishlist_success,
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': 'Failed to remove from wishlist',
+          'message': AppLocalizations.of(context!)!.failed_to_remove_from_wishlist,
           'status': response.statusCode,
         };
       }
@@ -200,7 +201,7 @@ class ProfileRepository {
       print("Error removing from wishlist: $e");
       return {
         'success': false,
-        'message': 'Network error. Please try again.',
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -230,7 +231,7 @@ class ProfileRepository {
         return {
           'success': false,
           'settings': {},
-          'message': 'Failed to get notification settings',
+          'message': AppLocalizations.of(context!)!.failed_to_get_notification_settings,
         };
       }
     } catch (e) {
@@ -238,7 +239,7 @@ class ProfileRepository {
       return {
         'success': false,
         'settings': {},
-        'message': 'Network error. Please try again.',
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -263,7 +264,7 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? "Verification code sent",
+          'message': responseData['message'] ?? AppLocalizations.of(context!)!.verification_code_sent,
           'data': responseData['data'],
         };
       } else {
@@ -272,12 +273,12 @@ class ProfileRepository {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? "Failed to send verification code",
+            'message': errorData['message'] ?? AppLocalizations.of(context!)!.failed_to_send_verification_code,
           };
         } catch (e) {
           return {
             'success': false,
-            'message': "Failed to send verification code",
+            'message': AppLocalizations.of(context!)!.failed_to_send_verification_code,
           };
         }
       }
@@ -285,7 +286,7 @@ class ProfileRepository {
       print("Error sending verification code: $e");
       return {
         'success': false,
-        'message': "Network error. Please try again.",
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -312,7 +313,7 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? "Email updated successfully",
+          'message': responseData['message'] ?? AppLocalizations.of(context!)!.email_updated_successfully,
           'data': responseData['data'],
         };
       } else {
@@ -321,12 +322,12 @@ class ProfileRepository {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? "Verification failed",
+            'message': errorData['message'] ?? AppLocalizations.of(context!)!.verification_failed,
           };
         } catch (e) {
           return {
             'success': false,
-            'message': "Verification failed",
+            'message': AppLocalizations.of(context!)!.verification_failed,
           };
         }
       }
@@ -334,12 +335,12 @@ class ProfileRepository {
       print("Error verifying email: $e");
       return {
         'success': false,
-        'message': "Network error. Please try again.",
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
 
-  // In profile_repository.dart
+  // Mark all notifications as read
   Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
     String url = "${AppConfig.BASE_URL}/notification/mark-all-read";
     
@@ -358,20 +359,20 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? 'All notifications marked as read',
+          'message': responseData['message'] ?? AppLocalizations.of(context!)!.all_notifications_marked_read,
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': 'Failed to mark all notifications as read',
+          'message': AppLocalizations.of(context!)!.failed_to_mark_notifications_read,
         };
       }
     } catch (e) {
       print("Error marking all notifications as read: $e");
       return {
         'success': false,
-        'message': 'Network error. Please try again.',
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -397,7 +398,7 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? "Withdrawal request submitted successfully",
+          'message': responseData['message'] ?? AppLocalizations.of(context!)!.withdrawal_request_submitted,
           'data': responseData['data'],
         };
       } else {
@@ -406,13 +407,13 @@ class ProfileRepository {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? "Failed to submit withdrawal request",
+            'message': errorData['message'] ?? AppLocalizations.of(context!)!.failed_to_submit_withdrawal,
             'status': response.statusCode,
           };
         } catch (e) {
           return {
             'success': false,
-            'message': "Failed to submit withdrawal request",
+            'message': AppLocalizations.of(context!)!.failed_to_submit_withdrawal,
             'status': response.statusCode,
           };
         }
@@ -421,7 +422,7 @@ class ProfileRepository {
       print("Error submitting withdrawal: $e");
       return {
         'success': false,
-        'message': "Network error. Please try again.",
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -436,30 +437,38 @@ class ProfileRepository {
   }) async {
     String url = "${AppConfig.BASE_URL}/affiliate/payment-details/update";
     
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-      body: jsonEncode({
-        "paypal_email": paypalEmail,
-        "bank_name": bankName,
-        "account_holder": accountHolder,
-        "account_number": accountNumber,
-        "ifsc_code": ifscCode,
-      })
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return responseData;
-    } else {
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({
+          "paypal_email": paypalEmail,
+          "bank_name": bankName,
+          "account_holder": accountHolder,
+          "account_number": accountNumber,
+          "ifsc_code": ifscCode,
+        })
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return responseData;
+      } else {
+        return {
+          'success': false,
+          'status': response.statusCode,
+          'message': AppLocalizations.of(context!)!.failed_to_update_payment_details
+        };
+      }
+    } catch (e) {
+      print("Error updating payment details: $e");
       return {
         'success': false,
-        'status': response.statusCode,
-        'message': 'Failed to update payment details'
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }
@@ -468,24 +477,32 @@ class ProfileRepository {
   Future<Map<String, dynamic>> getAffiliatePaymentDetails() async {
     String url = "${AppConfig.BASE_URL}/affiliate/payment-details";
     
-    final response = await ApiRequest.post(
-      url: url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${access_token.$}",
-        "App-Language": app_language.$!,
-      },
-      body: '{}'
-    );
-    
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      return responseData;
-    } else {
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: '{}'
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return responseData;
+      } else {
+        return {
+          'success': false,
+          'status': response.statusCode,
+          'message': AppLocalizations.of(context!)!.failed_to_get_payment_details
+        };
+      }
+    } catch (e) {
+      print("Error getting payment details: $e");
       return {
         'success': false,
-        'status': response.statusCode,
-        'message': 'Failed to get payment details'
+        'message': AppLocalizations.of(context!)!.network_error_try_again,
       };
     }
   }

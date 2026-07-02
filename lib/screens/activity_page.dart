@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
@@ -90,7 +90,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     } catch (e) {
       print("Error loading activities: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_activities);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_activities);
     } finally {
       setState(() {
         _isLoading = false;
@@ -341,7 +341,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         ),
       );
     } else {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
         AppLocalizations.of(context)!.product_details_not_available,
       );
     }
@@ -595,16 +595,16 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       statusColor = Colors.black;
     }
     
-    // ✅ Updated: Product name shown separately, then description
+    // Updated: Product name shown separately, then description
     String descriptionText;
     if (isOutbid && !isEnded) {
-      descriptionText = 'Someone placed a higher bid on';
+      descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
     } else if (isWinning && !isEnded) {
-      descriptionText = 'Your bid is currently the highest on';
+      descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
     } else if (isEnded && isWinning) {
-      descriptionText = 'Congratulations! You won';
+      descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
     } else if (isEnded && !isWinning) {
-      descriptionText = 'You didn\'t win';
+      descriptionText = AppLocalizations.of(context)!.you_didnt_win;
     } else {
       descriptionText = '';
     }
@@ -682,7 +682,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 2.h),
                 
-                // ✅ Product Name (shown before description)
+                // Product Name (shown before description)
                 Text(
                   productName,
                   style: TextStyle(
@@ -695,7 +695,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 2.h),
                 
-                // ✅ Description Text (without product name)
+                // Description Text (without product name)
                 if (descriptionText.isNotEmpty)
                   Text(
                     descriptionText,
@@ -744,7 +744,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                         borderRadius: BorderRadius.circular(14.r),
                       ),
                       child: Text(
-                        '1 Bid = $pointPerBid',
+                        '${AppLocalizations.of(context)!.one_bid_equals} $pointPerBid',
                         style: TextStyle(
                           fontSize: 9.sp,
                           fontWeight: FontWeight.w600,
@@ -781,7 +781,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         if (productSlug.isNotEmpty) {
           _navigateToProductDetails(productSlug);
         } else {
-          ToastComponent.showDialog(
+          ToastComponent.showWarning(
             AppLocalizations.of(context)!.product_details_not_available
           );
         }
@@ -812,7 +812,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         if (productSlug.isNotEmpty) {
           _navigateToProductDetails(productSlug);
         } else {
-          ToastComponent.showDialog(
+          ToastComponent.showWarning(
             AppLocalizations.of(context)!.product_details_not_available
           );
         }

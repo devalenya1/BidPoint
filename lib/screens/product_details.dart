@@ -120,10 +120,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _fetchAllData();
     _startPolling();
     
-    // Initialize audio player
     _audioPlayer.setReleaseMode(ReleaseMode.release);
-    
-    // Add listener for login state changes
     _setupLoginStateListener();
   }
 
@@ -171,9 +168,7 @@ class _ProductDetailsState extends State<ProductDetails>
         _reviewsCount = _product!.ratingCount ?? 0;
         _rating = (_product!.rating ?? 0).toDouble();
         _isWishlisted = false;
-        
         _isInWishlist = false;
-        
         _endingSeconds = _product!.swipeLeft ?? 10;
 
         _minNextBidNow = _currentHighestBid + 0.01;
@@ -196,6 +191,7 @@ class _ProductDetailsState extends State<ProductDetails>
       setState(() => _isLoading = false);
     } catch (e) {
       print('Error fetching data: $e');
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
       setState(() => _isLoading = false);
     }
   }
@@ -252,46 +248,35 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
-        // Update bid data
         if (response.startingBid != null) {
-          setState(() {
-            _startingBid = response.startingBid!;
-          });
+          setState(() { _startingBid = response.startingBid!; });
         }
 
         if (response.highestBid != null) {
           final oldHighestBid = _currentHighestBid;
-          setState(() {
-            _currentHighestBid = response.highestBid!;
-          });
+          setState(() { _currentHighestBid = response.highestBid!; });
           
           if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
             _playBidSound();
-            _showToast('${response.lastBidderName} placed a bid of ${_formatPrice(_currentHighestBid)}');
+            ToastComponent.showInfo(
+              '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
+            );
           }
         }
 
         if (response.totalBids != null) {
-          setState(() {
-            _totalBids = response.totalBids!;
-          });
+          setState(() { _totalBids = response.totalBids!; });
         }
 
         if (response.lastBidderName != null && response.lastBidderName!.isNotEmpty) {
-          setState(() {
-            _highestBidder = response.lastBidderName!;
-          });
+          setState(() { _highestBidder = response.lastBidderName!; });
         }
 
         if (response.pointPerBid != null) {
-          setState(() {
-            _pointPerBid = response.pointPerBid!;
-          });
+          setState(() { _pointPerBid = response.pointPerBid!; });
         }
         if (response.pointPerBidCustom != null) {
-          setState(() {
-            _pointPerBidCustom = response.pointPerBidCustom!;
-          });
+          setState(() { _pointPerBidCustom = response.pointPerBidCustom!; });
         }
 
         _minNextBidNow = _currentHighestBid + 0.01;
@@ -329,17 +314,19 @@ class _ProductDetailsState extends State<ProductDetails>
               response.remainingSeconds! > 0) {
             setState(() => _isEndingSoon = true);
             _playTickSound();
-            _showToast('⚠️ Auction ending in $_endingSeconds seconds! ⚠️');
+            ToastComponent.showWarning(
+              '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
+            );
           }
         } else {
           if (_isEndingSoon) setState(() => _isEndingSoon = false);
         }
 
         if (response.rating != null) {
-          setState(() => _rating = response.rating!);
+          setState(() { _rating = response.rating!; });
         }
         if (response.reviewsCount != null) {
-          setState(() => _reviewsCount = response.reviewsCount!);
+          setState(() { _reviewsCount = response.reviewsCount!; });
         }
 
         if (response.comments != null && response.comments!.isNotEmpty) {
@@ -367,7 +354,6 @@ class _ProductDetailsState extends State<ProductDetails>
       print('Polling error: $e');
     }
   }
-
 
   void _checkAndRefreshWishlist() {
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
@@ -409,7 +395,9 @@ class _ProductDetailsState extends State<ProductDetails>
       if (totalSeconds <= _endingSeconds && totalSeconds > 0 && !_isEndingSoon) {
         setState(() => _isEndingSoon = true);
         _playTickSound();
-        _showToast('⚠️ Auction ending in $_endingSeconds seconds! ⚠️');
+        ToastComponent.showWarning(
+          '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
+        );
       } else if (totalSeconds > _endingSeconds && _isEndingSoon) {
         setState(() => _isEndingSoon = false);
       }
@@ -433,7 +421,7 @@ class _ProductDetailsState extends State<ProductDetails>
             _comments[index].likes = response['data']['likes'].toString();
           }
         });
-        _showToast('Comment liked!');
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_liked);
       }
     } catch (e) {
       print('Error liking comment: $e');
@@ -474,7 +462,7 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true) {
         _playBidSound();
         if (response.timeExtended == true) {
-          _showToast(response.message ?? '⏰ Auction time extended!');
+          ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
           if (response.newEndDate != null) {
             try {
               final newEndTime = DateTime.parse(response.newEndDate!);
@@ -484,19 +472,19 @@ class _ProductDetailsState extends State<ProductDetails>
             }
           }
         } else {
-          _showToast(
-              response.message ?? 'Bid placed! Amount: ${_formatPrice(amount)}');
+          ToastComponent.showSuccess(
+              response.message ?? '${AppLocalizations.of(context)!.bid_placed} ${AppLocalizations.of(context)!.amount_ucf}: ${_formatPrice(amount)}');
         }
 
         await _pollData();
       } else {
-        _showToast(response.message ?? 'Something went wrong');
+        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
-      _showToast('Error placing bid: $e');
+      ToastComponent.showError(AppLocalizations.of(context)!.error_placing_bid);
     }
   }
 
@@ -510,11 +498,11 @@ class _ProductDetailsState extends State<ProductDetails>
 
     final amount = double.tryParse(_bidController.text);
     if (amount == null) {
-      _showToast('Please enter a valid amount');
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_valid_amount);
       return;
     }
     if (amount < _minNextBidNow) {
-      _showToast('Bid must be at least ${_formatPrice(_minNextBidNow)}');
+      ToastComponent.showWarning('${AppLocalizations.of(context)!.bid_must_be_at_least} ${_formatPrice(_minNextBidNow)}');
       return;
     }
 
@@ -534,19 +522,19 @@ class _ProductDetailsState extends State<ProductDetails>
         _playBidSound();
         _bidController.clear();
         if (response.timeExtended == true) {
-          _showToast(response.message ?? '⏰ Auction time extended!');
+          ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
         } else {
-          _showToast('Bid placed! Amount: ${_formatPrice(amount)}');
+          ToastComponent.showSuccess('${AppLocalizations.of(context)!.bid_placed} ${AppLocalizations.of(context)!.amount_ucf}: ${_formatPrice(amount)}');
         }
         await _pollData();
       } else {
-        _showToast(response.message ?? 'Error placing bid');
+        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_placing_bid);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
-      _showToast('Error placing bid');
+      ToastComponent.showError(AppLocalizations.of(context)!.error_placing_bid);
     }
   }
 
@@ -564,7 +552,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     final comment = _commentController.text.trim();
     if (comment.isEmpty) {
-      _showToast('Please enter a comment');
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_comment);
       return;
     }
 
@@ -584,15 +572,15 @@ class _ProductDetailsState extends State<ProductDetails>
         _playCommentSound();
         _commentController.clear();
         await _fetchComments();
-        _showToast('Comment added!');
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
       } else {
-        _showToast(response.message ?? 'Error adding comment');
+        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_adding_comment);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
-      _showToast('Error adding comment');
+      ToastComponent.showError(AppLocalizations.of(context)!.error_adding_comment);
     }
   }
 
@@ -609,13 +597,13 @@ class _ProductDetailsState extends State<ProductDetails>
     if (_isProcessing) return;
 
     if (_selectedRating == 0) {
-      _showToast('Please select a rating');
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_select_rating);
       return;
     }
 
     final comment = _reviewController.text.trim();
     if (comment.isEmpty) {
-      _showToast('Please write a review');
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_write_review);
       return;
     }
 
@@ -633,7 +621,7 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (response.success == true) {
-        _showToast('Review submitted!');
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.review_submitted);
         _showAddReviewModal = false;
         _selectedRating = 0;
         _reviewController.clear();
@@ -641,13 +629,13 @@ class _ProductDetailsState extends State<ProductDetails>
         await _pollData();
         setState(() {});
       } else {
-        _showToast(response.message ?? 'Error submitting review');
+        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_submitting_review);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
-      _showToast('Error submitting review');
+      ToastComponent.showError(AppLocalizations.of(context)!.error_submitting_review);
     }
   }
 
@@ -657,9 +645,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Future<void> _fetchWishlistStatus() async {
     if (!is_logged_in.$) {
-      setState(() {
-        _isInWishlist = false;
-      });
+      setState(() { _isInWishlist = false; });
       return;
     }
     
@@ -676,9 +662,7 @@ class _ProductDetailsState extends State<ProductDetails>
       if (result['success'] == true) {
         final newState = result['isInWishlist'] ?? false;
         if (_isInWishlist != newState) {
-          setState(() {
-            _isInWishlist = newState;
-          });
+          setState(() { _isInWishlist = newState; });
           print('✅ Updated wishlist to: $_isInWishlist');
         }
       } else {
@@ -725,34 +709,28 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true) {
         if (wasInWishlist) {
           _playCommentSound();
-          _showToast('Removed from wishlist');
+          ToastComponent.showSuccess(AppLocalizations.of(context)!.removed_from_wishlist);
         } else {
           _playBidSound();
-          _showToast('Added to wishlist');
+          ToastComponent.showSuccess(AppLocalizations.of(context)!.added_to_wishlist);
         }
         
         await _fetchWishlistStatus();
       } else {
-        setState(() {
-          _isInWishlist = wasInWishlist;
-        });
+        setState(() { _isInWishlist = wasInWishlist; });
         
         print('❌ Wishlist operation failed: ${response.message}');
-        _showToast('Wishlist update failed. Please try again.');
+        ToastComponent.showError(AppLocalizations.of(context)!.wishlist_update_failed);
         
         await _fetchWishlistStatus();
       }
     } catch (e) {
       print('❌ Wishlist error: $e');
-      setState(() {
-        _isInWishlist = wasInWishlist;
-      });
-      _showToast('Wishlist update failed. Please try again.');
+      setState(() { _isInWishlist = wasInWishlist; });
+      ToastComponent.showError(AppLocalizations.of(context)!.wishlist_update_failed);
     } finally {
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
+        setState(() { _isProcessing = false; });
       }
     }
   }
@@ -777,9 +755,7 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true && response.isInWishlist != null) {
         final newState = response.isInWishlist!;
         if (_isInWishlist != newState) {
-          setState(() {
-            _isInWishlist = newState;
-          });
+          setState(() { _isInWishlist = newState; });
           print('✅ Updated _isInWishlist to: $_isInWishlist');
         } else {
           print('✅ _isInWishlist already set to: $_isInWishlist');
@@ -816,7 +792,7 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (response['success'] == true) {
-        _showToast(response['message'] ?? 'Message sent to seller!');
+        ToastComponent.showSuccess(response['message'] ?? AppLocalizations.of(context)!.message_sent_to_seller);
         
         if (mounted) {
           Future.delayed(const Duration(milliseconds: 300), () {
@@ -829,13 +805,13 @@ class _ProductDetailsState extends State<ProductDetails>
           });
         }
       } else {
-        _showToast(response['message'] ?? 'Failed to contact seller');
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.failed_to_contact_seller);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
-      _showToast('Error contacting seller');
+      ToastComponent.showError(AppLocalizations.of(context)!.error_contacting_seller);
     }
   }
 
@@ -910,12 +886,8 @@ class _ProductDetailsState extends State<ProductDetails>
     };
   }
 
-  void _showToast(String message) {
-    ToastComponent.showDialog(message);
-  }
-
   void _showLoginRequired() {
-    _showToast('Please login to continue');
+    ToastComponent.showWarning(AppLocalizations.of(context)!.please_login_to_continue);
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
@@ -949,13 +921,13 @@ class _ProductDetailsState extends State<ProductDetails>
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Enter Your Bid',
+              AppLocalizations.of(context)!.enter_your_bid,
               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 4.h),
             Text(
-              '1 Bid = $_pointPerBidCustom',
+              '${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom',
               style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
@@ -964,7 +936,7 @@ class _ProductDetailsState extends State<ProductDetails>
               controller: _bidController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: 'Min: ${_formatPrice(_minNextBidNow)}',
+                hintText: '${AppLocalizations.of(context)!.min_ucf}: ${_formatPrice(_minNextBidNow)}',
                 hintStyle: TextStyle(fontSize: 14.sp),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.r),
@@ -988,7 +960,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       backgroundColor: Colors.grey.shade200,
                     ),
                     child: Text(
-                      'Cancel',
+                      AppLocalizations.of(context)!.cancel_ucf,
                       style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
                     ),
                   ),
@@ -1012,7 +984,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: _isProcessing
                         ? _buildButtonLoader()
                         : Text(
-                            'Place Bid',
+                            AppLocalizations.of(context)!.place_bid,
                             style: TextStyle(
                               fontSize: 14.sp,
                               color: Colors.white,
@@ -1079,7 +1051,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Product Details',
+                    AppLocalizations.of(context)!.product_details,
                     style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
@@ -1132,7 +1104,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'All Reviews ($_reviewsCount)',
+                          '${AppLocalizations.of(context)!.all_reviews} ($_reviewsCount)',
                           style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                         ),
                         IconButton(
@@ -1144,7 +1116,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   Expanded(
                     child: _reviews.isEmpty
-                        ? Center(child: Text('No reviews yet', style: TextStyle(fontSize: 14.sp)))
+                        ? Center(child: Text(AppLocalizations.of(context)!.no_reviews_yet, style: TextStyle(fontSize: 14.sp)))
                         : ListView.builder(
                             padding: EdgeInsets.all(16.w),
                             itemCount: _reviews.length,
@@ -1185,7 +1157,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                     SizedBox(height: 4.h),
                                     Text(
-                                      review.userName ?? 'User',
+                                      review.userName ?? AppLocalizations.of(context)!.user_ucf,
                                       style: TextStyle(fontSize: 12.sp, color: Colors.grey),
                                     ),
                                   ],
@@ -1215,7 +1187,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
-                              'Write a Review',
+                              AppLocalizations.of(context)!.write_a_review,
                               style: TextStyle(fontSize: 14.sp, color: Colors.white),
                             ),
                     ),
@@ -1251,7 +1223,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Write a Review',
+                        AppLocalizations.of(context)!.write_a_review,
                         style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                       ),
                       IconButton(
@@ -1261,7 +1233,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     ],
                   ),
                   SizedBox(height: 16.h),
-                  Text('Rating', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+                  Text(AppLocalizations.of(context)!.rating_ucf, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
                   SizedBox(height: 8.h),
                   RatingBar.builder(
                     initialRating: 0,
@@ -1278,13 +1250,13 @@ class _ProductDetailsState extends State<ProductDetails>
                     },
                   ),
                   SizedBox(height: 16.h),
-                  Text('Review', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+                  Text(AppLocalizations.of(context)!.review_ucf, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
                   SizedBox(height: 8.h),
                   TextField(
                     controller: tempController,
                     maxLines: 5,
                     decoration: InputDecoration(
-                      hintText: 'Share your experience with this product...',
+                      hintText: AppLocalizations.of(context)!.share_experience_hint,
                       hintStyle: TextStyle(fontSize: 14.sp),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8.r),
@@ -1297,11 +1269,11 @@ class _ProductDetailsState extends State<ProductDetails>
                         ? null
                         : () async {
                             if (tempRating == 0) {
-                              _showToast('Please select a rating');
+                              ToastComponent.showWarning(AppLocalizations.of(context)!.please_select_rating);
                               return;
                             }
                             if (tempController.text.trim().isEmpty) {
-                              _showToast('Please write a review');
+                              ToastComponent.showWarning(AppLocalizations.of(context)!.please_write_review);
                               return;
                             }
                             Navigator.pop(context);
@@ -1320,18 +1292,18 @@ class _ProductDetailsState extends State<ProductDetails>
                               }
 
                               if (response.success == true) {
-                                _showToast('Review submitted!');
+                                ToastComponent.showSuccess(AppLocalizations.of(context)!.review_submitted);
                                 await _fetchReviews();
                                 await _pollData();
                                 setState(() {});
                               } else {
-                                _showToast(response.message ?? 'Error submitting review');
+                                ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_submitting_review);
                               }
                             } catch (e) {
                               if (mounted) {
                                 setState(() => _isProcessing = false);
                               }
-                              _showToast('Error submitting review');
+                              ToastComponent.showError(AppLocalizations.of(context)!.error_submitting_review);
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -1343,7 +1315,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: _isProcessing
                         ? _buildButtonLoader()
                         : Text(
-                            'Submit Review',
+                            AppLocalizations.of(context)!.submit_review,
                             style: TextStyle(fontSize: 14.sp, color: Colors.white),
                           ),
                   ),
@@ -1375,7 +1347,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Bid History',
+                      AppLocalizations.of(context)!.bid_history,
                       style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
                     ),
                     IconButton(
@@ -1393,19 +1365,19 @@ class _ProductDetailsState extends State<ProductDetails>
                     Expanded(
                         flex: 2,
                         child: Text(
-                          'Bidder',
+                          AppLocalizations.of(context)!.bidder_ucf,
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
                         )),
                     Expanded(
                         flex: 1,
                         child: Text(
-                          'Amount',
+                          AppLocalizations.of(context)!.amount_ucf,
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
                         )),
                     Expanded(
                         flex: 1,
                         child: Text(
-                          'Date & Time',
+                          AppLocalizations.of(context)!.date_time_ucf,
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
                           textAlign: TextAlign.end,
                         )),
@@ -1414,7 +1386,7 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
               Expanded(
                 child: _bidHistory.isEmpty
-                    ? Center(child: Text('No bids yet', style: TextStyle(fontSize: 14.sp)))
+                    ? Center(child: Text(AppLocalizations.of(context)!.no_bids_yet, style: TextStyle(fontSize: 14.sp)))
                     : ListView.builder(
                         itemCount: _bidHistory.length,
                         itemBuilder: (context, index) {
@@ -1429,7 +1401,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 Expanded(
                                     flex: 2,
                                     child: Text(
-                                      bid.userName ?? 'User',
+                                      bid.userName ?? AppLocalizations.of(context)!.user_ucf,
                                       style: TextStyle(fontSize: 13.sp),
                                     )),
                                 Expanded(
@@ -1482,7 +1454,7 @@ class _ProductDetailsState extends State<ProductDetails>
               Text('🏆', style: TextStyle(fontSize: 48.sp)),
               SizedBox(height: 8.h),
               Text(
-                'Auction Ended!',
+                AppLocalizations.of(context)!.auction_ended_exclamation,
                 style: TextStyle(
                   fontSize: 24.sp,
                   fontWeight: FontWeight.bold,
@@ -1499,7 +1471,7 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
               SizedBox(height: 12.h),
               Text(
-                _winnerData!.userName ?? 'Winner',
+                _winnerData!.userName ?? AppLocalizations.of(context)!.winner_ucf,
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
@@ -1517,7 +1489,7 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
               SizedBox(height: 12.h),
               Text(
-                'Congratulations to the winner!',
+                AppLocalizations.of(context)!.congratulations_to_winner,
                 style: TextStyle(fontSize: 14.sp, color: Colors.white70),
               ),
               SizedBox(height: 20.h),
@@ -1530,7 +1502,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                 ),
                 child: Text(
-                  'Close',
+                  AppLocalizations.of(context)!.close_ucf,
                   style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
                 ),
               ),
@@ -1685,7 +1657,7 @@ class _ProductDetailsState extends State<ProductDetails>
           controller: _mainScrollController,
           physics: BouncingScrollPhysics(),
           slivers: [
-            // Image Sliver - 65% of screen height
+            // Image Sliver
             SliverAppBar(
               expandedHeight: imageHeight,
               pinned: true,
@@ -1719,7 +1691,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         );
                       }).toList(),
                     ),
-                    // Gradient Overlay
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1822,7 +1793,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Comments Section
                             Container(
                               width: MediaQuery.of(context).size.width * 0.75,
                               decoration: BoxDecoration(
@@ -1841,7 +1811,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     child: _comments.isEmpty
                                         ? Center(
                                             child: Text(
-                                              'No comments yet',
+                                              AppLocalizations.of(context)!.no_comments_yet,
                                               style: TextStyle(
                                                 color: Colors.white54,
                                                 fontSize: 11.sp,
@@ -1883,7 +1853,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         children: [
                                                           Text(
                                                             comment.userName ??
-                                                                'User',
+                                                                AppLocalizations.of(context)!.user_ucf,
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .white,
@@ -1911,7 +1881,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                                             .id ??
                                                                             0),
                                                                 child: Text(
-                                                                  '${comment.likesCount} Likes',
+                                                                  '${comment.likesCount} ${AppLocalizations.of(context)!.likes_ucf}',
                                                                   style: TextStyle(
                                                                     color: Colors
                                                                         .white54,
@@ -1925,9 +1895,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                                                     _replyToComment(
                                                                         comment
                                                                             .userName ??
-                                                                        'User'),
+                                                                        AppLocalizations.of(context)!.user_ucf),
                                                                 child: Text(
-                                                                  'Reply',
+                                                                  AppLocalizations.of(context)!.reply_ucf,
                                                                   style: TextStyle(
                                                                     color: Colors
                                                                         .white54,
@@ -1963,7 +1933,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                 color: Colors.white,
                                                 fontSize: 11.sp),
                                             decoration: InputDecoration(
-                                              hintText: 'Add Comment...',
+                                              hintText: AppLocalizations.of(context)!.add_comment_hint,
                                               hintStyle: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11.sp),
@@ -2008,7 +1978,6 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             SizedBox(height: 12.h),
-                            // Product name and description
                             GestureDetector(
                               onTap: _openTitleModal,
                               child: Column(
@@ -2033,14 +2002,13 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             SizedBox(height: 16.h),
-                            // Timer and Price
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('TIME LEFT',
+                                    Text(AppLocalizations.of(context)!.time_left,
                                         style: TextStyle(
                                             color: Colors.white70,
                                             fontSize: 12.sp)),
@@ -2048,15 +2016,15 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Row(
                                       children: [
                                         _buildTimerUnitBig(
-                                            timeComponents['days']!, 'days'),
+                                            timeComponents['days']!, AppLocalizations.of(context)!.days_short),
                                         _buildTimerUnitBig(
-                                            timeComponents['hours']!, 'hours'),
+                                            timeComponents['hours']!, AppLocalizations.of(context)!.hours_short),
                                         _buildTimerUnitBig(
                                             timeComponents['minutes']!,
-                                            'minutes'),
+                                            AppLocalizations.of(context)!.minutes_short),
                                         _buildTimerUnitBig(
                                             timeComponents['seconds']!,
-                                            'seconds'),
+                                            AppLocalizations.of(context)!.seconds_short),
                                       ],
                                     ),
                                   ],
@@ -2073,7 +2041,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      Text('Current Bid',
+                                      Text(AppLocalizations.of(context)!.current_bid,
                                           style: TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12.sp)),
@@ -2095,7 +2063,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // ✅ FIXED: Added back the missing Bid Info Section
+            // Bid Info Section
             SliverToBoxAdapter(
               child: Material(
                 borderRadius: BorderRadius.circular(16.r),
@@ -2110,7 +2078,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Bid Information',
+                      Text(AppLocalizations.of(context)!.bid_information,
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 16.sp)),
                       SizedBox(height: 12.h),
@@ -2122,15 +2090,15 @@ class _ProductDetailsState extends State<ProductDetails>
                         mainAxisSpacing: 12.h,
                         childAspectRatio: 3,
                         children: [
-                          _buildInfoItem('Starting bid',
+                          _buildInfoItem(AppLocalizations.of(context)!.starting_bid,
                               _formatPrice(_startingBid)),
-                          _buildInfoItem('Total bidders', '$_totalBids'),
+                          _buildInfoItem(AppLocalizations.of(context)!.total_bidders, '$_totalBids'),
                           _buildInfoItem(
-                              'Highest bidder',
+                              AppLocalizations.of(context)!.highest_bidder,
                               _highestBidder.isNotEmpty
                                   ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                  : 'No bids'),
-                          _buildInfoItem('Bid now at', '$_pointPerBid'),
+                                  : AppLocalizations.of(context)!.no_bids),
+                          _buildInfoItem(AppLocalizations.of(context)!.bid_now_at, '$_pointPerBid'),
                         ],
                       ),
                     ],
@@ -2138,7 +2106,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // ✅ FIXED: Added back the Reviews Section
+            // Reviews Section
             SliverToBoxAdapter(
               child: GestureDetector(
                 onTap: _openReviewsModal,
@@ -2184,7 +2152,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(20.r),
                             ),
-                            child: Text('$_reviewsCount reviews',
+                            child: Text('$_reviewsCount ${AppLocalizations.of(context)!.reviews_ucf}',
                                 style: TextStyle(
                                     fontSize: 12.sp, color: Colors.grey)),
                           ),
@@ -2197,7 +2165,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // ✅ FIXED: Added back the Thumbnails
+            // Thumbnails
             SliverToBoxAdapter(
               child: Container(
                 height: 70.h,
@@ -2241,7 +2209,7 @@ class _ProductDetailsState extends State<ProductDetails>
             SliverToBoxAdapter(child: SizedBox(height: 80.h)),
           ],
         ),
-        // More Menu - RENDERED AT THE HIGHEST Z-INDEX
+        // More Menu
         if (_showMoreMenu)
           Positioned(
             top: MediaQuery.of(context).padding.top + 80.h,
@@ -2267,7 +2235,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   children: [
                     _buildMoreMenuItem(
                       icon: Icons.share,
-                      text: 'Share',
+                      text: AppLocalizations.of(context)!.share_ucf,
                       onTap: () {
                         setState(() => _showMoreMenu = false);
                         _shareProduct();
@@ -2277,7 +2245,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       icon: _isInWishlist
                           ? Icons.favorite
                           : Icons.favorite_border,
-                      text: _isInWishlist ? 'Saved' : 'Save',
+                      text: _isInWishlist ? AppLocalizations.of(context)!.saved_ucf : AppLocalizations.of(context)!.save_ucf,
                       onTap: () {
                         setState(() => _showMoreMenu = false);
                         _toggleWishlist();
@@ -2285,7 +2253,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     ),
                     _buildMoreMenuItem(
                       icon: Icons.contact_mail,
-                      text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+                      text: _isProcessing ? AppLocalizations.of(context)!.contacting : AppLocalizations.of(context)!.contact_seller,
                       onTap: _isProcessing ? null : () {
                         setState(() => _showMoreMenu = false);
                         _contactSeller();
@@ -2296,7 +2264,7 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
           ),
-        // ✅ FIXED: Added back the Bottom Bar
+        // Bottom Bar
         Positioned(
           bottom: 0,
           left: 0,
@@ -2322,7 +2290,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.r)),
                     ),
-                    child: Text('Custom', style: TextStyle(fontSize: 14.sp)),
+                    child: Text(AppLocalizations.of(context)!.custom_ucf, style: TextStyle(fontSize: 14.sp)),
                   ),
                 ),
                 SizedBox(width: 12.w),
@@ -2339,7 +2307,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: _isProcessing
                         ? _buildButtonLoader()
                         : Text(
-                            'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                            '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
                             style: TextStyle(fontSize: 14.sp, color: Colors.white),
                           ),
                   ),
@@ -2672,10 +2640,10 @@ class _ProductDetailsState extends State<ProductDetails>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Comments',
+                          Text(AppLocalizations.of(context)!.comments_ucf,
                               style: TextStyle(
                                   fontSize: 16.sp, fontWeight: FontWeight.bold)),
-                          Text('Ask questions about this product',
+                          Text(AppLocalizations.of(context)!.ask_about_product,
                               style: TextStyle(
                                   fontSize: 12.sp, color: Colors.grey)),
                         ],
@@ -2735,7 +2703,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                           CrossAxisAlignment.start,
                                       children: [
                                         if (!isOwn)
-                                          Text(comment.userName ?? 'User',
+                                          Text(comment.userName ?? AppLocalizations.of(context)!.user_ucf,
                                               style: TextStyle(
                                                   fontSize: 11.sp,
                                                   fontWeight: FontWeight.w600,
@@ -2789,7 +2757,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 maxLines: null,
                                 style: TextStyle(fontSize: 14.sp),
                                 decoration: InputDecoration(
-                                  hintText: 'Type a message...',
+                                  hintText: AppLocalizations.of(context)!.type_message_hint,
                                   hintStyle:
                                       TextStyle(fontSize: 14.sp, color: Colors.grey),
                                   border: InputBorder.none,
@@ -2879,20 +2847,20 @@ class _ProductDetailsState extends State<ProductDetails>
                             children: [
                               _buildDesktopIconButton(
                                 icon: Icons.share,
-                                label: 'Share',
+                                label: AppLocalizations.of(context)!.share_ucf,
                                 onTap: _shareProduct,
                               ),
                               _buildDesktopIconButton(
                                 icon: _isInWishlist
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                label: _isInWishlist ? 'Saved' : 'Wishlist',
+                                label: _isInWishlist ? AppLocalizations.of(context)!.saved_ucf : AppLocalizations.of(context)!.wishlist_ucf,
                                 onTap: _toggleWishlist,
                                 isActive: _isInWishlist,
                               ),
                               _buildDesktopIconButton(
                                 icon: Icons.more_horiz,
-                                label: 'More',
+                                label: AppLocalizations.of(context)!.more_ucf,
                                 onTap: () => setState(() =>
                                     _showDesktopMoreMenu =
                                         !_showDesktopMoreMenu),
@@ -2917,7 +2885,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 children: [
                                   _buildDesktopMenuItem(
                                     icon: Icons.history,
-                                    text: 'Bid History',
+                                    text: AppLocalizations.of(context)!.bid_history,
                                     onTap: () {
                                       setState(() => _showDesktopMoreMenu =
                                           false);
@@ -2926,7 +2894,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   ),
                                   _buildDesktopMenuItem(
                                     icon: Icons.info_outline,
-                                    text: 'Product Details',
+                                    text: AppLocalizations.of(context)!.product_details,
                                     onTap: () {
                                       setState(() => _showDesktopMoreMenu =
                                           false);
@@ -2935,7 +2903,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   ),
                                   _buildDesktopMenuItem(
                                     icon: Icons.contact_mail,
-                                    text: _isProcessing ? 'Contacting...' : 'Contact Seller',
+                                    text: _isProcessing ? AppLocalizations.of(context)!.contacting : AppLocalizations.of(context)!.contact_seller,
                                     onTap: _isProcessing ? null : () {
                                       setState(() => _showDesktopMoreMenu =
                                           false);
@@ -2959,7 +2927,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('TIME LEFT',
+                                    Text(AppLocalizations.of(context)!.time_left,
                                         style: TextStyle(
                                             fontSize: 10.sp,
                                             color: Colors.grey,
@@ -2967,13 +2935,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Row(
                                       children: [
                                         _buildDesktopTimerUnit(
-                                            timeComponents['days']!, 'd'),
+                                            timeComponents['days']!, AppLocalizations.of(context)!.days_short),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['hours']!, 'h'),
+                                            timeComponents['hours']!, AppLocalizations.of(context)!.hours_short),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['minutes']!, 'm'),
+                                            timeComponents['minutes']!, AppLocalizations.of(context)!.minutes_short),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['seconds']!, 's'),
+                                            timeComponents['seconds']!, AppLocalizations.of(context)!.seconds_short),
                                       ],
                                     ),
                                   ],
@@ -2983,7 +2951,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Current Bid',
+                                    Text(AppLocalizations.of(context)!.current_bid,
                                         style: TextStyle(
                                             fontSize: 11.sp, color: Colors.grey)),
                                     Text(_formatPrice(_currentHighestBid),
@@ -3017,7 +2985,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Bid Information',
+                          Text(AppLocalizations.of(context)!.bid_information,
                               style: TextStyle(
                                   fontSize: 14.sp, fontWeight: FontWeight.bold)),
                           SizedBox(height: 12.h),
@@ -3029,16 +2997,16 @@ class _ProductDetailsState extends State<ProductDetails>
                             mainAxisSpacing: 12.h,
                             childAspectRatio: 2.5,
                             children: [
-                              _buildDesktopInfoItem('Starting bid',
+                              _buildDesktopInfoItem(AppLocalizations.of(context)!.starting_bid,
                                   _formatPrice(_startingBid)),
-                              _buildDesktopInfoItem('Total bidders',
+                              _buildDesktopInfoItem(AppLocalizations.of(context)!.total_bidders,
                                   '$_totalBids'),
                               _buildDesktopInfoItem(
-                                  'Highest bidder',
+                                  AppLocalizations.of(context)!.highest_bidder,
                                   _highestBidder.isNotEmpty
                                       ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                      : 'No bids'),
-                              _buildDesktopInfoItem('Bid now at',
+                                      : AppLocalizations.of(context)!.no_bids),
+                              _buildDesktopInfoItem(AppLocalizations.of(context)!.bid_now_at,
                                   '$_pointPerBid'),
                             ],
                           ),
@@ -3064,7 +3032,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              'Enter your bid amount (1 Bid = $_pointPerBidCustom)',
+                              '${AppLocalizations.of(context)!.enter_bid_amount} (${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom)',
                               style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
                           SizedBox(height: 8.h),
                           Row(
@@ -3074,7 +3042,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   controller: _bidController,
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
-                                    hintText: 'Enter amount',
+                                    hintText: AppLocalizations.of(context)!.enter_amount_hint,
                                     hintStyle: TextStyle(fontSize: 14.sp),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8.r),
@@ -3094,7 +3062,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                                 child: _isProcessing
                                     ? _buildButtonLoader()
-                                    : Text('Place Bid',
+                                    : Text(AppLocalizations.of(context)!.place_bid,
                                         style: TextStyle(fontSize: 14.sp, color: Colors.white)),
                               ),
                             ],
@@ -3116,7 +3084,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
-                              'Bid Now - ${_formatPrice(_minNextBidNow)}',
+                              '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
                               style: TextStyle(
                                   fontSize: 14.sp,
                                   color: Colors.white,
@@ -3162,7 +3130,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.bold)),
                                 SizedBox(width: 4.w),
-                                Text('($_reviewsCount reviews)',
+                                Text('($_reviewsCount ${AppLocalizations.of(context)!.reviews_ucf})',
                                     style: TextStyle(
                                         fontSize: 12.sp, color: Colors.grey)),
                               ],

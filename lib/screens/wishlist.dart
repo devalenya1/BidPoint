@@ -91,7 +91,7 @@ class _WishlistState extends State<Wishlist> {
       }
     } catch (e) {
       print("Error loading wishlist data: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_wishlist);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_wishlist);
     } finally {
       setState(() {
         _isLoading = false;
@@ -205,7 +205,7 @@ class _WishlistState extends State<Wishlist> {
         ),
       );
     } else {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
         AppLocalizations.of(context)!.product_details_not_available,
         gravity: Toast.center,
         duration: Toast.lengthShort,
@@ -265,13 +265,13 @@ class _WishlistState extends State<Wishlist> {
           wishlist_count.$ = _wishlistItems.length;
           wishlist_count.save();
           
-          ToastComponent.showDialog(
+          ToastComponent.showSuccess(
             response['message'] ?? AppLocalizations.of(context)!.removed_from_wishlist,
             gravity: Toast.center,
             duration: Toast.lengthShort,
           );
         } else {
-          ToastComponent.showDialog(
+          ToastComponent.showError(
             response['message'] ?? AppLocalizations.of(context)!.failed_to_remove_from_wishlist,
             gravity: Toast.center,
             duration: Toast.lengthShort,
@@ -279,7 +279,7 @@ class _WishlistState extends State<Wishlist> {
         }
       } catch (e) {
         print("Error removing from wishlist: $e");
-        ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_remove_from_wishlist);
+        ToastComponent.showError(AppLocalizations.of(context)!.failed_to_remove_from_wishlist);
       }
     }
   }
@@ -489,7 +489,7 @@ class _WishlistState extends State<Wishlist> {
               child: Container(
                 margin: EdgeInsets.only(right: 4.w),
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 24.w : 20.w, // ✅ Reduced padding
+                  horizontal: isTablet ? 24.w : 20.w,
                   vertical: isTablet ? 12.h : 10.h,
                 ),
                 decoration: BoxDecoration(
@@ -499,7 +499,7 @@ class _WishlistState extends State<Wishlist> {
                 child: Text(
                   tabs[index],
                   style: TextStyle(
-                    fontSize: isTablet ? 15.sp : 13.sp, // ✅ Slightly smaller
+                    fontSize: isTablet ? 15.sp : 13.sp,
                     fontWeight: FontWeight.w600,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
@@ -517,14 +517,12 @@ class _WishlistState extends State<Wishlist> {
     final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
     final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
     
-    // ✅ Get pointPerBid from API data (item already has it from the model)
     final int pointPerBid = item.pointPerBid ?? 10;
     
     final isEnded = false;
     final isOutbid = false;
     final isWinning = !isEnded && !isOutbid;
     
-    // ✅ All status text in BLACK
     String statusText;
     Color statusColor = Colors.black;
     
@@ -547,12 +545,12 @@ class _WishlistState extends State<Wishlist> {
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-    final imageSize = isTablet ? 120.w : 100.w; // ✅ Smaller
-    final imageHeight = isTablet ? 140.h : 120.h; // ✅ Smaller
+    final imageSize = isTablet ? 120.w : 100.w;
+    final imageHeight = isTablet ? 140.h : 120.h;
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(isTablet ? 14.w : 10.w), // ✅ Smaller padding
+      padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(16.r),
@@ -567,7 +565,7 @@ class _WishlistState extends State<Wishlist> {
               if (productSlug.isNotEmpty) {
                 _navigateToProductDetails(productSlug);
               } else {
-                ToastComponent.showDialog(
+                ToastComponent.showWarning(
                   AppLocalizations.of(context)!.product_details_not_available,
                   gravity: Toast.center,
                   duration: Toast.lengthShort,
@@ -612,7 +610,7 @@ class _WishlistState extends State<Wishlist> {
                           ),
                   ),
                 ),
-                // ✅ Remove from wishlist - FULL HEART (black)
+                // Remove from wishlist - FULL HEART (black)
                 Positioned(
                   top: 0,
                   right: 0,
@@ -634,34 +632,13 @@ class _WishlistState extends State<Wishlist> {
                         ],
                       ),
                       child: Icon(
-                        Icons.favorite, // ✅ Full heart (not border)
+                        Icons.favorite,
                         size: isTablet ? 16.sp : 14.sp,
-                        color: Colors.black, // ✅ Black
+                        color: Colors.black,
                       ),
                     ),
                   ),
                 ),
-                // Auction badge
-                // if (isAuctionProduct)
-                  // Positioned(
-                  //   bottom: 8.h,
-                  //   left: 8.w,
-                  //   child: Container(
-                  //     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  //     decoration: BoxDecoration(
-                  //       color: MyTheme.accent_color.withOpacity(0.9),
-                  //       borderRadius: BorderRadius.circular(12.r),
-                  //     ),
-                  //     child: Text(
-                  //       AppLocalizations.of(context)!.auction_ucf,
-                  //       style: TextStyle(
-                  //         fontSize: 9.sp,
-                  //         fontWeight: FontWeight.w600,
-                  //         color: Colors.white,
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
               ],
             ),
           ),
@@ -683,7 +660,7 @@ class _WishlistState extends State<Wishlist> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: isTablet ? 15.sp : 13.sp, // ✅ Smaller
+                      fontSize: isTablet ? 15.sp : 13.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -734,7 +711,7 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         AppLocalizations.of(context)!.bid_points(pointPerBid),
                         style: TextStyle(
-                          fontSize: isTablet ? 10.sp : 9.sp, // ✅ Smaller
+                          fontSize: isTablet ? 10.sp : 9.sp,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF0092AC),
                         ),
@@ -743,13 +720,13 @@ class _WishlistState extends State<Wishlist> {
                   ],
                 ),
                 SizedBox(height: 10.h),
-                // ✅ Action Button - White with accent border and text
+                // Action Button - White with accent border and text
                 GestureDetector(
                   onTap: () {
                     if (productSlug.isNotEmpty) {
                       _navigateToProductDetails(productSlug);
                     } else {
-                      ToastComponent.showDialog(
+                      ToastComponent.showWarning(
                         AppLocalizations.of(context)!.product_details_not_available,
                         gravity: Toast.center,
                         duration: Toast.lengthShort,
@@ -760,7 +737,7 @@ class _WishlistState extends State<Wishlist> {
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
                     decoration: BoxDecoration(
-                      color: Colors.white, // ✅ White background
+                      color: Colors.white,
                       border: Border.all(color: MyTheme.accent_color, width: 1.w),
                       borderRadius: BorderRadius.circular(7.r),
                     ),
@@ -772,7 +749,7 @@ class _WishlistState extends State<Wishlist> {
                       style: TextStyle(
                         fontSize: isTablet ? 12.sp : 11.sp,
                         fontWeight: FontWeight.w600,
-                        color: MyTheme.accent_color, // ✅ Accent color text
+                        color: MyTheme.accent_color,
                       ),
                     ),
                   ),
@@ -780,7 +757,7 @@ class _WishlistState extends State<Wishlist> {
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

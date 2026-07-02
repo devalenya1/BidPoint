@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/lang_text.dart';
@@ -93,7 +94,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog('Failed to load points history');
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_points_history);
     } finally {
       setState(() {
         _isLoading = false;
@@ -250,7 +251,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'Points History',
+          AppLocalizations.of(context)!.points_history,
           style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
@@ -322,7 +323,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Text(
-              'Points History',
+              AppLocalizations.of(context)!.points_history,
               style: TextStyle(fontSize: 16.sp),
             ),
           ),
@@ -393,7 +394,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _userName.isNotEmpty ? _userName : 'User',
+                  _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.user_ucf,
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
@@ -406,7 +407,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 Row(
                   children: [
                     Text(
-                      'Points Balance',
+                      AppLocalizations.of(context)!.points_balance,
                       style: TextStyle(
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
@@ -415,7 +416,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      '$_pointsBalance points',
+                      '$_pointsBalance ${AppLocalizations.of(context)!.points_ucf}',
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.w800,
@@ -433,7 +434,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   }
   
   Widget _buildFilterTabs() {
-    final filters = ['All', 'Today', '7', '30'];
+    final filters = [AppLocalizations.of(context)!.all_ucf, AppLocalizations.of(context)!.today_ucf, '7', '30'];
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -458,7 +459,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                   borderRadius: BorderRadius.circular(50.r),
                 ),
                 child: Text(
-                  filter == '7' ? '7 days' : (filter == '30' ? '30 days' : filter),
+                  filter == '7' ? '${AppLocalizations.of(context)!.days_ucf} 7' : (filter == '30' ? '${AppLocalizations.of(context)!.days_ucf} 30' : filter),
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
@@ -475,13 +476,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildPointsHistorySection() {
     return Container(
-      // ✅ Keep the padding so empty state matches history cards
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Points History',
+            AppLocalizations.of(context)!.points_history,
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,
@@ -491,7 +491,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           SizedBox(height: 12.h),
           
           if (_filteredPointsLogs.isEmpty)
-            _buildEmptyState() // ✅ Will have same width as history cards
+            _buildEmptyState()
           else
             Column(
               children: _filteredPointsLogs.map((log) => _buildHistoryCard(log)).toList(),
@@ -519,18 +519,18 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       child: Column(
         children: [
           _buildHistoryRow(
-            'Date',
+            AppLocalizations.of(context)!.date_ucf,
             date != null 
                 ? '${date.day} ${_getMonthAbbreviation(date.month)} ${date.year}, ${_formatTime(date)}'
-                : 'Unknown',
+                : AppLocalizations.of(context)!.unknown,
           ),
           _buildHistoryRow(
-            'Description',
-            log.cameFrom ?? 'Points transaction',
+            AppLocalizations.of(context)!.description_ucf,
+            log.cameFrom ?? AppLocalizations.of(context)!.points_transaction,
           ),
           _buildHistoryRow(
-            'Points',
-            '${isEarned ? '+' : '-'}$pointsValue pts',
+            AppLocalizations.of(context)!.points_ucf,
+            '${isEarned ? '+' : '-'}$pointsValue ${AppLocalizations.of(context)!.points_ucf}',
             isHighlighted: true,
             highlightColor: isEarned ? const Color(0xFF10B981) : const Color(0xFFEF4444),
           ),
@@ -578,8 +578,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      width: double.infinity, // ✅ Fill the parent container width
-      padding: EdgeInsets.symmetric(vertical: 40.h), // ✅ Only vertical padding
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 40.h),
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FC),
         borderRadius: BorderRadius.circular(14.r),
@@ -592,7 +592,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           ),
           SizedBox(height: 8.h),
           Text(
-            'No points history found',
+            AppLocalizations.of(context)!.no_points_history_found,
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
@@ -602,7 +602,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           ),
           SizedBox(height: 6.h),
           Text(
-            'Share your referral link to earn points',
+            AppLocalizations.of(context)!.share_referral_link_to_earn_points,
             style: TextStyle(
               fontSize: 11.sp,
               color: const Color(0xFF94A3B8),
@@ -619,13 +619,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     final monthPoints = _monthlyPoints[selectedMonth] ?? 0;
     
     return Container(
-      // ✅ Keep the padding so net points card matches history cards
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Monthly Points Balance',
+            AppLocalizations.of(context)!.monthly_points_balance,
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,
@@ -669,9 +668,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           
           SizedBox(height: 16.h),
           
-          // ✅ Net Points Card - Same width as history cards
+          // Net Points Card - Same width as history cards
           Container(
-            width: double.infinity, // ✅ Fill the parent container width
+            width: double.infinity,
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FC),
@@ -681,7 +680,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             child: Column(
               children: [
                 Text(
-                  'Net Points',
+                  AppLocalizations.of(context)!.net_points,
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
@@ -690,7 +689,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  '$monthPoints points',
+                  '$monthPoints ${AppLocalizations.of(context)!.points_ucf}',
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
@@ -699,7 +698,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  monthPoints >= 0 ? 'Earned this month' : 'Spent this month',
+                  monthPoints >= 0 
+                      ? AppLocalizations.of(context)!.earned_this_month 
+                      : AppLocalizations.of(context)!.spent_this_month,
                   style: TextStyle(
                     fontSize: 10.sp,
                     color: const Color(0xFF94A3B8),

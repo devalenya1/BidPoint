@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
@@ -68,6 +69,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       }
     } catch (e) {
       print("Error loading referral data: $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_referral_data);
     } finally {
       setState(() {
         _isLoading = false;
@@ -86,30 +88,12 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   
   void _copyToClipboard() {
     if (_referralCode.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.referral_code_not_available,
-            style: TextStyle(fontSize: 14.sp),
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      ToastComponent.showWarning(AppLocalizations.of(context)!.referral_code_not_available);
       return;
     }
     
     Clipboard.setData(ClipboardData(text: _referralLink));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.copied_to_clipboard,
-          style: TextStyle(fontSize: 14.sp),
-        ),
-        backgroundColor: MyTheme.accent_color,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    ToastComponent.showSuccess(AppLocalizations.of(context)!.copied_to_clipboard);
   }
   
   void _navigateBack() {
@@ -496,7 +480,12 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 48.h, horizontal: 16.w),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 48.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
       child: Column(
         children: [
           Text(

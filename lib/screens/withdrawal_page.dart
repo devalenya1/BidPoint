@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'dart:convert';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -78,7 +78,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       }
     } catch (e) {
       print("Error loading withdrawal data: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_withdrawal_data);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_withdrawal_data);
       _useDefaultData();
     } finally {
       setState(() {
@@ -115,20 +115,20 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       final response = await _profileRepository.submitWithdrawalRequest(amount);
       
       if (response['success'] == true) {
-        ToastComponent.showDialog(
+        ToastComponent.showSuccess(
           response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_submitted,
         );
         
         // Refresh data after successful submission
         await _fetchWithdrawalData();
       } else {
-        ToastComponent.showDialog(
+        ToastComponent.showError(
           response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_failed,
         );
       }
     } catch (e) {
       print("Error submitting withdrawal: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.withdrawal_request_failed);
+      ToastComponent.showError(AppLocalizations.of(context)!.withdrawal_request_failed);
     } finally {
       if (mounted) {
         setState(() {
@@ -436,17 +436,17 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   
   void _validateAndSubmit(StateSetter setModalState, BuildContext modalContext) {
     if (_withdrawAmount <= 0) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_valid_amount);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_valid_amount);
       return;
     }
     
     if (_withdrawAmount > _availableBalance) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.insufficient_balance);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.insufficient_balance);
       return;
     }
     
     if (_withdrawAmount < _minimumWithdrawAmount) {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
         '${AppLocalizations.of(context)!.min_withdrawal_amount} ${FormatHelper.formatPrice(_minimumWithdrawAmount)}'
       );
       return;
@@ -713,90 +713,92 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                     ),
                     SizedBox(height: 16.h),
                     
-                    // History List
-                    if (_withdrawalHistory.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _withdrawalHistory.length,
-                        separatorBuilder: (context, index) => SizedBox(height: 12.h),
-                        itemBuilder: (context, index) {
-                          final withdrawal = _withdrawalHistory[index];
-                          final date = withdrawal.createdAt;
-                          return Container(
-                            padding: EdgeInsets.all(16.w),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8F9FC),
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  flex: 3,
+                    // History List - With proper container for empty state
+                    Container(
+                      width: double.infinity,
+                      child: _withdrawalHistory.isEmpty
+                          ? _buildEmptyState()
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _withdrawalHistory.length,
+                              separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                              itemBuilder: (context, index) {
+                                final withdrawal = _withdrawalHistory[index];
+                                final date = withdrawal.createdAt;
+                                return Container(
+                                  padding: EdgeInsets.all(16.w),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8F9FC),
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
                                   child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      SizedBox(
-                                        width: 40.w,
-                                        child: Text(
-                                          '#${(index + 1).toString().padLeft(2, '0')}',
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF666666),
+                                      Flexible(
+                                        flex: 3,
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 40.w,
+                                              child: Text(
+                                                '#${(index + 1).toString().padLeft(2, '0')}',
+                                                style: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(0xFF666666),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 16.w),
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  date != null ? _formatDate(date) : AppLocalizations.of(context)!.unknown_date,
+                                                  style: TextStyle(
+                                                    fontSize: 12.sp,
+                                                    color: const Color(0xFF666666),
+                                                  ),
+                                                ),
+                                                SizedBox(height: 4.h),
+                                                Text(
+                                                  FormatHelper.formatPrice(withdrawal.amount ?? 0),
+                                                  style: TextStyle(
+                                                    fontSize: 16.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: const Color(0xFF0092AC),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      
+                                      Flexible(
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                                          decoration: BoxDecoration(
+                                            color: _getStatusBackgroundColor(withdrawal.status ?? 0),
+                                            borderRadius: BorderRadius.circular(20.r),
+                                          ),
+                                          child: Text(
+                                            _getStatusText(withdrawal.status ?? 0),
+                                            style: TextStyle(
+                                              fontSize: 11.sp,
+                                              fontWeight: FontWeight.w600,
+                                              color: _getStatusColor(withdrawal.status ?? 0),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 16.w),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            date != null ? _formatDate(date) : 'Unknown date',
-                                            style: TextStyle(
-                                              fontSize: 12.sp,
-                                              color: const Color(0xFF666666),
-                                            ),
-                                          ),
-                                          SizedBox(height: 4.h),
-                                          Text(
-                                            FormatHelper.formatPrice(withdrawal.amount ?? 0),
-                                            style: TextStyle(
-                                              fontSize: 16.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF0092AC),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
                                     ],
                                   ),
-                                ),
-                                
-                                Flexible(
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusBackgroundColor(withdrawal.status ?? 0),
-                                      borderRadius: BorderRadius.circular(20.r),
-                                    ),
-                                    child: Text(
-                                      _getStatusText(withdrawal.status ?? 0),
-                                      style: TextStyle(
-                                        fontSize: 11.sp,
-                                        fontWeight: FontWeight.w600,
-                                        color: _getStatusColor(withdrawal.status ?? 0),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
+                    ),
                   ],
                 ),
               ),
@@ -806,7 +808,12 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   
   Widget _buildEmptyState() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 40.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FC),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
       child: Column(
         children: [
           Text(

@@ -35,6 +35,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:toast/toast.dart';
 import 'package:validators/validators.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../custom/loading.dart';
 import '../repositories/address_repository.dart';
@@ -109,23 +110,23 @@ class _RegistrationState extends State<Registration> {
       
       // Determine strength level (max 5)
       if (strength <= 1) {
-        _passwordStrength = 'Weak';
+        _passwordStrength = AppLocalizations.of(context)!.password_weak;
         _strengthColor = Colors.red;
         _strengthProgress = 0.2;
       } else if (strength == 2) {
-        _passwordStrength = 'Fair';
+        _passwordStrength = AppLocalizations.of(context)!.password_fair;
         _strengthColor = Colors.orange;
         _strengthProgress = 0.4;
       } else if (strength == 3) {
-        _passwordStrength = 'Good';
+        _passwordStrength = AppLocalizations.of(context)!.password_good;
         _strengthColor = Colors.yellow.shade700;
         _strengthProgress = 0.6;
       } else if (strength == 4) {
-        _passwordStrength = 'Strong';
+        _passwordStrength = AppLocalizations.of(context)!.password_strong;
         _strengthColor = Colors.lightGreen;
         _strengthProgress = 0.8;
       } else {
-        _passwordStrength = 'Very Strong';
+        _passwordStrength = AppLocalizations.of(context)!.password_very_strong;
         _strengthColor = Colors.green;
         _strengthProgress = 1.0;
       }
@@ -155,41 +156,48 @@ class _RegistrationState extends State<Registration> {
     var password_confirm = _passwordConfirmController.text.toString();
 
     if (name == "") {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_your_name,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_your_name,
           gravity: Toast.center, duration: Toast.lengthLong);
+      Loading.close();
       return;
     } else if (_register_by == 'email' && (email == "" || !isEmail(email))) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_email,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_valid_email,
           gravity: Toast.center, duration: Toast.lengthLong);
+      Loading.close();
       return;
     } else if (_register_by == 'phone' && _phone == "") {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
           AppLocalizations.of(context)!.enter_phone_number,
           gravity: Toast.center,
           duration: Toast.lengthLong);
+      Loading.close();
       return;
     } else if (password == "") {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_password,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_password,
           gravity: Toast.center, duration: Toast.lengthLong);
+      Loading.close();
       return;
     } else if (password_confirm == "") {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
           AppLocalizations.of(context)!.confirm_your_password,
           gravity: Toast.center,
           duration: Toast.lengthLong);
+      Loading.close();
       return;
     } else if (password.length < 6) {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
           AppLocalizations.of(context)!
               .password_must_contain_at_least_6_characters,
           gravity: Toast.center,
           duration: Toast.lengthLong);
+      Loading.close();
       return;
     } else if (password != password_confirm) {
-      ToastComponent.showDialog(
+      ToastComponent.showWarning(
           AppLocalizations.of(context)!.passwords_do_not_match,
           gravity: Toast.center,
           duration: Toast.lengthLong);
+      Loading.close();
       return;
     }
 
@@ -208,13 +216,13 @@ class _RegistrationState extends State<Registration> {
         message += value + "\n";
       });
 
-      ToastComponent.showDialog(message, gravity: Toast.center, duration: 3);
+      ToastComponent.showError(message, gravity: Toast.center, duration: 3);
     } else {
-      ToastComponent.showDialog(signupResponse.message,
+      ToastComponent.showSuccess(signupResponse.message,
           gravity: Toast.center, duration: Toast.lengthLong);
       AuthHelper().setUserData(signupResponse);
 
-      // redirect to main - FIXED REDIRECTION
+      // redirect to main
       Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (context) {
             return Main();
@@ -245,24 +253,6 @@ class _RegistrationState extends State<Registration> {
           }
         }
       }
-
-      // REMOVED context.go("/") to avoid double navigation
-      // The Navigator.pushAndRemoveUntil already handles redirection to Main
-      
-      // Commented out original OTP redirect logic - preserved as is
-      // if ((mail_verification_status.$ && _register_by == "email") ||
-      //     _register_by == "phone") {
-      //   Navigator.push(context, MaterialPageRoute(builder: (context) {
-      //     return Otp(
-      //       verify_by: _register_by,
-      //       user_id: signupResponse.user_id,
-      //     );
-      //   }));
-      // } else {
-      //   Navigator.push(context, MaterialPageRoute(builder: (context) {
-      //     return Login();
-      //   }));
-      // }
     }
   }
 
@@ -283,14 +273,14 @@ class _RegistrationState extends State<Registration> {
         print("..........................${loginResponse.toString()}");
         
         if (loginResponse.result == false) {
-          ToastComponent.showDialog(loginResponse.message!,
+          ToastComponent.showError(loginResponse.message!,
               gravity: Toast.center, duration: Toast.lengthLong);
         } else {
-          ToastComponent.showDialog(loginResponse.message!,
+          ToastComponent.showSuccess(loginResponse.message!,
               gravity: Toast.center, duration: Toast.lengthLong);
 
           await AuthHelper().setUserData(loginResponse);
-          // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+          // Navigate to Main
           Navigator.push(context, MaterialPageRoute(builder: (context) {
             return const Main();
           }));
@@ -300,9 +290,13 @@ class _RegistrationState extends State<Registration> {
         print("....Facebook auth Failed.........");
         print(facebookLogin.status);
         print(facebookLogin.message);
+        ToastComponent.showError(AppLocalizations.of(context)!.facebook_login_failed,
+            gravity: Toast.center, duration: Toast.lengthLong);
       }
     } on Exception catch (e) {
       print(e);
+      ToastComponent.showError(AppLocalizations.of(context)!.facebook_login_error,
+          gravity: Toast.center, duration: Toast.lengthLong);
     }
   }
 
@@ -325,13 +319,13 @@ class _RegistrationState extends State<Registration> {
           access_token: accessToken);
 
       if (loginResponse.result == false) {
-        ToastComponent.showDialog(loginResponse.message!,
+        ToastComponent.showError(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
       } else {
-        ToastComponent.showDialog(loginResponse.message!,
+        ToastComponent.showSuccess(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        // Navigate to Main
         Navigator.push(context, MaterialPageRoute(builder: (context) {
           return const Main();
         }));
@@ -339,6 +333,8 @@ class _RegistrationState extends State<Registration> {
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
       print("error is ....... $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.google_login_error,
+          gravity: Toast.center, duration: Toast.lengthLong);
     }
   }
 
@@ -363,19 +359,21 @@ class _RegistrationState extends State<Registration> {
           secret_token: authResult.authTokenSecret);
 
       if (loginResponse.result == false) {
-        ToastComponent.showDialog(loginResponse.message!,
+        ToastComponent.showError(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
       } else {
-        ToastComponent.showDialog(loginResponse.message!,
+        ToastComponent.showSuccess(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        // Navigate to Main
         Navigator.push(context, MaterialPageRoute(builder: (context) {
           return const Main();
         }));
       }
     } on Exception catch (e) {
       print("error is ....... $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.twitter_login_error,
+          gravity: Toast.center, duration: Toast.lengthLong);
     }
   }
 
@@ -420,19 +418,21 @@ class _RegistrationState extends State<Registration> {
           access_token: appleCredential.identityToken);
 
       if (loginResponse.result == false) {
-        ToastComponent.showDialog(loginResponse.message!,
+        ToastComponent.showError(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
       } else {
-        ToastComponent.showDialog(loginResponse.message!,
+        ToastComponent.showSuccess(loginResponse.message!,
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
-        // ✅ MATCHES ORIGINAL: Use Navigator.push to Main
+        // Navigate to Main
         Navigator.push(context, MaterialPageRoute(builder: (context) {
           return const Main();
         }));
       }
     } on Exception catch (e) {
       print(e);
+      ToastComponent.showError(AppLocalizations.of(context)!.apple_login_error,
+          gravity: Toast.center, duration: Toast.lengthLong);
     }
   }
 
@@ -446,10 +446,9 @@ class _RegistrationState extends State<Registration> {
         buildBody(context, _screen_width));
   }
 
-  Widget buildBody(BuildContext context, double _screen_width) {  // Changed return type from Column to Widget
+  Widget buildBody(BuildContext context, double _screen_width) {
     return Container(
-      width: _screen_width,  // Make the outer container full width
-      // color: Colors.white,  
+      width: _screen_width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -459,7 +458,7 @@ class _RegistrationState extends State<Registration> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: EdgeInsets.only(bottom: 4.h),
                   child: Text(
                     AppLocalizations.of(context)!.name_ucf,
                     style: TextStyle(
@@ -467,19 +466,19 @@ class _RegistrationState extends State<Registration> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
+                  padding: EdgeInsets.only(bottom: 8.h),
                   child: Container(
-                    height: 36,
+                    height: 36.h,
                     child: TextField(
                       controller: _nameController,
                       autofocus: false,
                       decoration: InputDecorations.buildInputDecoration_1(
-                          hint_text: "John Doe"),
+                          hint_text: AppLocalizations.of(context)!.name_hint),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: EdgeInsets.only(bottom: 4.h),
                   child: Text(
                     _register_by == "email"
                         ? AppLocalizations.of(context)!.email_ucf
@@ -490,17 +489,17 @@ class _RegistrationState extends State<Registration> {
                 ),
                 if (_register_by == "email")
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
+                    padding: EdgeInsets.only(bottom: 8.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Container(
-                          height: 36,
+                          height: 36.h,
                           child: TextField(
                             controller: _emailController,
                             autofocus: false,
                             decoration: InputDecorations.buildInputDecoration_1(
-                                hint_text: "johndoe@example.com"),
+                                hint_text: AppLocalizations.of(context)!.email_hint),
                           ),
                         ),
                         otp_addon_installed.$
@@ -525,12 +524,12 @@ class _RegistrationState extends State<Registration> {
                   )
                 else
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
+                    padding: EdgeInsets.only(bottom: 8.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Container(
-                          height: 36,
+                          height: 36.h,
                           child: CustomInternationalPhoneNumberInput(
                             countries: countries_code,
                             onInputChanged: (PhoneNumber number) {
@@ -549,15 +548,13 @@ class _RegistrationState extends State<Registration> {
                             autoValidateMode: AutovalidateMode.disabled,
                             selectorTextStyle:
                                 TextStyle(color: MyTheme.font_grey),
-                            // initialValue: PhoneNumber(
-                            //     isoCode: countries_code[0].toString()),
                             textFieldController: _phoneNumberController,
                             formatInput: true,
                             keyboardType: TextInputType.numberWithOptions(
                                 signed: true, decimal: true),
                             inputDecoration:
                                 InputDecorations.buildInputDecoration_phone(
-                                    hint_text: "01XXX XXX XXX"),
+                                    hint_text: AppLocalizations.of(context)!.phone_hint),
                             onSaved: (PhoneNumber number) {
                               //print('On Saved: $number');
                             },
@@ -582,7 +579,7 @@ class _RegistrationState extends State<Registration> {
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: EdgeInsets.only(bottom: 4.h),
                   child: Text(
                     AppLocalizations.of(context)!.password_ucf,
                     style: TextStyle(
@@ -590,12 +587,12 @@ class _RegistrationState extends State<Registration> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
+                  padding: EdgeInsets.only(bottom: 8.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Container(
-                        height: 36,
+                        height: 36.h,
                         child: TextField(
                           controller: _passwordController,
                           autofocus: false,
@@ -603,30 +600,30 @@ class _RegistrationState extends State<Registration> {
                           enableSuggestions: false,
                           autocorrect: false,
                           decoration: InputDecorations.buildInputDecoration_1(
-                              hint_text: "• • • • • • • •"),
+                              hint_text: AppLocalizations.of(context)!.password_hint),
                         ),
                       ),
                       // Password Strength Indicator
                       if (_passwordController.text.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
+                          padding: EdgeInsets.only(top: 4.h),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                height: 4,
+                                height: 4.h,
                                 child: LinearProgressIndicator(
                                   value: _strengthProgress,
                                   backgroundColor: Colors.grey.shade300,
                                   color: _strengthColor,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4.h),
                               Text(
                                 _passwordStrength,
                                 style: TextStyle(
                                   color: _strengthColor,
-                                  fontSize: 10,
+                                  fontSize: 10.sp,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -644,7 +641,7 @@ class _RegistrationState extends State<Registration> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
+                  padding: EdgeInsets.only(bottom: 4.h),
                   child: Text(
                     AppLocalizations.of(context)!.retype_password_ucf,
                     style: TextStyle(
@@ -652,9 +649,9 @@ class _RegistrationState extends State<Registration> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
+                  padding: EdgeInsets.only(bottom: 8.h),
                   child: Container(
-                    height: 36,
+                    height: 36.h,
                     child: TextField(
                       controller: _passwordConfirmController,
                       autofocus: false,
@@ -662,14 +659,14 @@ class _RegistrationState extends State<Registration> {
                       enableSuggestions: false,
                       autocorrect: false,
                       decoration: InputDecorations.buildInputDecoration_1(
-                          hint_text: "• • • • • • • •"),
+                          hint_text: AppLocalizations.of(context)!.password_hint),
                     ),
                   ),
                 ),
                 if (google_recaptcha.$)
                   Container(
-                    height: _isCaptchaShowing ? 350 : 50,
-                    width: 300,
+                    height: _isCaptchaShowing ? 350.h : 50.h,
+                    width: 300.w,
                     child: Captcha(
                       (keyValue) {
                         googleRecaptchaKey = keyValue;
@@ -685,16 +682,16 @@ class _RegistrationState extends State<Registration> {
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
+                  padding: EdgeInsets.only(top: 20.h),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        height: 15,
-                        width: 15,
+                        height: 15.h,
+                        width: 15.w,
                         child: Checkbox(
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6)),
+                                borderRadius: BorderRadius.circular(6.r)),
                             value: _isAgree,
                             onChanged: (newValue) {
                               _isAgree = newValue;
@@ -702,17 +699,17 @@ class _RegistrationState extends State<Registration> {
                             }),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
+                        padding: EdgeInsets.only(left: 8.w),
                         child: Container(
-                          width: DeviceInfo(context).width! - 130,
+                          width: DeviceInfo(context).width! - 130.w,
                           child: RichText(
                               maxLines: 2,
                               text: TextSpan(
                                   style: TextStyle(
-                                      color: MyTheme.font_grey, fontSize: 12),
+                                      color: MyTheme.font_grey, fontSize: 12.sp),
                                   children: [
                                     TextSpan(
-                                      text: "I agree to the",
+                                      text: AppLocalizations.of(context)!.i_agree_to_the,
                                     ),
                                     TextSpan(
                                       recognizer: TapGestureRecognizer()
@@ -723,17 +720,17 @@ class _RegistrationState extends State<Registration> {
                                                   builder: (context) =>
                                                       CommonWebviewScreen(
                                                         page_name:
-                                                            "Terms Conditions",
+                                                            AppLocalizations.of(context)!.terms_conditions,
                                                         url:
                                                             "${AppConfig.RAW_BASE_URL}/mobile-page/terms",
                                                       )));
                                         },
                                       style:
                                           TextStyle(color: MyTheme.accent_color),
-                                      text: " Terms Conditions",
+                                      text: " ${AppLocalizations.of(context)!.terms_conditions}",
                                     ),
                                     TextSpan(
-                                      text: " &",
+                                      text: " ${AppLocalizations.of(context)!.and_ucf}",
                                     ),
                                     TextSpan(
                                       recognizer: TapGestureRecognizer()
@@ -744,12 +741,12 @@ class _RegistrationState extends State<Registration> {
                                                   builder: (context) =>
                                                       CommonWebviewScreen(
                                                         page_name:
-                                                            "Privacy Policy",
+                                                            AppLocalizations.of(context)!.privacy_policy,
                                                         url:
                                                             "${AppConfig.RAW_BASE_URL}/mobile-page/privacy-policy",
                                                       )));
                                         },
-                                      text: " Privacy Policy",
+                                      text: " ${AppLocalizations.of(context)!.privacy_policy}",
                                       style:
                                           TextStyle(color: MyTheme.accent_color),
                                     )
@@ -760,12 +757,12 @@ class _RegistrationState extends State<Registration> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 30.0),
+                  padding: EdgeInsets.only(top: 30.h),
                   child: Container(
-                    height: 45,
+                    height: 45.h,
                     child: Btn.minWidthFixHeight(
                       minWidth: MediaQuery.of(context).size.width,
-                      height: 50,
+                      height: 50.h,
                       color: MyTheme.accent_color,
                       shape: RoundedRectangleBorder(
                           borderRadius:
@@ -774,7 +771,7 @@ class _RegistrationState extends State<Registration> {
                         AppLocalizations.of(context)!.sign_up_ucf,
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w600),
                       ),
                       onPressed: _isAgree!
@@ -786,24 +783,24 @@ class _RegistrationState extends State<Registration> {
                   ), 
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
+                  padding: EdgeInsets.only(top: 20.h),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Center(
                           child: Text(
                         AppLocalizations.of(context)!.already_have_an_account,
-                        style: TextStyle(color: MyTheme.font_grey, fontSize: 12),
+                        style: TextStyle(color: MyTheme.font_grey, fontSize: 12.sp),
                       )),
                       SizedBox(
-                        width: 10,
+                        width: 10.w,
                       ),
                       InkWell(
                         child: Text(
                           AppLocalizations.of(context)!.log_in,
                           style: TextStyle(
                               color: MyTheme.accent_color,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w600),
                         ),
                         onTap: () {
@@ -820,7 +817,7 @@ class _RegistrationState extends State<Registration> {
 
                 if (Platform.isIOS)
                   Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
+                    padding: EdgeInsets.only(top: 20.h),
                     child: SignInWithAppleButton(
                       onPressed: () async {
                         signInWithApple();
@@ -830,16 +827,16 @@ class _RegistrationState extends State<Registration> {
                 Visibility(
                   visible: allow_google_login.$ || allow_facebook_login.$,
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
+                    padding: EdgeInsets.only(top: 20.h),
                     child: Center(
                         child: Text(
                       AppLocalizations.of(context)!.register_screen_sign_up_with,
-                      style: TextStyle(color: MyTheme.font_grey, fontSize: 12),
+                      style: TextStyle(color: MyTheme.font_grey, fontSize: 12.sp),
                     )),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 15.0),
+                  padding: EdgeInsets.only(top: 15.h),
                   child: Center(
                     child: Container(
                       child: Row(
@@ -852,13 +849,13 @@ class _RegistrationState extends State<Registration> {
                                 onPressedGoogleLogin();
                               },
                               child: Container(
-                                width: 28,
+                                width: 28.w,
                                 child: Image.asset("assets/google_logo.png"),
                               ),
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(left: 15.0),
+                            padding: EdgeInsets.only(left: 15.w),
                             child: Visibility(
                               visible: allow_facebook_login.$,
                               child: InkWell(
@@ -866,7 +863,7 @@ class _RegistrationState extends State<Registration> {
                                   onPressedFacebookLogin();
                                 },
                                 child: Container(
-                                  width: 28,
+                                  width: 28.w,
                                   child: Image.asset("assets/facebook_logo.png"),
                                 ),
                               ),
@@ -874,13 +871,13 @@ class _RegistrationState extends State<Registration> {
                           ),
                           if (allow_twitter_login.$)
                             Padding(
-                              padding: const EdgeInsets.only(left: 15.0),
+                              padding: EdgeInsets.only(left: 15.w),
                               child: InkWell(
                                 onTap: () {
                                   onPressedTwitterLogin();
                                 },
                                 child: Container(
-                                  width: 28,
+                                  width: 28.w,
                                   child: Image.asset("assets/twitter_logo.png"),
                                 ),
                               ),

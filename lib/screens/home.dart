@@ -1,6 +1,7 @@
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/custom/aiz_image.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
@@ -92,6 +93,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       }
     } catch (e) {
       print("Error loading notification counts: $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notifications);
     } finally {
       setState(() => _isLoadingCounts = false);
     }
@@ -210,7 +212,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   // ============ HOT AUCTION SECTION ============
   Widget _buildHotAuctionSection() {
-    print('Hot Auctions count: ${homeData.hotAuctionProductList.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -236,7 +237,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
-                    'View All',
+                    AppLocalizations.of(context)!.view_all,
                     style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
                   ),
                 ),
@@ -250,7 +251,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             height: 50.h,
             child: Center(
               child: Text(
-                'No hot auctions available',
+                AppLocalizations.of(context)!.no_hot_auctions_available,
                 style: TextStyle(fontSize: 14.sp),
               ),
             ),
@@ -284,7 +285,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   // ============ UPCOMING SECTION ============
   Widget _buildUpcomingSection() {
-    print('Upcoming count: ${homeData.upcomingProductList.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -310,7 +310,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
-                    'View All',
+                    AppLocalizations.of(context)!.view_all,
                     style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
                   ),
                 ),
@@ -324,7 +324,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             height: 50.h,
             child: Center(
               child: Text(
-                'No upcoming auctions',
+                AppLocalizations.of(context)!.no_upcoming_auctions,
                 style: TextStyle(fontSize: 14.sp),
               ),
             ),
@@ -391,8 +391,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         // Show only up to itemsToShow products
         final displayProducts = products.take(itemsToShow).toList();
         
-        // ✅ FIX: Use IntrinsicHeight to let cards determine their own height
-        // This removes the empty space below the button
+        // Use IntrinsicHeight to let cards determine their own height
         return IntrinsicHeight(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -416,7 +415,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   
   // ============ ENDING SOON SECTION ============
   Widget _buildEndingSoonSection() {
-    print('Ending Soon count: ${homeData.endingSoonProductList.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,7 +440,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
-                    'View All',
+                    AppLocalizations.of(context)!.view_all,
                     style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
                   ),
                 ),
@@ -456,7 +454,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             height: 50.h,
             child: Center(
               child: Text(
-                'No ending soon auctions',
+                AppLocalizations.of(context)!.no_ending_soon_auctions,
                 style: TextStyle(fontSize: 14.sp),
               ),
             ),
@@ -472,19 +470,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final products = homeData.endingSoonProductList;
     if (products.isEmpty) return const SizedBox.shrink();
 
-    // Debug: Print products to verify data
-    print('Total Ending Soon products: ${products.length}');
-    for (int i = 0; i < products.length; i++) {
-      print('Product $i: ${products[i].name}');
-    }
-
     // Group products in sets of 3
     List<List<dynamic>> grids = [];
     for (int i = 0; i < products.length; i += 3) {
       int end = (i + 3 < products.length) ? i + 3 : products.length;
       List<dynamic> grid = products.sublist(i, end);
       grids.add(grid);
-      print('Grid ${grids.length - 1}: ${grid.length} products');
     }
 
     return LayoutBuilder(
@@ -501,8 +492,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         } else {
           gridsToShow = 1;
         }
-
-        print('Screen width: ${constraints.maxWidth}, Grids to show: $gridsToShow');
 
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -700,8 +689,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     // Get screen width for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
     
-    // ✅ Fixed: Use the actual banner dimensions 350x167
-    // Calculate height based on the banner's aspect ratio (350/167)
+    // Use the actual banner dimensions 350x167
     final double carouselHeight = screenWidth * (167 / 350);
     
     if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
@@ -739,7 +727,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       height: carouselHeight,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12.r),
-                        // ✅ REMOVED: boxShadow removed
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12.r),
@@ -765,22 +752,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                         child: Icon(
                                           Icons.broken_image,
                                           size: 50.sp,
-                                          // color: Colors.grey[600],
-                                          color: Colors.transparent,
+                                          color: Colors.grey[600],
                                         ),
                                       ),
                                     );
                                   },
                                 )
                               : Container(
-                                  // color: Colors.grey[300],
-                                  color: Colors.transparent,
+                                  color: Colors.grey[300],
                                   child: Center(
                                     child: Icon(
                                       Icons.image,
                                       size: 50.sp,
-                                      // color: Colors.grey[600],
-                                      color: Colors.transparent,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
                                 ),
@@ -860,7 +844,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           color: Colors.grey[200],
           child: Center(
             child: Text(
-              'No images available',
+              AppLocalizations.of(context)!.no_images_available,
               style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
             ),
           ),

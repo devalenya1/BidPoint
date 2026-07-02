@@ -78,7 +78,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_cash_earnings);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_cash_earnings);
     } finally {
       setState(() {
         _isLoading = false;
@@ -275,7 +275,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Text(
-              'Cash History',
+              AppLocalizations.of(context)!.cash_history,
               style: TextStyle(fontSize: 16.sp),
             ),
           ),
@@ -384,7 +384,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     
   Widget _buildCashHistorySection(List<Map<String, dynamic>> logs) {
     return Container(
-      // ✅ Keep the padding so empty state matches history cards
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +400,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           SizedBox(height: 12.h),
           
           if (logs.isEmpty)
-            _buildEmptyState() // ✅ Will have same width as history cards
+            _buildEmptyState()
           else
             Column(
               children: logs.map((log) => _buildHistoryCard(log)).toList(),

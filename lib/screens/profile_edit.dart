@@ -137,6 +137,7 @@ class _ProfileEditState extends State<ProfileEdit> {
       }
     } catch (e) {
       print("Error fetching user data: $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_user_data);
     }
   }
 
@@ -158,6 +159,7 @@ class _ProfileEditState extends State<ProfileEdit> {
       setState(() {});
     } catch (e) {
       print("Error fetching addresses: $e");
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_addresses);
       _isAddressInitial = false;
     }
   }
@@ -199,7 +201,7 @@ class _ProfileEditState extends State<ProfileEdit> {
     _file = await _picker.pickImage(source: ImageSource.gallery);
     
     if (_file == null) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.no_file_is_chosen,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.no_file_is_chosen,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -210,9 +212,9 @@ class _ProfileEditState extends State<ProfileEdit> {
     var response = await ProfileRepository().getProfileImageUpdateResponse(base64Image, fileName);
     
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       avatar_original.$ = response.path;
       setState(() {});
     }
@@ -224,12 +226,12 @@ class _ProfileEditState extends State<ProfileEdit> {
     var phone = _phoneController.text.trim();
     
     if (name.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_your_name,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_your_name,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
     if (phone.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_phone_number,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_phone_number,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -240,9 +242,9 @@ class _ProfileEditState extends State<ProfileEdit> {
     var response = await ProfileRepository().getProfileUpdateResponse(post_body: post_body);
     
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       user_name.$ = name;
       user_phone.$ = phone;
     }
@@ -256,17 +258,17 @@ class _ProfileEditState extends State<ProfileEdit> {
     var passwordConfirm = _passwordConfirmController.text;
     
     if (password.isEmpty && passwordConfirm.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_password,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_password,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
     if (password.length < 6) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.password_must_contain_at_least_6_characters,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.password_must_contain_at_least_6_characters,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
     if (password != passwordConfirm) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.passwords_do_not_match,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.passwords_do_not_match,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -277,9 +279,9 @@ class _ProfileEditState extends State<ProfileEdit> {
     var response = await ProfileRepository().getProfileUpdateResponse(post_body: post_body);
     
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       _passwordController.clear();
       _passwordConfirmController.clear();
     }
@@ -291,7 +293,7 @@ class _ProfileEditState extends State<ProfileEdit> {
   Future<void> _sendEmailVerification() async {
     var email = _emailController.text.trim();
     if (email.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_email_address,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_email_address,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -301,14 +303,14 @@ class _ProfileEditState extends State<ProfileEdit> {
     try {
       var response = await ProfileRepository().sendEmailVerificationCode(email);
       if (response['success'] == true) {
-        ToastComponent.showDialog(response['message'] ?? "Verification code sent",
+        ToastComponent.showSuccess(response['message'] ?? AppLocalizations.of(context)!.verification_code_sent,
             gravity: Toast.center, duration: Toast.lengthLong);
       } else {
-        ToastComponent.showDialog(response['message'] ?? "Failed to send code",
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.failed_to_send_code,
             gravity: Toast.center, duration: Toast.lengthLong);
       }
     } catch (e) {
-      ToastComponent.showDialog("Failed to send verification code",
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_send_verification_code,
           gravity: Toast.center, duration: Toast.lengthLong);
     }
     
@@ -321,7 +323,7 @@ class _ProfileEditState extends State<ProfileEdit> {
     var code = _verificationCodeController.text.trim();
     
     if (code.isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_verification_code,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_verification_code,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -331,16 +333,16 @@ class _ProfileEditState extends State<ProfileEdit> {
     try {
       var response = await ProfileRepository().verifyAndUpdateEmail(email, code);
       if (response['success'] == true) {
-        ToastComponent.showDialog(response['message'] ?? "Email updated successfully",
+        ToastComponent.showSuccess(response['message'] ?? AppLocalizations.of(context)!.email_updated_successfully,
             gravity: Toast.center, duration: Toast.lengthLong);
         user_email.$ = email;
         user_email.save();
       } else {
-        ToastComponent.showDialog(response['message'] ?? "Verification failed",
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.verification_failed,
             gravity: Toast.center, duration: Toast.lengthLong);
       }
     } catch (e) {
-      ToastComponent.showDialog("Failed to verify email",
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_verify_email,
           gravity: Toast.center, duration: Toast.lengthLong);
     }
     
@@ -350,22 +352,22 @@ class _ProfileEditState extends State<ProfileEdit> {
   // ============ ADDRESS CRUD OPERATIONS ============
   Future<void> _addAddress() async {
     if (_addressController.text.trim().isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_address_ucf,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_address_ucf,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
     if (_selectedCountry == null) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.select_a_country,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.select_a_country,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
     if (_selectedState == null) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.select_a_state,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.select_a_state,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
     if (_selectedCity == null) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.select_a_city,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.select_a_city,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -382,9 +384,9 @@ class _ProfileEditState extends State<ProfileEdit> {
     );
     
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       Navigator.pop(context);
       await _fetchAddresses();
       _clearAddressForm();
@@ -395,7 +397,7 @@ class _ProfileEditState extends State<ProfileEdit> {
 
   Future<void> _updateAddress(int index, int addressId) async {
     if (_updateAddressControllers[index].text.trim().isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.enter_address_ucf,
+      ToastComponent.showWarning(AppLocalizations.of(context)!.enter_address_ucf,
           gravity: Toast.center, duration: Toast.lengthLong);
       return;
     }
@@ -413,9 +415,9 @@ class _ProfileEditState extends State<ProfileEdit> {
     );
     
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       Navigator.pop(context);
       await _fetchAddresses();
     }
@@ -426,9 +428,9 @@ class _ProfileEditState extends State<ProfileEdit> {
   Future<void> _deleteAddress(int addressId) async {
     var response = await AddressRepository().getAddressDeleteResponse(addressId);
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       await _fetchAddresses();
     }
   }
@@ -438,9 +440,9 @@ class _ProfileEditState extends State<ProfileEdit> {
     
     var response = await AddressRepository().getAddressMakeDefaultResponse(addressId);
     if (response.result == false) {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showError(response.message, gravity: Toast.center, duration: Toast.lengthLong);
     } else {
-      ToastComponent.showDialog(response.message, gravity: Toast.center, duration: Toast.lengthLong);
+      ToastComponent.showSuccess(response.message, gravity: Toast.center, duration: Toast.lengthLong);
       _defaultAddressId = addressId;
       await _fetchAddresses();
     }
@@ -642,13 +644,13 @@ class _ProfileEditState extends State<ProfileEdit> {
                 _buildTextField(
                   label: AppLocalizations.of(context)!.name_ucf,
                   controller: _nameController,
-                  hint: "John Doe",
+                  hint: AppLocalizations.of(context)!.enter_your_name_hint,
                 ),
                 SizedBox(height: 16.h),
                 _buildTextField(
                   label: AppLocalizations.of(context)!.phone_ucf,
                   controller: _phoneController,
-                  hint: "+1234567890",
+                  hint: AppLocalizations.of(context)!.enter_phone_number_hint,
                   keyboardType: TextInputType.phone,
                 ),
                 SizedBox(height: 24.h),
@@ -795,7 +797,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                 _buildTextField(
                   label: AppLocalizations.of(context)!.new_email_ucf,
                   controller: _emailController,
-                  hint: "example@email.com",
+                  hint: AppLocalizations.of(context)!.enter_new_email_hint,
                   keyboardType: TextInputType.emailAddress,
                 ),
                 SizedBox(height: 12.h),
@@ -805,7 +807,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                       child: _buildTextField(
                         label: AppLocalizations.of(context)!.verification_code,
                         controller: _verificationCodeController,
-                        hint: "Enter 6-digit code",
+                        hint: AppLocalizations.of(context)!.enter_verification_code_hint,
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -1064,7 +1066,7 @@ class _ProfileEditState extends State<ProfileEdit> {
           controller: controller,
           obscureText: !showPassword,
           decoration: InputDecoration(
-            hintText: "••••••••",
+            hintText: AppLocalizations.of(context)!.password_hint,
             hintStyle: TextStyle(fontSize: 14.sp, color: Colors.grey),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10.r),
@@ -1105,7 +1107,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.address_ucf,
                     controller: _addressController,
-                    hint: "Enter address",
+                    hint: AppLocalizations.of(context)!.enter_address_hint,
                   ),
                   SizedBox(height: 12.h),
                   _buildTypeAheadField(
@@ -1151,13 +1153,13 @@ class _ProfileEditState extends State<ProfileEdit> {
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.postal_code,
                     controller: _postalCodeController,
-                    hint: "Enter postal code",
+                    hint: AppLocalizations.of(context)!.enter_postal_code_hint,
                   ),
                   SizedBox(height: 12.h),
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.phone_ucf,
                     controller: _addressPhoneController,
-                    hint: "Enter phone number",
+                    hint: AppLocalizations.of(context)!.enter_phone_number_hint,
                     keyboardType: TextInputType.phone,
                   ),
                 ],
@@ -1209,7 +1211,7 @@ class _ProfileEditState extends State<ProfileEdit> {
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.address_ucf,
                     controller: _updateAddressControllers[index],
-                    hint: "Enter address",
+                    hint: AppLocalizations.of(context)!.enter_address_hint,
                   ),
                   SizedBox(height: 12.h),
                   _buildTypeAheadField(
@@ -1277,13 +1279,13 @@ class _ProfileEditState extends State<ProfileEdit> {
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.postal_code,
                     controller: _updatePostalCodeControllers[index],
-                    hint: "Enter postal code",
+                    hint: AppLocalizations.of(context)!.enter_postal_code_hint,
                   ),
                   SizedBox(height: 12.h),
                   _buildAddressFormField(
                     label: AppLocalizations.of(context)!.phone_ucf,
                     controller: _updatePhoneControllers[index],
-                    hint: "Enter phone number",
+                    hint: AppLocalizations.of(context)!.enter_phone_number_hint,
                     keyboardType: TextInputType.phone,
                   ),
                 ],
@@ -1382,7 +1384,7 @@ class _ProfileEditState extends State<ProfileEdit> {
             controller: controller,
             enabled: enabled,
             decoration: InputDecoration(
-              hintText: "Select $label",
+              hintText: AppLocalizations.of(context)!.select_label_hint(label),
               hintStyle: TextStyle(fontSize: 14.sp),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.r),

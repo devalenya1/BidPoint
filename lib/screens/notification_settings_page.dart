@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:convert';
 
 // Import the data model
@@ -112,7 +113,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       }
     } catch (e) {
       print("Error loading notification settings: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_notification_settings);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notification_settings);
       _useDefaultSettings();
     } finally {
       setState(() {
@@ -161,7 +162,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       final response = await _profileRepository.updateNotificationSettings(_notificationSettings);
       
       if (response['success'] == true) {
-        ToastComponent.showDialog(
+        ToastComponent.showSuccess(
           response['message'] ?? AppLocalizations.of(context)!.notification_settings_saved_successfully,
         );
         
@@ -170,13 +171,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           await _fetchNotificationSettings();
         }
       } else {
-        ToastComponent.showDialog(
+        ToastComponent.showError(
           response['message'] ?? AppLocalizations.of(context)!.notification_settings_save_failed,
         );
       }
     } catch (e) {
       print("Error saving notification settings: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.notification_settings_save_failed);
+      ToastComponent.showError(AppLocalizations.of(context)!.notification_settings_save_failed);
     } finally {
       if (mounted) {
         setState(() {
@@ -221,14 +222,15 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.notification_ucf,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        toolbarHeight: 60.h,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -240,7 +242,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             ? _buildShimmer()
             : SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(0, 16, 0, 30),
+                padding: EdgeInsets.fromLTRB(0, 16.h, 0, 30.h),
                 child: Column(
                   children: [
                     // Bid Notifications Card
@@ -278,7 +280,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                       keys: ['new_product_notification', 'ending_soon_notification', 'ended_notification'],
                     ),
                     
-                    // Save Button - Same loader as HotAuctionCard
+                    // Save Button
                     _buildSaveButton(),
                   ],
                 ),
@@ -291,22 +293,22 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget _buildShimmer() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(0, 16, 0, 30),
+      padding: EdgeInsets.fromLTRB(0, 16.h, 0, 30.h),
       child: Column(
         children: [
           _buildShimmerCard(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           _buildShimmerCard(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           _buildShimmerCard(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           _buildShimmerCard(),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           _buildShimmerCard(),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ShimmerHelper().buildBasicShimmer(height: 48, radius: 50),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: ShimmerHelper().buildBasicShimmer(height: 48.h, radius: 50.r),
           ),
         ],
       ),
@@ -315,31 +317,31 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   
   Widget _buildShimmerCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
+        borderRadius: BorderRadius.circular(7.r),
+        border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
             child: Row(
               children: [
-                ShimmerHelper().buildBasicShimmer(height: 28, width: 28, radius: 7),
-                const SizedBox(width: 10),
-                ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
+                ShimmerHelper().buildBasicShimmer(height: 28.w, width: 28.w, radius: 7.r),
+                SizedBox(width: 10.w),
+                ShimmerHelper().buildBasicShimmer(height: 20.h, width: 150.w),
               ],
             ),
           ),
           ...List.generate(3, (index) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ShimmerHelper().buildBasicShimmer(height: 16, width: 180),
-                ShimmerHelper().buildBasicShimmer(height: 24, width: 44, radius: 34),
+                ShimmerHelper().buildBasicShimmer(height: 16.h, width: 180.w),
+                ShimmerHelper().buildBasicShimmer(height: 24.h, width: 44.w, radius: 34.r),
               ],
             ),
           )),
@@ -354,18 +356,18 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     required List<String> keys,
   }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: const Color(0xFFEEF2F8)),
+        borderRadius: BorderRadius.circular(7.r),
+        border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Card Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: Color(0xFFEEF2F8)),
@@ -374,25 +376,25 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             child: Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: 28.w,
+                  height: 28.w,
                   decoration: BoxDecoration(
                     color: MyTheme.accent_color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: BorderRadius.circular(7.r),
                   ),
                   child: Icon(
                     icon,
-                    size: 16,
+                    size: 16.sp,
                     color: MyTheme.accent_color,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: const Color(0xFF0F172A),
                   ),
                 ),
               ],
@@ -417,7 +419,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     required Function(bool) onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Color(0xFFEEF2F8)),
@@ -429,10 +431,10 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF0F172A),
+                color: const Color(0xFF0F172A),
               ),
             ),
           ),
@@ -441,19 +443,19 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             onTap: () => onChanged(!value),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 44,
-              height: 24,
+              width: 44.w,
+              height: 24.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(34),
+                borderRadius: BorderRadius.circular(34.r),
                 color: value ? MyTheme.accent_color : const Color(0xFFCBD5E1),
               ),
               child: AnimatedAlign(
                 duration: const Duration(milliseconds: 200),
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
-                  width: 18,
-                  height: 18,
-                  margin: const EdgeInsets.all(3),
+                  width: 18.w,
+                  height: 18.w,
+                  margin: EdgeInsets.all(3.w),
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
@@ -467,34 +469,34 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     );
   }
   
-  // ============ SAVE BUTTON - SAME LOADER AS HOTAUCTIONCARD ============
+  // ============ SAVE BUTTON ============
   Widget _buildSaveButton() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+      margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
       child: GestureDetector(
         onTap: _isSaving ? null : _saveSettings,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: EdgeInsets.symmetric(vertical: 14.h),
           decoration: BoxDecoration(
             color: _isSaving ? MyTheme.medium_grey : MyTheme.accent_color,
-            borderRadius: BorderRadius.circular(50),
+            borderRadius: BorderRadius.circular(50.r),
           ),
           child: Center(
             child: _isSaving
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
+                ? SizedBox(
+                    height: 16.w,
+                    width: 16.w,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
+                      strokeWidth: 2.w,
                       color: Colors.white,
                     ),
                   )
                 : Text(
                     AppLocalizations.of(context)!.save_settings,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),

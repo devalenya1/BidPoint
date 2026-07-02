@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
-import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model
@@ -81,7 +81,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_payment_details);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_payment_details);
     } finally {
       setState(() {
         _isLoading = false;
@@ -141,15 +141,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   
   Future<void> _saveBankDetails() async {
     if (_bankNameController.text.trim().isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_bank_name);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_bank_name);
       return;
     }
     if (_accountHolderController.text.trim().isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_account_holder_name);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_account_holder_name);
       return;
     }
     if (_accountNumberController.text.trim().isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_account_number);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_account_number);
       return;
     }
     
@@ -171,15 +171,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _isBankModalOpen = false;
         });
         
-        ToastComponent.showDialog(AppLocalizations.of(context)!.bank_details_saved_successfully);
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.bank_details_saved_successfully);
         
         await _fetchUserData();
       } else {
-        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error saving bank details: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
+      ToastComponent.showError(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -189,11 +189,11 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
   
   Future<void> _savePaypalDetails() async {
     if (_paypalEmailController.text.trim().isEmpty) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_paypal_email);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_paypal_email);
       return;
     }
     if (!_paypalEmailController.text.contains('@')) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_enter_valid_email);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_valid_email);
       return;
     }
     
@@ -215,15 +215,15 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _isPaypalModalOpen = false;
         });
         
-        ToastComponent.showDialog(AppLocalizations.of(context)!.paypal_details_saved_successfully);
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.paypal_details_saved_successfully);
         
         await _fetchUserData();
       } else {
-        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error saving PayPal details: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
+      ToastComponent.showError(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -290,14 +290,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _ifscCodeController.clear();
         });
         
-        ToastComponent.showDialog(AppLocalizations.of(context)!.bank_disconnected_successfully);
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.bank_disconnected_successfully);
         await _fetchUserData();
       } else {
-        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error disconnecting bank: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
+      ToastComponent.showError(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -361,14 +361,14 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
           _paypalEmailController.clear();
         });
         
-        ToastComponent.showDialog(AppLocalizations.of(context)!.paypal_disconnected_successfully);
+        ToastComponent.showSuccess(AppLocalizations.of(context)!.paypal_disconnected_successfully);
         await _fetchUserData();
       } else {
-        ToastComponent.showDialog(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
+        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.something_went_wrong);
       }
     } catch (e) {
       print("Error disconnecting PayPal: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.something_went_wrong);
+      ToastComponent.showError(AppLocalizations.of(context)!.something_went_wrong);
     } finally {
       setState(() {
         _isSaving = false;
@@ -502,7 +502,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
     VoidCallback? onDisconnect,
   }) {
     return InkWell(
-      onTap: onTap,  // Whole card is now tappable
+      onTap: onTap,
       borderRadius: BorderRadius.circular(7.r),
       child: Container(
         decoration: BoxDecoration(
@@ -563,18 +563,6 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
               ),
               Row(
                 children: [
-                  // if (onDisconnect != null)
-                  //   GestureDetector(
-                  //     onTap: onDisconnect,
-                  //     child: Container(
-                  //       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  //       child: Icon(
-                  //         Icons.delete_outline,
-                  //         size: 18.sp,
-                  //         color: const Color(0xFFEF4444),
-                  //       ),
-                  //     ),
-                  //   ),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                     decoration: BoxDecoration(

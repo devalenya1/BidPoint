@@ -110,7 +110,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_user_data);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_user_data);
     }
   }
   
@@ -140,7 +140,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       }
     } catch (e) {
       print("Error loading packages: $e");
-      ToastComponent.showDialog(AppLocalizations.of(context)!.failed_to_load_packages);
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_packages);
     } finally {
       setState(() {
         _isLoading = false;
@@ -184,14 +184,11 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   // ============ GET PACKAGE POINTS ============
   int _getPackagePoints(Package package) {
-    // Points are stored in productUploadLimit field
-    // From server: "product_upload_limit": 1000
     return package.productUploadLimit ?? 0;
   }
   
   // ============ GET PACKAGE PRICE ============
   double _getPackagePrice(Package package) {
-    // Price is stored in 'price' field
     if (package.price == null) return 0.0;
     if (package.price is double) return package.price;
     if (package.price is int) return (package.price as int).toDouble();
@@ -204,13 +201,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   // ============ SUBMIT PURCHASE (Connects to Payment Gateway) ============
   Future<void> _submitPurchase() async {
     if (_selectedPackage == null) {
-      ToastComponent.showDialog(AppLocalizations.of(context)!.please_select_a_package);
+      ToastComponent.showWarning(AppLocalizations.of(context)!.please_select_a_package);
       return;
     }
     
     // Check if package has valid ID
     if (_selectedPackage!.id == null || _selectedPackage!.id! <= 0) {
-      ToastComponent.showDialog('Invalid package selected');
+      ToastComponent.showWarning(AppLocalizations.of(context)!.invalid_package_selected);
       return;
     }
     
@@ -228,7 +225,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             title: AppLocalizations.of(context)!.purchase_package,
             rechargeAmount: price,
             paymentFor: PaymentFor.PackagePay,
-            packageId: _selectedPackage!.id, // Make sure this is not null
+            packageId: _selectedPackage!.id,
           ),
         ),
       ).then((_) {
@@ -269,13 +266,12 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   }
   
   void _selectPackage(Package package) {
-    // Only select if package has a valid ID and price
     if (package.id != null && package.id! > 0) {
       setState(() {
         _selectedPackage = package;
       });
     } else {
-      ToastComponent.showDialog('Invalid package selected');
+      ToastComponent.showWarning(AppLocalizations.of(context)!.invalid_package_selected);
     }
   }
   
@@ -435,8 +431,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
-                        // ✅ FIX: Dynamic height based on content
-                        height: MediaQuery.of(context).size.height * 0.45, // Increased from 0.35
+                        height: MediaQuery.of(context).size.height * 0.45,
                         width: double.infinity,
                         padding: EdgeInsets.only(bottom: 70.h),
                         decoration: const BoxDecoration(
@@ -494,7 +489,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                               ),
                             ),
                             
-                            // ✅ FIX: Responsive package slider with flexible height
+                            // Responsive package slider with flexible height
                             Expanded(
                               child: _buildPackageSlider(),
                             ),
@@ -559,8 +554,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           final availableWidth = constraints.maxWidth;
           
           // Responsive card height - use percentage of available height
-          final cardHeight = availableHeight * 0.85; // 85% of available height
-          final cardWidth = availableWidth * 0.75; // 75% of available width
+          final cardHeight = availableHeight * 0.85;
+          final cardWidth = availableWidth * 0.75;
           
           return SingleChildScrollView(
             controller: _packageScrollController,
@@ -603,7 +598,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     double? cardHeight,
   }) {
     final height = cardHeight ?? 150.h;
-    final imageSize = height * 0.50; // Slightly smaller image to allow more text space
+    final imageSize = height * 0.50;
     
     return GestureDetector(
       onTap: () => _selectPackage(package),
@@ -635,37 +630,32 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Package Name - 1.4x larger
                   Text(
                     package.name ?? AppLocalizations.of(context)!.package_ucf,
                     style: TextStyle(
                       fontSize: (height * 0.12).clamp(16.sp, 22.sp),
                       fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : const Color(0xFFA5A5BA),
-                      height: 1.4, // Line height for readability
+                      height: 1.4,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  // Vertical spacing
-                  SizedBox(height: height * 0.04), // Dynamic spacing
+                  SizedBox(height: height * 0.04),
                   
-                  // Points - 1.4x larger
                   Text(
                     '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                     style: TextStyle(
                       fontSize: (height * 0.19).clamp(20.sp, 28.sp),
                       fontWeight: FontWeight.w800,
                       color: isSelected ? Colors.white : const Color(0xFF000417),
-                      height: 1.3, // Tighter line height for numbers
+                      height: 1.3,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  // Vertical spacing
                   SizedBox(height: height * 0.03),
                   
-                  // Price - 1.4x larger
                   Text(
                     packagePrice == 0 
                         ? AppLocalizations.of(context)!.free_ucf 
@@ -674,7 +664,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       fontSize: (height * 0.12).clamp(14.sp, 18.sp),
                       fontWeight: FontWeight.w500,
                       color: isSelected ? Colors.white : const Color(0xFF80818B),
-                      height: 1.4, // More line height for price
+                      height: 1.4,
                     ),
                   ),
                 ],
@@ -902,7 +892,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     final amount = item.amount ?? 0.0;
     final packageName = item.packageName ?? '';
     
-    // Get package points from the payment
     int packagePoints = 0;
     if (item.customerPackageId != null) {
       final foundPackage = _packages.firstWhere(
@@ -914,7 +903,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       }
     }
     
-    // Fallback: if we can't find the package, use a default
     if (packagePoints == 0) {
       packagePoints = (item.amount ?? 0).toInt();
     }
@@ -1019,7 +1007,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   Widget _buildEmptyState() {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 40.h, horizontal: 20.w),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 40.h),
       decoration: BoxDecoration(
         color: const Color(0xFFFAFBFC),
         borderRadius: BorderRadius.circular(16.r),
