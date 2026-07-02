@@ -747,24 +747,27 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   height: carouselHeight,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
-                                      color: Colors.grey[300],
+                                      // color: Colors.grey[300],
+                                      Colors.transparent,
                                       child: Center(
                                         child: Icon(
                                           Icons.broken_image,
                                           size: 50.sp,
-                                          color: Colors.grey[600],
+                                          // color: Colors.grey[600],
+                                          Colors.transparent,
                                         ),
                                       ),
                                     );
                                   },
                                 )
                               : Container(
-                                  color: Colors.grey[300],
+                                  Colors.transparent,
+                                  // color: Colors.grey[300],
                                   child: Center(
                                     child: Icon(
                                       Icons.image,
                                       size: 50.sp,
-                                      color: Colors.grey[600],
+                                      Colors.transparent,,
                                     ),
                                   ),
                                 ),
