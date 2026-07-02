@@ -231,7 +231,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
       );
       
       if (response.success == true) {
-        ToastComponent.showDialog(
+        // ✅ Using showSuccess - Green with success sound
+        ToastComponent.showSuccess(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
         );
         Navigator.push(
@@ -241,12 +242,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
         );
       } else {
-        ToastComponent.showDialog(
+        // ✅ Using showError - Red with error sound
+        ToastComponent.showError(
           response.message ?? 'Failed to place bid',
         );
       }
     } catch (e) {
-      ToastComponent.showDialog('Error placing bid');
+      // ✅ Using showError - Red with error sound
+      ToastComponent.showError('Error placing bid');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -308,7 +311,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
 
     return Container(
       decoration: BoxDecoration(
-        // ✅ FIXED: Changed to #F2F2F3
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),

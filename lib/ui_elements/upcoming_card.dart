@@ -200,16 +200,19 @@ class _UpcomingCardState extends State<UpcomingCard> {
       final response = await ProductRepository().notifyMeForAuction(widget.id);
       
       if (response['success'] == true) {
-        ToastComponent.showDialog(
+        // ✅ Using showSuccess - Green with success sound
+        ToastComponent.showSuccess(
           response['message'] ?? 'You will be notified when this auction starts!',
         );
       } else {
-        ToastComponent.showDialog(
+        // ✅ Using showError - Red with error sound
+        ToastComponent.showError(
           response['message'] ?? 'Failed to set notification',
         );
       }
     } catch (e) {
-      ToastComponent.showDialog('Error setting notification');
+      // ✅ Using showError - Red with error sound
+      ToastComponent.showError('Error setting notification');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -262,7 +265,6 @@ class _UpcomingCardState extends State<UpcomingCard> {
 
     return Container(
       decoration: BoxDecoration(
-        // ✅ Changed to #F2F2F3
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),

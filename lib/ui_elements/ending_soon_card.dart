@@ -244,7 +244,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       );
       
       if (response.success == true) {
-        ToastComponent.showDialog(
+        // ✅ Using showSuccess - Green with success sound
+        ToastComponent.showSuccess(
           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
         );
         Navigator.push(
@@ -254,12 +255,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           ),
         );
       } else {
-        ToastComponent.showDialog(
+        // ✅ Using showError - Red with error sound
+        ToastComponent.showError(
           response.message ?? 'Failed to place bid',
         );
       }
     } catch (e) {
-      ToastComponent.showDialog('Error placing bid');
+      // ✅ Using showError - Red with error sound
+      ToastComponent.showError('Error placing bid');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -330,7 +333,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   Widget _buildLeftCard(double displayBid, bool showTimer) {
     return Container(
       decoration: BoxDecoration(
-        // ✅ Changed to #F2F2F3
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
@@ -573,7 +575,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   Widget _buildRightCard(double displayBid, bool showTimer) {
     return Container(
       decoration: BoxDecoration(
-        // ✅ Changed to #F2F2F3
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
