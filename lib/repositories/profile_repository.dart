@@ -16,8 +16,64 @@ import 'package:flutter/foundation.dart';
 import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
 import 'package:flutter/material.dart'; 
 import 'package:flutter/foundation.dart' show kDebugMode;
-// ✅ Add this import for localization
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+// ✅ Helper class for localization without BuildContext
+class LocalizedMessages {
+  // Default messages (English fallback)
+  static const Map<String, String> _defaultMessages = {
+    'notification_settings_saved': 'Notification settings saved successfully',
+    'failed_to_save_notification_settings': 'Failed to save notification settings',
+    'removed_from_wishlist_success': 'Removed from wishlist successfully!',
+    'failed_to_remove_from_wishlist': 'Failed to remove from wishlist',
+    'failed_to_get_notification_settings': 'Failed to get notification settings',
+    'verification_code_sent': 'Verification code sent',
+    'failed_to_send_verification_code': 'Failed to send verification code',
+    'email_updated_successfully': 'Email updated successfully',
+    'verification_failed': 'Verification failed',
+    'all_notifications_marked_read': 'All notifications marked as read',
+    'failed_to_mark_notifications_read': 'Failed to mark notifications as read',
+    'withdrawal_request_submitted': 'Withdrawal request submitted successfully',
+    'failed_to_submit_withdrawal': 'Failed to submit withdrawal request',
+    'failed_to_update_payment_details': 'Failed to update payment details',
+    'failed_to_get_payment_details': 'Failed to get payment details',
+    'network_error_try_again': 'Network error. Please try again.',
+    'failed_to_load_notifications': 'Failed to load notifications',
+    'failed_to_load_wishlist': 'Failed to load wishlist',
+    'failed_to_load_activities': 'Failed to load activities',
+    'failed_to_load_comments': 'Failed to load comments',
+    'failed_to_load_reviews': 'Failed to load reviews',
+    'failed_to_load_bid_history': 'Failed to load bid history',
+    'failed_to_add_to_wishlist': 'Failed to add to wishlist',
+    'add_to_wishlist_success': 'Added to wishlist successfully!',
+    'wishlist_update_failed': 'Wishlist update failed',
+    'bid_placed_successfully': 'Bid placed successfully',
+    'bid_placed': 'Bid placed!',
+    'failed_to_place_bid': 'Failed to place bid',
+    'auction_time_extended': '⏰ Auction time extended!',
+    'comment_added_successfully': 'Comment added successfully',
+    'failed_to_add_comment': 'Failed to add comment',
+    'review_submitted_successfully': 'Review submitted successfully',
+    'failed_to_submit_review': 'Failed to submit review',
+    'notify_me_success': 'You will be notified when this auction starts',
+    'notify_me_failed': 'Failed to set notification',
+    'message_sent_to_seller': 'Message sent to seller!',
+    'failed_to_contact_seller': 'Failed to contact seller',
+    'something_went_wrong': 'Something went wrong',
+  };
+
+  static String getMessage(String key, [Map<String, String>? params]) {
+    String message = _defaultMessages[key] ?? key;
+    
+    if (params != null) {
+      params.forEach((key, value) {
+        message = message.replaceAll('{$key}', value);
+      });
+    }
+    
+    return message;
+  }
+}
 
 class ProfileRepository {
 
@@ -147,13 +203,13 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? AppLocalizations.of(context!)!.notification_settings_saved,
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('notification_settings_saved'),
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': AppLocalizations.of(context!)!.failed_to_save_notification_settings,
+          'message': LocalizedMessages.getMessage('failed_to_save_notification_settings'),
           'status': response.statusCode,
         };
       }
@@ -161,7 +217,7 @@ class ProfileRepository {
       print("Error updating notification settings: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -187,13 +243,13 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? AppLocalizations.of(context!)!.removed_from_wishlist_success,
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('removed_from_wishlist_success'),
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': AppLocalizations.of(context!)!.failed_to_remove_from_wishlist,
+          'message': LocalizedMessages.getMessage('failed_to_remove_from_wishlist'),
           'status': response.statusCode,
         };
       }
@@ -201,7 +257,7 @@ class ProfileRepository {
       print("Error removing from wishlist: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -231,7 +287,7 @@ class ProfileRepository {
         return {
           'success': false,
           'settings': {},
-          'message': AppLocalizations.of(context!)!.failed_to_get_notification_settings,
+          'message': LocalizedMessages.getMessage('failed_to_get_notification_settings'),
         };
       }
     } catch (e) {
@@ -239,7 +295,7 @@ class ProfileRepository {
       return {
         'success': false,
         'settings': {},
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -264,7 +320,7 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? AppLocalizations.of(context!)!.verification_code_sent,
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('verification_code_sent'),
           'data': responseData['data'],
         };
       } else {
@@ -273,12 +329,12 @@ class ProfileRepository {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? AppLocalizations.of(context!)!.failed_to_send_verification_code,
+            'message': errorData['message'] ?? LocalizedMessages.getMessage('failed_to_send_verification_code'),
           };
         } catch (e) {
           return {
             'success': false,
-            'message': AppLocalizations.of(context!)!.failed_to_send_verification_code,
+            'message': LocalizedMessages.getMessage('failed_to_send_verification_code'),
           };
         }
       }
@@ -286,7 +342,7 @@ class ProfileRepository {
       print("Error sending verification code: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -313,7 +369,7 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? AppLocalizations.of(context!)!.email_updated_successfully,
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('email_updated_successfully'),
           'data': responseData['data'],
         };
       } else {
@@ -322,12 +378,12 @@ class ProfileRepository {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? AppLocalizations.of(context!)!.verification_failed,
+            'message': errorData['message'] ?? LocalizedMessages.getMessage('verification_failed'),
           };
         } catch (e) {
           return {
             'success': false,
-            'message': AppLocalizations.of(context!)!.verification_failed,
+            'message': LocalizedMessages.getMessage('verification_failed'),
           };
         }
       }
@@ -335,7 +391,7 @@ class ProfileRepository {
       print("Error verifying email: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -359,20 +415,20 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? AppLocalizations.of(context!)!.all_notifications_marked_read,
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('all_notifications_marked_read'),
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': AppLocalizations.of(context!)!.failed_to_mark_notifications_read,
+          'message': LocalizedMessages.getMessage('failed_to_mark_notifications_read'),
         };
       }
     } catch (e) {
       print("Error marking all notifications as read: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -398,7 +454,7 @@ class ProfileRepository {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? AppLocalizations.of(context!)!.withdrawal_request_submitted,
+          'message': responseData['message'] ?? LocalizedMessages.getMessage('withdrawal_request_submitted'),
           'data': responseData['data'],
         };
       } else {
@@ -407,13 +463,13 @@ class ProfileRepository {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? AppLocalizations.of(context!)!.failed_to_submit_withdrawal,
+            'message': errorData['message'] ?? LocalizedMessages.getMessage('failed_to_submit_withdrawal'),
             'status': response.statusCode,
           };
         } catch (e) {
           return {
             'success': false,
-            'message': AppLocalizations.of(context!)!.failed_to_submit_withdrawal,
+            'message': LocalizedMessages.getMessage('failed_to_submit_withdrawal'),
             'status': response.statusCode,
           };
         }
@@ -422,7 +478,7 @@ class ProfileRepository {
       print("Error submitting withdrawal: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -461,14 +517,14 @@ class ProfileRepository {
         return {
           'success': false,
           'status': response.statusCode,
-          'message': AppLocalizations.of(context!)!.failed_to_update_payment_details
+          'message': LocalizedMessages.getMessage('failed_to_update_payment_details')
         };
       }
     } catch (e) {
       print("Error updating payment details: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }
@@ -495,14 +551,14 @@ class ProfileRepository {
         return {
           'success': false,
           'status': response.statusCode,
-          'message': AppLocalizations.of(context!)!.failed_to_get_payment_details
+          'message': LocalizedMessages.getMessage('failed_to_get_payment_details')
         };
       }
     } catch (e) {
       print("Error getting payment details: $e");
       return {
         'success': false,
-        'message': AppLocalizations.of(context!)!.network_error_try_again,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
       };
     }
   }

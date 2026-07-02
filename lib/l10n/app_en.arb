@@ -1231,6 +1231,8 @@
   "network_error_try_again": "Network error. Please try again.",
   "remove_from_wishlist_success": "Removed from wishlist successfully!",
   "add_to_wishlist_success": "Added to wishlist successfully!",
+  "enter_address_hint": "Enter your address",
+  
 
 
   "no_file_chosen_ucf": "No File Chosen",
