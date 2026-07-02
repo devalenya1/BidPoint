@@ -111,20 +111,56 @@ class _WishlistState extends State<Wishlist> {
     List<WishlistItem> endingSoon = [];
     List<WishlistItem> outbid = [];
     
+    final now = DateTime.now();
+    
     for (var item in wishlist) {
-      final isEnded = false;
-      final isOutbid = false;
+      // Use API data directly
+      final isLive = item.isLive ?? false;
+      final isEndingSoon = item.endingSoon ?? false;
+      final isOutbid = item.outbid ?? false;
+      final isAuction = item.isAuction ?? false;
       
+      // Add to all items
       allItems.add(item);
       
-      if (!isEnded) {
+      // Categorize based on API data
+      if (isAuction && isLive) {
         live.add(item);
       }
       
-      if (isOutbid && !isEnded) {
+      if (isAuction && isEndingSoon && isLive) {
+        endingSoon.add(item);
+      }
+      
+      if (isAuction && isOutbid && isLive) {
         outbid.add(item);
       }
     }
+    
+    // Sort all items by created_at (newest first)
+    allItems.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
+    live.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
+    endingSoon.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
+    outbid.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
     
     setState(() {
       _wishlistItems = allItems;
@@ -519,28 +555,43 @@ class _WishlistState extends State<Wishlist> {
     
     final int pointPerBid = item.pointPerBid ?? 10;
     
-    final isEnded = false;
-    final isOutbid = false;
-    final isWinning = !isEnded && !isOutbid;
+    // Use API data directly
+    final bool isLive = item.isLive ?? false;
+    final bool isEndingSoon = item.endingSoon ?? false;
+    final bool isOutbid = item.outbid ?? false;
+    final bool isWinning = item.isWinning ?? false;
+    final bool isAuction = item.isAuction ?? false;
     
+    // Determine status text and description
     String statusText;
+    String descriptionText = '';
     Color statusColor = Colors.black;
     
-    if (isEnded) {
+    // Determine the primary status for display
+    if (!isAuction) {
+      // Non-auction product
+      statusText = AppLocalizations.of(context)!.regular_product;
+    } else if (!isLive) {
+      // Auction has ended (not live)
       statusText = AppLocalizations.of(context)!.auction_has_ended;
-      statusColor = Colors.black;
-    } else if (isOutbid) {
+      descriptionText = AppLocalizations.of(context)!.auction_ended_description;
+    } else if (isOutbid && isLive) {
+      // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
-      statusColor = Colors.black;
-    } else if (isWinning) {
+      descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
+    } else if (isWinning && isLive) {
+      // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
-      statusColor = Colors.black;
+      descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
     } else {
+      // Default
       statusText = AppLocalizations.of(context)!.place_your_bid_now;
-      statusColor = Colors.black;
+      descriptionText = AppLocalizations.of(context)!.place_your_bid_now_description;
     }
     
-    final bool isAuctionProduct = item.isAuction ?? false;
+    // Show "Ending Soon" badge if applicable
+    final bool showEndingSoonBadge = isAuction && isLive && isEndingSoon;
+    
     final String productSlug = item.slug ?? '';
     
     final screenWidth = MediaQuery.of(context).size.width;
@@ -610,6 +661,27 @@ class _WishlistState extends State<Wishlist> {
                           ),
                   ),
                 ),
+                // "Ending Soon" Badge
+                if (showEndingSoonBadge)
+                  Positioned(
+                    top: 4.w,
+                    left: 4.w,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.ending_soon_ucf,
+                        style: TextStyle(
+                          fontSize: isTablet ? 8.sp : 7.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Remove from wishlist - FULL HEART (black)
                 Positioned(
                   top: 0,
@@ -676,10 +748,27 @@ class _WishlistState extends State<Wishlist> {
                     color: Colors.black,
                   ),
                 ),
+                // Description Text (if any)
+                if (descriptionText.isNotEmpty && isAuction)
+                  Padding(
+                    padding: EdgeInsets.only(top: 2.h),
+                    child: Text(
+                      descriptionText,
+                      style: TextStyle(
+                        fontSize: isTablet ? 10.sp : 9.sp,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF80818B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 SizedBox(height: 6.h),
                 // Bid Label
                 Text(
-                  AppLocalizations.of(context)!.current_bid,
+                  isLive && isAuction 
+                      ? AppLocalizations.of(context)!.current_bid
+                      : AppLocalizations.of(context)!.final_bid,
                   style: TextStyle(
                     fontSize: isTablet ? 10.sp : 9.sp,
                     fontWeight: FontWeight.w500,
@@ -719,7 +808,30 @@ class _WishlistState extends State<Wishlist> {
                     ),
                   ],
                 ),
-                SizedBox(height: 10.h),
+                // Show time remaining if live
+                if (isAuction && isLive && item.auctionEndDate != null && item.auctionEndDate!.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.h),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: isTablet ? 12.sp : 10.sp,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '${AppLocalizations.of(context)!.time_left}: ${_timeLeft[item.id] ?? AppLocalizations.of(context)!.loading}',
+                          style: TextStyle(
+                            fontSize: isTablet ? 10.sp : 9.sp,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(height: 8.h),
                 // Action Button - White with accent border and text
                 GestureDetector(
                   onTap: () {
@@ -742,8 +854,8 @@ class _WishlistState extends State<Wishlist> {
                       borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Text(
-                      isAuctionProduct 
-                          ? (isEnded ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.bid_now)
+                      isAuction && isLive 
+                          ? AppLocalizations.of(context)!.bid_now
                           : AppLocalizations.of(context)!.view_details,
                       textAlign: TextAlign.center,
                       style: TextStyle(

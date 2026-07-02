@@ -572,44 +572,35 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final userHighestBid = _getUserHighestBidForProduct(productId);
     final currentBid = _getCurrentBidById(productId);
     final pointPerBid = _getPointPerBidForProduct(productId);
+    final isEnded = _isAuctionEndedForProduct(productId);
     
-    final isOutbid = userHighestBid > 0 && userHighestBid < currentBid;
-    final isWinning = userHighestBid >= currentBid && userHighestBid > 0;
-    final isEnded = false;
+    // Determine statuses
+    final isOutbid = !isEnded && userHighestBid > 0 && userHighestBid < currentBid;
+    final isWinning = !isEnded && userHighestBid >= currentBid && userHighestBid > 0;
+    final isWon = isEnded && userHighestBid > 0 && userHighestBid >= currentBid;
+    final isLost = isEnded && !isWon;
     
-    // All status text in BLACK
+    // Status Text in BLACK
     String statusText;
+    String descriptionText;
     Color statusColor = Colors.black;
     
-    if (isOutbid && !isEnded) {
+    if (isOutbid) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
-      statusColor = Colors.black;
-    } else if (isWinning && !isEnded) {
-      statusText = AppLocalizations.of(context)!.currently_winning;
-      statusColor = Colors.black;
-    } else if (isEnded && isWinning) {
-      statusText = AppLocalizations.of(context)!.you_won_auction;
-      statusColor = Colors.black;
-    } else {
-      statusText = AppLocalizations.of(context)!.auction_ended;
-      statusColor = Colors.black;
-    }
-    
-    // Updated: Product name shown separately, then description
-    String descriptionText;
-    if (isOutbid && !isEnded) {
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-    } else if (isWinning && !isEnded) {
+    } else if (isWinning) {
+      statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
-    } else if (isEnded && isWinning) {
+    } else if (isWon) {
+      statusText = AppLocalizations.of(context)!.you_won_auction;
       descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
-    } else if (isEnded && !isWinning) {
+    } else if (isLost) {
+      statusText = AppLocalizations.of(context)!.auction_ended;
       descriptionText = AppLocalizations.of(context)!.you_didnt_win;
     } else {
+      statusText = '';
       descriptionText = '';
     }
-    
-    final timeLeft = _timeLeft[productId] ?? AppLocalizations.of(context)!.loading;
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -682,7 +673,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 2.h),
                 
-                // Product Name (shown before description)
+                // Product Name
                 Text(
                   productName,
                   style: TextStyle(
@@ -695,7 +686,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 2.h),
                 
-                // Description Text (without product name)
+                // Description Text
                 if (descriptionText.isNotEmpty)
                   Text(
                     descriptionText,
@@ -756,15 +747,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 10.h),
                 
-                // Action Button
-                if (isOutbid && !isEnded)
+                // Action Button based on status
+                if (isOutbid)
                   _buildBidAgainButton(productSlug)
-                else if (isWinning && !isEnded)
+                else if (isWinning || isWon)
                   _buildViewDetailsButton(productSlug, isWinning: true)
-                else if (isEnded && isWinning)
-                  _buildViewDetailsButton(productSlug, isWinning: true)
-                else if (isEnded && !isWinning)
-                  Container()
+                else if (isLost)
+                  _buildViewDetailsButton(productSlug, isWinning: false)
                 else
                   _buildViewDetailsButton(productSlug, isWinning: false),
               ],
