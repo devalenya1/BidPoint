@@ -81,7 +81,6 @@ class ToastComponent {
   // 🔄 LEGACY - Kept for backward compatibility
   // ============================================
   static showDialog(String msg, {duration = 0, gravity = 0}) {
-    // Default to info (or you can change to warning)
     showInfo(msg, duration: duration, gravity: gravity);
   }
 
@@ -96,24 +95,80 @@ class ToastComponent {
     required Color textColor,
     required Color borderColor,
   }) {
-    ToastContext().init(OneContext().context!);
-    Toast.show(
-      msg,
-      duration: duration != 0 ? duration : Toast.lengthShort,
-      gravity: gravity != 0 ? gravity : Toast.bottom,
-      backgroundColor: backgroundColor,
-      textStyle: TextStyle(
-        color: textColor,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      border: Border(
-        top: BorderSide(color: borderColor, width: 2),
-        bottom: BorderSide(color: borderColor, width: 2),
-        right: BorderSide(color: borderColor, width: 2),
-        left: BorderSide(color: borderColor, width: 2),
-      ),
-      backgroundRadius: 6,
-    );
+    try {
+      // Try to get context from OneContext
+      BuildContext? context = OneContext().context;
+      
+      // If OneContext is null, try to use the default context
+      if (context == null) {
+        // Fallback: Use a different approach for Home page
+        _showFallbackToast(msg, duration, gravity, backgroundColor, textColor);
+        return;
+      }
+      
+      ToastContext().init(context);
+      Toast.show(
+        msg,
+        duration: duration != 0 ? duration : Toast.lengthShort,
+        gravity: gravity != 0 ? gravity : Toast.bottom,
+        backgroundColor: backgroundColor,
+        textStyle: TextStyle(
+          color: textColor,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        border: Border(
+          top: BorderSide(color: borderColor, width: 2),
+          bottom: BorderSide(color: borderColor, width: 2),
+          right: BorderSide(color: borderColor, width: 2),
+          left: BorderSide(color: borderColor, width: 2),
+        ),
+        backgroundRadius: 6,
+      );
+    } catch (e) {
+      print('Toast error: $e');
+      // Fallback to basic toast
+      _showFallbackToast(msg, duration, gravity, backgroundColor, textColor);
+    }
+  }
+
+  // ============================================
+  // 🔄 FALLBACK - Used when OneContext fails
+  // ============================================
+  static void _showFallbackToast(
+    String msg,
+    int duration,
+    int gravity,
+    Color backgroundColor,
+    Color textColor,
+  ) {
+    try {
+      // Try to use the global navigator context as fallback
+      // This is a simplified version that should work on the Home page
+      Toast.show(
+        msg,
+        duration: duration != 0 ? duration : Toast.lengthShort,
+        gravity: gravity != 0 ? gravity : Toast.bottom,
+        backgroundColor: backgroundColor,
+        textStyle: TextStyle(
+          color: textColor,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        backgroundRadius: 6,
+      );
+    } catch (e2) {
+      print('Fallback toast also failed: $e2');
+      // Last resort - show a basic toast
+      try {
+        Toast.show(
+          msg,
+          duration: Toast.lengthShort,
+          gravity: Toast.bottom,
+        );
+      } catch (_) {
+        // Ignore - we tried our best
+      }
+    }
   }
 }

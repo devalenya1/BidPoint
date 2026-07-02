@@ -574,7 +574,6 @@ class _WishlistState extends State<Wishlist> {
     } else if (!isLive) {
       // Auction has ended (not live)
       statusText = AppLocalizations.of(context)!.auction_has_ended;
-      descriptionText = AppLocalizations.of(context)!.auction_ended_description;
     } else if (isOutbid && isLive) {
       // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
@@ -586,7 +585,6 @@ class _WishlistState extends State<Wishlist> {
     } else {
       // Default
       statusText = AppLocalizations.of(context)!.place_your_bid_now;
-      descriptionText = AppLocalizations.of(context)!.place_your_bid_now_description;
     }
     
     // Show "Ending Soon" badge if applicable

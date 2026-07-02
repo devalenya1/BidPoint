@@ -125,6 +125,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     List<AuctionBid> winning = [];
     List<AuctionBid> ended = [];
     
+    final now = DateTime.now();
+    
     for (var entry in bidsByProduct.entries) {
       final productId = entry.key;
       final userBids = entry.value;
@@ -135,7 +137,17 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       final userHighestBid = userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
       final productHighestBid = productInfo.amount ?? 0.0;
       
-      final isEnded = false;
+      // Check if auction has ended
+      bool isEnded = false;
+      if (productInfo.auctionEndDate != null && productInfo.auctionEndDate!.isNotEmpty) {
+        try {
+          final endDate = DateTime.parse(productInfo.auctionEndDate!);
+          isEnded = endDate.isBefore(now);
+        } catch (e) {
+          isEnded = false;
+        }
+      }
+      
       String status;
       
       if (isEnded) {
@@ -152,14 +164,39 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       
       allActivities.add(latestBid);
       
-      if (status == 'outbid' && !isEnded) {
+      if (status == 'outbid') {
         outbid.add(latestBid);
-      } else if (status == 'winning' && !isEnded) {
+      } else if (status == 'winning') {
         winning.add(latestBid);
-      } else if (isEnded) {
+      } else if (status == 'ended') {
         ended.add(latestBid);
       }
     }
+    
+    // Sort all activities by created_at (newest first)
+    allActivities.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
+    outbid.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
+    winning.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
+    ended.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
     
     setState(() {
       _allActivities = allActivities;
@@ -344,6 +381,19 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       ToastComponent.showWarning(
         AppLocalizations.of(context)!.product_details_not_available,
       );
+    }
+  }
+
+  bool _isAuctionEndedForProduct(int productId) {
+    final product = _getProductInfoById(productId);
+    if (product == null || product.auctionEndDate == null || product.auctionEndDate!.isEmpty) {
+      return false;
+    }
+    try {
+      final endDate = DateTime.parse(product.auctionEndDate!);
+      return endDate.isBefore(DateTime.now());
+    } catch (e) {
+      return false;
     }
   }
   

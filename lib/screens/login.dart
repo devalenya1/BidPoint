@@ -96,6 +96,7 @@ class _LoginState extends State<Login> {
     super.dispose();
   }
 
+
   onPressedLogin() async {
     Loading.show(context);
     var email = _emailController.text.toString();
@@ -165,7 +166,17 @@ class _LoginState extends State<Login> {
       }
 
       // ✅ Use pushReplacement to remove login from stack
-      context.pushReplacement("/");
+      // Also call the callback if provided
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      }
+      
+      // Navigate back to Home
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context, true);
+      } else {
+        context.pushReplacement("/");
+      }
     }
   }
 
@@ -193,7 +204,17 @@ class _LoginState extends State<Login> {
 
           await AuthHelper().setUserData(loginResponse);
           // ✅ Use pushReplacement to remove login from stack
-          context.pushReplacement("/");
+          
+          if (widget.onLoginSuccess != null) {
+            widget.onLoginSuccess!();
+          }
+          
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context, true);
+          } else {
+            context.pushReplacement("/");
+          }
+
           FacebookAuth.instance.logOut();
         }
       } else {
@@ -236,7 +257,16 @@ class _LoginState extends State<Login> {
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
         // ✅ Use pushReplacement to remove login from stack
-        context.pushReplacement("/");
+      
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        }
+        
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        } else {
+          context.pushReplacement("/");
+        }
       }
       GoogleSignIn().disconnect();
     } on Exception catch (e) {
@@ -274,7 +304,16 @@ class _LoginState extends State<Login> {
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
         // ✅ Use pushReplacement to remove login from stack
-        context.pushReplacement("/");
+        
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        }
+        
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        } else {
+          context.pushReplacement("/");
+        }
       }
     } on Exception catch (e) {
       print("error is ....... $e");
@@ -331,7 +370,16 @@ class _LoginState extends State<Login> {
             gravity: Toast.center, duration: Toast.lengthLong);
         await AuthHelper().setUserData(loginResponse);
         // ✅ Use pushReplacement to remove login from stack
-        context.pushReplacement("/");
+        
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        }
+        
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        } else {
+          context.pushReplacement("/");
+        }
       }
     } on Exception catch (e) {
       print(e);
