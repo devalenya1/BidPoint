@@ -570,7 +570,7 @@ class _WishlistState extends State<Wishlist> {
     // Determine the primary status for display
     if (!isAuction) {
       // Non-auction product
-      statusText = AppLocalizations.of(context)!.regular_product;
+      statusText = AppLocalizations.of(context)!.view_details;
     } else if (!isLive) {
       // Auction has ended (not live)
       statusText = AppLocalizations.of(context)!.auction_has_ended;
