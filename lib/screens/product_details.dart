@@ -1593,7 +1593,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // BUILD METHOD
+  // BUILD METHOD - SINGLE UNIFIED LAYOUT
   // ============================================
 
   @override
@@ -1644,13 +1644,13 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT
+  // MOBILE LAYOUT - SINGLE SCROLLABLE VIEW
   // ============================================
 
   Widget _buildMobileLayout() {
     final timeComponents = _getTimeComponents();
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.65;
+    final imageHeight = screenHeight * 0.55;
 
     return Stack(
       children: [
@@ -1794,191 +1794,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.75,
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20.r),
-                                border: Border.all(
-                                    color: Colors.white.withOpacity(0.15), width: 1.w),
-                              ),
-                              padding: EdgeInsets.all(12.w),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(height: 6.h),
-                                  Container(
-                                    height: imageHeight * 0.4,
-                                    child: _comments.isEmpty
-                                        ? Center(
-                                            child: Text(
-                                              AppLocalizations.of(context)!.no_comments_yet,
-                                              style: TextStyle(
-                                                color: Colors.white54,
-                                                fontSize: 11.sp,
-                                              ),
-                                            ),
-                                          )
-                                        : ListView.builder(
-                                            shrinkWrap: true,
-                                            itemCount: _comments.length,
-                                            itemBuilder: (context, index) {
-                                              final comment = _comments[index];
-                                              return Padding(
-                                                padding: EdgeInsets.only(bottom: 8.h),
-                                                child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    CircleAvatar(
-                                                      radius: 18.w,
-                                                      backgroundImage:
-                                                          NetworkImage(comment
-                                                                  .userAvatar ??
-                                                              ''),
-                                                      child: comment
-                                                              .userAvatar ==
-                                                          null
-                                                          ? Icon(Icons.person,
-                                                              size: 16.sp,
-                                                              color: Colors
-                                                                  .white54)
-                                                          : null,
-                                                    ),
-                                                    SizedBox(width: 10.w),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            comment.userName ??
-                                                                AppLocalizations.of(context)!.user_ucf,
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .white,
-                                                              fontSize: 13.sp,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            comment.comment ??
-                                                                '',
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .white70,
-                                                              fontSize: 12.sp,
-                                                            ),
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              GestureDetector(
-                                                                onTap: () =>
-                                                                    _likeComment(
-                                                                        comment
-                                                                            .id ??
-                                                                            0),
-                                                                child: Text(
-                                                                  '${comment.likesCount} ${AppLocalizations.of(context)!.likes_ucf}',
-                                                                  style: TextStyle(
-                                                                    color: Colors
-                                                                        .white54,
-                                                                    fontSize: 11.sp,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              SizedBox(width: 12.w),
-                                                              GestureDetector(
-                                                                onTap: () =>
-                                                                    _replyToComment(
-                                                                        comment
-                                                                            .userName ??
-                                                                        AppLocalizations.of(context)!.user_ucf),
-                                                                child: Text(
-                                                                  AppLocalizations.of(context)!.reply_ucf,
-                                                                  style: TextStyle(
-                                                                    color: Colors
-                                                                        .white54,
-                                                                    fontSize: 11.sp,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                  ),
-                                  SizedBox(height: 4.h),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white
-                                                .withOpacity(0.15),
-                                            borderRadius:
-                                                BorderRadius.circular(12.r),
-                                          ),
-                                          child: TextField(
-                                            controller: _commentController,
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11.sp),
-                                            decoration: InputDecoration(
-                                              hintText: AppLocalizations.of(context)!.add_comment_hint,
-                                              hintStyle: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11.sp),
-                                              border: InputBorder.none,
-                                              contentPadding:
-                                                  EdgeInsets.symmetric(
-                                                      horizontal: 10.w,
-                                                      vertical: 6.h),
-                                            ),
-                                            onSubmitted: (value) =>
-                                                _sendComment(),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 6.w),
-                                      GestureDetector(
-                                        onTap: _isProcessing ? null : _sendComment,
-                                        child: Container(
-                                          width: 28.w,
-                                          height: 28.w,
-                                          decoration: BoxDecoration(
-                                            color: MyTheme.accent_color,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: _isProcessing
-                                              ? SizedBox(
-                                                  height: 12.w,
-                                                  width: 12.w,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2.w,
-                                                    color: Colors.white,
-                                                  ),
-                                                )
-                                              : Icon(Icons.send,
-                                                  size: 14.sp,
-                                                  color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 12.h),
                             GestureDetector(
                               onTap: _openTitleModal,
                               child: Column(
@@ -2064,150 +1879,457 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            // Bid Info Section
-            SliverToBoxAdapter(
-              child: Material(
-                borderRadius: BorderRadius.circular(16.r),
-                child: Container(
-                  margin: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(color: Colors.grey.shade200, width: 1.w),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(AppLocalizations.of(context)!.bid_information,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16.sp)),
-                      SizedBox(height: 12.h),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12.w,
-                        mainAxisSpacing: 12.h,
-                        childAspectRatio: 3,
-                        children: [
-                          _buildInfoItem(AppLocalizations.of(context)!.starting_bid,
-                              _formatPrice(_startingBid)),
-                          _buildInfoItem(AppLocalizations.of(context)!.total_bidders, '$_totalBids'),
-                          _buildInfoItem(
-                              AppLocalizations.of(context)!.highest_bidder,
-                              _highestBidder.isNotEmpty
-                                  ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                  : AppLocalizations.of(context)!.no_bids),
-                          _buildInfoItem(AppLocalizations.of(context)!.bid_now_at, '$_pointPerBid'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Reviews Section
-            SliverToBoxAdapter(
-              child: GestureDetector(
-                onTap: _openReviewsModal,
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 16.w),
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(color: Colors.grey.shade200, width: 1.w),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4.r,
-                          offset: Offset(0, 2.h)),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Row(
-                            children: List.generate(5, (index) {
-                              return Icon(
-                                index < _rating.round()
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                size: 16.sp,
-                                color: Colors.amber,
-                              );
-                            }),
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(_rating.toStringAsFixed(1),
-                              style: TextStyle(
-                                  fontSize: 18.sp, fontWeight: FontWeight.bold)),
-                          SizedBox(width: 8.w),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 8.w, vertical: 4.h),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20.r),
-                            ),
-                            child: Text('$_reviewsCount ${AppLocalizations.of(context)!.reviews_ucf}',
-                                style: TextStyle(
-                                    fontSize: 12.sp, color: Colors.grey)),
-                          ),
-                        ],
-                      ),
-                      Icon(Icons.arrow_forward_ios,
-                          size: 16.sp, color: Colors.grey),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Thumbnails
+            // Content Section - All in one scrollable area
             SliverToBoxAdapter(
               child: Container(
-                height: 70.h,
-                margin: EdgeInsets.all(16.w),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _productImages.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _currentImageIndex = index);
-                      },
-                      child: Container(
-                        width: 60.w,
-                        height: 60.w,
-                        margin: EdgeInsets.only(right: 8.w),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(
-                            color: _currentImageIndex == index
-                                ? MyTheme.accent_color
-                                : Colors.grey.shade300,
-                            width: 2.w,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Bid Information Card
+                    Container(
+                      margin: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(16.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4.r,
+                              offset: Offset(0, 2.h))
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(AppLocalizations.of(context)!.bid_information,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16.sp)),
+                          SizedBox(height: 12.h),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12.w,
+                            mainAxisSpacing: 12.h,
+                            childAspectRatio: 3,
+                            children: [
+                              _buildInfoItem(AppLocalizations.of(context)!.starting_bid,
+                                  _formatPrice(_startingBid)),
+                              _buildInfoItem(AppLocalizations.of(context)!.total_bidders, '$_totalBids'),
+                              _buildInfoItem(
+                                  AppLocalizations.of(context)!.highest_bidder,
+                                  _highestBidder.isNotEmpty
+                                      ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                      : AppLocalizations.of(context)!.no_bids),
+                              _buildInfoItem(AppLocalizations.of(context)!.bid_now_at, '$_pointPerBid'),
+                            ],
                           ),
+                        ],
+                      ),
+                    ),
+                    // Custom Bid Input
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16.w),
+                      padding: EdgeInsets.all(16.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4.r,
+                              offset: Offset(0, 2.h))
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              '${AppLocalizations.of(context)!.enter_bid_amount} (${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom)',
+                              style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+                          SizedBox(height: 8.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _bidController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    hintText: AppLocalizations.of(context)!.enter_amount_hint,
+                                    hintStyle: TextStyle(fontSize: 14.sp),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12.w, vertical: 12.h),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              ElevatedButton(
+                                onPressed: _isProcessing ? null : _submitCustomBid,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: MyTheme.accent_color,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w, vertical: 12.h),
+                                ),
+                                child: _isProcessing
+                                    ? _buildButtonLoader()
+                                    : Text(AppLocalizations.of(context)!.place_bid,
+                                        style: TextStyle(fontSize: 14.sp, color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    // Bid Now Button
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: ElevatedButton(
+                        onPressed: _isProcessing ? null : _placeBidNow,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MyTheme.accent_color,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.r)),
+                          minimumSize: Size(double.infinity, 0),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10.r),
-                          child: Image.network(
-                            _productImages[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Icon(Icons.broken_image, color: Colors.grey),
+                        child: _isProcessing
+                            ? _buildButtonLoader()
+                            : Text(
+                                '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
+                                style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    // Reviews Section
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: GestureDetector(
+                        onTap: _openReviewsModal,
+                        child: Container(
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(color: Colors.grey.shade200, width: 1.w),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4.r,
+                                  offset: Offset(0, 2.h))
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Row(
+                                    children: List.generate(5, (index) {
+                                      return Icon(
+                                        index < _rating.round()
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        size: 16.sp,
+                                        color: Colors.amber,
+                                      );
+                                    }),
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Text(_rating.toStringAsFixed(1),
+                                      style: TextStyle(
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 8.w),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w, vertical: 4.h),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(20.r),
+                                    ),
+                                    child: Text('$_reviewsCount ${AppLocalizations.of(context)!.reviews_ucf}',
+                                        style: TextStyle(
+                                            fontSize: 12.sp, color: Colors.grey)),
+                                  ),
+                                ],
+                              ),
+                              Icon(Icons.arrow_forward_ios,
+                                  size: 16.sp, color: Colors.grey),
+                            ],
                           ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    SizedBox(height: 12.h),
+                    // Comments Section
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16.w),
+                      padding: EdgeInsets.all(16.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4.r,
+                              offset: Offset(0, 2.h))
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(AppLocalizations.of(context)!.comments_ucf,
+                              style: TextStyle(
+                                  fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 8.h),
+                          Container(
+                            height: 150.h,
+                            child: _comments.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      AppLocalizations.of(context)!.no_comments_yet,
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: _comments.length,
+                                    itemBuilder: (context, index) {
+                                      final comment = _comments[index];
+                                      final userIdStr = user_id.$?.toString() ?? '0';
+                                      final isOwn =
+                                          comment.userId == int.tryParse(userIdStr);
+
+                                      return Padding(
+                                        padding: EdgeInsets.only(bottom: 12.h),
+                                        child: Row(
+                                          mainAxisAlignment: isOwn
+                                              ? MainAxisAlignment.end
+                                              : MainAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (!isOwn) ...[
+                                              CircleAvatar(
+                                                radius: 16.w,
+                                                backgroundImage: NetworkImage(
+                                                    comment.userAvatar ?? ''),
+                                                child: comment.userAvatar == null
+                                                    ? Icon(Icons.person, size: 16.sp,
+                                                        color: Colors.grey)
+                                                    : null,
+                                              ),
+                                              SizedBox(width: 8.w),
+                                            ],
+                                            Flexible(
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 12.w, vertical: 8.h),
+                                                decoration: BoxDecoration(
+                                                  color: isOwn
+                                                      ? MyTheme.accent_color
+                                                      : Colors.grey.shade100,
+                                                  borderRadius: BorderRadius.only(
+                                                    topLeft: Radius.circular(12.r),
+                                                    topRight: Radius.circular(12.r),
+                                                    bottomLeft: isOwn
+                                                        ? Radius.circular(12.r)
+                                                        : Radius.circular(4.r),
+                                                    bottomRight: isOwn
+                                                        ? Radius.circular(4.r)
+                                                        : Radius.circular(12.r),
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    if (!isOwn)
+                                                      Text(comment.userName ?? AppLocalizations.of(context)!.user_ucf,
+                                                          style: TextStyle(
+                                                              fontSize: 11.sp,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Colors.grey
+                                                                  .shade600)),
+                                                    Text(comment.comment ?? '',
+                                                        style: TextStyle(
+                                                            color: isOwn
+                                                                ? Colors.white
+                                                                : Colors.black87,
+                                                            fontSize: 13.sp)),
+                                                    Align(
+                                                      alignment: Alignment.bottomRight,
+                                                      child: Text(
+                                                        _formatTime(comment.createdAt),
+                                                        style: TextStyle(
+                                                            fontSize: 9.sp,
+                                                            color: isOwn
+                                                                ? Colors.white70
+                                                                : Colors.grey),
+                                                      ),
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        GestureDetector(
+                                                          onTap: () =>
+                                                              _likeComment(comment.id ?? 0),
+                                                          child: Text(
+                                                            '${comment.likesCount} ${AppLocalizations.of(context)!.likes_ucf}',
+                                                            style: TextStyle(
+                                                              fontSize: 11.sp,
+                                                              color: isOwn
+                                                                  ? Colors.white70
+                                                                  : Colors.grey,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 12.w),
+                                                        GestureDetector(
+                                                          onTap: () => _replyToComment(
+                                                              comment.userName ??
+                                                                  AppLocalizations.of(context)!.user_ucf),
+                                                          child: Text(
+                                                            AppLocalizations.of(context)!.reply_ucf,
+                                                            style: TextStyle(
+                                                              fontSize: 11.sp,
+                                                              color: isOwn
+                                                                  ? Colors.white70
+                                                                  : Colors.grey,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            if (isOwn) SizedBox(width: 8.w),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(24.r),
+                                    border: Border.all(
+                                        color: Colors.grey.shade200, width: 1.w),
+                                  ),
+                                  child: TextField(
+                                    controller: _commentController,
+                                    style: TextStyle(fontSize: 14.sp),
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(context)!.add_comment_hint,
+                                      hintStyle:
+                                          TextStyle(fontSize: 14.sp, color: Colors.grey),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 16.w, vertical: 12.h),
+                                    ),
+                                    onSubmitted: (value) => _sendComment(),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 12.w),
+                              GestureDetector(
+                                onTap: _isProcessing ? null : _sendComment,
+                                child: Container(
+                                  width: 44.w,
+                                  height: 44.w,
+                                  decoration: BoxDecoration(
+                                    color: MyTheme.accent_color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: _isProcessing
+                                      ? SizedBox(
+                                          height: 16.w,
+                                          width: 16.w,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.w,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Icon(Icons.send,
+                                          color: Colors.white, size: 20.sp),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Thumbnails
+                    Container(
+                      height: 70.h,
+                      margin: EdgeInsets.all(16.w),
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _productImages.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() => _currentImageIndex = index);
+                            },
+                            child: Container(
+                              width: 60.w,
+                              height: 60.w,
+                              margin: EdgeInsets.only(right: 8.w),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12.r),
+                                border: Border.all(
+                                  color: _currentImageIndex == index
+                                      ? MyTheme.accent_color
+                                      : Colors.grey.shade300,
+                                  width: 2.w,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10.r),
+                                child: Image.network(
+                                  _productImages[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(Icons.broken_image, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 80.h),
+                  ],
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: 80.h)),
           ],
         ),
         // More Menu
@@ -2265,7 +2387,7 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
           ),
-        // Bottom Bar
+        // Bottom Bar - Fixed at bottom
         Positioned(
           bottom: 0,
           left: 0,
@@ -2322,7 +2444,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // Icon Circle with Custom Image
+  // MOBILE WIDGETS
   // ============================================
 
   Widget _buildIconCircleWithImage({
@@ -2405,10 +2527,6 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     );
   }
-
-  // ============================================
-  // MOBILE WIDGETS
-  // ============================================
 
   Widget _buildIconCircle({
     required IconData icon,

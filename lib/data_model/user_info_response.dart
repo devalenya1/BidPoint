@@ -20,7 +20,6 @@ class UserInfoResponse {
   int? status;
 
   factory UserInfoResponse.fromJson(Map<String, dynamic> json) => UserInfoResponse(
-    // Handle both list and single object responses
     data: json["data"] != null 
         ? (json["data"] is List 
             ? List<UserInformation>.from(json["data"].map((x) => UserInformation.fromJson(x)))
@@ -630,6 +629,7 @@ class WishlistItem {
   DateTime? createdAt;
   DateTime? updatedAt;
 
+  // In WishlistItem.fromJson - handle auction_end_date properly
   factory WishlistItem.fromJson(Map<String, dynamic> json) => WishlistItem(
     id: json["id"],
     productId: json["product_id"],
@@ -641,7 +641,10 @@ class WishlistItem {
     pointPerBid: json["point_per_bid"],
     slug: json["slug"],
     isAuction: json["is_auction"] ?? false,
-    auctionEndDate: json["auction_end_date"],
+    // Handle both String and int for auction_end_date
+    auctionEndDate: json["auction_end_date"] != null 
+        ? json["auction_end_date"].toString() 
+        : null,
     isLive: json["is_live"] ?? false,
     endingSoon: json["ending_soon"] ?? false,
     outbid: json["outbid"] ?? false,
@@ -706,6 +709,8 @@ class AuctionBid {
   DateTime? createdAt;
   DateTime? updatedAt;
 
+
+  // In AuctionBid.fromJson
   factory AuctionBid.fromJson(Map<String, dynamic> json) => AuctionBid(
     id: json["id"],
     productId: json["product_id"],
@@ -716,13 +721,17 @@ class AuctionBid {
     formattedAmount: json["formatted_amount"]?.toDouble(),
     dayOfBid: json["day_of_bid"],
     pointPerBid: json["point_per_bid"],
-    auctionEndDate: json["auction_end_date"],
+    // Handle both String and int for auction_end_date
+    auctionEndDate: json["auction_end_date"] != null 
+        ? json["auction_end_date"].toString() 
+        : null,
     highestBid: json["highest_bid"]?.toDouble(),
     isWinning: json["is_winning"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
+
 
   Map<String, dynamic> toJson() => {
     "id": id,
@@ -785,7 +794,7 @@ class DistinctAuctionBid {
     amount: json["amount"]?.toDouble(),
     formattedAmount: json["formatted_amount"]?.toDouble(),
     dayOfBid: json["day_of_bid"],
-    auctionEndDate: json["auction_end_date"],
+    auctionEndDate: json["auction_end_date"]?.toString(),
     highestBid: json["highest_bid"]?.toDouble(),
     isWinning: json["is_winning"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
