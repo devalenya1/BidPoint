@@ -154,18 +154,21 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       // If highestBidder is true, user is the highest bidder (winning)
       // If highestBidder is false, user is outbid
       final isHighestBidder = latestBid.highestBidder ?? false;
+      final hasBid = (latestBid.amount ?? 0) > 0;
       
       String status;
       
       if (isEnded) {
         status = 'ended';
-      } else if (isHighestBidder) {
+      } else if (isHighestBidder && hasBid) {
+        // ✅ FIXED: If highestBidder is true and they have a bid, they are winning
         status = 'winning';
+      } else if (!isHighestBidder && hasBid) {
+        // If not highest bidder but has a bid, they are outbid
+        status = 'outbid';
       } else {
-        // If not ended and not the highest bidder, user is outbid
-        // But only if they have placed a bid
-        final hasBid = (latestBid.amount ?? 0) > 0;
-        status = hasBid ? 'outbid' : 'pending';
+        // No bid placed yet
+        status = 'pending';
       }
       
       allActivities.add(latestBid);
@@ -177,6 +180,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       } else if (status == 'ended') {
         ended.add(latestBid);
       }
+      // Pending items don't go to any tab
     }
     
     // Sort all activities by created_at (newest first)
@@ -631,6 +635,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final isHighestBidder = activity.highestBidder ?? false;
     final currentBid = activity.highestBid ?? 0.0;
     final userBidAmount = activity.amount ?? 0.0;
+    final hasBid = userBidAmount > 0;
     
     // Check if auction has ended using the API field
     bool isEnded = activity.recentlyEnded ?? false;
@@ -640,11 +645,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       isEnded = _isAuctionEndedForProduct(productId);
     }
     
-    // Determine statuses based on API data
-    final isOutbid = !isEnded && userBidAmount > 0 && !isHighestBidder;
-    final isWinning = !isEnded && isHighestBidder && userBidAmount > 0;
-    final isWon = isEnded && isHighestBidder && userBidAmount > 0;
-    final isLost = isEnded && !isHighestBidder;
+    // ✅ FIXED: Determine statuses based on API data
+    // If highestBidder is true, user is winning (not outbid)
+    final isWinning = !isEnded && isHighestBidder && hasBid;
+    final isOutbid = !isEnded && !isHighestBidder && hasBid;
+    final isWon = isEnded && isHighestBidder && hasBid;
+    final isLost = isEnded && !isHighestBidder && hasBid;
     
     // Status Text in BLACK
     String statusText;

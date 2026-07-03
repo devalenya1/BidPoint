@@ -85,7 +85,8 @@ class _UpcomingCardState extends State<UpcomingCard> {
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = "Upcoming";
+          // _timeLeft = "Ended";
         });
       }
       _timer?.cancel();
@@ -104,7 +105,8 @@ class _UpcomingCardState extends State<UpcomingCard> {
     if (endDate <= 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = "Upcoming";
+          // _timeLeft = "Ended";
         });
       }
       _timer?.cancel();
@@ -117,7 +119,8 @@ class _UpcomingCardState extends State<UpcomingCard> {
     if (distance < 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = "Upcoming";
+          // _timeLeft = "Ended";
         });
       }
       _timer?.cancel();
@@ -261,7 +264,8 @@ class _UpcomingCardState extends State<UpcomingCard> {
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = _timeLeft != "Ended" && _timeLeft != "No Timer" && _timeLeft != "Upcoming";
+    // final showTimer = _timeLeft != "Ended" && _timeLeft != "No Timer" && _timeLeft != "Upcoming";
+    final showTimer = _timeLeft != "Upcoming" && _timeLeft != "No Timer" && _timeLeft != "Upcoming";
 
     return Container(
       decoration: BoxDecoration(
@@ -313,8 +317,10 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                   decoration: BoxDecoration(
-                    color: _timeLeft == "Ended" 
-                        ? Colors.red 
+                    // color: _timeLeft == "Ended" 
+                    //     ? Colors.red 
+                    color: _timeLeft == "Upcoming" 
+                        ? Colors.orange 
                         : (_timeLeft == "Upcoming" 
                             ? Colors.orange 
                             : const Color(0xFF009572)),
@@ -331,7 +337,9 @@ class _UpcomingCardState extends State<UpcomingCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _timeLeft == "Ended" 
+                        // _timeLeft == "Ended" 
+                        //     ? Icons.cancel 
+                        _timeLeft == "Upcoming" 
                             ? Icons.cancel 
                             : (_timeLeft == "Upcoming"
                                 ? Icons.schedule
