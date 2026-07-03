@@ -1848,7 +1848,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                           .userAvatar ==
                                                       null
                                                       ? Icon(Icons.person,
-                                                          size: 16.sp,
+                                                          size: 14.sp,
                                                           color: Colors
                                                               .white54)
                                                       : null,
@@ -1866,7 +1866,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white,
-                                                          fontSize: 13.sp,
+                                                          fontSize: 12.sp,
                                                           fontWeight:
                                                               FontWeight
                                                                   .w600,
@@ -1878,7 +1878,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white70,
-                                                          fontSize: 12.sp,
+                                                          fontSize: 11.sp,
                                                         ),
                                                       ),
                                                       Row(
@@ -1894,7 +1894,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: 11.sp,
+                                                                fontSize: 10.sp,
                                                               ),
                                                             ),
                                                           ),
@@ -1910,7 +1910,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: 11.sp,
+                                                                fontSize: 10.sp,
                                                               ),
                                                             ),
                                                           ),
@@ -2012,7 +2012,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                               '') ??
                                       '',
                                   style: TextStyle(
-                                      color: Colors.white70, fontSize: 14.sp),
+                                      color: Colors.white70, fontSize: 13.sp),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis),
                             ],
@@ -2023,6 +2023,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // TIMER & CURRENT BID - ON THE IMAGE
                       // ============================================
                       Positioned(
+                        top: 5.w,
                         bottom: 16.h,
                         left: 16.w,
                         right: 16.w,
@@ -2038,7 +2039,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Text(AppLocalizations.of(context)!.time_left,
                                         style: TextStyle(
                                             color: Colors.white70,
-                                            fontSize: 12.sp)),
+                                            fontSize: 11.sp)),
                                     SizedBox(height: 4.h),
                                     Row(
                                       children: [
