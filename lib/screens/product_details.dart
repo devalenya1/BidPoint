@@ -2023,7 +2023,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // TIMER & CURRENT BID - ON THE IMAGE
                       // ============================================
                       Positioned(
-                        top: 5.w,
+                        // top: 5.w,
                         bottom: 16.h,
                         left: 16.w,
                         right: 16.w,
