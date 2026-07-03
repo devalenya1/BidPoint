@@ -1810,9 +1810,12 @@ class _ProductDetailsState extends State<ProductDetails>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Comments List
-                              Container(
-                                height: 140.h,
+                              // Comments List - DYNAMIC HEIGHT
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: 200.h, // Maximum height
+                                  minHeight: 80.h,  // Minimum height when empty
+                                ),
                                 child: _comments.isEmpty
                                     ? Center(
                                         child: Text(
@@ -1825,6 +1828,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       )
                                     : ListView.builder(
                                         shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
                                         itemCount: _comments.length,
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
