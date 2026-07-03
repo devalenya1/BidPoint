@@ -104,19 +104,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     if (_userInfo == null) return;
     
     final auctionBids = _userInfo!.auctionBids ?? [];
-    final distinctAuctionBids = _userInfo!.distinctAuctionBids ?? [];
     
-    final Map<int, DistinctAuctionBid> productInfoMap = {};
-    for (var product in distinctAuctionBids) {
-      if (product.productId != null) {
-        productInfoMap[product.productId!] = product;
-      }
-    }
-    
-    final Map<int, List<AuctionBid>> bidsByProduct = {};
+    // Get the latest bid for each product
+    final Map<int, AuctionBid> latestBidsByProduct = {};
     for (var bid in auctionBids) {
       if (bid.productId != null) {
-        bidsByProduct.putIfAbsent(bid.productId!, () => []).add(bid);
+        final existing = latestBidsByProduct[bid.productId!];
+        if (existing == null || (bid.createdAt != null && existing.createdAt != null && bid.createdAt!.isAfter(existing.createdAt!))) {
+          latestBidsByProduct[bid.productId!] = bid;
+        }
       }
     }
     
@@ -125,49 +121,29 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     List<AuctionBid> winning = [];
     List<AuctionBid> ended = [];
     
-    final now = DateTime.now();
-    
-    for (var entry in bidsByProduct.entries) {
-      final productId = entry.key;
-      final userBids = entry.value;
-      final productInfo = productInfoMap[productId];
+    for (var entry in latestBidsByProduct.entries) {
+      final latestBid = entry.value;
       
-      if (productInfo == null) continue;
-      
-      // Get the latest bid for this product
-      final latestBid = userBids.last;
-      
-      // Check if auction has ended using the API field
-      bool isEnded = latestBid.recentlyEnded ?? false;
-      
-      // If not marked as recentlyEnded, check the date manually
-      if (!isEnded && productInfo.auctionEndDate != null && productInfo.auctionEndDate!.isNotEmpty) {
-        try {
-          final endDate = DateTime.parse(productInfo.auctionEndDate!);
-          isEnded = endDate.isBefore(now);
-        } catch (e) {
-          isEnded = false;
-        }
-      }
-      
-      // Use the API's highestBidder field directly
-      // If highestBidder is true, user is the highest bidder (winning)
-      // If highestBidder is false, user is outbid
+      // Get values directly from the API
+      final isEnded = latestBid.recentlyEnded ?? false;
+      final isWinning = latestBid.isWinning ?? false;
       final isHighestBidder = latestBid.highestBidder ?? false;
       final hasBid = (latestBid.amount ?? 0) > 0;
       
+      // Determine status based on API fields
       String status;
       
       if (isEnded) {
+        // Auction has ended
         status = 'ended';
-      } else if (isHighestBidder && hasBid) {
-        // ✅ FIXED: If highestBidder is true and they have a bid, they are winning
+      } else if (isWinning || isHighestBidder) {
+        // User is winning (either by isWinning or highestBidder)
         status = 'winning';
-      } else if (!isHighestBidder && hasBid) {
-        // If not highest bidder but has a bid, they are outbid
+      } else if (!isWinning && !isHighestBidder && hasBid) {
+        // User is NOT winning and has placed a bid → OUTBID
         status = 'outbid';
       } else {
-        // No bid placed yet
+        // No bid placed or other cases
         status = 'pending';
       }
       
@@ -631,42 +607,34 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final productSlug = _getProductSlugForBid(activity);
     final pointPerBid = _getPointPerBidForProduct(productId);
     
-    // Use the API's highestBidder field directly
+    // ✅ USE API FIELDS DIRECTLY
+    final isEnded = activity.recentlyEnded ?? false;
+    final isWinning = activity.isWinning ?? false;
     final isHighestBidder = activity.highestBidder ?? false;
     final currentBid = activity.highestBid ?? 0.0;
-    final userBidAmount = activity.amount ?? 0.0;
-    final hasBid = userBidAmount > 0;
+    final hasBid = (activity.amount ?? 0) > 0;
     
-    // Check if auction has ended using the API field
-    bool isEnded = activity.recentlyEnded ?? false;
-    
-    // If not marked as recentlyEnded, check using helper
-    if (!isEnded) {
-      isEnded = _isAuctionEndedForProduct(productId);
-    }
-    
-    // ✅ FIXED: Determine statuses based on API data
-    // If highestBidder is true, user is winning (not outbid)
-    final isWinning = !isEnded && isHighestBidder && hasBid;
-    final isOutbid = !isEnded && !isHighestBidder && hasBid;
-    final isWon = isEnded && isHighestBidder && hasBid;
-    final isLost = isEnded && !isHighestBidder && hasBid;
+    // Determine statuses based on API data
+    final isWinningStatus = !isEnded && (isWinning || isHighestBidder);
+    final isOutbidStatus = !isEnded && !isWinning && !isHighestBidder && hasBid;
+    final isWonStatus = isEnded && (isWinning || isHighestBidder);
+    final isLostStatus = isEnded && !isWinning && !isHighestBidder;
     
     // Status Text in BLACK
     String statusText;
     String descriptionText;
     Color statusColor = Colors.black;
     
-    if (isOutbid) {
+    if (isOutbidStatus) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-    } else if (isWinning) {
+    } else if (isWinningStatus) {
       statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
-    } else if (isWon) {
+    } else if (isWonStatus) {
       statusText = AppLocalizations.of(context)!.you_won_auction;
       descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
-    } else if (isLost) {
+    } else if (isLostStatus) {
       statusText = AppLocalizations.of(context)!.auction_ended;
       descriptionText = AppLocalizations.of(context)!.you_didnt_win;
     } else {
@@ -820,11 +788,11 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 SizedBox(height: 10.h),
                 
                 // Action Button based on status
-                if (isOutbid)
+                if (isOutbidStatus)
                   _buildBidAgainButton(productSlug)
-                else if (isWinning || isWon)
+                else if (isWinningStatus || isWonStatus)
                   _buildViewDetailsButton(productSlug, isWinning: true)
-                else if (isLost)
+                else if (isLostStatus)
                   _buildViewDetailsButton(productSlug, isWinning: false)
                 else
                   _buildViewDetailsButton(productSlug, isWinning: false),
