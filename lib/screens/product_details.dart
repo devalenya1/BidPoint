@@ -1650,7 +1650,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildMobileLayout() {
     final timeComponents = _getTimeComponents();
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.65; // Changed back to 65%
+    final imageHeight = screenHeight * 0.70; // Changed back to 70%
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -2036,10 +2036,10 @@ class _ProductDetailsState extends State<ProductDetails>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(AppLocalizations.of(context)!.time_left,
-                                        style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 11.sp)),
+                                    // Text(AppLocalizations.of(context)!.time_left,
+                                    //     style: TextStyle(
+                                    //         color: Colors.white70,
+                                    //         fontSize: 11.sp)),
                                     SizedBox(height: 4.h),
                                     Row(
                                       children: [
