@@ -2794,66 +2794,66 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
               
-              // ============================================
-              // CUSTOM BID INPUT
-              // ============================================
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: 16.w),
-                padding: EdgeInsets.all(16.w),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: Colors.grey.shade200, width: 1.w),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4.r,
-                        offset: Offset(0, 2.h))
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        '${AppLocalizations.of(context)!.enter_bid_amount} (${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom)',
-                        style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
-                    SizedBox(height: 8.h),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _bidController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.enter_amount_hint,
-                              hintStyle: TextStyle(fontSize: 14.sp),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12.w, vertical: 12.h),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        ElevatedButton(
-                          onPressed: _isProcessing ? null : _submitCustomBid,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: MyTheme.accent_color,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 16.w, vertical: 12.h),
-                          ),
-                          child: _isProcessing
-                              ? _buildButtonLoader()
-                              : Text(AppLocalizations.of(context)!.place_bid,
-                                  style: TextStyle(fontSize: 14.sp, color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 12.h),
+              // // ============================================
+              // // CUSTOM BID INPUT
+              // // ============================================
+              // Container(
+              //   margin: EdgeInsets.symmetric(horizontal: 16.w),
+              //   padding: EdgeInsets.all(16.w),
+              //   decoration: BoxDecoration(
+              //     color: Colors.white,
+              //     borderRadius: BorderRadius.circular(16.r),
+              //     border: Border.all(color: Colors.grey.shade200, width: 1.w),
+              //     boxShadow: [
+              //       BoxShadow(
+              //           color: Colors.black.withOpacity(0.05),
+              //           blurRadius: 4.r,
+              //           offset: Offset(0, 2.h))
+              //     ],
+              //   ),
+              //   child: Column(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Text(
+              //           '${AppLocalizations.of(context)!.enter_bid_amount} (${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom)',
+              //           style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
+              //       SizedBox(height: 8.h),
+              //       Row(
+              //         children: [
+              //           Expanded(
+              //             child: TextField(
+              //               controller: _bidController,
+              //               keyboardType: TextInputType.number,
+              //               decoration: InputDecoration(
+              //                 hintText: AppLocalizations.of(context)!.enter_amount_hint,
+              //                 hintStyle: TextStyle(fontSize: 14.sp),
+              //                 border: OutlineInputBorder(
+              //                   borderRadius: BorderRadius.circular(8.r),
+              //                 ),
+              //                 contentPadding: EdgeInsets.symmetric(
+              //                     horizontal: 12.w, vertical: 12.h),
+              //               ),
+              //             ),
+              //           ),
+              //           SizedBox(width: 8.w),
+              //           ElevatedButton(
+              //             onPressed: _isProcessing ? null : _submitCustomBid,
+              //             style: ElevatedButton.styleFrom(
+              //               backgroundColor: MyTheme.accent_color,
+              //               padding: EdgeInsets.symmetric(
+              //                   horizontal: 16.w, vertical: 12.h),
+              //             ),
+              //             child: _isProcessing
+              //                 ? _buildButtonLoader()
+              //                 : Text(AppLocalizations.of(context)!.place_bid,
+              //                     style: TextStyle(fontSize: 14.sp, color: Colors.white)),
+              //           ),
+              //         ],
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // SizedBox(height: 12.h),
               
               // ============================================
               // BID NOW BUTTON
