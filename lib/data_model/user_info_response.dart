@@ -688,7 +688,7 @@ class AuctionBid {
     this.auctionEndDate,
     this.highestBid,
     this.isWinning,
-    this.highestBidder;
+    this.highestBidder,
     this.recentlyEnded,
     this.createdAt,
     this.updatedAt,
@@ -769,7 +769,7 @@ class DistinctAuctionBid {
     this.auctionEndDate,
     this.highestBid,
     this.isWinning,
-    this.highestBidder;
+    this.highestBidder,
     this.recentlyEnded,
     this.createdAt,
     this.updatedAt,
