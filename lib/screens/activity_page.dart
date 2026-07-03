@@ -134,12 +134,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       
       if (productInfo == null) continue;
       
-      final userHighestBid = userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
-      final productHighestBid = productInfo.amount ?? 0.0;
+      // Get the latest bid for this product
+      final latestBid = userBids.last;
       
-      // Check if auction has ended
-      bool isEnded = false;
-      if (productInfo.auctionEndDate != null && productInfo.auctionEndDate!.isNotEmpty) {
+      // Check if auction has ended using the API field
+      bool isEnded = latestBid.recentlyEnded ?? false;
+      
+      // If not marked as recentlyEnded, check the date manually
+      if (!isEnded && productInfo.auctionEndDate != null && productInfo.auctionEndDate!.isNotEmpty) {
         try {
           final endDate = DateTime.parse(productInfo.auctionEndDate!);
           isEnded = endDate.isBefore(now);
@@ -148,19 +150,23 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         }
       }
       
+      // Use the API's highestBidder field directly
+      // If highestBidder is true, user is the highest bidder (winning)
+      // If highestBidder is false, user is outbid
+      final isHighestBidder = latestBid.highestBidder ?? false;
+      
       String status;
       
       if (isEnded) {
         status = 'ended';
-      } else if (userHighestBid > 0 && userHighestBid < productHighestBid) {
-        status = 'outbid';
-      } else if (userHighestBid >= productHighestBid && userHighestBid > 0) {
+      } else if (isHighestBidder) {
         status = 'winning';
       } else {
-        status = 'pending';
+        // If not ended and not the highest bidder, user is outbid
+        // But only if they have placed a bid
+        final hasBid = (latestBid.amount ?? 0) > 0;
+        status = hasBid ? 'outbid' : 'pending';
       }
-      
-      final latestBid = userBids.last;
       
       allActivities.add(latestBid);
       
@@ -619,16 +625,26 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final productName = _getProductNameForBid(activity);
     final productImage = _getProductImageForBid(activity);
     final productSlug = _getProductSlugForBid(activity);
-    final userHighestBid = _getUserHighestBidForProduct(productId);
-    final currentBid = _getCurrentBidById(productId);
     final pointPerBid = _getPointPerBidForProduct(productId);
-    final isEnded = _isAuctionEndedForProduct(productId);
     
-    // Determine statuses
-    final isOutbid = !isEnded && userHighestBid > 0 && userHighestBid < currentBid;
-    final isWinning = !isEnded && userHighestBid >= currentBid && userHighestBid > 0;
-    final isWon = isEnded && userHighestBid > 0 && userHighestBid >= currentBid;
-    final isLost = isEnded && !isWon;
+    // Use the API's highestBidder field directly
+    final isHighestBidder = activity.highestBidder ?? false;
+    final currentBid = activity.highestBid ?? 0.0;
+    final userBidAmount = activity.amount ?? 0.0;
+    
+    // Check if auction has ended using the API field
+    bool isEnded = activity.recentlyEnded ?? false;
+    
+    // If not marked as recentlyEnded, check using helper
+    if (!isEnded) {
+      isEnded = _isAuctionEndedForProduct(productId);
+    }
+    
+    // Determine statuses based on API data
+    final isOutbid = !isEnded && userBidAmount > 0 && !isHighestBidder;
+    final isWinning = !isEnded && isHighestBidder && userBidAmount > 0;
+    final isWon = isEnded && isHighestBidder && userBidAmount > 0;
+    final isLost = isEnded && !isHighestBidder;
     
     // Status Text in BLACK
     String statusText;

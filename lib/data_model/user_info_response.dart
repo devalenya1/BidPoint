@@ -688,6 +688,7 @@ class AuctionBid {
     this.auctionEndDate,
     this.highestBid,
     this.isWinning,
+    this.highestBidder;
     this.recentlyEnded,
     this.createdAt,
     this.updatedAt,
@@ -705,6 +706,7 @@ class AuctionBid {
   String? auctionEndDate;
   double? highestBid;
   bool? isWinning;
+  bool? highestBidder;
   bool? recentlyEnded;
   DateTime? createdAt;
   DateTime? updatedAt;
@@ -727,6 +729,7 @@ class AuctionBid {
         : null,
     highestBid: json["highest_bid"]?.toDouble(),
     isWinning: json["is_winning"] ?? false,
+    highestBidder: json["highest_bidder"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
@@ -746,6 +749,7 @@ class AuctionBid {
     "auction_end_date": auctionEndDate,
     "highest_bid": highestBid,
     "is_winning": isWinning,
+    "highest_bidder": highestBidder,
     "recently_ended": recentlyEnded,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
@@ -765,6 +769,7 @@ class DistinctAuctionBid {
     this.auctionEndDate,
     this.highestBid,
     this.isWinning,
+    this.highestBidder;
     this.recentlyEnded,
     this.createdAt,
     this.updatedAt,
@@ -781,6 +786,7 @@ class DistinctAuctionBid {
   String? auctionEndDate;
   double? highestBid;
   bool? isWinning;
+  bool? highestBidder;
   bool? recentlyEnded;
   String? createdAt;
   String? updatedAt;
@@ -797,6 +803,7 @@ class DistinctAuctionBid {
     auctionEndDate: json["auction_end_date"]?.toString(),
     highestBid: json["highest_bid"]?.toDouble(),
     isWinning: json["is_winning"] ?? false,
+    highestBidder: json["highest_bidder"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
     createdAt: json["created_at"],
     updatedAt: json["updated_at"],
@@ -814,6 +821,7 @@ class DistinctAuctionBid {
     "auction_end_date": auctionEndDate,
     "highest_bid": highestBid,
     "is_winning": isWinning,
+    "highest_bidder": highestBidder,
     "recently_ended": recentlyEnded,
     "created_at": createdAt,
     "updated_at": updatedAt,
