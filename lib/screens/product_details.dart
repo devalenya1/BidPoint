@@ -1810,12 +1810,9 @@ class _ProductDetailsState extends State<ProductDetails>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Comments List - DYNAMIC HEIGHT
-                              ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight: 200.h, // Maximum height
-                                  minHeight: 80.h,  // Minimum height when empty
-                                ),
+                              // Comments List - SCROLLABLE
+                              Container(
+                                height: 160.h, // Fixed height for scrollable area
                                 child: _comments.isEmpty
                                     ? Center(
                                         child: Text(
@@ -1827,8 +1824,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         ),
                                       )
                                     : ListView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
+                                        physics: const AlwaysScrollableScrollPhysics(), // Enable scrolling
                                         itemCount: _comments.length,
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
@@ -2086,7 +2082,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             // ============================================
                             // 10px SPACE BELOW TIMER & CURRENT BID
                             // ============================================
-                            SizedBox(height: 10.h),
+                            SizedBox(height: 7.h),
                           ],
                         ),
                       ),
