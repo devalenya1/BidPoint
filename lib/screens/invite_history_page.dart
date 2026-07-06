@@ -24,8 +24,19 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
+  bool _isLoadingMore = false;
+  
+  // ============ PAGINATION STATE ============
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  int _perPage = 10;
+  bool _hasMore = true;
   
   UserInformation? _userInfo;  // Store user info for referral data
+  
+  // ============ CACHED LISTS ============
+  List<AffiliateLog> _allInviteHistory = [];
   
   // Referral data derived from _userInfo
   int get _totalReferrals => _userInfo?.affiliateLogs?.where((log) => log.bonusType == 'referral').length ?? 0;
@@ -33,13 +44,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   double get _totalEarnings => _userInfo?.affiliateBalance ?? 0.0;
   String get _referralCode => _userInfo?.referralCode ?? "";
   
-  // FIXED: Use AppConfig.RAW_BASE_URL for referral link
   String get _referralLink => "${AppConfig.RAW_BASE_URL}/ref/$_referralCode";
   
-  // Invite history from API - FIXED: Use correct type
-  List<AffiliateLog> get _inviteHistory => _userInfo?.affiliateLogs?.where((log) => 
-    log.bonusType == 'referral' && log.cameFrom != null
-  ).toList() ?? [];
+  // Display list (paginated)
+  List<AffiliateLog> get _displayHistory => _allInviteHistory;
   
   @override
   void initState() {
@@ -53,19 +61,68 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     }
   }
   
-  // ============ FETCH REFERRAL DATA FROM API ============
-  Future<void> _fetchReferralData() async {
+  // ============ FETCH REFERRAL DATA FROM API WITH PAGINATION ============
+  Future<void> _fetchReferralData({bool loadMore = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
-      
-      var response = await ProfileRepository().getUserInfoResponse();
+      if (loadMore) {
+        if (_isLoadingMore || !_hasMore) return;
+        setState(() {
+          _isLoadingMore = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _currentPage = 1;
+          _hasMore = true;
+          _allInviteHistory.clear();
+        });
+      }
+
+      final page = loadMore ? _currentPage + 1 : 1;
+
+      var response = await ProfileRepository().getUserInfoResponse(
+        notificationPage: 1,
+        notificationPerPage: 10,
+        pointPage: page,
+        pointPerPage: _perPage,
+        cashPage: 1,
+        cashPerPage: 10,
+        withdrawPage: 1,
+        withdrawPerPage: 10,
+      );
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        final newUserInfo = response.data![0];
+        
+        // Update pagination info from points_pagination
+        final pagination = newUserInfo.pointsPagination;
+        if (pagination != null) {
+          _currentPage = pagination.currentPage;
+          _totalPages = pagination.totalPages;
+          _totalItems = pagination.total;
+          _perPage = pagination.perPage;
+          _hasMore = pagination.hasNext;
+        }
+        
         setState(() {
-          _userInfo = response.data![0];  // Store locally
+          if (loadMore) {
+            // Append new items to existing list
+            final newLogs = newUserInfo.affiliateLogs ?? [];
+            _allInviteHistory.addAll(newLogs);
+          } else {
+            // First page - replace all data
+            _userInfo = newUserInfo;
+            _allInviteHistory = newUserInfo.affiliateLogs?.where((log) => 
+              log.bonusType == 'referral' && log.cameFrom != null
+            ).toList() ?? [];
+          }
         });
+      } else {
+        if (!loadMore) {
+          setState(() {
+            _allInviteHistory = [];
+          });
+        }
       }
     } catch (e) {
       print("Error loading referral data: $e");
@@ -74,8 +131,15 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       setState(() {
         _isLoading = false;
         _isRefreshing = false;
+        _isLoadingMore = false;
       });
     }
+  }
+  
+  // ============ LOAD MORE (INFINITE SCROLL) ============
+  Future<void> _loadMore() async {
+    if (!_hasMore || _isLoadingMore) return;
+    await _fetchReferralData(loadMore: true);
   }
   
   // ============ PULL TO REFRESH ============
@@ -83,7 +147,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchReferralData();
+    await _fetchReferralData(loadMore: false);
   }
   
   void _copyToClipboard() {
@@ -96,17 +160,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     ToastComponent.showSuccess(AppLocalizations.of(context)!.copied_to_clipboard);
   }
   
-  void _navigateBack() {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
-  }
-  
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
   
-  // FIXED: Use correct type
   String _getReferralName(AffiliateLog log) {
     if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
       return log.cameFrom!;
@@ -140,17 +197,28 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
-                child: Column(
-                  children: [
-                    _buildStatsRow(),
-                    SizedBox(height: 24.h),
-                    _buildReferralSection(),
-                    SizedBox(height: 24.h),
-                    _buildHistorySection(),
-                  ],
+            : NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  // Detect when user scrolls to bottom
+                  if (!_isLoadingMore &&
+                      _hasMore &&
+                      scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                    _loadMore();
+                  }
+                  return true;
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
+                  child: Column(
+                    children: [
+                      _buildStatsRow(),
+                      SizedBox(height: 24.h),
+                      _buildReferralSection(),
+                      SizedBox(height: 24.h),
+                      _buildHistorySection(),
+                    ],
+                  ),
                 ),
               ),
       ),
@@ -346,7 +414,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   }
   
   Widget _buildHistorySection() {
-    final history = _inviteHistory;
+    final history = _displayHistory;
     
     return Column(
       children: [
@@ -411,26 +479,51 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             constraints: BoxConstraints(maxHeight: 500.h),
             child: ListView.separated(
               shrinkWrap: true,
-              physics: const BouncingScrollPhysics(),
-              itemCount: history.length,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: history.length + (_hasMore ? 1 : 0),
               separatorBuilder: (context, index) => Divider(
                 height: 0,
                 color: const Color(0xFFEEF2F8),
               ),
               itemBuilder: (context, index) {
+                // Show loading indicator at the end if there are more items
+                if (index == history.length && _hasMore) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    child: Center(
+                      child: SizedBox(
+                        height: 24.w,
+                        width: 24.w,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.w,
+                          color: MyTheme.accent_color,
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 final item = history[index];
                 return _buildHistoryItem(item, index);
               },
             ),
           ),
         
-        if (history.length > 5)
-          _buildPagination(),
+        // Show "End of list" message when no more items
+        if (!_hasMore && history.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: 16.h),
+            child: Text(
+              AppLocalizations.of(context)!.no_more_notifications,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: const Color(0xFF999999),
+              ),
+            ),
+          ),
       ],
     );
   }
   
-  // FIXED: Use correct type
   Widget _buildHistoryItem(AffiliateLog item, int index) {
     final pointsValue = (item.amount ?? 0).abs().toInt();
     final isEarned = (item.amount ?? 0) > 0;
@@ -514,36 +607,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-  
-  Widget _buildPagination() {
-    final history = _inviteHistory;
-    final totalPages = (history.length / 10).ceil();
-    
-    return Container(
-      margin: EdgeInsets.only(top: 24.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(totalPages > 5 ? 5 : totalPages, (index) {
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: 4.w),
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: index == 0 ? MyTheme.accent_color : Colors.white,
-              border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Text(
-              '${index + 1}',
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: index == 0 ? Colors.white : const Color(0xFF1A1A2E),
-              ),
-            ),
-          );
-        }),
       ),
     );
   }

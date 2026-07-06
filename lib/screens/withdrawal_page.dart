@@ -31,6 +31,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   int _totalItems = 0;
   int _perPage = 10;
   bool _isLoadingMore = false;
+  bool _hasMore = true;
   
   UserInformation? _userInfo;
   
@@ -40,7 +41,6 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   final TextEditingController _amountController = TextEditingController();
   
   List<AffiliateWithdrawRequest> _withdrawalHistory = [];
-  List<AffiliateWithdrawRequest> _paginatedHistory = [];
   
   final ProfileRepository _profileRepository = ProfileRepository();
 
@@ -67,15 +67,23 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   }
   
   // ============ FETCH WITHDRAWAL DATA FROM API WITH PAGINATION ============
-  Future<void> _fetchWithdrawalData({int page = 1}) async {
+  Future<void> _fetchWithdrawalData({bool loadMore = false}) async {
     try {
-      setState(() {
-        if (page == 1) {
-          _isLoading = true;
-        } else {
+      if (loadMore) {
+        if (_isLoadingMore || !_hasMore) return;
+        setState(() {
           _isLoadingMore = true;
-        }
-      });
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _currentPage = 1;
+          _hasMore = true;
+          _withdrawalHistory.clear();
+        });
+      }
+
+      final page = loadMore ? _currentPage + 1 : 1;
       
       var response = await _profileRepository.getUserInfoResponse(
         notificationPage: 1,
@@ -98,76 +106,32 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
           _totalPages = pagination.totalPages;
           _totalItems = pagination.total;
           _perPage = pagination.perPage;
+          _hasMore = pagination.hasNext;
         }
         
         setState(() {
-          if (page == 1) {
-            _userInfo = newUserInfo;
-            _availableBalance = _userInfo?.affiliateBalance ?? 0.0;
-            _withdrawalHistory = _userInfo?.affiliateWithdrawRequests ?? [];
-          } else {
+          if (loadMore) {
             // Append new items to existing list
             final newItems = newUserInfo.affiliateWithdrawRequests ?? [];
             _withdrawalHistory.addAll(newItems);
-            
-            // Update user info balance (keep existing data)
-            _userInfo = UserInformation(
-              id: _userInfo?.id ?? newUserInfo.id,
-              name: _userInfo?.name ?? newUserInfo.name,
-              email: _userInfo?.email ?? newUserInfo.email,
-              avatar: _userInfo?.avatar ?? newUserInfo.avatar,
-              address: _userInfo?.address ?? newUserInfo.address,
-              country: _userInfo?.country ?? newUserInfo.country,
-              state: _userInfo?.state ?? newUserInfo.state,
-              city: _userInfo?.city ?? newUserInfo.city,
-              postalCode: _userInfo?.postalCode ?? newUserInfo.postalCode,
-              phone: _userInfo?.phone ?? newUserInfo.phone,
-              balance: _userInfo?.balance ?? newUserInfo.balance,
-              referralCode: _userInfo?.referralCode ?? newUserInfo.referralCode,
-              remainingUploads: _userInfo?.remainingUploads ?? newUserInfo.remainingUploads,
-              packageId: _userInfo?.packageId ?? newUserInfo.packageId,
-              packageName: _userInfo?.packageName ?? newUserInfo.packageName,
-              // affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
-              totalAffiliateEarnings: newUserInfo.totalAffiliateEarnings,
-              affiliateWithdrawRequests: _withdrawalHistory,
-              totalWithdrawnAmount: _userInfo?.totalWithdrawnAmount ?? newUserInfo.totalWithdrawnAmount,
-              pendingWithdrawAmount: _userInfo?.pendingWithdrawAmount ?? newUserInfo.pendingWithdrawAmount,
-              addresses: _userInfo?.addresses ?? newUserInfo.addresses,
-              addressCount: _userInfo?.addressCount ?? newUserInfo.addressCount,
-              defaultAddressCount: _userInfo?.defaultAddressCount ?? newUserInfo.defaultAddressCount,
-              customerPackagePayments: _userInfo?.customerPackagePayments ?? newUserInfo.customerPackagePayments,
-              totalPackagePayments: _userInfo?.totalPackagePayments ?? newUserInfo.totalPackagePayments,
-              wishlist: _userInfo?.wishlist ?? newUserInfo.wishlist,
-              wishlistCount: _userInfo?.wishlistCount ?? newUserInfo.wishlistCount,
-              auctionBids: _userInfo?.auctionBids ?? newUserInfo.auctionBids,
-              auctionBidsCount: _userInfo?.auctionBidsCount ?? newUserInfo.auctionBidsCount,
-              distinctAuctionBids: _userInfo?.distinctAuctionBids ?? newUserInfo.distinctAuctionBids,
-              distinctAuctionBidsCount: _userInfo?.distinctAuctionBidsCount ?? newUserInfo.distinctAuctionBidsCount,
-              affiliateId: _userInfo?.affiliateId ?? newUserInfo.affiliateId,
-              paypalEmail: _userInfo?.paypalEmail ?? newUserInfo.paypalEmail,
-              bankName: _userInfo?.bankName ?? newUserInfo.bankName,
-              accountHolder: _userInfo?.accountHolder ?? newUserInfo.accountHolder,
-              accountNumber: _userInfo?.accountNumber ?? newUserInfo.accountNumber,
-              ifscCode: _userInfo?.ifscCode ?? newUserInfo.ifscCode,
-              affiliateBalance: _userInfo?.affiliateBalance ?? newUserInfo.affiliateBalance,
-              affiliateStatus: _userInfo?.affiliateStatus ?? newUserInfo.affiliateStatus,
-              notifications: _userInfo?.notifications ?? newUserInfo.notifications,
-              unreadNotificationsCount: _userInfo?.unreadNotificationsCount ?? newUserInfo.unreadNotificationsCount,
-              unreadMessagesCount: _userInfo?.unreadMessagesCount ?? newUserInfo.unreadMessagesCount,
-            );
-            
+          } else {
+            // First page - replace all data
+            _userInfo = newUserInfo;
             _availableBalance = _userInfo?.affiliateBalance ?? 0.0;
+            _withdrawalHistory = _userInfo?.affiliateWithdrawRequests ?? [];
           }
         });
-        
-        _updatePaginatedHistory();
       } else {
-        _useDefaultData();
+        if (!loadMore) {
+          _useDefaultData();
+        }
       }
     } catch (e) {
       print("Error loading withdrawal data: $e");
       ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_withdrawal_data);
-      _useDefaultData();
+      if (!loadMore) {
+        _useDefaultData();
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -177,40 +141,20 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     }
   }
   
-  void _updatePaginatedHistory() {
-    final start = (_currentPage - 1) * _perPage;
-    final end = start + _perPage;
-    _paginatedHistory = _withdrawalHistory.skip(start).take(_perPage).toList();
+  // ============ LOAD MORE (INFINITE SCROLL) ============
+  Future<void> _loadMore() async {
+    if (!_hasMore || _isLoadingMore) return;
+    await _fetchWithdrawalData(loadMore: true);
   }
   
   void _useDefaultData() {
     setState(() {
       _availableBalance = 0.0;
       _withdrawalHistory = [];
-      _paginatedHistory = [];
       _totalItems = 0;
       _totalPages = 1;
+      _hasMore = false;
     });
-  }
-  
-  // ============ GO TO PAGE ============
-  Future<void> _goToPage(int page) async {
-    if (page < 1 || page > _totalPages || page == _currentPage) return;
-    await _fetchWithdrawalData(page: page);
-  }
-  
-  // ============ GO TO NEXT PAGE ============
-  Future<void> _nextPage() async {
-    if (_currentPage < _totalPages) {
-      await _goToPage(_currentPage + 1);
-    }
-  }
-  
-  // ============ GO TO PREVIOUS PAGE ============
-  Future<void> _previousPage() async {
-    if (_currentPage > 1) {
-      await _goToPage(_currentPage - 1);
-    }
   }
   
   // ============ PULL TO REFRESH ============
@@ -218,7 +162,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchWithdrawalData(page: 1);
+    await _fetchWithdrawalData(loadMore: false);
   }
   
   // ============ SUBMIT WITHDRAWAL REQUEST TO SERVER ============
@@ -238,7 +182,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         );
         
         // Refresh data after successful submission
-        await _fetchWithdrawalData(page: 1);
+        await _fetchWithdrawalData(loadMore: false);
       } else {
         ToastComponent.showError(
           response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_failed,
@@ -719,407 +663,257 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Stats Cards Row
-                    Row(
-                      children: [
-                        // Affiliate Balance Card
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  margin: EdgeInsets.only(bottom: 12.h),
-                                  child: Icon(
-                                    Icons.attach_money,
-                                    size: 28.sp,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Text(
-                                  AppLocalizations.of(context)!.affiliate_balance,
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white70,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(height: 6.h),
-                                Text(
-                                  FormatHelper.formatPrice(_availableBalance),
-                                  style: TextStyle(
-                                    fontSize: 20.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 15.w),
-                        // Withdraw Request Card
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _showWithdrawModal,
+            : NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  // Detect when user scrolls to bottom
+                  if (!_isLoadingMore &&
+                      _hasMore &&
+                      scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                    _loadMore();
+                  }
+                  return true;
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Stats Cards Row
+                      Row(
+                        children: [
+                          // Affiliate Balance Card
+                          Expanded(
                             child: Container(
                               padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8F9FC),
+                                color: MyTheme.accent_color,
                                 borderRadius: BorderRadius.circular(16.r),
-                                border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
                               ),
                               child: Column(
                                 children: [
                                   Container(
                                     margin: EdgeInsets.only(bottom: 12.h),
                                     child: Icon(
-                                      Icons.add_circle_outline,
+                                      Icons.attach_money,
                                       size: 28.sp,
-                                      color: const Color(0xFF64748B),
+                                      color: Colors.white,
                                     ),
                                   ),
                                   Text(
-                                    AppLocalizations.of(context)!.withdraw_request,
+                                    AppLocalizations.of(context)!.affiliate_balance,
                                     style: TextStyle(
                                       fontSize: 11.sp,
                                       fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF666666),
+                                      color: Colors.white70,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
                                   SizedBox(height: 6.h),
                                   Text(
-                                    AppLocalizations.of(context)!.withdraw_ucf,
+                                    FormatHelper.formatPrice(_availableBalance),
                                     style: TextStyle(
                                       fontSize: 20.sp,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.black,
+                                      color: Colors.white,
                                     ),
-                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    
-                    SizedBox(height: 24.h),
-                    
-                    // Withdraw Request History Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.withdraw_request_history,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
+                          SizedBox(width: 15.w),
+                          // Withdraw Request Card
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _showWithdrawModal,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 12.w),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8F9FC),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      margin: EdgeInsets.only(bottom: 12.h),
+                                      child: Icon(
+                                        Icons.add_circle_outline,
+                                        size: 28.sp,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                    Text(
+                                      AppLocalizations.of(context)!.withdraw_request,
+                                      style: TextStyle(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF666666),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(height: 6.h),
+                                    Text(
+                                      AppLocalizations.of(context)!.withdraw_ucf,
+                                      style: TextStyle(
+                                        fontSize: 20.sp,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.black,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${AppLocalizations.of(context)!.total_ucf}: $_totalItems',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF666666),
+                        ],
+                      ),
+                      
+                      SizedBox(height: 24.h),
+                      
+                      // Withdraw Request History Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.withdraw_request_history,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
-                    
-                    // History List - With proper container for empty state
-                    Container(
-                      width: double.infinity,
-                      child: _paginatedHistory.isEmpty
-                          ? _buildEmptyState()
-                          : ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _paginatedHistory.length,
-                              separatorBuilder: (context, index) => SizedBox(height: 12.h),
-                              itemBuilder: (context, index) {
-                                final withdrawal = _paginatedHistory[index];
-                                final date = withdrawal.createdAt;
-                                return Container(
-                                  padding: EdgeInsets.all(16.w),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF8F9FC),
-                                    borderRadius: BorderRadius.circular(12.r),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible(
-                                        flex: 3,
-                                        child: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: 40.w,
-                                              child: Text(
-                                                '#${((_currentPage - 1) * _perPage + index + 1).toString().padLeft(2, '0')}',
-                                                style: TextStyle(
-                                                  fontSize: 14.sp,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(0xFF666666),
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(width: 16.w),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                          Text(
+                            '${AppLocalizations.of(context)!.total_ucf}: $_totalItems',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF666666),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16.h),
+                      
+                      // History List - With proper container for empty state
+                      Container(
+                        width: double.infinity,
+                        child: _withdrawalHistory.isEmpty
+                            ? _buildEmptyState()
+                            : Column(
+                                children: [
+                                  ..._withdrawalHistory.map((withdrawal) {
+                                    final date = withdrawal.createdAt;
+                                    return Container(
+                                      padding: EdgeInsets.all(16.w),
+                                      margin: EdgeInsets.only(bottom: 12.h),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8F9FC),
+                                        borderRadius: BorderRadius.circular(12.r),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Flexible(
+                                            flex: 3,
+                                            child: Row(
                                               children: [
-                                                Text(
-                                                  date != null ? _formatDate(date) : AppLocalizations.of(context)!.unknown_date,
-                                                  style: TextStyle(
-                                                    fontSize: 12.sp,
-                                                    color: const Color(0xFF666666),
+                                                SizedBox(
+                                                  width: 40.w,
+                                                  child: Text(
+                                                    '#${(_withdrawalHistory.indexOf(withdrawal) + 1).toString().padLeft(2, '0')}',
+                                                    style: TextStyle(
+                                                      fontSize: 14.sp,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: const Color(0xFF666666),
+                                                    ),
                                                   ),
                                                 ),
-                                                SizedBox(height: 4.h),
-                                                Text(
-                                                  FormatHelper.formatPrice(withdrawal.amount ?? 0),
-                                                  style: TextStyle(
-                                                    fontSize: 16.sp,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: const Color(0xFF0092AC),
-                                                  ),
+                                                SizedBox(width: 16.w),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      date != null ? _formatDate(date) : AppLocalizations.of(context)!.unknown_date,
+                                                      style: TextStyle(
+                                                        fontSize: 12.sp,
+                                                        color: const Color(0xFF666666),
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 4.h),
+                                                    Text(
+                                                      FormatHelper.formatPrice(withdrawal.amount ?? 0),
+                                                      style: TextStyle(
+                                                        fontSize: 16.sp,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: const Color(0xFF0092AC),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                      
-                                      Flexible(
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
-                                          decoration: BoxDecoration(
-                                            color: _getStatusBackgroundColor(withdrawal.status ?? 0),
-                                            borderRadius: BorderRadius.circular(20.r),
                                           ),
-                                          child: Text(
-                                            _getStatusText(withdrawal.status ?? 0),
-                                            style: TextStyle(
-                                              fontSize: 11.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: _getStatusColor(withdrawal.status ?? 0),
+                                          
+                                          Flexible(
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                                              decoration: BoxDecoration(
+                                                color: _getStatusBackgroundColor(withdrawal.status ?? 0),
+                                                borderRadius: BorderRadius.circular(20.r),
+                                              ),
+                                              child: Text(
+                                                _getStatusText(withdrawal.status ?? 0),
+                                                style: TextStyle(
+                                                  fontSize: 11.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: _getStatusColor(withdrawal.status ?? 0),
+                                                ),
+                                              ),
                                             ),
                                           ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  // Loading indicator at bottom
+                                  if (_isLoadingMore)
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                                      child: Center(
+                                        child: SizedBox(
+                                          height: 24.w,
+                                          width: 24.w,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.w,
+                                            color: MyTheme.accent_color,
+                                          ),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                    
-                    // =============================================
-                    // PAGINATION CONTROLS
-                    // =============================================
-                    if (_totalPages > 1) _buildPaginationControls(),
-                  ],
-                ),
-              ),
-      ),
-    );
-  }
-  
-  // ============ PAGINATION CONTROLS ============
-  Widget _buildPaginationControls() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      child: Column(
-        children: [
-          // Page info
-          Text(
-            '${AppLocalizations.of(context)!.page_ucf} $_currentPage ${AppLocalizations.of(context)!.of_ucf} $_totalPages',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF666666),
-            ),
-          ),
-          SizedBox(height: 8.h),
-          // Pagination buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Previous button
-              GestureDetector(
-                onTap: _currentPage > 1 ? _previousPage : null,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: _currentPage > 1 ? const Color(0xFF0092AC) : const Color(0xFFE0E0E0),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.arrow_back,
-                        size: 16.sp,
-                        color: _currentPage > 1 ? Colors.white : const Color(0xFF999999),
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        AppLocalizations.of(context)!.previous_ucf,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: _currentPage > 1 ? Colors.white : const Color(0xFF999999),
-                        ),
+                                    ),
+                                  // End of list message
+                                  if (!_hasMore && _withdrawalHistory.isNotEmpty)
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 16.h),
+                                      child: Text(
+                                        'No more withdrawal history',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: const Color(0xFF999999),
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                ],
+                              ),
                       ),
                     ],
                   ),
                 ),
               ),
-              SizedBox(width: 8.w),
-              // Page numbers
-              ..._buildPageNumbers(),
-              SizedBox(width: 8.w),
-              // Next button
-              GestureDetector(
-                onTap: _currentPage < _totalPages ? _nextPage : null,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: _currentPage < _totalPages ? const Color(0xFF0092AC) : const Color(0xFFE0E0E0),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.next_ucf,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: _currentPage < _totalPages ? Colors.white : const Color(0xFF999999),
-                        ),
-                      ),
-                      SizedBox(width: 4.w),
-                      Icon(
-                        Icons.arrow_forward,
-                        size: 16.sp,
-                        color: _currentPage < _totalPages ? Colors.white : const Color(0xFF999999),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // Loading more indicator
-          if (_isLoadingMore)
-            Padding(
-              padding: EdgeInsets.only(top: 8.h),
-              child: CircularProgressIndicator(
-                color: MyTheme.accent_color,
-                strokeWidth: 2.w,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-  
-  List<Widget> _buildPageNumbers() {
-    List<Widget> widgets = [];
-    int maxVisible = 5;
-    int startPage = 1;
-    int endPage = _totalPages;
-    
-    if (_totalPages > maxVisible) {
-      if (_currentPage <= 3) {
-        startPage = 1;
-        endPage = maxVisible;
-      } else if (_currentPage >= _totalPages - 2) {
-        startPage = _totalPages - maxVisible + 1;
-        endPage = _totalPages;
-      } else {
-        startPage = _currentPage - 2;
-        endPage = _currentPage + 2;
-      }
-    }
-    
-    if (startPage > 1) {
-      widgets.add(_buildPageNumber(1));
-      if (startPage > 2) {
-        widgets.add(Text(
-          '...',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF666666),
-          ),
-        ));
-      }
-    }
-    
-    for (int i = startPage; i <= endPage && i <= _totalPages; i++) {
-      widgets.add(_buildPageNumber(i));
-    }
-    
-    if (endPage < _totalPages) {
-      if (endPage < _totalPages - 1) {
-        widgets.add(Text(
-          '...',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF666666),
-          ),
-        ));
-      }
-      widgets.add(_buildPageNumber(_totalPages));
-    }
-    
-    return widgets;
-  }
-  
-  Widget _buildPageNumber(int page) {
-    final isActive = page == _currentPage;
-    return GestureDetector(
-      onTap: () => _goToPage(page),
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 4.w),
-        width: 36.w,
-        height: 36.w,
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8.r),
-          border: isActive ? null : Border.all(
-            color: const Color(0xFFE0E0E0),
-            width: 1.w,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            page.toString(),
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: isActive ? Colors.white : const Color(0xFF333333),
-            ),
-          ),
-        ),
       ),
     );
   }

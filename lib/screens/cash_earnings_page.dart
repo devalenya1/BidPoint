@@ -40,6 +40,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   int _totalItems = 0;
   int _perPage = 10;
   bool _isLoadingMore = false;
+  bool _hasMore = true;
   
   UserInformation? _userInfo;  // Store the complete user info response
   
@@ -62,15 +63,24 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   }
   
   // ============ FETCH DATA FROM API WITH PAGINATION ============
-  Future<void> _fetchUserData({int page = 1}) async {
+  Future<void> _fetchUserData({bool loadMore = false}) async {
     try {
-      setState(() {
-        if (page == 1) {
-          _isLoading = true;
-        } else {
+      if (loadMore) {
+        if (_isLoadingMore || !_hasMore) return;
+        setState(() {
           _isLoadingMore = true;
-        }
-      });
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _currentPage = 1;
+          _hasMore = true;
+          _cashLogs.clear();
+          _paginatedCashLogs.clear();
+        });
+      }
+
+      final page = loadMore ? _currentPage + 1 : 1;
       
       var response = await ProfileRepository().getUserInfoResponse(
         notificationPage: 1,
@@ -92,78 +102,46 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           _totalPages = pagination.totalPages;
           _totalItems = pagination.total;
           _perPage = pagination.perPage;
+          _hasMore = pagination.hasNext;
         }
         
         setState(() {
-          if (page == 1) {
-            _userInfo = newUserInfo;
-          } else {
-            // FIXED: Use cashHistory instead of affiliateLogs
+          if (loadMore) {
+            // Append new cash logs
             final newCash = newUserInfo.cashHistory ?? [];
-            final existingCash = _userInfo?.cashHistory ?? [];
-            
-            _userInfo = UserInformation(
-              id: _userInfo?.id ?? newUserInfo.id,
-              name: _userInfo?.name ?? newUserInfo.name,
-              email: _userInfo?.email ?? newUserInfo.email,
-              avatar: _userInfo?.avatar ?? newUserInfo.avatar,
-              address: _userInfo?.address ?? newUserInfo.address,
-              country: _userInfo?.country ?? newUserInfo.country,
-              state: _userInfo?.state ?? newUserInfo.state,
-              city: _userInfo?.city ?? newUserInfo.city,
-              postalCode: _userInfo?.postalCode ?? newUserInfo.postalCode,
-              phone: _userInfo?.phone ?? newUserInfo.phone,
-              balance: _userInfo?.balance ?? newUserInfo.balance,
-              referralCode: _userInfo?.referralCode ?? newUserInfo.referralCode,
-              remainingUploads: _userInfo?.remainingUploads ?? newUserInfo.remainingUploads,
-              packageId: _userInfo?.packageId ?? newUserInfo.packageId,
-              packageName: _userInfo?.packageName ?? newUserInfo.packageName,
-              // FIXED: Use cashHistory
-              cashHistory: page == 1 
-                  ? newUserInfo.cashHistory 
-                  : [...existingCash, ...newCash],
-              totalCashEarnings: newUserInfo.totalCashEarnings,
-              cashPagination: newUserInfo.cashPagination,
-              affiliateWithdrawRequests: page == 1 
-                  ? newUserInfo.affiliateWithdrawRequests 
-                  : [...?_userInfo?.affiliateWithdrawRequests, ...?newUserInfo.affiliateWithdrawRequests],
-              totalWithdrawnAmount: _userInfo?.totalWithdrawnAmount ?? newUserInfo.totalWithdrawnAmount,
-              pendingWithdrawAmount: _userInfo?.pendingWithdrawAmount ?? newUserInfo.pendingWithdrawAmount,
-              addresses: _userInfo?.addresses ?? newUserInfo.addresses,
-              addressCount: _userInfo?.addressCount ?? newUserInfo.addressCount,
-              defaultAddressCount: _userInfo?.defaultAddressCount ?? newUserInfo.defaultAddressCount,
-              customerPackagePayments: _userInfo?.customerPackagePayments ?? newUserInfo.customerPackagePayments,
-              totalPackagePayments: _userInfo?.totalPackagePayments ?? newUserInfo.totalPackagePayments,
-              wishlist: _userInfo?.wishlist ?? newUserInfo.wishlist,
-              wishlistCount: _userInfo?.wishlistCount ?? newUserInfo.wishlistCount,
-              auctionBids: _userInfo?.auctionBids ?? newUserInfo.auctionBids,
-              auctionBidsCount: _userInfo?.auctionBidsCount ?? newUserInfo.auctionBidsCount,
-              distinctAuctionBids: _userInfo?.distinctAuctionBids ?? newUserInfo.distinctAuctionBids,
-              distinctAuctionBidsCount: _userInfo?.distinctAuctionBidsCount ?? newUserInfo.distinctAuctionBidsCount,
-              affiliateId: _userInfo?.affiliateId ?? newUserInfo.affiliateId,
-              paypalEmail: _userInfo?.paypalEmail ?? newUserInfo.paypalEmail,
-              bankName: _userInfo?.bankName ?? newUserInfo.bankName,
-              accountHolder: _userInfo?.accountHolder ?? newUserInfo.accountHolder,
-              accountNumber: _userInfo?.accountNumber ?? newUserInfo.accountNumber,
-              ifscCode: _userInfo?.ifscCode ?? newUserInfo.ifscCode,
-              affiliateBalance: _userInfo?.affiliateBalance ?? newUserInfo.affiliateBalance,
-              affiliateStatus: _userInfo?.affiliateStatus ?? newUserInfo.affiliateStatus,
-              notifications: _userInfo?.notifications ?? newUserInfo.notifications,
-              unreadNotificationsCount: _userInfo?.unreadNotificationsCount ?? newUserInfo.unreadNotificationsCount,
-              unreadMessagesCount: _userInfo?.unreadMessagesCount ?? newUserInfo.unreadMessagesCount,
-              affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
-              totalAffiliateEarnings: _userInfo?.totalAffiliateEarnings ?? newUserInfo.totalAffiliateEarnings,
-            );
+            _cashLogs.addAll(newCash.map((log) => {
+              'type': 'earning',
+              'amount': log.amount ?? 0.0,
+              'cameFrom': log.cameFrom ?? AppLocalizations.of(context)!.affiliate_earning,
+              'status': log.status == 1 ? 1 : 0,
+              'createdAt': log.createdAt,
+              'orderId': log.orderId,
+            }));
+          } else {
+            // First page - replace all data
+            _userInfo = newUserInfo;
+            _processCashLogs();
           }
         });
         
-        _processCashLogs();
+        // Update monthly totals
+        _calculateMonthlyCash();
+        _updatePaginatedLogs();
         
         affiliate_balance.$ = _userInfo?.affiliateBalance?.toString() ?? "0";
         affiliate_balance.save();
         
         if (_userInfo != null) {
           UserDataHelper.saveUserData(_userInfo!);
+        }
+      } else {
+        if (!loadMore) {
+          setState(() {
+            _cashLogs = [];
+            _paginatedCashLogs = [];
+            _monthlyCash = {};
+            _months = [];
+          });
         }
       }
     } catch (e) {
@@ -178,24 +156,10 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     }
   }
   
-  // ============ GO TO PAGE ============
-  Future<void> _goToPage(int page) async {
-    if (page < 1 || page > _totalPages || page == _currentPage) return;
-    await _fetchUserData(page: page);
-  }
-  
-  // ============ GO TO NEXT PAGE ============
-  Future<void> _nextPage() async {
-    if (_currentPage < _totalPages) {
-      await _goToPage(_currentPage + 1);
-    }
-  }
-  
-  // ============ GO TO PREVIOUS PAGE ============
-  Future<void> _previousPage() async {
-    if (_currentPage > 1) {
-      await _goToPage(_currentPage - 1);
-    }
+  // ============ LOAD MORE (INFINITE SCROLL) ============
+  Future<void> _loadMore() async {
+    if (!_hasMore || _isLoadingMore) return;
+    await _fetchUserData(loadMore: true);
   }
   
   // ============ PROCESS CASH LOGS ============
@@ -243,8 +207,13 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     });
     
     _cashLogs = allCashTransactions;
+    _calculateMonthlyCash();
+    _updatePaginatedLogs();
     
-    // Calculate monthly cash totals
+    setState(() {});
+  }
+  
+  void _calculateMonthlyCash() {
     final Map<String, double> monthlyTemp = {};
     for (var log in _cashLogs) {
       final date = log['createdAt'];
@@ -265,17 +234,11 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     if (_months.isNotEmpty) {
       _selectedMonthIndex = 0;
     }
-    
-    _updatePaginatedLogs();
-    
-    setState(() {});
   }
   
   void _updatePaginatedLogs() {
     final filtered = _getFilteredLogs();
-    final start = (_currentPage - 1) * _perPage;
-    final end = start + _perPage;
-    _paginatedCashLogs = filtered.skip(start).take(_perPage).toList();
+    _paginatedCashLogs = filtered;
   }
   
   // ============ PULL TO REFRESH ============
@@ -283,7 +246,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchUserData(page: 1);
+    await _fetchUserData(loadMore: false);
   }
   
   // Helper getters for user data
@@ -341,14 +304,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   @override
   Widget build(BuildContext context) {
     final filteredLogs = _getFilteredLogs();
-    final totalFilteredItems = filteredLogs.length;
-    final totalFilteredPages = totalFilteredItems > 0 ? (totalFilteredItems / _perPage).ceil() : 1;
-    
-    if (_currentPage > totalFilteredPages) {
-      _currentPage = totalFilteredPages;
-    }
-    
-    _paginatedCashLogs = filteredLogs.skip((_currentPage - 1) * _perPage).take(_perPage).toList();
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -373,195 +328,29 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildProfileCard(),
-                    _buildCashHistorySection(_paginatedCashLogs),
-                    if (_months.isNotEmpty) _buildMonthlySection(),
-                    if (totalFilteredPages > 1) _buildPaginationControls(totalFilteredPages),
-                  ],
-                ),
-              ),
-      ),
-    );
-  }
-  
-  // ============ PAGINATION CONTROLS ============
-  Widget _buildPaginationControls(int totalPages) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      child: Column(
-        children: [
-          Text(
-            '${AppLocalizations.of(context)!.page_ucf} $_currentPage ${AppLocalizations.of(context)!.of_ucf} $totalPages',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF666666),
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: _currentPage > 1 ? _previousPage : null,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: _currentPage > 1 ? const Color(0xFF0092AC) : const Color(0xFFE0E0E0),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
+            : NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  // Detect when user scrolls to bottom
+                  if (!_isLoadingMore &&
+                      _hasMore &&
+                      scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                    _loadMore();
+                  }
+                  return true;
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.arrow_back,
-                        size: 16.sp,
-                        color: _currentPage > 1 ? Colors.white : const Color(0xFF999999),
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        AppLocalizations.of(context)!.previous_ucf,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: _currentPage > 1 ? Colors.white : const Color(0xFF999999),
-                        ),
-                      ),
+                      _buildProfileCard(),
+                      _buildCashHistorySection(filteredLogs),
+                      if (_months.isNotEmpty) _buildMonthlySection(),
                     ],
                   ),
                 ),
               ),
-              SizedBox(width: 8.w),
-              ..._buildPageNumbers(totalPages),
-              SizedBox(width: 8.w),
-              GestureDetector(
-                onTap: _currentPage < totalPages ? _nextPage : null,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: _currentPage < totalPages ? const Color(0xFF0092AC) : const Color(0xFFE0E0E0),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.next_ucf,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: _currentPage < totalPages ? Colors.white : const Color(0xFF999999),
-                        ),
-                      ),
-                      SizedBox(width: 4.w),
-                      Icon(
-                        Icons.arrow_forward,
-                        size: 16.sp,
-                        color: _currentPage < totalPages ? Colors.white : const Color(0xFF999999),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_isLoadingMore)
-            Padding(
-              padding: EdgeInsets.only(top: 8.h),
-              child: CircularProgressIndicator(
-                color: MyTheme.accent_color,
-                strokeWidth: 2.w,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-  
-  List<Widget> _buildPageNumbers(int totalPages) {
-    List<Widget> widgets = [];
-    int maxVisible = 5;
-    int startPage = 1;
-    int endPage = totalPages;
-    
-    if (totalPages > maxVisible) {
-      if (_currentPage <= 3) {
-        startPage = 1;
-        endPage = maxVisible;
-      } else if (_currentPage >= totalPages - 2) {
-        startPage = totalPages - maxVisible + 1;
-        endPage = totalPages;
-      } else {
-        startPage = _currentPage - 2;
-        endPage = _currentPage + 2;
-      }
-    }
-    
-    if (startPage > 1) {
-      widgets.add(_buildPageNumber(1, totalPages));
-      if (startPage > 2) {
-        widgets.add(Text(
-          '...',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF666666),
-          ),
-        ));
-      }
-    }
-    
-    for (int i = startPage; i <= endPage && i <= totalPages; i++) {
-      widgets.add(_buildPageNumber(i, totalPages));
-    }
-    
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        widgets.add(Text(
-          '...',
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF666666),
-          ),
-        ));
-      }
-      widgets.add(_buildPageNumber(totalPages, totalPages));
-    }
-    
-    return widgets;
-  }
-  
-  Widget _buildPageNumber(int page, int totalPages) {
-    final isActive = page == _currentPage;
-    return GestureDetector(
-      onTap: () => _goToPage(page),
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 4.w),
-        width: 36.w,
-        height: 36.w,
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8.r),
-          border: isActive ? null : Border.all(
-            color: const Color(0xFFE0E0E0),
-            width: 1.w,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            page.toString(),
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: isActive ? Colors.white : const Color(0xFF333333),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -689,6 +478,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   }
     
   Widget _buildCashHistorySection(List<Map<String, dynamic>> logs) {
+    final hasMore = _hasMore;
+    
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
@@ -707,7 +498,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 ),
               ),
               Text(
-                '${AppLocalizations.of(context)!.total_ucf}: ${_getFilteredLogs().length}',
+                '${AppLocalizations.of(context)!.total_ucf}: $_totalItems',
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
@@ -722,7 +513,37 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             _buildEmptyState()
           else
             Column(
-              children: logs.map((log) => _buildHistoryCard(log)).toList(),
+              children: [
+                ...logs.map((log) => _buildHistoryCard(log)).toList(),
+                // Loading indicator at bottom
+                if (_isLoadingMore)
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    child: Center(
+                      child: SizedBox(
+                        height: 24.w,
+                        width: 24.w,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.w,
+                          color: MyTheme.accent_color,
+                        ),
+                      ),
+                    ),
+                  ),
+                // End of list message
+                if (!hasMore && logs.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 16.h),
+                    child: Text(
+                      'No more cash history',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: const Color(0xFF999999),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
             ),
         ],
       ),
