@@ -25,6 +25,13 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   bool _isRefreshing = false;
   bool _isSubmitting = false;
   
+  // ============ PAGINATION STATE ============
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  int _perPage = 10;
+  bool _isLoadingMore = false;
+  
   UserInformation? _userInfo;
   
   double _availableBalance = 0.0;
@@ -33,6 +40,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
   final TextEditingController _amountController = TextEditingController();
   
   List<AffiliateWithdrawRequest> _withdrawalHistory = [];
+  List<AffiliateWithdrawRequest> _paginatedHistory = [];
   
   final ProfileRepository _profileRepository = ProfileRepository();
 
@@ -58,21 +66,101 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     return '\$';
   }
   
-  // ============ FETCH WITHDRAWAL DATA FROM API ============
-  Future<void> _fetchWithdrawalData() async {
+  // ============ FETCH WITHDRAWAL DATA FROM API WITH PAGINATION ============
+  Future<void> _fetchWithdrawalData({int page = 1}) async {
     try {
       setState(() {
-        _isLoading = true;
+        if (page == 1) {
+          _isLoading = true;
+        } else {
+          _isLoadingMore = true;
+        }
       });
       
-      var response = await _profileRepository.getUserInfoResponse();
+      var response = await _profileRepository.getUserInfoResponse(
+        notificationPage: 1,
+        notificationPerPage: 10,
+        pointPage: 1,
+        pointPerPage: 10,
+        cashPage: 1,
+        cashPerPage: 10,
+        withdrawPage: page,
+        withdrawPerPage: _perPage,
+      );
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        final newUserInfo = response.data![0];
+        
+        // Update pagination info from withdraw_pagination
+        final pagination = newUserInfo.withdrawPagination;
+        if (pagination != null) {
+          _currentPage = pagination.currentPage;
+          _totalPages = pagination.totalPages;
+          _totalItems = pagination.total;
+          _perPage = pagination.perPage;
+        }
+        
         setState(() {
-          _userInfo = response.data![0];
-          _availableBalance = _userInfo?.affiliateBalance ?? 0.0;
-          _withdrawalHistory = _userInfo?.affiliateWithdrawRequests ?? [];
+          if (page == 1) {
+            _userInfo = newUserInfo;
+            _availableBalance = _userInfo?.affiliateBalance ?? 0.0;
+            _withdrawalHistory = _userInfo?.affiliateWithdrawRequests ?? [];
+          } else {
+            // Append new items to existing list
+            final newItems = newUserInfo.affiliateWithdrawRequests ?? [];
+            _withdrawalHistory.addAll(newItems);
+            
+            // Update user info balance (keep existing data)
+            _userInfo = UserInformation(
+              id: _userInfo?.id ?? newUserInfo.id,
+              name: _userInfo?.name ?? newUserInfo.name,
+              email: _userInfo?.email ?? newUserInfo.email,
+              avatar: _userInfo?.avatar ?? newUserInfo.avatar,
+              address: _userInfo?.address ?? newUserInfo.address,
+              country: _userInfo?.country ?? newUserInfo.country,
+              state: _userInfo?.state ?? newUserInfo.state,
+              city: _userInfo?.city ?? newUserInfo.city,
+              postalCode: _userInfo?.postalCode ?? newUserInfo.postalCode,
+              phone: _userInfo?.phone ?? newUserInfo.phone,
+              balance: _userInfo?.balance ?? newUserInfo.balance,
+              referralCode: _userInfo?.referralCode ?? newUserInfo.referralCode,
+              remainingUploads: _userInfo?.remainingUploads ?? newUserInfo.remainingUploads,
+              packageId: _userInfo?.packageId ?? newUserInfo.packageId,
+              packageName: _userInfo?.packageName ?? newUserInfo.packageName,
+              affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
+              totalAffiliateEarnings: newUserInfo.totalAffiliateEarnings,
+              affiliateWithdrawRequests: _withdrawalHistory,
+              totalWithdrawnAmount: _userInfo?.totalWithdrawnAmount ?? newUserInfo.totalWithdrawnAmount,
+              pendingWithdrawAmount: _userInfo?.pendingWithdrawAmount ?? newUserInfo.pendingWithdrawAmount,
+              addresses: _userInfo?.addresses ?? newUserInfo.addresses,
+              addressCount: _userInfo?.addressCount ?? newUserInfo.addressCount,
+              defaultAddressCount: _userInfo?.defaultAddressCount ?? newUserInfo.defaultAddressCount,
+              customerPackagePayments: _userInfo?.customerPackagePayments ?? newUserInfo.customerPackagePayments,
+              totalPackagePayments: _userInfo?.totalPackagePayments ?? newUserInfo.totalPackagePayments,
+              wishlist: _userInfo?.wishlist ?? newUserInfo.wishlist,
+              wishlistCount: _userInfo?.wishlistCount ?? newUserInfo.wishlistCount,
+              auctionBids: _userInfo?.auctionBids ?? newUserInfo.auctionBids,
+              auctionBidsCount: _userInfo?.auctionBidsCount ?? newUserInfo.auctionBidsCount,
+              distinctAuctionBids: _userInfo?.distinctAuctionBids ?? newUserInfo.distinctAuctionBids,
+              distinctAuctionBidsCount: _userInfo?.distinctAuctionBidsCount ?? newUserInfo.distinctAuctionBidsCount,
+              affiliateId: _userInfo?.affiliateId ?? newUserInfo.affiliateId,
+              paypalEmail: _userInfo?.paypalEmail ?? newUserInfo.paypalEmail,
+              bankName: _userInfo?.bankName ?? newUserInfo.bankName,
+              accountHolder: _userInfo?.accountHolder ?? newUserInfo.accountHolder,
+              accountNumber: _userInfo?.accountNumber ?? newUserInfo.accountNumber,
+              ifscCode: _userInfo?.ifscCode ?? newUserInfo.ifscCode,
+              affiliateBalance: _userInfo?.affiliateBalance ?? newUserInfo.affiliateBalance,
+              affiliateStatus: _userInfo?.affiliateStatus ?? newUserInfo.affiliateStatus,
+              notifications: _userInfo?.notifications ?? newUserInfo.notifications,
+              unreadNotificationsCount: _userInfo?.unreadNotificationsCount ?? newUserInfo.unreadNotificationsCount,
+              unreadMessagesCount: _userInfo?.unreadMessagesCount ?? newUserInfo.unreadMessagesCount,
+            );
+            
+            _availableBalance = _userInfo?.affiliateBalance ?? 0.0;
+          }
         });
+        
+        _updatePaginatedHistory();
       } else {
         _useDefaultData();
       }
@@ -84,15 +172,45 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       setState(() {
         _isLoading = false;
         _isRefreshing = false;
+        _isLoadingMore = false;
       });
     }
+  }
+  
+  void _updatePaginatedHistory() {
+    final start = (_currentPage - 1) * _perPage;
+    final end = start + _perPage;
+    _paginatedHistory = _withdrawalHistory.skip(start).take(_perPage).toList();
   }
   
   void _useDefaultData() {
     setState(() {
       _availableBalance = 0.0;
       _withdrawalHistory = [];
+      _paginatedHistory = [];
+      _totalItems = 0;
+      _totalPages = 1;
     });
+  }
+  
+  // ============ GO TO PAGE ============
+  Future<void> _goToPage(int page) async {
+    if (page < 1 || page > _totalPages || page == _currentPage) return;
+    await _fetchWithdrawalData(page: page);
+  }
+  
+  // ============ GO TO NEXT PAGE ============
+  Future<void> _nextPage() async {
+    if (_currentPage < _totalPages) {
+      await _goToPage(_currentPage + 1);
+    }
+  }
+  
+  // ============ GO TO PREVIOUS PAGE ============
+  Future<void> _previousPage() async {
+    if (_currentPage > 1) {
+      await _goToPage(_currentPage - 1);
+    }
   }
   
   // ============ PULL TO REFRESH ============
@@ -100,7 +218,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchWithdrawalData();
+    await _fetchWithdrawalData(page: 1);
   }
   
   // ============ SUBMIT WITHDRAWAL REQUEST TO SERVER ============
@@ -120,7 +238,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
         );
         
         // Refresh data after successful submission
-        await _fetchWithdrawalData();
+        await _fetchWithdrawalData(page: 1);
       } else {
         ToastComponent.showError(
           response['message'] ?? AppLocalizations.of(context)!.withdrawal_request_failed,
@@ -703,28 +821,41 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                     SizedBox(height: 24.h),
                     
                     // Withdraw Request History Section
-                    Text(
-                      AppLocalizations.of(context)!.withdraw_request_history,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.withdraw_request_history,
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          '${AppLocalizations.of(context)!.total_ucf}: $_totalItems',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF666666),
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 16.h),
                     
                     // History List - With proper container for empty state
                     Container(
                       width: double.infinity,
-                      child: _withdrawalHistory.isEmpty
+                      child: _paginatedHistory.isEmpty
                           ? _buildEmptyState()
                           : ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _withdrawalHistory.length,
+                              itemCount: _paginatedHistory.length,
                               separatorBuilder: (context, index) => SizedBox(height: 12.h),
                               itemBuilder: (context, index) {
-                                final withdrawal = _withdrawalHistory[index];
+                                final withdrawal = _paginatedHistory[index];
                                 final date = withdrawal.createdAt;
                                 return Container(
                                   padding: EdgeInsets.all(16.w),
@@ -742,7 +873,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                                             SizedBox(
                                               width: 40.w,
                                               child: Text(
-                                                '#${(index + 1).toString().padLeft(2, '0')}',
+                                                '#${((_currentPage - 1) * _perPage + index + 1).toString().padLeft(2, '0')}',
                                                 style: TextStyle(
                                                   fontSize: 14.sp,
                                                   fontWeight: FontWeight.w600,
@@ -799,9 +930,196 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
                               },
                             ),
                     ),
+                    
+                    // =============================================
+                    // PAGINATION CONTROLS
+                    // =============================================
+                    if (_totalPages > 1) _buildPaginationControls(),
                   ],
                 ),
               ),
+      ),
+    );
+  }
+  
+  // ============ PAGINATION CONTROLS ============
+  Widget _buildPaginationControls() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16.h),
+      child: Column(
+        children: [
+          // Page info
+          Text(
+            '${AppLocalizations.of(context)!.page_ucf} $_currentPage ${AppLocalizations.of(context)!.of_ucf} $_totalPages',
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF666666),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          // Pagination buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Previous button
+              GestureDetector(
+                onTap: _currentPage > 1 ? _previousPage : null,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: _currentPage > 1 ? const Color(0xFF0092AC) : const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_back,
+                        size: 16.sp,
+                        color: _currentPage > 1 ? Colors.white : const Color(0xFF999999),
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        AppLocalizations.of(context)!.previous_ucf,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: _currentPage > 1 ? Colors.white : const Color(0xFF999999),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              // Page numbers
+              ..._buildPageNumbers(),
+              SizedBox(width: 8.w),
+              // Next button
+              GestureDetector(
+                onTap: _currentPage < _totalPages ? _nextPage : null,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: _currentPage < _totalPages ? const Color(0xFF0092AC) : const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.next_ucf,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: _currentPage < _totalPages ? Colors.white : const Color(0xFF999999),
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 16.sp,
+                        color: _currentPage < _totalPages ? Colors.white : const Color(0xFF999999),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Loading more indicator
+          if (_isLoadingMore)
+            Padding(
+              padding: EdgeInsets.only(top: 8.h),
+              child: CircularProgressIndicator(
+                color: MyTheme.accent_color,
+                strokeWidth: 2.w,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  List<Widget> _buildPageNumbers() {
+    List<Widget> widgets = [];
+    int maxVisible = 5;
+    int startPage = 1;
+    int endPage = _totalPages;
+    
+    if (_totalPages > maxVisible) {
+      if (_currentPage <= 3) {
+        startPage = 1;
+        endPage = maxVisible;
+      } else if (_currentPage >= _totalPages - 2) {
+        startPage = _totalPages - maxVisible + 1;
+        endPage = _totalPages;
+      } else {
+        startPage = _currentPage - 2;
+        endPage = _currentPage + 2;
+      }
+    }
+    
+    if (startPage > 1) {
+      widgets.add(_buildPageNumber(1));
+      if (startPage > 2) {
+        widgets.add(Text(
+          '...',
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF666666),
+          ),
+        ));
+      }
+    }
+    
+    for (int i = startPage; i <= endPage && i <= _totalPages; i++) {
+      widgets.add(_buildPageNumber(i));
+    }
+    
+    if (endPage < _totalPages) {
+      if (endPage < _totalPages - 1) {
+        widgets.add(Text(
+          '...',
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF666666),
+          ),
+        ));
+      }
+      widgets.add(_buildPageNumber(_totalPages));
+    }
+    
+    return widgets;
+  }
+  
+  Widget _buildPageNumber(int page) {
+    final isActive = page == _currentPage;
+    return GestureDetector(
+      onTap: () => _goToPage(page),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        width: 36.w,
+        height: 36.w,
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF0092AC) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8.r),
+          border: isActive ? null : Border.all(
+            color: const Color(0xFFE0E0E0),
+            width: 1.w,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            page.toString(),
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: isActive ? Colors.white : const Color(0xFF333333),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -26,14 +26,27 @@ class _NotificationsPageState extends State<NotificationsPage> {
   bool _isLoading = true;
   bool _isRefreshing = false;
   bool _isMarkingAllAsRead = false;
+  bool _isLoadingMore = false;
 
   model.UserInformation? _userInfo; // Store the complete user info response
 
-  // Derived notification lists (processed from _userInfo)
+  // ============ PAGINATION STATE ============
+  int _currentNotificationPage = 1;
+  int _currentPointPage = 1;
+  int _currentCashPage = 1;
+  int _currentWithdrawPage = 1;
+  bool _hasMoreNotifications = true;
+  bool _hasMorePoints = true;
+  bool _hasMoreCash = true;
+
+  // ============ CACHED LISTS FOR INFINITE SCROLL ============
   List<model.Notification> _allNotifications = [];
   List<model.Notification> _auctionNotifications = [];
   List<model.Notification> _paymentNotifications = [];
   List<model.Notification> _systemNotifications = [];
+
+  // Track if initial load is complete for each tab
+  bool _initialLoadComplete = false;
 
   @override
   void initState() {
@@ -47,42 +60,87 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  // ============ FETCH DATA FROM API ============
-  Future<void> _fetchNotifications() async {
+  // ============ FETCH DATA FROM API WITH PAGINATION ============
+  Future<void> _fetchNotifications({bool loadMore = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      if (loadMore) {
+        if (_isLoadingMore || !_hasMoreNotifications) return;
+        setState(() {
+          _isLoadingMore = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _currentNotificationPage = 1;
+          _hasMoreNotifications = true;
+          _allNotifications.clear();
+          _auctionNotifications.clear();
+          _paymentNotifications.clear();
+          _systemNotifications.clear();
+        });
+      }
 
-      var response = await ProfileRepository().getUserInfoResponse();
+      final page = loadMore ? _currentNotificationPage + 1 : 1;
+
+      var response = await ProfileRepository().getUserInfoResponse(
+        notificationPage: page,
+        notificationPerPage: 10,
+        pointPage: _currentPointPage,
+        pointPerPage: 10,
+        cashPage: _currentCashPage,
+        cashPerPage: 10,
+        withdrawPage: _currentWithdrawPage,
+        withdrawPerPage: 10,
+      );
 
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
-        setState(() {
-          _userInfo = response.data![0];
-        });
+        final newUserInfo = response.data![0];
 
-        // Process notifications from the stored user info
-        _processNotifications();
-
-        // Optional: Update global SharedValues for unread count
-        unread_notifications_count.$ = _userInfo?.unreadNotificationsCount ?? 0;
-        unread_notifications_count.save();
-
-        // Save all user data to SharedPreferences for other screens
-        if (_userInfo != null) {
-          UserDataHelper.saveUserData(_userInfo!);
+        // Update pagination info
+        final pagination = newUserInfo.notificationsPagination;
+        if (pagination != null) {
+          _hasMoreNotifications = pagination.hasNext;
+          _currentNotificationPage = pagination.currentPage;
         }
 
-        // AFTER loading notifications, mark all as read in background
-        _markAllAsReadInBackground();
-      } else {
-        // Handle empty response
+        // Process notifications
+        final newNotifications = newUserInfo.notifications ?? [];
+
         setState(() {
-          _allNotifications = [];
-          _auctionNotifications = [];
-          _paymentNotifications = [];
-          _systemNotifications = [];
+          if (loadMore) {
+            // Append to existing lists
+            _allNotifications.addAll(newNotifications);
+            _updateFilteredLists();
+          } else {
+            // Replace entire user info and lists
+            _userInfo = newUserInfo;
+            _allNotifications = newNotifications;
+            _updateFilteredLists();
+
+            // Update global unread count
+            unread_notifications_count.$ = _userInfo?.unreadNotificationsCount ?? 0;
+            unread_notifications_count.save();
+
+            // Save user data
+            if (_userInfo != null) {
+              UserDataHelper.saveUserData(_userInfo!);
+            }
+          }
         });
+
+        // Mark all as read in background (only on first load)
+        if (!loadMore) {
+          _markAllAsReadInBackground();
+        }
+      } else {
+        if (!loadMore) {
+          setState(() {
+            _allNotifications = [];
+            _auctionNotifications = [];
+            _paymentNotifications = [];
+            _systemNotifications = [];
+          });
+        }
       }
     } catch (e) {
       print("Error loading notifications: $e");
@@ -91,16 +149,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
       setState(() {
         _isLoading = false;
         _isRefreshing = false;
+        _isLoadingMore = false;
+        _initialLoadComplete = true;
       });
     }
   }
 
-  // ============ PROCESS NOTIFICATIONS ============
-  void _processNotifications() {
-    if (_userInfo == null) return;
-
-    final notifications = _userInfo!.notifications ?? [];
-
+  // ============ UPDATE FILTERED LISTS ============
+  void _updateFilteredLists() {
     // Auction related: outbid, newbid, point_deduction, bid_placed, etc.
     const auctionTypes = [
       'outbid',
@@ -123,21 +179,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
       'withdrawal_failed'
     ];
 
-    setState(() {
-      _allNotifications = notifications;
+    _auctionNotifications = _allNotifications.where((n) {
+      return auctionTypes.contains(n.type);
+    }).toList();
 
-      _auctionNotifications = notifications.where((n) {
-        return auctionTypes.contains(n.type);
-      }).toList();
+    _paymentNotifications = _allNotifications.where((n) {
+      return paymentTypes.contains(n.type);
+    }).toList();
 
-      _paymentNotifications = notifications.where((n) {
-        return paymentTypes.contains(n.type);
-      }).toList();
+    _systemNotifications = _allNotifications.where((n) {
+      return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
+    }).toList();
+  }
 
-      _systemNotifications = notifications.where((n) {
-        return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
-      }).toList();
-    });
+  // ============ LOAD MORE NOTIFICATIONS (INFINITE SCROLL) ============
+  Future<void> _loadMoreNotifications() async {
+    if (!_hasMoreNotifications || _isLoadingMore) return;
+    await _fetchNotifications(loadMore: true);
   }
 
   // ============ PULL TO REFRESH ============
@@ -145,26 +203,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchNotifications();
+    await _fetchNotifications(loadMore: false);
   }
 
   // ============ MARK ALL AS READ (BACKGROUND - NO UI BLOCKING) ============
   void _markAllAsReadInBackground() {
-    // Only mark if there are unread notifications
     if (_userInfo == null || (_userInfo?.unreadNotificationsCount ?? 0) <= 0) {
       return;
     }
 
-    // Don't process if already processing
     if (_isMarkingAllAsRead) return;
 
     setState(() {
       _isMarkingAllAsRead = true;
     });
 
-    // Update local UI immediately (optimistic update)
+    // Optimistic update - mark all as read locally
     setState(() {
-      // Mark all notifications as read locally
       _allNotifications = _allNotifications.map((n) {
         return model.Notification(
           id: n.id,
@@ -177,54 +232,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
         );
       }).toList();
 
-      _auctionNotifications = _auctionNotifications.map((n) {
-        return model.Notification(
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          readAt: DateTime.now().toIso8601String(),
-          createdAt: n.createdAt,
-          isRead: true,
-        );
-      }).toList();
+      _updateFilteredLists();
 
-      _paymentNotifications = _paymentNotifications.map((n) {
-        return model.Notification(
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          readAt: DateTime.now().toIso8601String(),
-          createdAt: n.createdAt,
-          isRead: true,
-        );
-      }).toList();
-
-      _systemNotifications = _systemNotifications.map((n) {
-        return model.Notification(
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          readAt: DateTime.now().toIso8601String(),
-          createdAt: n.createdAt,
-          isRead: true,
-        );
-      }).toList();
-
-      // Update unread count
       unread_notifications_count.$ = 0;
       unread_notifications_count.save();
     });
 
-    // Send background request (fire and forget)
+    // Send background request
     _sendMarkAllAsReadRequest();
   }
 
   void _sendMarkAllAsReadRequest() async {
     try {
-      // This runs in background - no UI blocking
       final Map<String, dynamic> response = await ProfileRepository().markAllNotificationsAsRead();
 
       setState(() {
@@ -236,8 +255,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       } else {
         print('❌ Failed to mark all notifications as read: ${response['message']}');
         ToastComponent.showWarning(response['message'] ?? AppLocalizations.of(context)!.failed_to_mark_notifications_read);
-        // If failed, revert the optimistic update by fetching fresh data
-        await _fetchNotifications();
+        await _fetchNotifications(loadMore: false);
       }
     } catch (e) {
       print('❌ Failed to mark all notifications as read: $e');
@@ -245,12 +263,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
       setState(() {
         _isMarkingAllAsRead = false;
       });
-      // Revert the optimistic update on error
-      await _fetchNotifications();
+      await _fetchNotifications(loadMore: false);
     }
   }
 
-  // Helper to get notification type category
+  // ============ HELPER METHODS ============
   String _getNotificationType(String type) {
     const auctionTypes = [
       'outbid',
@@ -398,6 +415,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
             }
           },
         ),
+        actions: [
+          // Mark all as read button (only show if there are unread notifications)
+          if ((_userInfo?.unreadNotificationsCount ?? 0) > 0)
+            IconButton(
+              icon: Icon(Icons.done_all, size: 22.sp, color: MyTheme.accent_color),
+              onPressed: _isMarkingAllAsRead ? null : _markAllAsReadInBackground,
+              tooltip: AppLocalizations.of(context)!.mark_all_read,
+            ),
+        ],
       ),
       body: RefreshIndicator(
         color: MyTheme.accent_color,
@@ -409,8 +435,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 children: [
                   _buildTabs(),
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: Padding(
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (ScrollNotification scrollInfo) {
+                        // Detect when user scrolls to bottom
+                        if (!_isLoadingMore &&
+                            _hasMoreNotifications &&
+                            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                          _loadMoreNotifications();
+                        }
+                        return true;
+                      },
+                      child: SingleChildScrollView(
                         padding: EdgeInsets.symmetric(horizontal: 16.w),
                         child: Column(
                           children: [
@@ -418,9 +453,32 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               _buildEmptyState()
                             else
                               Column(
-                                children: currentNotifications.map((notification) =>
-                                  _buildNotificationItem(notification)
-                                ).toList(),
+                                children: [
+                                  ...currentNotifications.map((notification) =>
+                                    _buildNotificationItem(notification)
+                                  ).toList(),
+                                  // Loading more indicator
+                                  if (_isLoadingMore)
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                                      child: CircularProgressIndicator(
+                                        color: MyTheme.accent_color,
+                                        strokeWidth: 2.w,
+                                      ),
+                                    ),
+                                  // End of list indicator
+                                  if (!_hasMoreNotifications && currentNotifications.isNotEmpty)
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                                      child: Text(
+                                        AppLocalizations.of(context)!.no_more_notifications,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: const Color(0xFF999999),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             SizedBox(height: 20.h),
                           ],

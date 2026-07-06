@@ -148,8 +148,29 @@ class ProfileRepository {
     return phoneEmailAvailabilityResponseFromJson(response.body);
   }
 
-  Future<dynamic> getUserInfoResponse({BuildContext? context}) async {
-    String url = "${AppConfig.BASE_URL}/customer/info";
+  // =============================================
+  // GET USER INFO WITH PAGINATION SUPPORT
+  // =============================================
+  Future<dynamic> getUserInfoResponse({
+    BuildContext? context,
+    int notificationPage = 1,
+    int notificationPerPage = 10,
+    int pointPage = 1,
+    int pointPerPage = 10,
+    int cashPage = 1,
+    int cashPerPage = 10,
+    int withdrawPage = 1,
+    int withdrawPerPage = 10,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/customer/info"
+        "?notification_page=$notificationPage"
+        "&notification_per_page=$notificationPerPage"
+        "&point_page=$pointPage"
+        "&point_per_page=$pointPerPage"
+        "&cash_page=$cashPage"
+        "&cash_per_page=$cashPerPage"
+        "&withdraw_page=$withdrawPage"
+        "&withdraw_per_page=$withdrawPerPage";
     
     try {
       final response = await ApiRequest.get(
@@ -182,6 +203,208 @@ class ProfileRepository {
       }
       rethrow;
     }
+  }
+
+  // =============================================
+  // GET NOTIFICATIONS WITH PAGINATION
+  // =============================================
+  Future<Map<String, dynamic>> getNotifications({
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/notifications?page=$page&per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'data': responseData['data'] ?? [],
+          'pagination': responseData['pagination'] ?? {},
+          'unread_count': responseData['unread_count'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': LocalizedMessages.getMessage('failed_to_load_notifications'),
+        };
+      }
+    } catch (e) {
+      print("Error loading notifications: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
+      };
+    }
+  }
+
+  // =============================================
+  // GET POINT HISTORY WITH PAGINATION
+  // =============================================
+  Future<Map<String, dynamic>> getPointHistory({
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/point-history?page=$page&per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'data': responseData['data'] ?? [],
+          'pagination': responseData['pagination'] ?? {},
+          'total_points': responseData['total_points'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': LocalizedMessages.getMessage('failed_to_load_activities'),
+        };
+      }
+    } catch (e) {
+      print("Error loading point history: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
+      };
+    }
+  }
+
+  // =============================================
+  // GET CASH HISTORY WITH PAGINATION
+  // =============================================
+  Future<Map<String, dynamic>> getCashHistory({
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/cash-history?page=$page&per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'data': responseData['data'] ?? [],
+          'pagination': responseData['pagination'] ?? {},
+          'total_cash': responseData['total_cash'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': LocalizedMessages.getMessage('failed_to_load_activities'),
+        };
+      }
+    } catch (e) {
+      print("Error loading cash history: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
+      };
+    }
+  }
+
+  // =============================================
+  // GET WITHDRAW REQUESTS WITH PAGINATION
+  // =============================================
+  Future<Map<String, dynamic>> getWithdrawRequests({
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/withdraw-requests?page=$page&per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'data': responseData['data'] ?? [],
+          'pagination': responseData['pagination'] ?? {},
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to load withdraw requests',
+        };
+      }
+    } catch (e) {
+      print("Error loading withdraw requests: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
+      };
+    }
+  }
+
+  // =============================================
+  // LOAD MORE NOTIFICATIONS (Helper method)
+  // =============================================
+  Future<Map<String, dynamic>> loadMoreNotifications({
+    required int currentPage,
+    int perPage = 10,
+  }) async {
+    return await getNotifications(
+      page: currentPage + 1,
+      perPage: perPage,
+    );
+  }
+
+  // =============================================
+  // LOAD MORE POINTS (Helper method)
+  // =============================================
+  Future<Map<String, dynamic>> loadMorePoints({
+    required int currentPage,
+    int perPage = 10,
+  }) async {
+    return await getPointHistory(
+      page: currentPage + 1,
+      perPage: perPage,
+    );
+  }
+
+  // =============================================
+  // LOAD MORE CASH (Helper method)
+  // =============================================
+  Future<Map<String, dynamic>> loadMoreCash({
+    required int currentPage,
+    int perPage = 10,
+  }) async {
+    return await getCashHistory(
+      page: currentPage + 1,
+      perPage: perPage,
+    );
   }
 
   // Update notification settings
@@ -299,7 +522,6 @@ class ProfileRepository {
       };
     }
   }
-
 
   // Send email verification code
   Future<Map<String, dynamic>> sendEmailVerificationCode(String email) async {

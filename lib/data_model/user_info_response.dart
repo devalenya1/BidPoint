@@ -36,7 +36,114 @@ class UserInfoResponse {
   };
 }
 
+// =============================================
+// PAGINATION MODEL
+// =============================================
+class Pagination {
+  int currentPage;
+  int perPage;
+  int total;
+  int totalPages;
+  bool hasNext;
+  bool hasPrevious;
+  int nextPage;
+  int previousPage;
+
+  Pagination({
+    this.currentPage = 1,
+    this.perPage = 10,
+    this.total = 0,
+    this.totalPages = 0,
+    this.hasNext = false,
+    this.hasPrevious = false,
+    this.nextPage = 2,
+    this.previousPage = 0,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
+    currentPage: json["current_page"] ?? 1,
+    perPage: json["per_page"] ?? 10,
+    total: json["total"] ?? 0,
+    totalPages: json["total_pages"] ?? 0,
+    hasNext: json["has_next"] ?? false,
+    hasPrevious: json["has_previous"] ?? false,
+    nextPage: json["next_page"] ?? 2,
+    previousPage: json["previous_page"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "current_page": currentPage,
+    "per_page": perPage,
+    "total": total,
+    "total_pages": totalPages,
+    "has_next": hasNext,
+    "has_previous": hasPrevious,
+    "next_page": nextPage,
+    "previous_page": previousPage,
+  };
+}
+
 class UserInformation {
+  int? id;
+  String? name;
+  String? email;
+  String? avatar;
+  String? address;
+  String? country;
+  String? state;
+  String? city;
+  String? postalCode;
+  String? phone;
+  double? balance;
+  String? referralCode;
+  dynamic? remainingUploads;
+  dynamic? packageId;
+  String? packageName;
+  
+  // Notifications with pagination
+  List<Notification>? notifications;
+  int? unreadNotificationsCount;
+  Pagination? notificationsPagination;
+  
+  // Point history with pagination
+  List<PointHistory>? pointHistory;
+  int? totalPoints;
+  Pagination? pointsPagination;
+  
+  // Cash earning history with pagination
+  List<CashHistory>? cashHistory;
+  double? totalCashEarnings;
+  Pagination? cashPagination;
+  
+  // Withdraw requests with pagination
+  List<AffiliateWithdrawRequest>? affiliateWithdrawRequests;
+  double? totalWithdrawnAmount;
+  double? pendingWithdrawAmount;
+  Pagination? withdrawPagination;
+  
+  int? unreadMessagesCount;
+  List<Address>? addresses;
+  int? addressCount;
+  int? defaultAddressCount;
+  List<CustomerPackagePayment>? customerPackagePayments;
+  double? totalPackagePayments;
+  List<WishlistItem>? wishlist;
+  int? wishlistCount;
+  List<AuctionBid>? auctionBids;
+  int? auctionBidsCount;
+  List<DistinctAuctionBid>? distinctAuctionBids;
+  int? distinctAuctionBidsCount;
+  
+  // Affiliate Info
+  String? affiliateId;
+  String? paypalEmail;
+  String? bankName;
+  String? accountHolder;
+  String? accountNumber;
+  String? ifscCode;
+  double? affiliateBalance;
+  int? affiliateStatus;
+
   UserInformation({
     this.id,
     this.name,
@@ -55,12 +162,18 @@ class UserInformation {
     this.packageName,
     this.notifications,
     this.unreadNotificationsCount,
-    this.unreadMessagesCount,
-    this.affiliateLogs,
-    this.totalAffiliateEarnings,
+    this.notificationsPagination,
+    this.pointHistory,
+    this.totalPoints,
+    this.pointsPagination,
+    this.cashHistory,
+    this.totalCashEarnings,
+    this.cashPagination,
     this.affiliateWithdrawRequests,
     this.totalWithdrawnAmount,
     this.pendingWithdrawAmount,
+    this.withdrawPagination,
+    this.unreadMessagesCount,
     this.addresses,
     this.addressCount,
     this.defaultAddressCount,
@@ -76,54 +189,11 @@ class UserInformation {
     this.paypalEmail,
     this.bankName,
     this.accountHolder,
-    this.ifscCode,
     this.accountNumber,
+    this.ifscCode,
     this.affiliateBalance,
     this.affiliateStatus,
   });
-
-  int? id;
-  String? name;
-  String? email;
-  String? avatar;
-  String? address;
-  String? country;
-  String? state;
-  String? city;
-  String? postalCode;
-  String? phone;
-  double? balance;
-  String? referralCode;
-  dynamic? remainingUploads;
-  dynamic? packageId;
-  String? packageName;
-  List<Notification>? notifications;
-  int? unreadNotificationsCount;
-  int? unreadMessagesCount;
-  List<AffiliateLog>? affiliateLogs;
-  double? totalAffiliateEarnings;
-  List<AffiliateWithdrawRequest>? affiliateWithdrawRequests;
-  double? totalWithdrawnAmount;
-  double? pendingWithdrawAmount;
-  List<Address>? addresses;
-  int? addressCount;
-  int? defaultAddressCount;
-  List<CustomerPackagePayment>? customerPackagePayments;
-  double? totalPackagePayments;
-  List<WishlistItem>? wishlist;
-  int? wishlistCount;
-  List<AuctionBid>? auctionBids;
-  int? auctionBidsCount;
-  List<DistinctAuctionBid>? distinctAuctionBids;
-  int? distinctAuctionBidsCount;
-  String? affiliateId;
-  String? paypalEmail;
-  String? bankName;
-  String? accountHolder;
-  String? accountNumber;
-  String? ifscCode;
-  double? affiliateBalance;
-  int? affiliateStatus;
 
   factory UserInformation.fromJson(Map<String, dynamic> json) => UserInformation(
     id: json["id"],
@@ -147,20 +217,39 @@ class UserInformation {
         ? List<Notification>.from(json["notifications"].map((x) => Notification.fromJson(x)))
         : [],
     unreadNotificationsCount: json["unread_notifications_count"],
-    unreadMessagesCount: json["unread_messages_count"] ?? 0,
+    notificationsPagination: json["notifications_pagination"] != null
+        ? Pagination.fromJson(json["notifications_pagination"])
+        : null,
     
-    // Affiliate Logs
-    affiliateLogs: json["affiliate_logs"] != null
-        ? List<AffiliateLog>.from(json["affiliate_logs"].map((x) => AffiliateLog.fromJson(x)))
+    // Point History
+    pointHistory: json["point_history"] != null
+        ? List<PointHistory>.from(json["point_history"].map((x) => PointHistory.fromJson(x)))
         : [],
-    totalAffiliateEarnings: json["total_affiliate_earnings"]?.toDouble(),
+    totalPoints: json["total_points"],
+    pointsPagination: json["points_pagination"] != null
+        ? Pagination.fromJson(json["points_pagination"])
+        : null,
     
-    // Affiliate Withdraw Requests
+    // Cash History
+    cashHistory: json["cash_earning_history"] != null
+        ? List<CashHistory>.from(json["cash_earning_history"].map((x) => CashHistory.fromJson(x)))
+        : [],
+    totalCashEarnings: json["total_cash_earnings"]?.toDouble(),
+    cashPagination: json["cash_pagination"] != null
+        ? Pagination.fromJson(json["cash_pagination"])
+        : null,
+    
+    // Withdraw Requests
     affiliateWithdrawRequests: json["affiliate_withdraw_requests"] != null
         ? List<AffiliateWithdrawRequest>.from(json["affiliate_withdraw_requests"].map((x) => AffiliateWithdrawRequest.fromJson(x)))
         : [],
     totalWithdrawnAmount: json["total_withdrawn_amount"]?.toDouble(),
     pendingWithdrawAmount: json["pending_withdraw_amount"]?.toDouble(),
+    withdrawPagination: json["withdraw_pagination"] != null
+        ? Pagination.fromJson(json["withdraw_pagination"])
+        : null,
+    
+    unreadMessagesCount: json["unread_messages_count"] ?? 0,
     
     // Addresses
     addresses: json["addresses"] != null
@@ -222,12 +311,18 @@ class UserInformation {
     "package_name": packageName,
     "notifications": notifications != null ? List<dynamic>.from(notifications!.map((x) => x.toJson())) : [],
     "unread_notifications_count": unreadNotificationsCount,
-    "unread_messages_count": unreadMessagesCount,
-    "affiliate_logs": affiliateLogs != null ? List<dynamic>.from(affiliateLogs!.map((x) => x.toJson())) : [],
-    "total_affiliate_earnings": totalAffiliateEarnings,
+    "notifications_pagination": notificationsPagination?.toJson(),
+    "point_history": pointHistory != null ? List<dynamic>.from(pointHistory!.map((x) => x.toJson())) : [],
+    "total_points": totalPoints,
+    "points_pagination": pointsPagination?.toJson(),
+    "cash_earning_history": cashHistory != null ? List<dynamic>.from(cashHistory!.map((x) => x.toJson())) : [],
+    "total_cash_earnings": totalCashEarnings,
+    "cash_pagination": cashPagination?.toJson(),
     "affiliate_withdraw_requests": affiliateWithdrawRequests != null ? List<dynamic>.from(affiliateWithdrawRequests!.map((x) => x.toJson())) : [],
     "total_withdrawn_amount": totalWithdrawnAmount,
     "pending_withdraw_amount": pendingWithdrawAmount,
+    "withdraw_pagination": withdrawPagination?.toJson(),
+    "unread_messages_count": unreadMessagesCount,
     "addresses": addresses != null ? List<dynamic>.from(addresses!.map((x) => x.toJson())) : [],
     "address_count": addressCount,
     "default_address_count": defaultAddressCount,
@@ -250,7 +345,18 @@ class UserInformation {
   };
 }
 
+// =============================================
+// NOTIFICATION MODEL
+// =============================================
 class Notification {
+  int? id;
+  String? type;
+  String? title;
+  String? message;
+  dynamic? readAt;
+  DateTime? createdAt;
+  bool? isRead;
+
   Notification({
     this.id,
     this.type,
@@ -260,14 +366,6 @@ class Notification {
     this.createdAt,
     this.isRead,
   });
-
-  int? id;
-  String? type;
-  String? title;
-  String? message;
-  dynamic? readAt;
-  DateTime? createdAt;
-  bool? isRead;
 
   factory Notification.fromJson(Map<String, dynamic> json) => Notification(
     id: json["id"],
@@ -290,8 +388,23 @@ class Notification {
   };
 }
 
-class AffiliateLog {
-  AffiliateLog({
+// =============================================
+// POINT HISTORY MODEL
+// =============================================
+class PointHistory {
+  int? id;
+  String? bonusType;
+  String? cameFrom;
+  int? amount;
+  String? formattedAmount;
+  int? status;
+  dynamic? orderId;
+  int? referredByUser;
+  DateTime? createdAt;
+  bool? isCredit;
+  bool? isDebit;
+
+  PointHistory({
     this.id,
     this.bonusType,
     this.cameFrom,
@@ -301,28 +414,22 @@ class AffiliateLog {
     this.orderId,
     this.referredByUser,
     this.createdAt,
+    this.isCredit,
+    this.isDebit,
   });
 
-  int? id;
-  String? bonusType;
-  String? cameFrom;
-  double? amount;
-  double? formattedAmount;
-  int? status;
-  dynamic? orderId;
-  int? referredByUser;
-  DateTime? createdAt;
-
-  factory AffiliateLog.fromJson(Map<String, dynamic> json) => AffiliateLog(
+  factory PointHistory.fromJson(Map<String, dynamic> json) => PointHistory(
     id: json["id"],
     bonusType: json["bonus_type"],
     cameFrom: json["came_from"],
-    amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"]?.toDouble(),
+    amount: json["amount"],
+    formattedAmount: json["formatted_amount"],
     status: json["status"],
     orderId: json["order_id"],
     referredByUser: json["referred_by_user"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
+    isCredit: json["is_credit"] ?? false,
+    isDebit: json["is_debit"] ?? false,
   );
 
   Map<String, dynamic> toJson() => {
@@ -335,31 +442,98 @@ class AffiliateLog {
     "order_id": orderId,
     "referred_by_user": referredByUser,
     "created_at": createdAt?.toIso8601String(),
+    "is_credit": isCredit,
+    "is_debit": isDebit,
   };
 }
 
+// =============================================
+// CASH HISTORY MODEL
+// =============================================
+class CashHistory {
+  int? id;
+  String? bonusType;
+  String? cameFrom;
+  double? amount;
+  String? formattedAmount;
+  int? status;
+  dynamic? orderId;
+  int? referredByUser;
+  DateTime? createdAt;
+  bool? isCredit;
+  bool? isDebit;
+
+  CashHistory({
+    this.id,
+    this.bonusType,
+    this.cameFrom,
+    this.amount,
+    this.formattedAmount,
+    this.status,
+    this.orderId,
+    this.referredByUser,
+    this.createdAt,
+    this.isCredit,
+    this.isDebit,
+  });
+
+  factory CashHistory.fromJson(Map<String, dynamic> json) => CashHistory(
+    id: json["id"],
+    bonusType: json["bonus_type"],
+    cameFrom: json["came_from"],
+    amount: json["amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"],
+    status: json["status"],
+    orderId: json["order_id"],
+    referredByUser: json["referred_by_user"],
+    createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
+    isCredit: json["is_credit"] ?? false,
+    isDebit: json["is_debit"] ?? false,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "bonus_type": bonusType,
+    "came_from": cameFrom,
+    "amount": amount,
+    "formatted_amount": formattedAmount,
+    "status": status,
+    "order_id": orderId,
+    "referred_by_user": referredByUser,
+    "created_at": createdAt?.toIso8601String(),
+    "is_credit": isCredit,
+    "is_debit": isDebit,
+  };
+}
+
+// =============================================
+// AFFILIATE WITHDRAW REQUEST MODEL
+// =============================================
 class AffiliateWithdrawRequest {
+  int? id;
+  double? amount;
+  String? formattedAmount;
+  int? status;
+  String? statusLabel;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
   AffiliateWithdrawRequest({
     this.id,
     this.amount,
     this.formattedAmount,
     this.status,
+    this.statusLabel,
     this.createdAt,
     this.updatedAt,
   });
 
-  int? id;
-  double? amount;
-  double? formattedAmount;
-  int? status;
-  DateTime? createdAt;
-  DateTime? updatedAt;
-
   factory AffiliateWithdrawRequest.fromJson(Map<String, dynamic> json) => AffiliateWithdrawRequest(
     id: json["id"],
     amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"],
     status: json["status"],
+    statusLabel: json["status_label"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -369,12 +543,35 @@ class AffiliateWithdrawRequest {
     "amount": amount,
     "formatted_amount": formattedAmount,
     "status": status,
+    "status_label": statusLabel,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };
 }
 
+// =============================================
+// ADDRESS MODEL
+// =============================================
 class Address {
+  int? id;
+  String? address;
+  int? countryId;
+  String? countryName;
+  dynamic? stateId;
+  String? stateName;
+  dynamic? cityId;
+  String? cityName;
+  dynamic? areaId;
+  String? areaName;
+  dynamic? longitude;
+  dynamic? latitude;
+  String? postalCode;
+  String? phone;
+  bool? setDefault;
+  bool? setBilling;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
   Address({
     this.id,
     this.address,
@@ -395,25 +592,6 @@ class Address {
     this.createdAt,
     this.updatedAt,
   });
-
-  int? id;
-  String? address;
-  int? countryId;
-  String? countryName;
-  dynamic? stateId;
-  String? stateName;
-  dynamic? cityId;
-  String? cityName;
-  dynamic? areaId;
-  String? areaName;
-  dynamic? longitude;
-  dynamic? latitude;
-  String? postalCode;
-  String? phone;
-  bool? setDefault;
-  bool? setBilling;
-  DateTime? createdAt;
-  DateTime? updatedAt;
 
   factory Address.fromJson(Map<String, dynamic> json) => Address(
     id: json["id"],
@@ -458,7 +636,24 @@ class Address {
   };
 }
 
+// =============================================
+// CUSTOMER PACKAGE PAYMENT MODEL
+// =============================================
 class CustomerPackagePayment {
+  int? id;
+  int? customerPackageId;
+  String? packageName;
+  String? paymentMethod;
+  double? amount;
+  String? formattedAmount;
+  PaymentDetails? paymentDetails;
+  int? approval;
+  int? offlinePayment;
+  dynamic? reciept;
+  String? status;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
   CustomerPackagePayment({
     this.id,
     this.customerPackageId,
@@ -475,27 +670,13 @@ class CustomerPackagePayment {
     this.updatedAt,
   });
 
-  int? id;
-  int? customerPackageId;
-  String? packageName;
-  String? paymentMethod;
-  double? amount;
-  double? formattedAmount;
-  PaymentDetails? paymentDetails;
-  int? approval;
-  int? offlinePayment;
-  dynamic? reciept;
-  String? status;
-  DateTime? createdAt;
-  DateTime? updatedAt;
-
   factory CustomerPackagePayment.fromJson(Map<String, dynamic> json) => CustomerPackagePayment(
     id: json["id"],
     customerPackageId: json["customer_package_id"],
     packageName: json["package_name"],
     paymentMethod: json["payment_method"],
     amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"],
     paymentDetails: json["payment_details"] != null ? PaymentDetails.fromJson(json["payment_details"]) : null,
     approval: json["approval"],
     offlinePayment: json["offline_payment"],
@@ -523,6 +704,21 @@ class CustomerPackagePayment {
 }
 
 class PaymentDetails {
+  String? paypalTransactionId;
+  String? paypalIntent;
+  String? paypalStatus;
+  String? paypalPayerEmail;
+  String? paypalPayerName;
+  String? paypalAmount;
+  String? paypalCurrency;
+  String? paypalCaptureId;
+  String? paypalCaptureStatus;
+  String? paypalFee;
+  String? paypalNetAmount;
+  String? paypalCreateTime;
+  String? paypalUpdateTime;
+  String? paypalDebugId;
+
   PaymentDetails({
     this.paypalTransactionId,
     this.paypalIntent,
@@ -539,21 +735,6 @@ class PaymentDetails {
     this.paypalUpdateTime,
     this.paypalDebugId,
   });
-
-  String? paypalTransactionId;
-  String? paypalIntent;
-  String? paypalStatus;
-  String? paypalPayerEmail;
-  String? paypalPayerName;
-  String? paypalAmount;
-  String? paypalCurrency;
-  String? paypalCaptureId;
-  String? paypalCaptureStatus;
-  String? paypalFee;
-  String? paypalNetAmount;
-  String? paypalCreateTime;
-  String? paypalUpdateTime;
-  String? paypalDebugId;
 
   factory PaymentDetails.fromJson(Map<String, dynamic> json) => PaymentDetails(
     paypalTransactionId: json["paypal_transaction_id"],
@@ -590,7 +771,28 @@ class PaymentDetails {
   };
 }
 
+// =============================================
+// WISHLIST MODEL
+// =============================================
 class WishlistItem {
+  int? id;
+  int? productId;
+  String? productName;
+  String? productImage;
+  double? productPrice;
+  double? highestBid;
+  double? userBidAmount;
+  int? pointPerBid;
+  String? slug;
+  bool? isAuction;
+  String? auctionEndDate;
+  bool? isLive;
+  bool? endingSoon;
+  bool? outbid;
+  bool? isWinning;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
   WishlistItem({
     this.id,
     this.productId,
@@ -611,25 +813,6 @@ class WishlistItem {
     this.updatedAt,
   });
 
-  int? id;
-  int? productId;
-  String? productName;
-  String? productImage;
-  double? productPrice;
-  double? highestBid;
-  double? userBidAmount;
-  int? pointPerBid;
-  String? slug;
-  bool? isAuction;
-  String? auctionEndDate;
-  bool? isLive;
-  bool? endingSoon;
-  bool? outbid;
-  bool? isWinning;
-  DateTime? createdAt;
-  DateTime? updatedAt;
-
-  // In WishlistItem.fromJson - handle auction_end_date properly
   factory WishlistItem.fromJson(Map<String, dynamic> json) => WishlistItem(
     id: json["id"],
     productId: json["product_id"],
@@ -641,10 +824,7 @@ class WishlistItem {
     pointPerBid: json["point_per_bid"],
     slug: json["slug"],
     isAuction: json["is_auction"] ?? false,
-    // Handle both String and int for auction_end_date
-    auctionEndDate: json["auction_end_date"] != null 
-        ? json["auction_end_date"].toString() 
-        : null,
+    auctionEndDate: json["auction_end_date"] != null ? json["auction_end_date"].toString() : null,
     isLive: json["is_live"] ?? false,
     endingSoon: json["ending_soon"] ?? false,
     outbid: json["outbid"] ?? false,
@@ -674,7 +854,27 @@ class WishlistItem {
   };
 }
 
+// =============================================
+// AUCTION BID MODEL
+// =============================================
 class AuctionBid {
+  int? id;
+  int? productId;
+  String? productName;
+  String? productImage;
+  String? productSlug;
+  double? amount;
+  String? formattedAmount;
+  String? dayOfBid;
+  int? pointPerBid;
+  String? auctionEndDate;
+  double? highestBid;
+  bool? isWinning;
+  bool? highestBidder;
+  bool? recentlyEnded;
+  DateTime? createdAt;
+  DateTime? updatedAt;
+
   AuctionBid({
     this.id,
     this.productId,
@@ -694,25 +894,6 @@ class AuctionBid {
     this.updatedAt,
   });
 
-  int? id;
-  int? productId;
-  String? productName;
-  String? productImage;
-  String? productSlug;
-  double? amount;
-  double? formattedAmount;
-  String? dayOfBid;
-  int? pointPerBid;
-  String? auctionEndDate;
-  double? highestBid;
-  bool? isWinning;
-  bool? highestBidder;
-  bool? recentlyEnded;
-  DateTime? createdAt;
-  DateTime? updatedAt;
-
-
-  // In AuctionBid.fromJson
   factory AuctionBid.fromJson(Map<String, dynamic> json) => AuctionBid(
     id: json["id"],
     productId: json["product_id"],
@@ -720,21 +901,17 @@ class AuctionBid {
     productImage: json["product_image"],
     productSlug: json["product_slug"],
     amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"],
     dayOfBid: json["day_of_bid"],
     pointPerBid: json["point_per_bid"],
-    // Handle both String and int for auction_end_date
-    auctionEndDate: json["auction_end_date"] != null 
-        ? json["auction_end_date"].toString() 
-        : null,
+    auctionEndDate: json["auction_end_date"] != null ? json["auction_end_date"].toString() : null,
     highestBid: json["highest_bid"]?.toDouble(),
     isWinning: json["is_winning"] ?? false,
-    highestBidder: json["highest_bidder"] ?? false,
+    highestBidder: json["highest_biddder"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
-
 
   Map<String, dynamic> toJson() => {
     "id": id,
@@ -749,14 +926,33 @@ class AuctionBid {
     "auction_end_date": auctionEndDate,
     "highest_bid": highestBid,
     "is_winning": isWinning,
-    "highest_bidder": highestBidder,
+    "highest_biddder": highestBidder,
     "recently_ended": recentlyEnded,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };
 }
 
+// =============================================
+// DISTINCT AUCTION BID MODEL
+// =============================================
 class DistinctAuctionBid {
+  int? id;
+  int? productId;
+  String? productName;
+  String? productImage;
+  String? productSlug;
+  double? amount;
+  String? formattedAmount;
+  String? dayOfBid;
+  String? auctionEndDate;
+  double? highestBid;
+  bool? isWinning;
+  bool? highestBidder;
+  bool? recentlyEnded;
+  String? createdAt;
+  String? updatedAt;
+
   DistinctAuctionBid({
     this.id,
     this.productId,
@@ -775,22 +971,6 @@ class DistinctAuctionBid {
     this.updatedAt,
   });
 
-  int? id;
-  int? productId;
-  String? productName;
-  String? productImage;
-  String? productSlug;
-  double? amount;
-  double? formattedAmount;
-  String? dayOfBid;
-  String? auctionEndDate;
-  double? highestBid;
-  bool? isWinning;
-  bool? highestBidder;
-  bool? recentlyEnded;
-  String? createdAt;
-  String? updatedAt;
-
   factory DistinctAuctionBid.fromJson(Map<String, dynamic> json) => DistinctAuctionBid(
     id: json["id"],
     productId: json["product_id"],
@@ -798,7 +978,7 @@ class DistinctAuctionBid {
     productImage: json["product_image"],
     productSlug: json["product_slug"],
     amount: json["amount"]?.toDouble(),
-    formattedAmount: json["formatted_amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"],
     dayOfBid: json["day_of_bid"],
     auctionEndDate: json["auction_end_date"]?.toString(),
     highestBid: json["highest_bid"]?.toDouble(),
