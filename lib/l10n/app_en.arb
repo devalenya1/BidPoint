@@ -1232,6 +1232,13 @@
   "remove_from_wishlist_success": "Removed from wishlist successfully!",
   "add_to_wishlist_success": "Added to wishlist successfully!",
   "enter_address_hint": "Enter your address",
+  "mark_all_read": "Mark all read",
+  "no_more_notifications": "No more notifications",
+  "page_ucf": "Page",
+  "of_ucf": "of",
+  "previous_ucf": "Previous",
+  "next_ucf": "Next",
+  "total_ucf": "Total",
   
 
 

@@ -127,7 +127,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
               remainingUploads: _userInfo?.remainingUploads ?? newUserInfo.remainingUploads,
               packageId: _userInfo?.packageId ?? newUserInfo.packageId,
               packageName: _userInfo?.packageName ?? newUserInfo.packageName,
-              affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
+              // affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
               totalAffiliateEarnings: newUserInfo.totalAffiliateEarnings,
               affiliateWithdrawRequests: _withdrawalHistory,
               totalWithdrawnAmount: _userInfo?.totalWithdrawnAmount ?? newUserInfo.totalWithdrawnAmount,

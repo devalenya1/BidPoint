@@ -32,7 +32,7 @@ class PointsHistoryPage extends StatefulWidget {
 }
  
 class _PointsHistoryPageState extends State<PointsHistoryPage> {
-  // ============ LOCAL STATE (Like ProductDetails pattern) ============
+  // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
   String _selectedFilter = 'All';
@@ -47,9 +47,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   
   UserInformation? _userInfo;  // Store the complete user info response
   
-  // Derived data (processed from _userInfo)
-  List<AffiliateLog> _allPointsLogs = [];
-  List<AffiliateLog> _filteredPointsLogs = [];
+  // FIXED: Use PointHistory instead of AffiliateLog
+  List<PointHistory> _allPointsLogs = [];
+  List<PointHistory> _filteredPointsLogs = [];
   Map<String, int> _monthlyPoints = {};
   List<String> _months = [];
   
@@ -76,7 +76,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         }
       });
       
-      // For points history, we need to fetch user info with point pagination
       var response = await ProfileRepository().getUserInfoResponse(
         notificationPage: 1,
         notificationPerPage: 10,
@@ -91,7 +90,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         final newUserInfo = response.data![0];
         
-        // Update pagination info from points_pagination
         final pagination = newUserInfo.pointsPagination;
         if (pagination != null) {
           _currentPage = pagination.currentPage;
@@ -102,11 +100,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         
         setState(() {
           if (page == 1) {
-            // First page - replace all data
             _userInfo = newUserInfo;
           } else {
-            // Subsequent pages - update user info but keep existing data
-            // We only want to update the user info for points history, not replace everything
+            // FIXED: Use pointHistory instead of affiliateLogs
+            final newPoints = newUserInfo.pointHistory ?? [];
+            final existingPoints = _userInfo?.pointHistory ?? [];
+            
             _userInfo = UserInformation(
               id: _userInfo?.id ?? newUserInfo.id,
               name: _userInfo?.name ?? newUserInfo.name,
@@ -123,11 +122,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               remainingUploads: _userInfo?.remainingUploads ?? newUserInfo.remainingUploads,
               packageId: _userInfo?.packageId ?? newUserInfo.packageId,
               packageName: _userInfo?.packageName ?? newUserInfo.packageName,
-              // Keep existing point history and add new ones
-              affiliateLogs: page == 1 
-                  ? newUserInfo.affiliateLogs 
-                  : [...?_userInfo?.affiliateLogs, ...?newUserInfo.affiliateLogs],
-              totalAffiliateEarnings: newUserInfo.totalAffiliateEarnings,
+              // FIXED: Use pointHistory
+              pointHistory: page == 1 
+                  ? newUserInfo.pointHistory 
+                  : [...existingPoints, ...newPoints],
+              totalPoints: newUserInfo.totalPoints,
+              pointsPagination: newUserInfo.pointsPagination,
               affiliateWithdrawRequests: _userInfo?.affiliateWithdrawRequests ?? newUserInfo.affiliateWithdrawRequests,
               totalWithdrawnAmount: _userInfo?.totalWithdrawnAmount ?? newUserInfo.totalWithdrawnAmount,
               pendingWithdrawAmount: _userInfo?.pendingWithdrawAmount ?? newUserInfo.pendingWithdrawAmount,
@@ -153,23 +153,21 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               notifications: _userInfo?.notifications ?? newUserInfo.notifications,
               unreadNotificationsCount: _userInfo?.unreadNotificationsCount ?? newUserInfo.unreadNotificationsCount,
               unreadMessagesCount: _userInfo?.unreadMessagesCount ?? newUserInfo.unreadMessagesCount,
+              affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
+              totalAffiliateEarnings: _userInfo?.totalAffiliateEarnings ?? newUserInfo.totalAffiliateEarnings,
             );
           }
         });
         
-        // Process points history from the stored user info
         _processPointsHistory();
         
-        // Optional: Update global SharedValues for points balance
         points_balance.$ = _userInfo?.balance?.toString() ?? "0";
         points_balance.save();
         
-        // Save all user data to SharedPreferences for other screens
         if (_userInfo != null) {
           UserDataHelper.saveUserData(_userInfo!);
         }
       } else {
-        // Handle empty response
         setState(() {
           _allPointsLogs = [];
           _filteredPointsLogs = [];
@@ -209,16 +207,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     }
   }
   
-  // ============ PROCESS POINTS HISTORY (Extract from stored user info) ============
+  // ============ PROCESS POINTS HISTORY ============
   void _processPointsHistory() {
     if (_userInfo == null) return;
     
-    final affiliateLogs = _userInfo!.affiliateLogs ?? [];
-    
-    // Filter for point transactions only
-    _allPointsLogs = affiliateLogs.where((log) {
-      return log.bonusType == 'point';
-    }).toList();
+    // FIXED: Use pointHistory instead of affiliateLogs
+    _allPointsLogs = _userInfo!.pointHistory ?? [];
     
     _applyFilter();
     _calculateMonthlyPoints();
@@ -269,12 +263,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       if (date == null) continue;
       
       final monthKey = _formatMonthYear(date);
-      
-      // Get the amount as double and convert to int points value
-      final amountValue = log.amount ?? 0.0;
-      int pointsValue = amountValue.abs().toInt();
-      
-      // Points are negative for spending, positive for earning
+      final amountValue = log.amount ?? 0;
+      int pointsValue = amountValue.abs();
       final isEarned = amountValue > 0;
       final pointsToAdd = isEarned ? pointsValue : -pointsValue;
       
@@ -294,7 +284,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     }
   }
   
-  // ============ PULL TO REFRESH (Like ProductDetails) ============
+  // ============ PULL TO REFRESH ============
   Future<void> _onPageRefresh() async {
     setState(() {
       _isRefreshing = true;
@@ -302,7 +292,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     await _fetchUserData(page: 1);
   }
   
-  // Helper getters for user data (derived from _userInfo)
+  // Helper getters for user data
   String get _userName => _userInfo?.name ?? "";
   String get _userEmail => _userInfo?.email ?? "";
   String get _userPhone => _userInfo?.phone ?? "";
@@ -339,7 +329,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     return months[month - 1];
   }
   
-  String _getUserDisplay(AffiliateLog log) {
+  // FIXED: Use PointHistory type
+  String _getUserDisplay(PointHistory log) {
     if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
       return log.cameFrom!;
     }
@@ -350,7 +341,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
   
-  // ============ BUILD UI (Like ProductDetails conditional rendering) ============
+  // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -375,7 +366,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         backgroundColor: Colors.white,
         onRefresh: _onPageRefresh,
         child: _isLoading
-            ? _buildShimmer()  // Show shimmer while loading
+            ? _buildShimmer()
             : SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 30.h),
                 child: Column(
@@ -385,9 +376,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     _buildFilterTabs(),
                     _buildPointsHistorySection(),
                     if (_months.isNotEmpty) _buildMonthlySection(),
-                    // =============================================
-                    // PAGINATION CONTROLS
-                    // =============================================
                     if (_totalPages > 1) _buildPaginationControls(),
                   ],
                 ),
@@ -402,7 +390,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         children: [
-          // Page info
           Text(
             '${AppLocalizations.of(context)!.page_ucf} $_currentPage ${AppLocalizations.of(context)!.of_ucf} $_totalPages',
             style: TextStyle(
@@ -412,11 +399,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
           ),
           SizedBox(height: 8.h),
-          // Pagination buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Previous button
               GestureDetector(
                 onTap: _currentPage > 1 ? _previousPage : null,
                 child: Container(
@@ -446,10 +431,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 ),
               ),
               SizedBox(width: 8.w),
-              // Page numbers (1, 2, 3, 4, 5, ...)
               ..._buildPageNumbers(),
               SizedBox(width: 8.w),
-              // Next button
               GestureDetector(
                 onTap: _currentPage < _totalPages ? _nextPage : null,
                 child: Container(
@@ -480,7 +463,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
               ),
             ],
           ),
-          // Loading more indicator
           if (_isLoadingMore)
             Padding(
               padding: EdgeInsets.only(top: 8.h),
@@ -501,7 +483,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     int endPage = _totalPages;
     
     if (_totalPages > maxVisible) {
-      // Show first page, last page, and pages around current
       if (_currentPage <= 3) {
         startPage = 1;
         endPage = maxVisible;
@@ -586,12 +567,10 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile card shimmer
           Padding(
             padding: EdgeInsets.all(16.w),
             child: ShimmerHelper().buildBasicShimmer(height: 87.h, radius: 20.r),
           ),
-          // Filter tabs shimmer
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: SingleChildScrollView(
@@ -612,7 +591,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
           ),
           SizedBox(height: 16.h),
-          // Points History header shimmer
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Text(
@@ -621,7 +599,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
           ),
           SizedBox(height: 12.h),
-          // History cards shimmer
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
@@ -648,7 +625,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       ),
       child: Row(
         children: [
-          // Avatar
           Container(
             width: 55.w,
             height: 55.w,
@@ -681,7 +657,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
           ),
           SizedBox(width: 12.w),
-          // User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,11 +782,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     );
   }
   
-  Widget _buildHistoryCard(AffiliateLog log) {
+  // FIXED: Use PointHistory type
+  Widget _buildHistoryCard(PointHistory log) {
     final date = log.createdAt;
-    final amountValue = log.amount ?? 0.0;
-    final pointsValue = amountValue.abs().toInt();
-    // If amount is negative, it's spent (deducted), if positive it's earned
+    final amountValue = log.amount ?? 0;
+    final pointsValue = amountValue.abs();
     final isEarned = amountValue > 0;
     
     return Container(
@@ -939,7 +914,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           ),
           SizedBox(height: 12.h),
           
-          // Month Selection Tabs
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -974,7 +948,6 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           
           SizedBox(height: 16.h),
           
-          // Net Points Card - Same width as history cards
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(16.w),

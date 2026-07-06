@@ -83,6 +83,9 @@ class Pagination {
   };
 }
 
+// =============================================
+// USER INFORMATION MODEL (UPDATED)
+// =============================================
 class UserInformation {
   int? id;
   String? name;
@@ -99,6 +102,10 @@ class UserInformation {
   dynamic? remainingUploads;
   dynamic? packageId;
   String? packageName;
+  
+  // ============ AFFILIATE LOGS (ADDED) ============
+  List<AffiliateLog>? affiliateLogs;
+  double? totalAffiliateEarnings;
   
   // Notifications with pagination
   List<Notification>? notifications;
@@ -160,6 +167,9 @@ class UserInformation {
     this.remainingUploads,
     this.packageId,
     this.packageName,
+    // ============ ADDED ============
+    this.affiliateLogs,
+    this.totalAffiliateEarnings,
     this.notifications,
     this.unreadNotificationsCount,
     this.notificationsPagination,
@@ -211,6 +221,12 @@ class UserInformation {
     remainingUploads: json["remaining_uploads"],
     packageId: json["package_id"],
     packageName: json["package_name"],
+    
+    // ============ ADDED ============
+    affiliateLogs: json["affiliate_logs"] != null
+        ? List<AffiliateLog>.from(json["affiliate_logs"].map((x) => AffiliateLog.fromJson(x)))
+        : [],
+    totalAffiliateEarnings: json["total_affiliate_earnings"]?.toDouble(),
     
     // Notifications
     notifications: json["notifications"] != null 
@@ -309,6 +325,9 @@ class UserInformation {
     "remaining_uploads": remainingUploads,
     "package_id": packageId,
     "package_name": packageName,
+    // ============ ADDED ============
+    "affiliate_logs": affiliateLogs != null ? List<dynamic>.from(affiliateLogs!.map((x) => x.toJson())) : [],
+    "total_affiliate_earnings": totalAffiliateEarnings,
     "notifications": notifications != null ? List<dynamic>.from(notifications!.map((x) => x.toJson())) : [],
     "unread_notifications_count": unreadNotificationsCount,
     "notifications_pagination": notificationsPagination?.toJson(),
@@ -503,6 +522,57 @@ class CashHistory {
     "created_at": createdAt?.toIso8601String(),
     "is_credit": isCredit,
     "is_debit": isDebit,
+  };
+}
+
+// =============================================
+// AFFILIATE LOG MODEL (ADDED)
+// =============================================
+class AffiliateLog {
+  int? id;
+  String? bonusType;
+  String? cameFrom;
+  double? amount;
+  String? formattedAmount;
+  int? status;
+  dynamic? orderId;
+  int? referredByUser;
+  DateTime? createdAt;
+
+  AffiliateLog({
+    this.id,
+    this.bonusType,
+    this.cameFrom,
+    this.amount,
+    this.formattedAmount,
+    this.status,
+    this.orderId,
+    this.referredByUser,
+    this.createdAt,
+  });
+
+  factory AffiliateLog.fromJson(Map<String, dynamic> json) => AffiliateLog(
+    id: json["id"],
+    bonusType: json["bonus_type"],
+    cameFrom: json["came_from"],
+    amount: json["amount"]?.toDouble(),
+    formattedAmount: json["formatted_amount"],
+    status: json["status"],
+    orderId: json["order_id"],
+    referredByUser: json["referred_by_user"],
+    createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "bonus_type": bonusType,
+    "came_from": cameFrom,
+    "amount": amount,
+    "formatted_amount": formattedAmount,
+    "status": status,
+    "order_id": orderId,
+    "referred_by_user": referredByUser,
+    "created_at": createdAt?.toIso8601String(),
   };
 }
 

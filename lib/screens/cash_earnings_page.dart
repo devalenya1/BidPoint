@@ -72,7 +72,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         }
       });
       
-      // For cash history, we need to fetch user info with cash pagination
       var response = await ProfileRepository().getUserInfoResponse(
         notificationPage: 1,
         notificationPerPage: 10,
@@ -87,7 +86,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         final newUserInfo = response.data![0];
         
-        // Update pagination info from cash_pagination
         final pagination = newUserInfo.cashPagination;
         if (pagination != null) {
           _currentPage = pagination.currentPage;
@@ -98,10 +96,12 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         
         setState(() {
           if (page == 1) {
-            // First page - replace all data
             _userInfo = newUserInfo;
           } else {
-            // Subsequent pages - update user info but keep existing data
+            // FIXED: Use cashHistory instead of affiliateLogs
+            final newCash = newUserInfo.cashHistory ?? [];
+            final existingCash = _userInfo?.cashHistory ?? [];
+            
             _userInfo = UserInformation(
               id: _userInfo?.id ?? newUserInfo.id,
               name: _userInfo?.name ?? newUserInfo.name,
@@ -118,11 +118,12 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
               remainingUploads: _userInfo?.remainingUploads ?? newUserInfo.remainingUploads,
               packageId: _userInfo?.packageId ?? newUserInfo.packageId,
               packageName: _userInfo?.packageName ?? newUserInfo.packageName,
-              // Keep existing cash history and add new ones
-              affiliateLogs: page == 1 
-                  ? newUserInfo.affiliateLogs 
-                  : [...?_userInfo?.affiliateLogs, ...?newUserInfo.affiliateLogs],
-              totalAffiliateEarnings: newUserInfo.totalAffiliateEarnings,
+              // FIXED: Use cashHistory
+              cashHistory: page == 1 
+                  ? newUserInfo.cashHistory 
+                  : [...existingCash, ...newCash],
+              totalCashEarnings: newUserInfo.totalCashEarnings,
+              cashPagination: newUserInfo.cashPagination,
               affiliateWithdrawRequests: page == 1 
                   ? newUserInfo.affiliateWithdrawRequests 
                   : [...?_userInfo?.affiliateWithdrawRequests, ...?newUserInfo.affiliateWithdrawRequests],
@@ -150,6 +151,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
               notifications: _userInfo?.notifications ?? newUserInfo.notifications,
               unreadNotificationsCount: _userInfo?.unreadNotificationsCount ?? newUserInfo.unreadNotificationsCount,
               unreadMessagesCount: _userInfo?.unreadMessagesCount ?? newUserInfo.unreadMessagesCount,
+              affiliateLogs: _userInfo?.affiliateLogs ?? newUserInfo.affiliateLogs,
+              totalAffiliateEarnings: _userInfo?.totalAffiliateEarnings ?? newUserInfo.totalAffiliateEarnings,
             );
           }
         });
@@ -199,17 +202,18 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
   void _processCashLogs() {
     if (_userInfo == null) return;
     
-    final affiliateLogs = _userInfo!.affiliateLogs ?? [];
+    // FIXED: Use cashHistory instead of affiliateLogs
+    final cashHistory = _userInfo!.cashHistory ?? [];
     final withdrawRequests = _userInfo!.affiliateWithdrawRequests ?? [];
     
     List<Map<String, dynamic>> allCashTransactions = [];
     
-    // Add earnings from affiliate logs (positive amounts)
-    for (var log in affiliateLogs) {
-      if (log.bonusType != 'point' && (log.amount ?? 0) > 0) {
+    // Add earnings from cash history
+    for (var log in cashHistory) {
+      if ((log.amount ?? 0) > 0) {
         allCashTransactions.add({
           'type': 'earning',
-          'amount': (log.amount ?? 0).toDouble(),
+          'amount': log.amount ?? 0.0,
           'cameFrom': log.cameFrom ?? AppLocalizations.of(context)!.affiliate_earning,
           'status': log.status == 1 ? 1 : 0,
           'createdAt': log.createdAt,
@@ -262,7 +266,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       _selectedMonthIndex = 0;
     }
     
-    // Update paginated logs
     _updatePaginatedLogs();
     
     setState(() {});
@@ -341,12 +344,10 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
     final totalFilteredItems = filteredLogs.length;
     final totalFilteredPages = totalFilteredItems > 0 ? (totalFilteredItems / _perPage).ceil() : 1;
     
-    // Ensure current page is valid
     if (_currentPage > totalFilteredPages) {
       _currentPage = totalFilteredPages;
     }
     
-    // Update paginated logs
     _paginatedCashLogs = filteredLogs.skip((_currentPage - 1) * _perPage).take(_perPage).toList();
     
     return Scaffold(
@@ -381,9 +382,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     _buildProfileCard(),
                     _buildCashHistorySection(_paginatedCashLogs),
                     if (_months.isNotEmpty) _buildMonthlySection(),
-                    // =============================================
-                    // PAGINATION CONTROLS
-                    // =============================================
                     if (totalFilteredPages > 1) _buildPaginationControls(totalFilteredPages),
                   ],
                 ),
@@ -398,7 +396,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: Column(
         children: [
-          // Page info
           Text(
             '${AppLocalizations.of(context)!.page_ucf} $_currentPage ${AppLocalizations.of(context)!.of_ucf} $totalPages',
             style: TextStyle(
@@ -408,11 +405,9 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
             ),
           ),
           SizedBox(height: 8.h),
-          // Pagination buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Previous button
               GestureDetector(
                 onTap: _currentPage > 1 ? _previousPage : null,
                 child: Container(
@@ -442,10 +437,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 ),
               ),
               SizedBox(width: 8.w),
-              // Page numbers
               ..._buildPageNumbers(totalPages),
               SizedBox(width: 8.w),
-              // Next button
               GestureDetector(
                 onTap: _currentPage < totalPages ? _nextPage : null,
                 child: Container(
@@ -476,7 +469,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
               ),
             ],
           ),
-          // Loading more indicator
           if (_isLoadingMore)
             Padding(
               padding: EdgeInsets.only(top: 8.h),
@@ -881,7 +873,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           ),
           SizedBox(height: 12.h),
           
-          // Month Selection Tabs
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -892,7 +883,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     setState(() {
                       _selectedMonthIndex = index;
                     });
-                    // Update pagination when month changes
                     _currentPage = 1;
                   },
                   child: Container(
@@ -918,7 +908,6 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
           
           SizedBox(height: 16.h),
           
-          // Summary Card for selected month
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(16.w),

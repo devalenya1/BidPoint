@@ -36,7 +36,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   // FIXED: Use AppConfig.RAW_BASE_URL for referral link
   String get _referralLink => "${AppConfig.RAW_BASE_URL}/ref/$_referralCode";
   
-  // Invite history from API
+  // Invite history from API - FIXED: Use correct type
   List<AffiliateLog> get _inviteHistory => _userInfo?.affiliateLogs?.where((log) => 
     log.bonusType == 'referral' && log.cameFrom != null
   ).toList() ?? [];
@@ -106,6 +106,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
   
+  // FIXED: Use correct type
   String _getReferralName(AffiliateLog log) {
     if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
       return log.cameFrom!;
@@ -429,6 +430,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     );
   }
   
+  // FIXED: Use correct type
   Widget _buildHistoryItem(AffiliateLog item, int index) {
     final pointsValue = (item.amount ?? 0).abs().toInt();
     final isEarned = (item.amount ?? 0) > 0;
