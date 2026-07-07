@@ -2802,7 +2802,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // DESKTOP LAYOUT - UPDATED
+  // DESKTOP LAYOUT - FIXED
   // ============================================
 
   Widget _buildDesktopLayout() {
@@ -3088,7 +3088,7 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
             SizedBox(width: 12.w),
-            // Column 3: Bidding & Details - UPDATED TIMER
+            // Column 3: Bidding & Details
             Expanded(
               flex: 1,
               child: Container(
@@ -3212,13 +3212,10 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                           SizedBox(height: 12.h),
-                          // ============================================
-                          // TIMER & PRICE - UPDATED: Sky blue background, accent border
-                          // ============================================
                           Container(
                             padding: EdgeInsets.all(10.w),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F4F8), // Sky blue background
+                              color: const Color(0xFFE8F4F8),
                               borderRadius: BorderRadius.circular(12.r),
                               border: Border.all(
                                 color: MyTheme.accent_color,
@@ -3227,7 +3224,6 @@ class _ProductDetailsState extends State<ProductDetails>
                             ),
                             child: Column(
                               children: [
-                                // TIME LEFT Title
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
@@ -3243,7 +3239,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Timer with short labels (d, h, m, s)
                                     Row(
                                       children: [
                                         _buildDesktopTimerUnit(
@@ -3260,7 +3255,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                             isSmallScreen: isSmallScreen),
                                       ],
                                     ),
-                                    // Current Bid - Centered
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [

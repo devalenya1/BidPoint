@@ -806,29 +806,29 @@ class _WishlistState extends State<Wishlist> {
                     ),
                   ],
                 ),
-                // Show time remaining if live
-                if (isAuction && isLive && item.auctionEndDate != null && item.auctionEndDate!.isNotEmpty)
-                  Padding(
-                    padding: EdgeInsets.only(top: 4.h),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: isTablet ? 12.sp : 10.sp,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          '${AppLocalizations.of(context)!.time_left}: ${_timeLeft[item.id] ?? AppLocalizations.of(context)!.loading}',
-                          style: TextStyle(
-                            fontSize: isTablet ? 10.sp : 9.sp,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                // // Show time remaining if live
+                // if (isAuction && isLive && item.auctionEndDate != null && item.auctionEndDate!.isNotEmpty)
+                //   Padding(
+                //     padding: EdgeInsets.only(top: 4.h),
+                //     child: Row(
+                //       children: [
+                //         Icon(
+                //           Icons.timer_outlined,
+                //           size: isTablet ? 12.sp : 10.sp,
+                //           color: const Color(0xFF94A3B8),
+                //         ),
+                //         SizedBox(width: 4.w),
+                //         Text(
+                //           '${AppLocalizations.of(context)!.time_left}: ${_timeLeft[item.id] ?? AppLocalizations.of(context)!.loading}',
+                //           style: TextStyle(
+                //             fontSize: isTablet ? 10.sp : 9.sp,
+                //             fontWeight: FontWeight.w400,
+                //             color: const Color(0xFF94A3B8),
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   ),
                 SizedBox(height: 8.h),
                 // Action Button - White with accent border and text
                 GestureDetector(
