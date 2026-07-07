@@ -2391,7 +2391,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // PRODUCT NAME & DESCRIPTION - Below comments with space
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(50, 80),
+                        bottom: _getResponsiveSize(60, 90),
                         left: _getResponsiveSize(8, 12),
                         right: _getResponsiveSize(8, 12),
                         child: GestureDetector(
@@ -2423,7 +2423,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // TIMER & CURRENT BID
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(10, 20),
+                        bottom: _getResponsiveSize(20, 30),
                         left: _getResponsiveSize(8, 12),
                         right: _getResponsiveSize(8, 12),
                         child: Column(
@@ -2492,7 +2492,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   // BID INFORMATION SECTION - Offset -10
                   // ============================================
                   Transform.translate(
-                    offset: Offset(0, -10),
+                    offset: Offset(0, -15),
                     child: Container(
                       margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16)),
                       padding: EdgeInsets.all(_getResponsivePadding(8, 16)),
