@@ -962,13 +962,13 @@ class _ProductDetailsState extends State<ProductDetails>
           children: [
             Text(
               AppLocalizations.of(context)!.enter_your_bid,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: _getResponsiveFontSize(16, 18), fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 4),
             Text(
               '${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: _getResponsiveFontSize(12, 14), color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 12),
@@ -977,7 +977,7 @@ class _ProductDetailsState extends State<ProductDetails>
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: '${AppLocalizations.of(context)!.min_ucf}: ${_formatPrice(_minNextBidNow)}',
-                hintStyle: TextStyle(fontSize: 12),
+                hintStyle: TextStyle(fontSize: _getResponsiveFontSize(12, 14)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1001,7 +1001,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     ),
                     child: Text(
                       AppLocalizations.of(context)!.cancel_ucf,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: _getResponsiveFontSize(12, 14), color: Colors.grey.shade600),
                     ),
                   ),
                 ),
@@ -1026,7 +1026,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         : Text(
                             AppLocalizations.of(context)!.place_bid,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: _getResponsiveFontSize(12, 14),
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1072,7 +1072,24 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MODAL DIALOGS - UPDATED WITH 90% WIDTH
+  // RESPONSIVE HELPER
+  // ============================================
+  
+  double _getResponsiveFontSize(double smallSize, double largeSize) {
+    // If screen width is less than 400, use small size, else use large size
+    return _screenWidth < 400 ? smallSize : largeSize;
+  }
+
+  double _getResponsivePadding(double smallSize, double largeSize) {
+    return _screenWidth < 400 ? smallSize : largeSize;
+  }
+
+  double _getResponsiveSize(double smallSize, double largeSize) {
+    return _screenWidth < 400 ? smallSize : largeSize;
+  }
+
+  // ============================================
+  // MODAL DIALOGS - UPDATED WITH 90% WIDTH AND RESPONSIVE FONTS
   // ============================================
 
   void _showProductDetailsModal() {
@@ -1085,7 +1102,7 @@ class _ProductDetailsState extends State<ProductDetails>
         child: Container(
           width: modalWidth,
           height: MediaQuery.of(context).size.height * 0.85,
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(_getResponsivePadding(12, 20)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1095,12 +1112,12 @@ class _ProductDetailsState extends State<ProductDetails>
                   Text(
                     AppLocalizations.of(context)!.product_details,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: _getResponsiveFontSize(14, 18),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, size: 24),
+                    icon: Icon(Icons.close, size: _getResponsiveSize(20, 24)),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -1114,7 +1131,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       Text(
                         _product?.name ?? '',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: _getResponsiveFontSize(16, 20),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1123,7 +1140,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         data: _product?.description ?? '',
                         style: {
                           'body': Style(
-                            fontSize: FontSize(12.0),
+                            fontSize: FontSize(_getResponsiveFontSize(11, 14)),
                           ),
                         },
                       ),
@@ -1151,7 +1168,7 @@ class _ProductDetailsState extends State<ProductDetails>
           child: Column(
             children: [
               Container(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
                 ),
@@ -1161,19 +1178,19 @@ class _ProductDetailsState extends State<ProductDetails>
                     Text(
                       AppLocalizations.of(context)!.bid_history,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: _getResponsiveFontSize(12, 16),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, size: 20),
+                      icon: Icon(Icons.close, size: _getResponsiveSize(18, 22)),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 12), vertical: _getResponsivePadding(6, 8)),
                 color: Colors.grey.shade100,
                 child: Row(
                   children: [
@@ -1183,7 +1200,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         AppLocalizations.of(context)!.bidder_ucf,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 10,
+                          fontSize: _getResponsiveFontSize(9, 12),
                         ),
                       ),
                     ),
@@ -1193,7 +1210,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         AppLocalizations.of(context)!.amount_ucf,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 10,
+                          fontSize: _getResponsiveFontSize(9, 12),
                         ),
                       ),
                     ),
@@ -1203,7 +1220,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         AppLocalizations.of(context)!.date_time_ucf,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 10,
+                          fontSize: _getResponsiveFontSize(9, 12),
                         ),
                         textAlign: TextAlign.end,
                       ),
@@ -1216,7 +1233,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     ? Center(
                         child: Text(
                           AppLocalizations.of(context)!.no_bids_yet,
-                          style: TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
                         ),
                       )
                     : ListView.builder(
@@ -1224,7 +1241,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         itemBuilder: (context, index) {
                           final bid = _bidHistory[index];
                           return Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 12), vertical: _getResponsivePadding(6, 8)),
                             decoration: BoxDecoration(
                               border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
                             ),
@@ -1234,7 +1251,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   flex: 2,
                                   child: Text(
                                     bid.userName ?? AppLocalizations.of(context)!.user_ucf,
-                                    style: TextStyle(fontSize: 11),
+                                    style: TextStyle(fontSize: _getResponsiveFontSize(10, 13)),
                                   ),
                                 ),
                                 Expanded(
@@ -1242,7 +1259,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   child: Text(
                                     _formatPrice(bid.amount ?? 0),
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: _getResponsiveFontSize(10, 13),
                                       fontWeight: FontWeight.bold,
                                       color: MyTheme.accent_color,
                                     ),
@@ -1253,7 +1270,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   child: Text(
                                     _formatDateTime(bid.createdAt),
                                     style: TextStyle(
-                                      fontSize: 9,
+                                      fontSize: _getResponsiveFontSize(8, 11),
                                       color: Colors.grey,
                                     ),
                                     textAlign: TextAlign.end,
@@ -1287,7 +1304,7 @@ class _ProductDetailsState extends State<ProductDetails>
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
                     decoration: BoxDecoration(
                       border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
                     ),
@@ -1297,12 +1314,12 @@ class _ProductDetailsState extends State<ProductDetails>
                         Text(
                           '${AppLocalizations.of(context)!.all_reviews} ($_reviewsCount)',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: _getResponsiveFontSize(12, 16),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, size: 20),
+                          icon: Icon(Icons.close, size: _getResponsiveSize(18, 22)),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -1313,16 +1330,16 @@ class _ProductDetailsState extends State<ProductDetails>
                         ? Center(
                             child: Text(
                               AppLocalizations.of(context)!.no_reviews_yet,
-                              style: TextStyle(fontSize: 12),
+                              style: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
                             ),
                           )
                         : ListView.builder(
-                            padding: EdgeInsets.all(16),
+                            padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
                             itemCount: _reviews.length,
                             itemBuilder: (context, index) {
                               final review = _reviews[index];
                               return Container(
-                                padding: EdgeInsets.symmetric(vertical: 8),
+                                padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(6, 8)),
                                 decoration: BoxDecoration(
                                   border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
                                 ),
@@ -1337,7 +1354,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                               starIndex < (review.rating ?? 0)
                                                   ? Icons.star
                                                   : Icons.star_border,
-                                              size: 12,
+                                              size: _getResponsiveSize(10, 14),
                                               color: Colors.amber,
                                             );
                                           }),
@@ -1346,7 +1363,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         Text(
                                           _formatDate(review.createdAt),
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: _getResponsiveFontSize(8, 11),
                                             color: Colors.grey,
                                           ),
                                         ),
@@ -1356,14 +1373,14 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Text(
                                       review.comment ?? '',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: _getResponsiveFontSize(11, 14),
                                       ),
                                     ),
                                     SizedBox(height: 4),
                                     Text(
                                       review.userName ?? AppLocalizations.of(context)!.user_ucf,
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: _getResponsiveFontSize(9, 12),
                                         color: Colors.grey,
                                       ),
                                     ),
@@ -1374,7 +1391,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
                     decoration: BoxDecoration(
                       border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
                     ),
@@ -1387,7 +1404,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 14)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         minimumSize: Size(double.infinity, 0),
                       ),
@@ -1396,7 +1413,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           : Text(
                               AppLocalizations.of(context)!.write_a_review,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: _getResponsiveFontSize(11, 14),
                                 color: Colors.white,
                               ),
                             ),
@@ -1425,7 +1442,7 @@ class _ProductDetailsState extends State<ProductDetails>
             child: Container(
               width: modalWidth,
               height: MediaQuery.of(context).size.height * 0.8,
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.all(_getResponsivePadding(16, 24)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1436,32 +1453,32 @@ class _ProductDetailsState extends State<ProductDetails>
                       Text(
                         AppLocalizations.of(context)!.write_a_review,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: _getResponsiveFontSize(14, 18),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, size: 20),
+                        icon: Icon(Icons.close, size: _getResponsiveSize(18, 22)),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: _getResponsiveSize(8, 12)),
                   Text(
                     AppLocalizations.of(context)!.rating_ucf,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: _getResponsiveFontSize(11, 14),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: _getResponsiveSize(4, 8)),
                   RatingBar.builder(
                     initialRating: 0,
                     minRating: 1,
                     direction: Axis.horizontal,
                     allowHalfRating: false,
                     itemCount: 5,
-                    itemSize: 26,
+                    itemSize: _getResponsiveSize(22, 30),
                     itemBuilder: (context, _) =>
                         Icon(Icons.star, color: Colors.amber),
                     onRatingUpdate: (rating) {
@@ -1469,29 +1486,29 @@ class _ProductDetailsState extends State<ProductDetails>
                       setModalState(() {});
                     },
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(height: _getResponsiveSize(8, 12)),
                   Text(
                     AppLocalizations.of(context)!.review_ucf,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: _getResponsiveFontSize(11, 14),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: _getResponsiveSize(4, 8)),
                   TextField(
                     controller: tempController,
                     maxLines: 4,
-                    style: TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!.share_experience_hint,
-                      hintStyle: TextStyle(fontSize: 12),
+                      hintStyle: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 12), vertical: _getResponsivePadding(8, 12)),
                     ),
                   ),
-                  SizedBox(height: 14),
+                  SizedBox(height: _getResponsiveSize(12, 16)),
                   ElevatedButton(
                     onPressed: _isProcessing
                         ? null
@@ -1536,7 +1553,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 14)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       minimumSize: Size(double.infinity, 0),
                     ),
@@ -1545,7 +1562,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         : Text(
                             AppLocalizations.of(context)!.submit_review,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: _getResponsiveFontSize(11, 14),
                               color: Colors.white,
                             ),
                           ),
@@ -1568,7 +1585,7 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          padding: EdgeInsets.all(20),
+          padding: EdgeInsets.all(_getResponsivePadding(16, 24)),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Color(0xFF667eea), Color(0xFF764ba2)]),
             borderRadius: BorderRadius.circular(32),
@@ -1576,51 +1593,51 @@ class _ProductDetailsState extends State<ProductDetails>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🏆', style: TextStyle(fontSize: 40)),
-              SizedBox(height: 6),
+              Text('🏆', style: TextStyle(fontSize: _getResponsiveSize(36, 48))),
+              SizedBox(height: _getResponsiveSize(4, 8)),
               Text(
                 AppLocalizations.of(context)!.auction_ended_exclamation,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: _getResponsiveFontSize(18, 24),
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: _getResponsiveSize(8, 12)),
               CircleAvatar(
-                radius: 40,
+                radius: _getResponsiveSize(32, 50),
                 backgroundImage: NetworkImage(_winnerData!.avatar ?? ''),
                 child: _winnerData!.avatar == null
-                    ? Icon(Icons.person, size: 32)
+                    ? Icon(Icons.person, size: _getResponsiveSize(24, 40))
                     : null,
               ),
-              SizedBox(height: 8),
+              SizedBox(height: _getResponsiveSize(6, 10)),
               Text(
                 _winnerData!.userName ?? AppLocalizations.of(context)!.winner_ucf,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: _getResponsiveFontSize(14, 20),
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: _getResponsiveSize(2, 4)),
               Text(
                 _formatPrice(_winnerData!.amount ?? 0),
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: _getResponsiveFontSize(18, 24),
                   fontWeight: FontWeight.bold,
                   color: Colors.amber,
                 ),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: _getResponsiveSize(6, 10)),
               Text(
                 AppLocalizations.of(context)!.congratulations_to_winner,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: _getResponsiveFontSize(10, 14),
                   color: Colors.white70,
                 ),
               ),
-              SizedBox(height: 14),
+              SizedBox(height: _getResponsiveSize(12, 16)),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
@@ -1632,7 +1649,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 child: Text(
                   AppLocalizations.of(context)!.close_ucf,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: _getResponsiveFontSize(10, 14),
                     color: MyTheme.accent_color,
                   ),
                 ),
@@ -1668,7 +1685,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       color: Colors.black54,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, size: 20, color: Colors.white),
+                    child: Icon(Icons.close, size: _getResponsiveSize(18, 24), color: Colors.white),
                   ),
                 ),
               ),
@@ -1778,11 +1795,11 @@ class _ProductDetailsState extends State<ProductDetails>
     }
     
     return Container(
-      margin: EdgeInsets.only(right: 4),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: EdgeInsets.only(right: _getResponsiveSize(3, 6)),
+      padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(6, 10), vertical: _getResponsiveSize(3, 6)),
       decoration: BoxDecoration(
         color: const Color(0xFFE8F4F8), // Sky blue background
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8)),
         border: Border.all(
           color: MyTheme.accent_color,
           width: 1.5,
@@ -1795,16 +1812,16 @@ class _ProductDetailsState extends State<ProductDetails>
             value,
             style: TextStyle(
               color: Colors.black87,
-              fontSize: 14,
+              fontSize: _getResponsiveFontSize(12, 16),
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(width: 2),
+          SizedBox(width: _getResponsiveSize(1, 3)),
           Text(
             label,
             style: TextStyle(
               color: Colors.black87,
-              fontSize: 10,
+              fontSize: _getResponsiveFontSize(8, 12),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1850,11 +1867,14 @@ class _ProductDetailsState extends State<ProductDetails>
     bool isLoading = false,
     IconData? fallbackIcon,
   }) {
+    final size = _getResponsiveSize(36, 48);
+    final iconSize = _getResponsiveSize(16, 22);
+    
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -1868,37 +1888,37 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: isLoading
             ? SizedBox(
-                height: 14,
-                width: 14,
+                height: _getResponsiveSize(12, 16),
+                width: _getResponsiveSize(12, 16),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: MyTheme.accent_color,
                 ),
               )
             : Padding(
-                padding: EdgeInsets.all(8),
+                padding: EdgeInsets.all(_getResponsiveSize(6, 10)),
                 child: Image.asset(
                   imagePath,
-                  height: 18,
-                  width: 18,
+                  height: iconSize,
+                  width: iconSize,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     if (imagePath.contains('product_details')) {
                       return Icon(
                         Icons.info_outline,
-                        size: 18,
+                        size: iconSize,
                         color: Colors.black87,
                       );
                     } else if (imagePath.contains('bid_history')) {
                       return Icon(
                         Icons.history,
-                        size: 18,
+                        size: iconSize,
                         color: Colors.black87,
                       );
                     }
                     return Icon(
                       Icons.image_not_supported,
-                      size: 18,
+                      size: iconSize,
                       color: Colors.black87,
                     );
                   },
@@ -1908,8 +1928,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     }
                     return frame == null
                         ? SizedBox(
-                            height: 18,
-                            width: 18,
+                            height: iconSize,
+                            width: iconSize,
                             child: Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
@@ -1935,11 +1955,14 @@ class _ProductDetailsState extends State<ProductDetails>
     required VoidCallback onTap,
     bool isLoading = false,
   }) {
+    final size = _getResponsiveSize(36, 48);
+    final iconSize = _getResponsiveSize(16, 22);
+    
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -1953,8 +1976,8 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: isLoading
             ? SizedBox(
-                height: 14,
-                width: 14,
+                height: _getResponsiveSize(12, 16),
+                width: _getResponsiveSize(12, 16),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: MyTheme.accent_color,
@@ -1963,7 +1986,7 @@ class _ProductDetailsState extends State<ProductDetails>
             : Icon(
                 icon,
                 color: isActive ? MyTheme.accent_color : Colors.black87,
-                size: 18,
+                size: iconSize,
               ),
       ),
     );
@@ -1977,17 +2000,17 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(12, 16), vertical: _getResponsivePadding(8, 12)),
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: Colors.grey.shade700),
-            SizedBox(width: 10),
+            Icon(icon, size: _getResponsiveSize(14, 18), color: Colors.grey.shade700),
+            SizedBox(width: _getResponsiveSize(8, 12)),
             Text(text,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: _getResponsiveFontSize(11, 14),
                   color: Colors.grey.shade800,
                 )),
           ],
@@ -1998,23 +2021,23 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildInfoItem(String label, String value) {
     return Container(
-      padding: EdgeInsets.all(6),
+      padding: EdgeInsets.all(_getResponsivePadding(4, 8)),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: _getResponsiveFontSize(8, 11),
                 color: Colors.grey.shade600,
               )),
           SizedBox(height: 1),
           Text(value,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: _getResponsiveFontSize(10, 14),
                 fontWeight: FontWeight.bold,
               )),
         ],
@@ -2023,12 +2046,13 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT - UPDATED: Fixed positioning, no overlays
+  // MOBILE LAYOUT - UPDATED: Responsive sizing
   // ============================================
 
   Widget _buildMobileLayout() {
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.80;
+    final imageHeight = screenHeight * 0.75;
+    final isSmallScreen = _screenWidth < 400;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -2042,7 +2066,7 @@ class _ProductDetailsState extends State<ProductDetails>
             child: SingleChildScrollView(
               controller: _mainScrollController,
               physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(bottom: 70),
+              padding: EdgeInsets.only(bottom: _getResponsiveSize(60, 80)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2098,8 +2122,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                       // TOP RIGHT ICONS
                       Positioned(
-                        top: MediaQuery.of(context).padding.top + 6,
-                        right: 12,
+                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(4, 8),
+                        right: _getResponsiveSize(8, 16),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -2112,8 +2136,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     });
                                   },
                                   child: Container(
-                                    width: 40,
-                                    height: 40,
+                                    width: _getResponsiveSize(36, 48),
+                                    height: _getResponsiveSize(36, 48),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       shape: BoxShape.circle,
@@ -2127,8 +2151,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                     child: _isProcessing
                                         ? SizedBox(
-                                            height: 14,
-                                            width: 14,
+                                            height: _getResponsiveSize(12, 16),
+                                            width: _getResponsiveSize(12, 16),
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                               color: MyTheme.accent_color,
@@ -2137,20 +2161,20 @@ class _ProductDetailsState extends State<ProductDetails>
                                         : Icon(
                                             Icons.more_vert,
                                             color: Colors.black87,
-                                            size: 18,
+                                            size: _getResponsiveSize(16, 22),
                                           ),
                                   ),
                                 );
                               },
                             ),
-                            SizedBox(height: 6),
+                            SizedBox(height: _getResponsiveSize(4, 8)),
                             _buildIconCircleWithImage(
                               imagePath: 'assets/bid_history.png',
                               onTap: _openBidHistoryModal,
                               isLoading: _isProcessing,
                               fallbackIcon: Icons.history,
                             ),
-                            SizedBox(height: 6),
+                            SizedBox(height: _getResponsiveSize(4, 8)),
                             _buildIconCircleWithImage(
                               imagePath: 'assets/product_details.png',
                               onTap: _openTitleModal,
@@ -2162,8 +2186,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                       // LEFT ICON - Back Button
                       Positioned(
-                        top: MediaQuery.of(context).padding.top + 6,
-                        left: 12,
+                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(4, 8),
+                        left: _getResponsiveSize(8, 16),
                         child: _buildIconCircle(
                           icon: Icons.arrow_back,
                           onTap: () => Navigator.pop(context),
@@ -2171,33 +2195,33 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // COMMENTS SECTION - Positioned above title with space
+                      // COMMENTS SECTION - Longer height (up to 260)
                       // ============================================
                       Positioned(
-                        bottom: 100,
-                        left: 10,
+                        bottom: _getResponsiveSize(150, 180),
+                        left: _getResponsiveSize(8, 12),
                         child: Container(
-                          width: _screenWidth * 0.78,
+                          width: _screenWidth * 0.74,
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(_getResponsiveSize(8, 14)),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.15), width: 1),
                           ),
-                          padding: EdgeInsets.all(6),
+                          padding: EdgeInsets.all(_getResponsiveSize(4, 8)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Comments List
                               Container(
-                                height: 200,
+                                height: _getResponsiveSize(180, 260),
                                 child: _comments.isEmpty
                                     ? Center(
                                         child: Text(
                                           AppLocalizations.of(context)!.no_comments_yet,
                                           style: TextStyle(
                                             color: Colors.white54,
-                                            fontSize: 9,
+                                            fontSize: _getResponsiveFontSize(8, 11),
                                           ),
                                         ),
                                       )
@@ -2208,13 +2232,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
                                           return Padding(
-                                            padding: EdgeInsets.only(bottom: 3),
+                                            padding: EdgeInsets.only(bottom: _getResponsiveSize(2, 4)),
                                             child: Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 CircleAvatar(
-                                                  radius: 10,
+                                                  radius: _getResponsiveSize(8, 14),
                                                   backgroundImage:
                                                       NetworkImage(comment
                                                               .userAvatar ??
@@ -2223,12 +2247,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                           .userAvatar ==
                                                       null
                                                       ? Icon(Icons.person,
-                                                          size: 8,
+                                                          size: _getResponsiveSize(6, 12),
                                                           color: Colors
                                                               .white54)
                                                       : null,
                                                 ),
-                                                SizedBox(width: 4),
+                                                SizedBox(width: _getResponsiveSize(3, 6)),
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -2241,7 +2265,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white,
-                                                          fontSize: 9,
+                                                          fontSize: _getResponsiveFontSize(8, 11),
                                                           fontWeight:
                                                               FontWeight
                                                                   .w600,
@@ -2253,7 +2277,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white70,
-                                                          fontSize: 8,
+                                                          fontSize: _getResponsiveFontSize(7, 10),
                                                         ),
                                                       ),
                                                       Row(
@@ -2269,11 +2293,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: 7,
+                                                                fontSize: _getResponsiveFontSize(6, 8),
                                                               ),
                                                             ),
                                                           ),
-                                                          SizedBox(width: 6),
+                                                          SizedBox(width: _getResponsiveSize(4, 8)),
                                                           GestureDetector(
                                                             onTap: () =>
                                                                 _replyToComment(
@@ -2285,7 +2309,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: 7,
+                                                                fontSize: _getResponsiveFontSize(6, 8),
                                                               ),
                                                             ),
                                                           ),
@@ -2300,7 +2324,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         },
                                       ),
                               ),
-                              SizedBox(height: 3),
+                              SizedBox(height: _getResponsiveSize(2, 4)),
                               // Comment Input
                               Row(
                                 children: [
@@ -2310,50 +2334,50 @@ class _ProductDetailsState extends State<ProductDetails>
                                         color: Colors.white
                                             .withOpacity(0.15),
                                         borderRadius:
-                                            BorderRadius.circular(8),
+                                            BorderRadius.circular(_getResponsiveSize(6, 10)),
                                       ),
                                       child: TextField(
                                         controller: _commentController,
                                         style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 9),
+                                            fontSize: _getResponsiveFontSize(8, 11)),
                                         decoration: InputDecoration(
                                           hintText: AppLocalizations.of(context)!.add_comment_hint,
                                           hintStyle: TextStyle(
                                               color: Colors.white54,
-                                              fontSize: 9),
+                                              fontSize: _getResponsiveFontSize(8, 11)),
                                           border: InputBorder.none,
                                           contentPadding:
                                               EdgeInsets.symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 3),
+                                                  horizontal: _getResponsiveSize(4, 8),
+                                                  vertical: _getResponsiveSize(2, 4)),
                                         ),
                                         onSubmitted: (value) =>
                                             _sendComment(),
                                       ),
                                     ),
                                   ),
-                                  SizedBox(width: 3),
+                                  SizedBox(width: _getResponsiveSize(2, 4)),
                                   GestureDetector(
                                     onTap: _isProcessing ? null : _sendComment,
                                     child: Container(
-                                      width: 24,
-                                      height: 24,
+                                      width: _getResponsiveSize(20, 28),
+                                      height: _getResponsiveSize(20, 28),
                                       decoration: BoxDecoration(
                                         color: MyTheme.accent_color,
                                         shape: BoxShape.circle,
                                       ),
                                       child: _isProcessing
                                           ? SizedBox(
-                                              height: 8,
-                                              width: 8,
+                                              height: _getResponsiveSize(6, 10),
+                                              width: _getResponsiveSize(6, 10),
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                                 color: Colors.white,
                                               ),
                                             )
                                           : Icon(Icons.send,
-                                              size: 12,
+                                              size: _getResponsiveSize(10, 14),
                                               color: Colors.white),
                                     ),
                                   ),
@@ -2367,9 +2391,9 @@ class _ProductDetailsState extends State<ProductDetails>
                       // PRODUCT NAME & DESCRIPTION - Below comments with space
                       // ============================================
                       Positioned(
-                        bottom: 60,
-                        left: 10,
-                        right: 10,
+                        bottom: _getResponsiveSize(50, 80),
+                        left: _getResponsiveSize(8, 12),
+                        right: _getResponsiveSize(8, 12),
                         child: GestureDetector(
                           onTap: _openTitleModal,
                           child: Column(
@@ -2378,7 +2402,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               Text(_product?.name ?? '',
                                   style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 16,
+                                      fontSize: _getResponsiveFontSize(14, 20),
                                       fontWeight: FontWeight.bold)),
                               SizedBox(height: 1),
                               Text(
@@ -2388,7 +2412,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       '',
                                   style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: 10),
+                                      fontSize: _getResponsiveFontSize(9, 12)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                             ],
@@ -2399,22 +2423,22 @@ class _ProductDetailsState extends State<ProductDetails>
                       // TIMER & CURRENT BID
                       // ============================================
                       Positioned(
-                        bottom: 12,
-                        left: 10,
-                        right: 10,
+                        bottom: _getResponsiveSize(10, 20),
+                        left: _getResponsiveSize(8, 12),
+                        right: _getResponsiveSize(8, 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // TIME LEFT Title
-                            Text(
-                              AppLocalizations.of(context)!.time_left,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 2),
+                            // TIME LEFT Title - COMMENTED OUT to prevent overlay
+                            // Text(
+                            //   AppLocalizations.of(context)!.time_left,
+                            //   style: TextStyle(
+                            //     color: Colors.white,
+                            //     fontSize: _getResponsiveFontSize(8, 12),
+                            //     fontWeight: FontWeight.w600,
+                            //   ),
+                            // ),
+                            // SizedBox(height: _getResponsiveSize(1, 4)),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -2423,10 +2447,10 @@ class _ProductDetailsState extends State<ProductDetails>
                                 _buildTimerRow(),
                                 // Current Bid
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16), vertical: _getResponsivePadding(6, 12)),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
                                     border: Border.all(
                                       color: Colors.white.withOpacity(0.2),
                                       width: 1,
@@ -2439,7 +2463,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         AppLocalizations.of(context)!.current_bid,
                                         style: TextStyle(
                                           color: Colors.white70,
-                                          fontSize: 9,
+                                          fontSize: _getResponsiveFontSize(8, 11),
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -2447,7 +2471,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         _formatPrice(_currentHighestBid),
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 16,
+                                          fontSize: _getResponsiveFontSize(14, 20),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -2458,9 +2482,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             ),
                           ],
                         ),
+                        SizedBox(height: _getResponsiveSize(6, 9)),
                       ),
                     ],
                   ),
+                  
                   
                   // ============================================
                   // BID INFORMATION SECTION - Offset -10
@@ -2468,17 +2494,17 @@ class _ProductDetailsState extends State<ProductDetails>
                   Transform.translate(
                     offset: Offset(0, -10),
                     child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: 12),
-                      padding: EdgeInsets.all(12),
+                      margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16)),
+                      padding: EdgeInsets.all(_getResponsivePadding(8, 16)),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
                         border: Border.all(color: Colors.grey.shade200, width: 1),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
+                            blurRadius: _getResponsiveSize(6, 10),
+                            offset: Offset(0, _getResponsiveSize(2, 4)),
                           ),
                         ],
                       ),
@@ -2488,14 +2514,14 @@ class _ProductDetailsState extends State<ProductDetails>
                           Text(AppLocalizations.of(context)!.bid_information,
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13)),
-                          SizedBox(height: 8),
+                                  fontSize: _getResponsiveFontSize(11, 16))),
+                          SizedBox(height: _getResponsiveSize(6, 10)),
                           GridView.count(
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
+                            crossAxisSpacing: _getResponsiveSize(4, 10),
+                            mainAxisSpacing: _getResponsiveSize(4, 10),
                             childAspectRatio: 3,
                             children: [
                               _buildInfoItem(
@@ -2527,20 +2553,20 @@ class _ProductDetailsState extends State<ProductDetails>
                   // REVIEWS SECTION
                   // ============================================
                   Container(
-                    margin: EdgeInsets.symmetric(horizontal: 12),
+                    margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16)),
                     child: GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(
-                        padding: EdgeInsets.all(12),
+                        padding: EdgeInsets.all(_getResponsivePadding(8, 16)),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
                           border: Border.all(color: Colors.grey.shade200, width: 1),
                           boxShadow: [
                             BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
-                                blurRadius: 3,
-                                offset: Offset(0, 1))
+                                blurRadius: _getResponsiveSize(2, 4),
+                                offset: Offset(0, _getResponsiveSize(1, 2)))
                           ],
                         ),
                         child: Row(
@@ -2554,46 +2580,46 @@ class _ProductDetailsState extends State<ProductDetails>
                                       index < _rating.round()
                                           ? Icons.star
                                           : Icons.star_border,
-                                      size: 12,
+                                      size: _getResponsiveSize(10, 16),
                                       color: Colors.amber,
                                     );
                                   }),
                                 ),
-                                SizedBox(width: 4),
+                                SizedBox(width: _getResponsiveSize(2, 6)),
                                 Text(_rating.toStringAsFixed(1),
                                     style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: _getResponsiveFontSize(11, 16),
                                         fontWeight: FontWeight.bold)),
-                                SizedBox(width: 4),
+                                SizedBox(width: _getResponsiveSize(2, 6)),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 4, vertical: 1),
+                                      horizontal: _getResponsiveSize(3, 6), vertical: _getResponsiveSize(1, 2)),
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(_getResponsiveSize(12, 20)),
                                   ),
                                   child: Text('$_reviewsCount',
                                       style: TextStyle(
-                                          fontSize: 10,
+                                          fontSize: _getResponsiveFontSize(8, 12),
                                           color: Colors.grey)),
                                 ),
                               ],
                             ),
                             Icon(Icons.arrow_forward_ios,
-                                size: 14, color: Colors.grey),
+                                size: _getResponsiveSize(12, 16), color: Colors.grey),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: _getResponsiveSize(6, 10)),
                   
                   // ============================================
                   // THUMBNAILS
                   // ============================================
                   Container(
-                    height: 60,
-                    margin: EdgeInsets.all(10),
+                    height: _getResponsiveSize(50, 70),
+                    margin: EdgeInsets.all(_getResponsivePadding(8, 12)),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: _productImages.length,
@@ -2603,11 +2629,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             setState(() => _currentImageIndex = index);
                           },
                           child: Container(
-                            width: 50,
-                            height: 50,
-                            margin: EdgeInsets.only(right: 5),
+                            width: _getResponsiveSize(40, 60),
+                            height: _getResponsiveSize(40, 60),
+                            margin: EdgeInsets.only(right: _getResponsiveSize(4, 6)),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10)),
                               border: Border.all(
                                 color: _currentImageIndex == index
                                     ? MyTheme.accent_color
@@ -2616,7 +2642,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8)),
                               child: Image.network(
                                 _productImages[index],
                                 fit: BoxFit.cover,
@@ -2629,7 +2655,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       },
                     ),
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: _getResponsiveSize(12, 20)),
                 ],
               ),
             ),
@@ -2642,13 +2668,13 @@ class _ProductDetailsState extends State<ProductDetails>
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 12), vertical: _getResponsivePadding(6, 10)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
                       color: Colors.black12,
-                      blurRadius: 6,
+                      blurRadius: _getResponsiveSize(4, 8),
                       offset: Offset(0, -2))
                 ],
               ),
@@ -2658,33 +2684,33 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: OutlinedButton(
                       onPressed: _showBidInputDialog,
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 10),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(8, 14)),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6)),
+                            borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8))),
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.custom_ucf,
-                        style: TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: _getResponsiveFontSize(10, 14)),
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: _getResponsiveSize(6, 10)),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: 10),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(8, 14)),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6)),
+                            borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8))),
                       ),
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
                               '${AppLocalizations.of(context)!.bid_now} (${_formatPrice(_minNextBidNow)})',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: _getResponsiveFontSize(10, 14),
                                 color: Colors.white,
                               ),
                             ),
@@ -2699,21 +2725,21 @@ class _ProductDetailsState extends State<ProductDetails>
           // ============================================
           if (_showMoreMenu)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 72,
-              right: 12,
+              top: MediaQuery.of(context).padding.top + _getResponsiveSize(60, 80),
+              right: _getResponsiveSize(8, 16),
               child: Material(
                 elevation: 16,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
                 child: Container(
-                  width: 150,
+                  width: _getResponsiveSize(130, 180),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
+                        blurRadius: _getResponsiveSize(8, 15),
+                        offset: Offset(0, _getResponsiveSize(2, 5)),
                       ),
                     ],
                   ),
