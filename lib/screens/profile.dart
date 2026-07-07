@@ -238,21 +238,6 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  // ============ RESPONSIVE FONT HELPER ============
-  double _responsiveFontSize(double baseSize) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    // Scale factor: 0.7 for small phones, 0.85 for medium, 1.0 for large phones/tablets/desktop
-    double scaleFactor;
-    if (screenWidth < 380) {
-      scaleFactor = 0.7;
-    } else if (screenWidth < 480) {
-      scaleFactor = 0.85;
-    } else {
-      scaleFactor = 1.0;
-    }
-    return baseSize * scaleFactor;
-  }
-
   @override
   Widget build(BuildContext context) {
     // Check if we're on a large screen for responsive layout
@@ -264,10 +249,7 @@ class _ProfileState extends State<Profile> {
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.profile_ucf,
-          style: TextStyle(
-            fontSize: _responsiveFontSize(18).sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         elevation: 0,
@@ -275,7 +257,7 @@ class _ProfileState extends State<Profile> {
         foregroundColor: Colors.black,
         toolbarHeight: 60.h,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, size: _responsiveFontSize(24).sp),
+          icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
@@ -289,7 +271,7 @@ class _ProfileState extends State<Profile> {
             Padding(
               padding: EdgeInsets.only(right: 8.w),
               child: IconButton(
-                icon: Icon(Icons.logout, size: _responsiveFontSize(24).sp, color: const Color(0xFFDC2626)),
+                icon: Icon(Icons.logout, size: 24.sp, color: const Color(0xFFDC2626)),
                 onPressed: () => _onTapLogout(context),
               ),
             )
@@ -303,7 +285,7 @@ class _ProfileState extends State<Profile> {
                 child: Text(
                   AppLocalizations.of(context)!.login_ucf,
                   style: TextStyle(
-                    fontSize: _responsiveFontSize(14).sp,
+                    fontSize: 14.sp,
                     color: MyTheme.accent_color,
                     fontWeight: FontWeight.w600,
                   ),
@@ -434,17 +416,14 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildProfileCardSmall() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isExtraSmall = screenWidth < 380;
-    
     return Column(
       children: [
         // Avatar and name in a row
         Row(
           children: [
             Container(
-              width: isExtraSmall ? 38.w : 45.w,
-              height: isExtraSmall ? 38.w : 45.w,
+              width: 45.w,
+              height: 45.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
@@ -461,19 +440,19 @@ class _ProfileState extends State<Profile> {
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons.person,
-                            size: isExtraSmall ? 30.sp : 40.sp,
+                            size: 40.sp,
                             color: const Color(0xFF94A3B8),
                           );
                         },
                       )
                     : Icon(
                         Icons.person,
-                        size: isExtraSmall ? 30.sp : 40.sp,
+                        size: 40.sp,
                         color: const Color(0xFF94A3B8),
                       ),
               ),
             ),
-            SizedBox(width: isExtraSmall ? 8.w : 12.w),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,18 +460,18 @@ class _ProfileState extends State<Profile> {
                   Text(
                     _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(14).sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  SizedBox(height: isExtraSmall ? 2.h : 4.h),
+                  SizedBox(height: 4.h),
                   Text(
                     '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(9).sp,
+                      fontSize: 9.sp,
                       fontWeight: FontWeight.w700,
                       color: MyTheme.accent_color,
                     ),
@@ -502,11 +481,11 @@ class _ProfileState extends State<Profile> {
             ),
           ],
         ),
-        SizedBox(height: isExtraSmall ? 8.h : 12.h),
+        SizedBox(height: 12.h),
         // Points section full width
         Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: isExtraSmall ? 8.w : 11.w, vertical: isExtraSmall ? 8.h : 11.h),
+          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.r),
@@ -519,24 +498,24 @@ class _ProfileState extends State<Profile> {
                   Text(
                     AppLocalizations.of(context)!.referral_point,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(8).sp,
+                      fontSize: 8.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF64748B),
                     ),
                   ),
-                  SizedBox(width: isExtraSmall ? 4.w : 7.w),
+                  SizedBox(width: 7.w),
                   GestureDetector(
                     onTap: _togglePointsVisibility,
                     child: Container(
-                      width: isExtraSmall ? 22.w : 27.w,
-                      height: isExtraSmall ? 22.w : 27.w,
+                      width: 27.w,
+                      height: 27.w,
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Icon(
                         _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                        size: _responsiveFontSize(16).sp,
+                        size: 16.sp,
                         color: MyTheme.accent_color,
                       ),
                     ),
@@ -551,16 +530,16 @@ class _ProfileState extends State<Profile> {
                         ? (_userInfo?.balance?.toInt() ?? 0).toString() 
                         : '****',
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(17).sp,
+                      fontSize: 17.sp,
                       fontWeight: FontWeight.w800,
                       color: Colors.black,
                     ),
                   ),
-                  SizedBox(width: isExtraSmall ? 2.w : 4.w),
+                  SizedBox(width: 4.w),
                   Text(
                     AppLocalizations.of(context)!.points_ucf,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(10).sp,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.black,
                     ),
@@ -575,10 +554,6 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildProfileCardRegular() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMediumScreen = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
-    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -587,8 +562,8 @@ class _ProfileState extends State<Profile> {
           child: Row(
             children: [
               Container(
-                width: isDesktop ? 55.w : 45.w,
-                height: isDesktop ? 55.w : 45.w,
+                width: 45.w,
+                height: 45.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
@@ -605,19 +580,19 @@ class _ProfileState extends State<Profile> {
                           errorBuilder: (context, error, stackTrace) {
                             return Icon(
                               Icons.person,
-                              size: isDesktop ? 50.sp : 40.sp,
+                              size: 40.sp,
                               color: const Color(0xFF94A3B8),
                             );
                           },
                         )
                       : Icon(
                           Icons.person,
-                          size: isDesktop ? 50.sp : 40.sp,
+                          size: 40.sp,
                           color: const Color(0xFF94A3B8),
                         ),
                 ),
               ),
-              SizedBox(width: isDesktop ? 20.w : 16.w),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,18 +600,18 @@ class _ProfileState extends State<Profile> {
                     Text(
                       _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
                       style: TextStyle(
-                        fontSize: _responsiveFontSize(isDesktop ? 18 : 16).sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    SizedBox(height: isDesktop ? 10.h : 8.h),
+                    SizedBox(height: 8.h),
                     Text(
                       '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
                       style: TextStyle(
-                        fontSize: _responsiveFontSize(isDesktop ? 12 : 10).sp,
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
                         color: MyTheme.accent_color,
                       ),
@@ -648,7 +623,7 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: isDesktop ? 16.w : 11.w, vertical: isDesktop ? 16.h : 11.h),
+          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.r),
@@ -661,7 +636,7 @@ class _ProfileState extends State<Profile> {
                   Text(
                     AppLocalizations.of(context)!.referral_point,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(10).sp,
+                      fontSize: 8.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF64748B),
                     ),
@@ -670,22 +645,22 @@ class _ProfileState extends State<Profile> {
                   GestureDetector(
                     onTap: _togglePointsVisibility,
                     child: Container(
-                      width: isDesktop ? 32.w : 27.w,
-                      height: isDesktop ? 32.w : 27.w,
+                      width: 27.w,
+                      height: 27.w,
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Icon(
                         _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                        size: _responsiveFontSize(20).sp,
+                        size: 16.sp,
                         color: MyTheme.accent_color,
                       ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: isDesktop ? 8.h : 4.h),
+              SizedBox(height: 4.h),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -694,16 +669,16 @@ class _ProfileState extends State<Profile> {
                         ? (_userInfo?.balance?.toInt() ?? 0).toString() 
                         : '****',
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(isDesktop ? 22 : 17).sp,
+                      fontSize: 17.sp,
                       fontWeight: FontWeight.w800,
                       color: Colors.black,
                     ),
                   ),
-                  SizedBox(width: isDesktop ? 6.w : 4.w),
+                  SizedBox(width: 4.w),
                   Text(
                     AppLocalizations.of(context)!.points_ucf,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(isDesktop ? 14 : 10).sp,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.black,
                     ),
@@ -722,7 +697,6 @@ class _ProfileState extends State<Profile> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600 && screenWidth < 1024;
     final isDesktop = screenWidth >= 1024;
-    final isSmallScreen = screenWidth < 380;
     
     // For tablet/desktop, show menus in a grid
     if (isTablet || isDesktop) {
@@ -731,13 +705,13 @@ class _ProfileState extends State<Profile> {
     
     // Mobile menu
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8.w : 16.w),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeading(AppLocalizations.of(context)!.my_account),
           Container(
-            padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF9F9F9),
               borderRadius: BorderRadius.circular(16.r),
@@ -783,11 +757,11 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           
-          SizedBox(height: isSmallScreen ? 12.h : 16.h),
+          SizedBox(height: 16.h),
           
           _buildSectionHeading(AppLocalizations.of(context)!.security),
           Container(
-            padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
+            padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: const Color(0xFFF9F9F9),
               borderRadius: BorderRadius.circular(16.r),
@@ -837,7 +811,7 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           
-          SizedBox(height: isSmallScreen ? 30.h : 50.h),
+          SizedBox(height: 50.h),
         ],
       ),
     );
@@ -845,9 +819,6 @@ class _ProfileState extends State<Profile> {
 
   // ============ DESKTOP MENU ============
   Widget _buildDesktopMenuSection() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1024;
-    
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Row(
@@ -860,7 +831,7 @@ class _ProfileState extends State<Profile> {
               children: [
                 _buildSectionHeading(AppLocalizations.of(context)!.my_account),
                 Container(
-                  padding: EdgeInsets.all(isDesktop ? 20.w : 16.w),
+                  padding: EdgeInsets.all(16.w),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF9F9F9),
                     borderRadius: BorderRadius.circular(16.r),
@@ -908,7 +879,7 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          SizedBox(width: isDesktop ? 24.w : 16.w),
+          SizedBox(width: 16.w),
           // Security Column
           Expanded(
             child: Column(
@@ -916,7 +887,7 @@ class _ProfileState extends State<Profile> {
               children: [
                 _buildSectionHeading(AppLocalizations.of(context)!.security),
                 Container(
-                  padding: EdgeInsets.all(isDesktop ? 20.w : 16.w),
+                  padding: EdgeInsets.all(16.w),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF9F9F9),
                     borderRadius: BorderRadius.circular(16.r),
@@ -980,7 +951,7 @@ class _ProfileState extends State<Profile> {
       child: Text(
         title,
         style: TextStyle(
-          fontSize: _responsiveFontSize(14).sp,
+          fontSize: 14.sp,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF000417),
         ),
@@ -997,36 +968,32 @@ class _ProfileState extends State<Profile> {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1024;
-    final isSmallScreen = screenWidth < 380;
     
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(
-          vertical: isDesktop ? 14.h : (isSmallScreen ? 10.h : 12.h), 
-          horizontal: isSmallScreen ? 4.w : 8.w,
-        ),
+        padding: EdgeInsets.symmetric(vertical: isDesktop ? 14.h : 12.h, horizontal: 8.w),
         child: Row(
           children: [
             Container(
-              width: isDesktop ? 40.w : (isSmallScreen ? 32.w : 36.w),
-              height: isDesktop ? 40.w : (isSmallScreen ? 32.w : 36.w),
+              width: isDesktop ? 40.w : 36.w,
+              height: isDesktop ? 40.w : 36.w,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: _responsiveFontSize(isDesktop ? 20 : (isSmallScreen ? 16 : 18)).sp,
+                size: isDesktop ? 20.sp : 18.sp,
                 color: const Color(0xFF000417),
               ),
             ),
-            SizedBox(width: isSmallScreen ? 10.w : 14.w),
+            SizedBox(width: 14.w),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: _responsiveFontSize(isDesktop ? 16 : (isSmallScreen ? 12 : 14)).sp,
+                  fontSize: isDesktop ? 16.sp : 14.sp,
                   fontWeight: FontWeight.w500,
                   color: isActive ? MyTheme.accent_color : const Color(0xFF334155),
                 ),
@@ -1037,7 +1004,7 @@ class _ProfileState extends State<Profile> {
             Text(
               '›',
               style: TextStyle(
-                fontSize: _responsiveFontSize(isDesktop ? 28 : (isSmallScreen ? 20 : 24)).sp,
+                fontSize: isDesktop ? 28.sp : 24.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF334155),
               ),

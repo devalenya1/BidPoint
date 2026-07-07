@@ -91,20 +91,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     super.dispose();
   }
   
-  // ============ RESPONSIVE FONT HELPER ============
-  double _responsiveFontSize(double baseSize) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    double scaleFactor;
-    if (screenWidth < 380) {
-      scaleFactor = 0.7;
-    } else if (screenWidth < 480) {
-      scaleFactor = 0.85;
-    } else {
-      scaleFactor = 1.0;
-    }
-    return baseSize * scaleFactor;
-  }
-
   // ============ FETCH USER DATA FROM API ============
   Future<void> _fetchUserData() async {
     try {
@@ -336,17 +322,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   // ============ BUILD UI ============
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
-    final isMediumScreen = screenWidth >= 380 && screenWidth < 480;
-    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.points_ucf,
           style: TextStyle(
-            fontSize: _responsiveFontSize(18).sp, 
+            fontSize: 18.sp, 
             fontWeight: FontWeight.w700, 
             color: const Color(0xFF0F172A)
           ),
@@ -357,13 +339,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: Container(
-            width: isSmallScreen ? 30.w : 36.w,
-            height: isSmallScreen ? 30.w : 36.w,
+            width: 36.w,
+            height: 36.w,
             decoration: BoxDecoration(
               color: const Color(0xFFF6F6F6),
               borderRadius: BorderRadius.circular(50.r),
             ),
-            child: Icon(Icons.arrow_back_ios, size: _responsiveFontSize(18).sp, color: const Color(0xFF64748B)),
+            child: Icon(Icons.arrow_back_ios, size: 18.sp, color: const Color(0xFF64748B)),
           ),
           onPressed: () {
             if (Navigator.canPop(context)) {
@@ -388,11 +370,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
-    
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12.w : 16.w),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         children: [
           SizedBox(height: 16.h),
@@ -416,13 +395,10 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   // ============ MAIN BODY ============
   Widget _buildBody() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
-    
     return Stack(
       children: [
         SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12.w : 16.w),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
             children: [
               SizedBox(height: 16.h),
@@ -457,7 +433,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       child: Container(
                         height: MediaQuery.of(context).size.height * 0.45,
                         width: double.infinity,
-                        padding: EdgeInsets.only(bottom: isSmallScreen ? 50.h : 70.h),
+                        padding: EdgeInsets.only(bottom: 70.h),
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.only(
@@ -480,15 +456,15 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                             
                             // Header with cancel button on the right
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16.w : 20.w, vertical: 12.h),
+                              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  SizedBox(width: isSmallScreen ? 24.w : 32.w),
+                                  SizedBox(width: 32.w),
                                   Text(
                                     AppLocalizations.of(context)!.our_package_ucf,
                                     style: TextStyle(
-                                      fontSize: _responsiveFontSize(20).sp,
+                                      fontSize: 20.sp,
                                       fontWeight: FontWeight.w700,
                                       color: const Color(0xFF000417),
                                     ),
@@ -496,15 +472,15 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                                   GestureDetector(
                                     onTap: _closeBuyPointsDrawer,
                                     child: Container(
-                                      width: isSmallScreen ? 28.w : 32.w,
-                                      height: isSmallScreen ? 28.w : 32.w,
+                                      width: 32.w,
+                                      height: 32.w,
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFF6F6F6),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
                                         Icons.close,
-                                        size: _responsiveFontSize(16).sp,
+                                        size: 16.sp,
                                         color: const Color(0xFF64748B),
                                       ),
                                     ),
@@ -520,12 +496,12 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                             
                             // Buy button - Fixed at bottom of drawer
                             Container(
-                              padding: EdgeInsets.fromLTRB(isSmallScreen ? 16.w : 20.w, 12.h, isSmallScreen ? 16.w : 20.w, isSmallScreen ? 16.h : 20.h),
+                              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
                               child: GestureDetector(
                                 onTap: _isPurchasing ? null : _submitPurchase,
                                 child: Container(
                                   width: double.infinity,
-                                  padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 12.h : 14.h),
+                                  padding: EdgeInsets.symmetric(vertical: 14.h),
                                   decoration: BoxDecoration(
                                     color: MyTheme.accent_color,
                                     borderRadius: BorderRadius.circular(7.r),
@@ -545,7 +521,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                                           AppLocalizations.of(context)!.buy_now_ucf,
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            fontSize: _responsiveFontSize(16).sp,
+                                            fontSize: 16.sp,
                                             fontWeight: FontWeight.w700,
                                             color: Colors.white,
                                           ),
@@ -581,13 +557,10 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           final cardHeight = availableHeight * 0.85;
           final cardWidth = availableWidth * 0.75;
           
-          final screenWidth = MediaQuery.of(context).size.width;
-          final isSmallScreen = screenWidth < 380;
-          
           return SingleChildScrollView(
             controller: _packageScrollController,
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12.w : 16.w),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: _packages.asMap().entries.map((entry) {
@@ -598,15 +571,15 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                 final packagePoints = _getPackagePoints(package);
                 
                 return Container(
-                  width: cardWidth.clamp(180.w, 400.w),
-                  height: cardHeight.clamp(100.h, 300.h),
+                  width: cardWidth.clamp(200.w, 400.w),
+                  height: cardHeight.clamp(120.h, 300.h),
                   margin: EdgeInsets.only(right: index != _packages.length - 1 ? 12.w : 0),
                   child: _buildPackageCard(
                     package: package,
                     isSelected: isSelected,
                     packagePoints: packagePoints,
                     packagePrice: packagePrice,
-                    cardHeight: cardHeight.clamp(100.h, 300.h),
+                    cardHeight: cardHeight.clamp(120.h, 300.h),
                   ),
                 );
               }).toList(),
@@ -624,8 +597,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     required double packagePrice,
     double? cardHeight,
   }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
     final height = cardHeight ?? 150.h;
     final imageSize = height * 0.50;
     
@@ -649,7 +620,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16.w : 20.w, vertical: isSmallScreen ? 12.h : 16.h),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
         child: Row(
           children: [
             // Left side - Package info
@@ -662,7 +633,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     package.name ?? AppLocalizations.of(context)!.package_ucf,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize((height * 0.12).clamp(14, 22).toDouble()).sp,
+                      fontSize: (height * 0.12).clamp(16.sp, 22.sp),
                       fontWeight: FontWeight.w600,
                       color: isSelected ? Colors.white : const Color(0xFFA5A5BA),
                       height: 1.4,
@@ -675,7 +646,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                     style: TextStyle(
-                      fontSize: _responsiveFontSize((height * 0.19).clamp(18, 28).toDouble()).sp,
+                      fontSize: (height * 0.19).clamp(20.sp, 28.sp),
                       fontWeight: FontWeight.w800,
                       color: isSelected ? Colors.white : const Color(0xFF000417),
                       height: 1.3,
@@ -690,7 +661,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         ? AppLocalizations.of(context)!.free_ucf 
                         : _formatPrice(packagePrice),
                     style: TextStyle(
-                      fontSize: _responsiveFontSize((height * 0.12).clamp(12, 18).toDouble()).sp,
+                      fontSize: (height * 0.12).clamp(14.sp, 18.sp),
                       fontWeight: FontWeight.w500,
                       color: isSelected ? Colors.white : const Color(0xFF80818B),
                       height: 1.4,
@@ -702,8 +673,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             
             // Right side - Package image
             Container(
-              width: imageSize.clamp(40.w, 90.w),
-              height: imageSize.clamp(40.h, 90.h),
+              width: imageSize.clamp(50.w, 90.w),
+              height: imageSize.clamp(50.h, 90.h),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14.r),
               ),
@@ -721,7 +692,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                             ),
                             child: Icon(
                               Icons.card_giftcard, 
-                              size: imageSize.clamp(24.sp, 52.sp), 
+                              size: imageSize.clamp(28.sp, 52.sp), 
                               color: Colors.grey,
                             ),
                           );
@@ -735,7 +706,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       ),
                       child: Icon(
                         Icons.card_giftcard, 
-                        size: imageSize.clamp(24.sp, 52.sp), 
+                        size: imageSize.clamp(28.sp, 52.sp), 
                         color: Colors.grey,
                       ),
                     ),
@@ -747,12 +718,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   }
   
   Widget _buildUserPointsCard() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
-    final isMediumScreen = screenWidth >= 380 && screenWidth < 480;
-    
     return Container(
-      padding: EdgeInsets.all(isSmallScreen ? 16.w : 24.w),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
         borderRadius: BorderRadius.circular(24.r),
@@ -762,8 +729,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           Row(
             children: [
               Container(
-                width: isSmallScreen ? 56.w : 72.w,
-                height: isSmallScreen ? 56.w : 72.w,
+                width: 72.w,
+                height: 72.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
@@ -780,19 +747,19 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                           errorBuilder: (context, error, stackTrace) {
                             return Icon(
                               Icons.person,
-                              size: isSmallScreen ? 32.sp : 40.sp,
+                              size: 40.sp,
                               color: MyTheme.medium_grey,
                             );
                           },
                         )
                       : Icon(
                           Icons.person,
-                          size: isSmallScreen ? 32.sp : 40.sp,
+                          size: 40.sp,
                           color: MyTheme.medium_grey,
                         ),
                 ),
               ),
-              SizedBox(width: isSmallScreen ? 12.w : 16.w),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,18 +767,18 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.guest_user,
                       style: TextStyle(
-                        fontSize: _responsiveFontSize(isSmallScreen ? 16 : 20).sp,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0F172A),
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    SizedBox(height: isSmallScreen ? 2.h : 4.h),
+                    SizedBox(height: 4.h),
                     Text(
                       _userEmail,
                       style: TextStyle(
-                        fontSize: _responsiveFontSize(isSmallScreen ? 11 : 13).sp,
+                        fontSize: 13.sp,
                         color: const Color(0xFF64748B),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -822,7 +789,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               ),
             ],
           ),
-          SizedBox(height: isSmallScreen ? 14.h : 20.h),
+          SizedBox(height: 20.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -833,29 +800,29 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       AppLocalizations.of(context)!.referral_and_points,
                       style: TextStyle(
-                        fontSize: _responsiveFontSize(isSmallScreen ? 9 : 10).sp,
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
                         color: MyTheme.accent_color,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    SizedBox(height: isSmallScreen ? 2.h : 4.h),
+                    SizedBox(height: 4.h),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '$_userPoints',
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(isSmallScreen ? 22 : 28).sp,
+                            fontSize: 28.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
-                        SizedBox(width: isSmallScreen ? 2.w : 4.w),
+                        SizedBox(width: 4.w),
                         Text(
                           AppLocalizations.of(context)!.points_ucf,
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(isSmallScreen ? 11 : 13).sp,
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF0F172A),
                           ),
@@ -868,7 +835,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               GestureDetector(
                 onTap: _openBuyPointsDrawer,
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16.w : 20.w, vertical: isSmallScreen ? 8.h : 10.h),
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                   decoration: BoxDecoration(
                     color: MyTheme.accent_color,
                     borderRadius: BorderRadius.circular(7.r),
@@ -876,7 +843,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   child: Text(
                     AppLocalizations.of(context)!.buy_point,
                     style: TextStyle(
-                      fontSize: _responsiveFontSize(isSmallScreen ? 12 : 14).sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -892,8 +859,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   Widget _buildPurchaseHistory() {
     final history = _purchaseHistory;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -901,12 +866,12 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         Text(
           '${AppLocalizations.of(context)!.purchase_history} (${history.length})',
           style: TextStyle(
-            fontSize: _responsiveFontSize(isSmallScreen ? 13 : 15).sp,
+            fontSize: 15.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF0F172A),
           ),
         ),
-        SizedBox(height: isSmallScreen ? 12.h : 16.h),
+        SizedBox(height: 16.h),
         if (history.isEmpty)
           _buildEmptyState()
         else
@@ -914,7 +879,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: history.length,
-            separatorBuilder: (context, index) => SizedBox(height: isSmallScreen ? 8.h : 12.h),
+            separatorBuilder: (context, index) => SizedBox(height: 12.h),
             itemBuilder: (context, index) {
               return _buildHistoryItem(history[index]);
             },
@@ -924,8 +889,6 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   }
   
   Widget _buildHistoryItem(CustomerPackagePayment item) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
     final amount = item.amount ?? 0.0;
     final packageName = item.packageName ?? '';
     
@@ -945,7 +908,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     }
     
     return Container(
-      padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16.r),
@@ -957,8 +920,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             child: Row(
               children: [
                 Container(
-                  width: isSmallScreen ? 40.w : 50.w,
-                  height: isSmallScreen ? 40.w : 50.w,
+                  width: 50.w,
+                  height: 50.w,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12.r),
@@ -966,11 +929,11 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   child: Center(
                     child: Text(
                       _getPaymentMethodIcon(item.paymentMethod ?? ''),
-                      style: TextStyle(fontSize: _responsiveFontSize(isSmallScreen ? 24 : 30).sp),
+                      style: TextStyle(fontSize: 30.sp),
                     ),
                   ),
                 ),
-                SizedBox(width: isSmallScreen ? 10.w : 14.w),
+                SizedBox(width: 14.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -978,25 +941,25 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       Text(
                         packageName.isNotEmpty ? packageName : AppLocalizations.of(context)!.package_purchase,
                         style: TextStyle(
-                          fontSize: _responsiveFontSize(isSmallScreen ? 14 : 16).sp,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF0F172A),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
-                      SizedBox(height: isSmallScreen ? 2.h : 4.h),
+                      SizedBox(height: 4.h),
                       Text(
                         '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                         style: TextStyle(
-                          fontSize: _responsiveFontSize(isSmallScreen ? 12 : 14).sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w600,
                           color: MyTheme.accent_color,
                         ),
                       ),
-                      SizedBox(height: isSmallScreen ? 2.h : 4.h),
+                      SizedBox(height: 4.h),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 6.w : 8.w, vertical: isSmallScreen ? 1.h : 2.h),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEF2F8),
                           borderRadius: BorderRadius.circular(20.r),
@@ -1004,7 +967,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         child: Text(
                           item.paymentMethod ?? AppLocalizations.of(context)!.unknown,
                           style: TextStyle(
-                            fontSize: _responsiveFontSize(isSmallScreen ? 9 : 10).sp,
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF64748B),
                           ),
@@ -1022,16 +985,16 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               Text(
                 _formatPrice(amount),
                 style: TextStyle(
-                  fontSize: _responsiveFontSize(isSmallScreen ? 16 : 18).sp,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
                 ),
               ),
-              SizedBox(height: isSmallScreen ? 2.h : 4.h),
+              SizedBox(height: 4.h),
               Text(
                 item.createdAt != null ? _formatDate(item.createdAt!) : '',
                 style: TextStyle(
-                  fontSize: _responsiveFontSize(isSmallScreen ? 10 : 11).sp,
+                  fontSize: 11.sp,
                   color: const Color(0xFF64748B),
                 ),
               ),
@@ -1043,12 +1006,9 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   }
   
   Widget _buildEmptyState() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 380;
-    
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 30.h : 40.h),
+      padding: EdgeInsets.symmetric(vertical: 40.h),
       decoration: BoxDecoration(
         color: const Color(0xFFFAFBFC),
         borderRadius: BorderRadius.circular(16.r),
@@ -1057,24 +1017,24 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         children: [
           Icon(
             Icons.shopping_bag_outlined,
-            size: _responsiveFontSize(isSmallScreen ? 40 : 50).sp,
+            size: 50.sp,
             color: const Color(0xFFCBD5E1),
           ),
-          SizedBox(height: isSmallScreen ? 8.h : 12.h),
+          SizedBox(height: 12.h),
           Text(
             AppLocalizations.of(context)!.purchase_history_empty,
             style: TextStyle(
-              fontSize: _responsiveFontSize(isSmallScreen ? 12 : 14).sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF334155),
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: isSmallScreen ? 4.h : 6.h),
+          SizedBox(height: 6.h),
           Text(
             AppLocalizations.of(context)!.purchase_history_empty_desc,
             style: TextStyle(
-              fontSize: _responsiveFontSize(isSmallScreen ? 10 : 11).sp,
+              fontSize: 11.sp,
               color: const Color(0xFF94A3B8),
             ),
             textAlign: TextAlign.center,
