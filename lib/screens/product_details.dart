@@ -3191,48 +3191,60 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // TIMER & CURRENT BID - UPDATED DESIGN
+                      // TIMER & CURRENT BID - FIXED: Sky blue only on counter box
                       // ============================================
                       Positioned(
                         bottom: 16.h,
                         left: 12.w,
                         right: 12.w,
-                        child: Container(
-                          padding: EdgeInsets.all(10.w),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F4F8), // Sky blue background
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: MyTheme.accent_color,
-                              width: 1.5.w,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // TIME LEFT Title
-                              Text(
-                                AppLocalizations.of(context)!.time_left,
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: timerTitleSize,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // TIME LEFT Title (outside the sky blue box)
+                            Text(
+                              AppLocalizations.of(context)!.time_left,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: timerTitleSize,
+                                fontWeight: FontWeight.w600,
                               ),
-                              SizedBox(height: 6.h),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Timer with short labels (d, h, m, s) - Inside the box
-                                  _buildTimerRowWithLabels(),
-                                  // Current Bid - Centered
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                            ),
+                            SizedBox(height: 4.h),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Timer with sky blue background and accent border (ONLY THIS PART IS SKY BLUE)
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F4F8), // Sky blue background
+                                    borderRadius: BorderRadius.circular(12.r),
+                                    border: Border.all(
+                                      color: MyTheme.accent_color,
+                                      width: 1.5.w,
+                                    ),
+                                  ),
+                                  child: _buildTimerRowWithLabels(),
+                                ),
+                                // Current Bid
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.2),
+                                      width: 1.w,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
                                         AppLocalizations.of(context)!.current_bid,
                                         style: TextStyle(
-                                          color: Colors.grey.shade700,
+                                          color: Colors.white70,
                                           fontSize: bidLabelSize,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -3240,17 +3252,17 @@ class _ProductDetailsState extends State<ProductDetails>
                                       Text(
                                         _formatPrice(_currentHighestBid),
                                         style: TextStyle(
-                                          color: Colors.black87,
+                                          color: Colors.white,
                                           fontSize: bidPriceSize,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ],
