@@ -63,6 +63,9 @@ class _LoginState extends State<Login> {
   // ✅ Password visibility toggle
   bool _obscurePassword = true;
 
+  // ✅ Remember me state
+  bool _rememberMe = false;
+
   @override
   void initState() {
     //on Splash Screen hide statusbar
@@ -404,6 +407,7 @@ class _LoginState extends State<Login> {
   Widget buildBody(BuildContext context, double _screen_width) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final inputBorderColor = Colors.grey.shade300;
+    final isSmallScreen = _screen_width < 400;
     
     return SingleChildScrollView(
       child: Padding(
@@ -412,22 +416,22 @@ class _LoginState extends State<Login> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // ============================================
-            // Heading: "Login Your Account"
+            // Heading: "Login Your Account" - GRAY COLOR
             // ============================================
             Padding(
               padding: EdgeInsets.only(top: 20.h, bottom: 30.h),
               child: Text(
                 AppLocalizations.of(context)!.login_your_account,
                 style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24.sp,
+                  color: Colors.grey.shade700, // Changed to gray
+                  fontSize: isSmallScreen ? 20.sp : 24.sp,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
             
             // ============================================
-            // Email Input Field (Full Width)
+            // Email Input Field (Full Width) WITH ICON
             // ============================================
             if (_login_by == "email")
               Column(
@@ -449,26 +453,34 @@ class _LoginState extends State<Login> {
                           color: Colors.grey.shade400,
                           fontSize: 14.sp,
                         ),
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: Colors.grey.shade400,
+                          size: 20.sp,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
+                        contentPadding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 0),
                       ),
                     ),
                   ),
                   SizedBox(height: 12.h),
-                  // Phone login option
+                  // Phone login option - FLOAT TO THE RIGHT
                   if (otp_addon_installed.$)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _login_by = "phone";
-                        });
-                      },
-                      child: Text(
-                        AppLocalizations.of(context)!.or_login_with_a_phone,
-                        style: TextStyle(
-                          color: MyTheme.accent_color,
-                          fontSize: 12.sp,
-                          decoration: TextDecoration.underline,
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _login_by = "phone";
+                          });
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)!.or_login_with_a_phone,
+                          style: TextStyle(
+                            color: MyTheme.accent_color,
+                            fontSize: 12.sp,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ),
@@ -476,7 +488,7 @@ class _LoginState extends State<Login> {
               ),
             
             // ============================================
-            // Phone Input Field (Full Width)
+            // Phone Input Field (Full Width) WITH ICON
             // ============================================
             if (_login_by == "phone")
               Column(
@@ -516,8 +528,13 @@ class _LoginState extends State<Login> {
                           color: Colors.grey.shade400,
                           fontSize: 14.sp,
                         ),
+                        prefixIcon: Icon(
+                          Icons.phone_outlined,
+                          color: Colors.grey.shade400,
+                          size: 20.sp,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w),
+                        contentPadding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 0),
                       ),
                       onSaved: (PhoneNumber number) {
                         print('On Saved: $number');
@@ -525,18 +542,22 @@ class _LoginState extends State<Login> {
                     ),
                   ),
                   SizedBox(height: 12.h),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _login_by = "email";
-                      });
-                    },
-                    child: Text(
-                      AppLocalizations.of(context)!.or_login_with_an_email,
-                      style: TextStyle(
-                        color: MyTheme.accent_color,
-                        fontSize: 12.sp,
-                        decoration: TextDecoration.underline,
+                  // Email login option - FLOAT TO THE RIGHT
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _login_by = "email";
+                        });
+                      },
+                      child: Text(
+                        AppLocalizations.of(context)!.or_login_with_an_email,
+                        style: TextStyle(
+                          color: MyTheme.accent_color,
+                          fontSize: 12.sp,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ),
@@ -546,7 +567,7 @@ class _LoginState extends State<Login> {
             SizedBox(height: 16.h),
             
             // ============================================
-            // Password Input Field (Full Width) with Eye Icon
+            // Password Input Field (Full Width) with Eye Icon & Icon
             // ============================================
             Container(
               height: 48.h,
@@ -567,8 +588,13 @@ class _LoginState extends State<Login> {
                     color: Colors.grey.shade400,
                     fontSize: 14.sp,
                   ),
+                  prefixIcon: Icon(
+                    Icons.lock_outline,
+                    color: Colors.grey.shade400,
+                    size: 20.sp,
+                  ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
+                  contentPadding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 0),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword 
@@ -595,27 +621,38 @@ class _LoginState extends State<Login> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Remember Me
-                Row(
-                  children: [
-                    Checkbox(
-                      value: false,
-                      onChanged: (value) {},
-                      activeColor: MyTheme.accent_color,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4.r),
+                // Remember Me - NOW CLICKABLE
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _rememberMe = !_rememberMe;
+                    });
+                  },
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (value) {
+                          setState(() {
+                            _rememberMe = value ?? false;
+                          });
+                        },
+                        activeColor: MyTheme.accent_color,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
                       ),
-                    ),
-                    Text(
-                      AppLocalizations.of(context)!.remember_me,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13.sp,
+                      Text(
+                        AppLocalizations.of(context)!.remember_me,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13.sp,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 // Forgot Password
                 GestureDetector(
@@ -658,7 +695,7 @@ class _LoginState extends State<Login> {
                 child: Text(
                   AppLocalizations.of(context)!.login_screen_log_in,
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    fontSize: isSmallScreen ? 14.sp : 16.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -677,7 +714,7 @@ class _LoginState extends State<Login> {
                   "${AppLocalizations.of(context)!.dont_have_account} ",
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: 14.sp,
+                    fontSize: isSmallScreen ? 12.sp : 14.sp,
                   ),
                 ),
                 GestureDetector(
@@ -691,7 +728,7 @@ class _LoginState extends State<Login> {
                     AppLocalizations.of(context)!.sign_up,
                     style: TextStyle(
                       color: MyTheme.accent_color,
-                      fontSize: 14.sp,
+                      fontSize: isSmallScreen ? 12.sp : 14.sp,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -720,7 +757,7 @@ class _LoginState extends State<Login> {
                       AppLocalizations.of(context)!.or_log_in_with,
                       style: TextStyle(
                         color: Colors.grey.shade500,
-                        fontSize: 12.sp,
+                        fontSize: isSmallScreen ? 10.sp : 12.sp,
                       ),
                     ),
                   ),
@@ -737,56 +774,64 @@ class _LoginState extends State<Login> {
             SizedBox(height: 16.h),
             
             // ============================================
-            // Social Login Buttons (Rectangle, icon right, text left)
+            // Social Login Buttons - SIDE BY SIDE (icon and text)
             // ============================================
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Google Button
                 Visibility(
                   visible: allow_google_login.$,
                   child: Padding(
-                    padding: EdgeInsets.only(bottom: 12.h),
-                    child: _buildSocialLoginButton(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w),
+                    child: _buildSocialLoginButtonSideBySide(
                       label: "Google",
                       iconPath: "assets/google_logo.png",
                       onTap: onPressedGoogleLogin,
+                      isSmallScreen: isSmallScreen,
                     ),
                   ),
                 ),
                 // Facebook Button
                 Visibility(
                   visible: allow_facebook_login.$,
-                  child: _buildSocialLoginButton(
-                    label: "Facebook",
-                    iconPath: "assets/facebook_logo.png",
-                    onTap: onPressedFacebookLogin,
-                  ),
-                ),
-                // Apple Login (iOS only)
-                if (Platform.isIOS)
-                  Padding(
-                    padding: EdgeInsets.only(top: 12.h),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: SignInWithAppleButton(
-                        onPressed: signInWithApple,
-                      ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w),
+                    child: _buildSocialLoginButtonSideBySide(
+                      label: "Facebook",
+                      iconPath: "assets/facebook_logo.png",
+                      onTap: onPressedFacebookLogin,
+                      isSmallScreen: isSmallScreen,
                     ),
                   ),
-                // Twitter Login
+                ),
+                // Twitter Button
                 Visibility(
                   visible: allow_twitter_login.$,
                   child: Padding(
-                    padding: EdgeInsets.only(top: 12.h),
-                    child: _buildSocialLoginButton(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w),
+                    child: _buildSocialLoginButtonSideBySide(
                       label: "Twitter",
                       iconPath: "assets/twitter_logo.png",
                       onTap: onPressedTwitterLogin,
+                      isSmallScreen: isSmallScreen,
                     ),
                   ),
                 ),
               ],
             ),
+            
+            // Apple Login (iOS only) - Full width
+            if (Platform.isIOS)
+              Padding(
+                padding: EdgeInsets.only(top: 12.h),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SignInWithAppleButton(
+                    onPressed: signInWithApple,
+                  ),
+                ),
+              ),
             
             SizedBox(height: 30.h),
           ],
@@ -796,16 +841,16 @@ class _LoginState extends State<Login> {
   }
   
   // ============================================
-  // Social Login Button Widget
+  // Social Login Button - SIDE BY SIDE (icon and text)
   // ============================================
-  Widget _buildSocialLoginButton({
+  Widget _buildSocialLoginButtonSideBySide({
     required String label,
     required String iconPath,
     required VoidCallback onTap,
+    bool isSmallScreen = false,
   }) {
     return SizedBox(
-      width: double.infinity,
-      height: 48.h,
+      height: 44.h,
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
@@ -814,24 +859,26 @@ class _LoginState extends State<Login> {
             borderRadius: BorderRadius.circular(10.r),
           ),
           backgroundColor: Colors.white,
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            SizedBox(
+              width: isSmallScreen ? 18.w : 22.w,
+              height: isSmallScreen ? 18.w : 22.w,
+              child: Image.asset(
+                iconPath,
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(width: 8.w),
             Text(
               label,
               style: TextStyle(
                 color: Colors.black87,
-                fontSize: 14.sp,
+                fontSize: isSmallScreen ? 11.sp : 13.sp,
                 fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(
-              width: 24.w,
-              height: 24.w,
-              child: Image.asset(
-                iconPath,
-                fit: BoxFit.contain,
               ),
             ),
           ],
