@@ -116,6 +116,9 @@ class _ProductDetailsState extends State<ProductDetails>
   // Screen width for responsive sizing
   double _screenWidth = 0;
 
+  // Scroll controller for comments to auto-scroll to bottom
+  final ScrollController _commentsScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -138,6 +141,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _audioPlayer.dispose();
+    _commentsScrollController.dispose();
     super.dispose();
   }
 
@@ -193,10 +197,25 @@ class _ProductDetailsState extends State<ProductDetails>
       await _fetchWishlistStatus();
 
       setState(() => _isLoading = false);
+      
+      // Auto-scroll to bottom after comments load
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     } catch (e) {
       print('Error fetching data: $e');
       ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
       setState(() => _isLoading = false);
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_commentsScrollController.hasClients) {
+      _commentsScrollController.animateTo(
+        _commentsScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -207,6 +226,9 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true && response.comments != null) {
         // Reverse comments so latest appears at bottom
         setState(() => _comments = response.comments!.reversed.toList());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
       }
     } catch (e) {
       print('Error fetching comments: $e');
@@ -336,6 +358,9 @@ class _ProductDetailsState extends State<ProductDetails>
 
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() => _comments = response.comments!.reversed.toList());
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
         }
 
         if (response.reviews != null && response.reviews!.isNotEmpty) {
@@ -579,6 +604,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _commentController.clear();
         await _fetchComments();
         ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
       } else {
         ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_adding_comment);
       }
@@ -863,10 +892,6 @@ class _ProductDetailsState extends State<ProductDetails>
     return FormatHelper.formatPrice(amount);
   }
 
-  // ============================================
-  // UPDATED TIMER METHODS
-  // ============================================
-
   String _formatTimeLeft() {
     if (_timeLeft.isNegative) return '00:00:00';
 
@@ -888,11 +913,8 @@ class _ProductDetailsState extends State<ProductDetails>
     final minutes = _timeLeft.inMinutes.remainder(60);
     final seconds = _timeLeft.inSeconds.remainder(60);
 
-    // Determine which units to show based on time remaining
     bool showDays = days > 0;
-    bool showHours = true;
-    bool showMinutes = true;
-    bool showSeconds = !showDays; // Show seconds only if less than a day
+    bool showSeconds = !showDays;
 
     return {
       'days': days.toString().padLeft(2, '0'),
@@ -900,8 +922,6 @@ class _ProductDetailsState extends State<ProductDetails>
       'minutes': minutes.toString().padLeft(2, '0'),
       'seconds': seconds.toString().padLeft(2, '0'),
       'showDays': showDays,
-      'showHours': showHours,
-      'showMinutes': showMinutes,
       'showSeconds': showSeconds,
     };
   }
@@ -1056,14 +1076,17 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _showProductDetailsModal() {
+    final isSmallScreen = _screenWidth < 400;
+    final modalWidth = _screenWidth * 0.9;
+    
     showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: EdgeInsets.all(16.w),
+          width: modalWidth,
+          height: MediaQuery.of(context).size.height * 0.85,
+          padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1072,10 +1095,13 @@ class _ProductDetailsState extends State<ProductDetails>
                 children: [
                   Text(
                     AppLocalizations.of(context)!.product_details,
-                    style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 16.sp : 18.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, size: 24.sp),
+                    icon: Icon(Icons.close, size: isSmallScreen ? 20.sp : 24.sp),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -1088,10 +1114,20 @@ class _ProductDetailsState extends State<ProductDetails>
                     children: [
                       Text(
                         _product?.name ?? '',
-                        style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 18.sp : 20.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(height: 12.h),
-                      Html(data: _product?.description ?? ''),
+                      Html(
+                        data: _product?.description ?? '',
+                        style: {
+                          'body': Style(
+                            fontSize: FontSize(isSmallScreen ? 12.0 : 14.0),
+                          ),
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -1103,7 +1139,145 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  void _showBidHistoryModalDialog() {
+    final isSmallScreen = _screenWidth < 400;
+    final modalWidth = _screenWidth * 0.9;
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        child: Container(
+          width: modalWidth,
+          height: MediaQuery.of(context).size.height * 0.85,
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.bid_history,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 14.sp : 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, size: isSmallScreen ? 20.sp : 24.sp),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                color: Colors.grey.shade100,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        AppLocalizations.of(context)!.bidder_ucf,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isSmallScreen ? 10.sp : 12.sp,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        AppLocalizations.of(context)!.amount_ucf,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isSmallScreen ? 10.sp : 12.sp,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        AppLocalizations.of(context)!.date_time_ucf,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isSmallScreen ? 10.sp : 12.sp,
+                        ),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _bidHistory.isEmpty
+                    ? Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.no_bids_yet,
+                          style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _bidHistory.length,
+                        itemBuilder: (context, index) {
+                          final bid = _bidHistory[index];
+                          return Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                            decoration: BoxDecoration(
+                              border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    bid.userName ?? AppLocalizations.of(context)!.user_ucf,
+                                    style: TextStyle(fontSize: isSmallScreen ? 11.sp : 13.sp),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    _formatPrice(bid.amount ?? 0),
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? 11.sp : 13.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: MyTheme.accent_color,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    _formatDateTime(bid.createdAt),
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? 9.sp : 11.sp,
+                                      color: Colors.grey,
+                                    ),
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showReviewsModalDialog() {
+    final isSmallScreen = _screenWidth < 400;
+    final modalWidth = _screenWidth * 0.9;
+    
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1111,12 +1285,12 @@ class _ProductDetailsState extends State<ProductDetails>
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.8,
-              height: MediaQuery.of(context).size.height * 0.8,
+              width: modalWidth,
+              height: MediaQuery.of(context).size.height * 0.85,
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(16.w),
+                    padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                     decoration: BoxDecoration(
                       border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                     ),
@@ -1125,10 +1299,13 @@ class _ProductDetailsState extends State<ProductDetails>
                       children: [
                         Text(
                           '${AppLocalizations.of(context)!.all_reviews} ($_reviewsCount)',
-                          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 14.sp : 16.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, size: 24.sp),
+                          icon: Icon(Icons.close, size: isSmallScreen ? 20.sp : 24.sp),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -1136,14 +1313,19 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   Expanded(
                     child: _reviews.isEmpty
-                        ? Center(child: Text(AppLocalizations.of(context)!.no_reviews_yet, style: TextStyle(fontSize: 14.sp)))
+                        ? Center(
+                            child: Text(
+                              AppLocalizations.of(context)!.no_reviews_yet,
+                              style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
+                            ),
+                          )
                         : ListView.builder(
-                            padding: EdgeInsets.all(16.w),
+                            padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                             itemCount: _reviews.length,
                             itemBuilder: (context, index) {
                               final review = _reviews[index];
                               return Container(
-                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                padding: EdgeInsets.symmetric(vertical: 10.h),
                                 decoration: BoxDecoration(
                                   border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
                                 ),
@@ -1158,27 +1340,35 @@ class _ProductDetailsState extends State<ProductDetails>
                                               starIndex < (review.rating ?? 0)
                                                   ? Icons.star
                                                   : Icons.star_border,
-                                              size: 14.sp,
+                                              size: isSmallScreen ? 12.sp : 14.sp,
                                               color: Colors.amber,
                                             );
                                           }),
                                         ),
-                                        SizedBox(width: 8.w),
+                                        SizedBox(width: 6.w),
                                         Text(
                                           _formatDate(review.createdAt),
-                                          style: TextStyle(fontSize: 11.sp, color: Colors.grey),
+                                          style: TextStyle(
+                                            fontSize: isSmallScreen ? 9.sp : 11.sp,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ],
                                     ),
                                     SizedBox(height: 4.h),
                                     Text(
                                       review.comment ?? '',
-                                      style: TextStyle(fontSize: 14.sp),
+                                      style: TextStyle(
+                                        fontSize: isSmallScreen ? 12.sp : 14.sp,
+                                      ),
                                     ),
                                     SizedBox(height: 4.h),
                                     Text(
                                       review.userName ?? AppLocalizations.of(context)!.user_ucf,
-                                      style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                                      style: TextStyle(
+                                        fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1187,7 +1377,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(16.w),
+                    padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                     decoration: BoxDecoration(
                       border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                     ),
@@ -1208,7 +1398,10 @@ class _ProductDetailsState extends State<ProductDetails>
                           ? _buildButtonLoader()
                           : Text(
                               AppLocalizations.of(context)!.write_a_review,
-                              style: TextStyle(fontSize: 14.sp, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12.sp : 14.sp,
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   ),
@@ -1224,6 +1417,8 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showAddReviewModalDialog() {
     double tempRating = 0;
     TextEditingController tempController = TextEditingController();
+    final isSmallScreen = _screenWidth < 400;
+    final modalWidth = _screenWidth * 0.9;
 
     showDialog(
       context: context,
@@ -1232,9 +1427,9 @@ class _ProductDetailsState extends State<ProductDetails>
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.8,
+              width: modalWidth,
               height: MediaQuery.of(context).size.height * 0.8,
-              padding: EdgeInsets.all(24.w),
+              padding: EdgeInsets.all(isSmallScreen ? 16.w : 24.w),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1244,16 +1439,25 @@ class _ProductDetailsState extends State<ProductDetails>
                     children: [
                       Text(
                         AppLocalizations.of(context)!.write_a_review,
-                        style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 16.sp : 18.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, size: 24.sp),
+                        icon: Icon(Icons.close, size: isSmallScreen ? 20.sp : 24.sp),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16.h),
-                  Text(AppLocalizations.of(context)!.rating_ucf, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+                  SizedBox(height: 12.h),
+                  Text(
+                    AppLocalizations.of(context)!.rating_ucf,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 12.sp : 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   SizedBox(height: 8.h),
                   RatingBar.builder(
                     initialRating: 0,
@@ -1261,7 +1465,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     direction: Axis.horizontal,
                     allowHalfRating: false,
                     itemCount: 5,
-                    itemSize: 30.w,
+                    itemSize: isSmallScreen ? 24.w : 30.w,
                     itemBuilder: (context, _) =>
                         Icon(Icons.star, color: Colors.amber),
                     onRatingUpdate: (rating) {
@@ -1269,21 +1473,29 @@ class _ProductDetailsState extends State<ProductDetails>
                       setModalState(() {});
                     },
                   ),
-                  SizedBox(height: 16.h),
-                  Text(AppLocalizations.of(context)!.review_ucf, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500)),
+                  SizedBox(height: 12.h),
+                  Text(
+                    AppLocalizations.of(context)!.review_ucf,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 12.sp : 14.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   SizedBox(height: 8.h),
                   TextField(
                     controller: tempController,
-                    maxLines: 5,
+                    maxLines: 4,
+                    style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!.share_experience_hint,
-                      hintStyle: TextStyle(fontSize: 14.sp),
+                      hintStyle: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8.r),
                       ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                     ),
                   ),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: 16.h),
                   ElevatedButton(
                     onPressed: _isProcessing
                         ? null
@@ -1336,7 +1548,10 @@ class _ProductDetailsState extends State<ProductDetails>
                         ? _buildButtonLoader()
                         : Text(
                             AppLocalizations.of(context)!.submit_review,
-                            style: TextStyle(fontSize: 14.sp, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 12.sp : 14.sp,
+                              color: Colors.white,
+                            ),
                           ),
                   ),
                 ],
@@ -1348,114 +1563,9 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  void _showBidHistoryModalDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.all(16.w),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.bid_history,
-                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, size: 24.sp),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                color: Colors.grey.shade100,
-                child: Row(
-                  children: [
-                    Expanded(
-                        flex: 2,
-                        child: Text(
-                          AppLocalizations.of(context)!.bidder_ucf,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
-                        )),
-                    Expanded(
-                        flex: 1,
-                        child: Text(
-                          AppLocalizations.of(context)!.amount_ucf,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
-                        )),
-                    Expanded(
-                        flex: 1,
-                        child: Text(
-                          AppLocalizations.of(context)!.date_time_ucf,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.sp),
-                          textAlign: TextAlign.end,
-                        )),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _bidHistory.isEmpty
-                    ? Center(child: Text(AppLocalizations.of(context)!.no_bids_yet, style: TextStyle(fontSize: 14.sp)))
-                    : ListView.builder(
-                        itemCount: _bidHistory.length,
-                        itemBuilder: (context, index) {
-                          final bid = _bidHistory[index];
-                          return Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                            decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                      bid.userName ?? AppLocalizations.of(context)!.user_ucf,
-                                      style: TextStyle(fontSize: 13.sp),
-                                    )),
-                                Expanded(
-                                    flex: 1,
-                                    child: Text(
-                                      _formatPrice(bid.amount ?? 0),
-                                      style: TextStyle(
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: MyTheme.accent_color,
-                                      ),
-                                    )),
-                                Expanded(
-                                    flex: 1,
-                                    child: Text(
-                                      _formatDateTime(bid.createdAt),
-                                      style: TextStyle(fontSize: 11.sp, color: Colors.grey),
-                                      textAlign: TextAlign.end,
-                                    )),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
+    final isSmallScreen = _screenWidth < 400;
 
     showDialog(
       context: context,
@@ -1463,7 +1573,7 @@ class _ProductDetailsState extends State<ProductDetails>
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          padding: EdgeInsets.all(24.w),
+          padding: EdgeInsets.all(isSmallScreen ? 16.w : 24.w),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Color(0xFF667eea), Color(0xFF764ba2)]),
             borderRadius: BorderRadius.circular(32.r),
@@ -1471,29 +1581,29 @@ class _ProductDetailsState extends State<ProductDetails>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🏆', style: TextStyle(fontSize: 48.sp)),
+              Text('🏆', style: TextStyle(fontSize: isSmallScreen ? 40.sp : 48.sp)),
               SizedBox(height: 8.h),
               Text(
                 AppLocalizations.of(context)!.auction_ended_exclamation,
                 style: TextStyle(
-                  fontSize: 24.sp,
+                  fontSize: isSmallScreen ? 20.sp : 24.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 16.h),
+              SizedBox(height: 12.h),
               CircleAvatar(
-                radius: 50.w,
+                radius: isSmallScreen ? 40.w : 50.w,
                 backgroundImage: NetworkImage(_winnerData!.avatar ?? ''),
                 child: _winnerData!.avatar == null
-                    ? Icon(Icons.person, size: 40.sp)
+                    ? Icon(Icons.person, size: isSmallScreen ? 32.sp : 40.sp)
                     : null,
               ),
-              SizedBox(height: 12.h),
+              SizedBox(height: 10.h),
               Text(
                 _winnerData!.userName ?? AppLocalizations.of(context)!.winner_ucf,
                 style: TextStyle(
-                  fontSize: 20.sp,
+                  fontSize: isSmallScreen ? 16.sp : 20.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -1502,17 +1612,20 @@ class _ProductDetailsState extends State<ProductDetails>
               Text(
                 _formatPrice(_winnerData!.amount ?? 0),
                 style: TextStyle(
-                  fontSize: 24.sp,
+                  fontSize: isSmallScreen ? 20.sp : 24.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.amber,
                 ),
               ),
-              SizedBox(height: 12.h),
+              SizedBox(height: 10.h),
               Text(
                 AppLocalizations.of(context)!.congratulations_to_winner,
-                style: TextStyle(fontSize: 14.sp, color: Colors.white70),
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 12.sp : 14.sp,
+                  color: Colors.white70,
+                ),
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 16.h),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
@@ -1523,7 +1636,10 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.close_ucf,
-                  style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 12.sp : 14.sp,
+                    color: MyTheme.accent_color,
+                  ),
                 ),
               ),
             ],
@@ -1663,22 +1779,25 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // UPDATED TIMER UNIT WIDGET - WITH SHORT LABELS (d, h, m, s)
+  // TIMER WIDGETS - UPDATED
   // ============================================
 
-  Widget _buildTimerUnit(String value, String label, {bool isEndingSoon = false}) {
-    // Determine if we should show this unit
+  Widget _buildTimerUnitWithLabel(String value, String label, {bool isEndingSoon = false}) {
     if (label == 's' && _timeLeft.inDays > 0) {
-      // Hide seconds when there are days
       return SizedBox.shrink();
     }
     
+    final isSmallScreen = _screenWidth < 400;
+    final fontSize = isSmallScreen ? 18.sp : 22.sp;
+    final labelSize = isSmallScreen ? 8.sp : 10.sp;
+    final padding = isSmallScreen ? 6.w : 8.w;
+    
     return Container(
-      margin: EdgeInsets.only(right: 6.w),
+      margin: EdgeInsets.only(right: 4.w),
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            padding: EdgeInsets.symmetric(horizontal: padding, vertical: 4.h),
             decoration: BoxDecoration(
               color: isEndingSoon ? Colors.red : MyTheme.accent_color,
               borderRadius: BorderRadius.circular(8.r),
@@ -1687,7 +1806,7 @@ class _ProductDetailsState extends State<ProductDetails>
               value,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16.sp,
+                fontSize: fontSize,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1697,7 +1816,7 @@ class _ProductDetailsState extends State<ProductDetails>
             label,
             style: TextStyle(
               color: Colors.white70,
-              fontSize: 10.sp,
+              fontSize: labelSize,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1706,11 +1825,7 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // ============================================
-  // UPDATED TIMER ROW WIDGET
-  // ============================================
-
-  Widget _buildTimerRow() {
+  Widget _buildTimerRowWithLabels() {
     final components = _getTimeComponents();
     final days = components['days'] as String;
     final hours = components['hours'] as String;
@@ -1722,14 +1837,14 @@ class _ProductDetailsState extends State<ProductDetails>
     List<Widget> timerUnits = [];
 
     if (showDays) {
-      timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon));
+      timerUnits.add(_buildTimerUnitWithLabel(days, 'd', isEndingSoon: _isEndingSoon));
     }
     
-    timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon));
-    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon));
+    timerUnits.add(_buildTimerUnitWithLabel(hours, 'h', isEndingSoon: _isEndingSoon));
+    timerUnits.add(_buildTimerUnitWithLabel(minutes, 'm', isEndingSoon: _isEndingSoon));
     
     if (showSeconds) {
-      timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon));
+      timerUnits.add(_buildTimerUnitWithLabel(seconds, 's', isEndingSoon: _isEndingSoon));
     }
 
     return Row(
@@ -1738,23 +1853,25 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT
+  // MOBILE LAYOUT - UPDATED
   // ============================================
 
   Widget _buildMobileLayout() {
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.85;
+    final imageHeight = screenHeight * 0.85; // 85% of screen height
     final isSmallScreen = _screenWidth < 380;
     final isMediumScreen = _screenWidth >= 380 && _screenWidth < 480;
     
-    // Responsive font sizes
-    final double nameFontSize = isSmallScreen ? 18.sp : (isMediumScreen ? 20.sp : 22.sp);
-    final double descFontSize = isSmallScreen ? 11.sp : (isMediumScreen ? 12.sp : 13.sp);
-    final double timerFontSize = isSmallScreen ? 12.sp : (isMediumScreen ? 14.sp : 16.sp);
-    final double timerLabelFontSize = isSmallScreen ? 8.sp : (isMediumScreen ? 9.sp : 10.sp);
-    final double commentFontSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
-    final double commentNameFontSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
-    final double badgeFontSize = isSmallScreen ? 7.sp : (isMediumScreen ? 8.sp : 9.sp);
+    // Responsive font sizes - dynamically scale
+    final double nameFontSize = isSmallScreen ? 16.sp : (isMediumScreen ? 18.sp : 20.sp);
+    final double descFontSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
+    final double commentFontSize = isSmallScreen ? 8.sp : (isMediumScreen ? 9.sp : 10.sp);
+    final double commentNameFontSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
+    final double badgeFontSize = isSmallScreen ? 6.sp : (isMediumScreen ? 7.sp : 8.sp);
+    final double timerTitleSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
+    final double bidPriceSize = isSmallScreen ? 16.sp : (isMediumScreen ? 18.sp : 20.sp);
+    final double bidLabelSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
+    final double commentsHeight = isSmallScreen ? 200.h : 240.h; // Longer comment section
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1838,8 +1955,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     });
                                   },
                                   child: Container(
-                                    width: 48.w,
-                                    height: 48.w,
+                                    width: isSmallScreen ? 40.w : 48.w,
+                                    height: isSmallScreen ? 40.w : 48.w,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       shape: BoxShape.circle,
@@ -1853,8 +1970,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                     child: _isProcessing
                                         ? SizedBox(
-                                            height: 20.w,
-                                            width: 20.w,
+                                            height: 16.w,
+                                            width: 16.w,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2.w,
                                               color: MyTheme.accent_color,
@@ -1863,25 +1980,27 @@ class _ProductDetailsState extends State<ProductDetails>
                                         : Icon(
                                             Icons.more_vert,
                                             color: Colors.black87,
-                                            size: 22.sp,
+                                            size: isSmallScreen ? 18.sp : 22.sp,
                                           ),
                                   ),
                                 );
                               },
                             ),
-                            SizedBox(height: 12.h),
+                            SizedBox(height: 8.h),
                             _buildIconCircleWithImage(
                               imagePath: 'assets/bid_history.png',
                               onTap: _openBidHistoryModal,
                               isLoading: _isProcessing,
                               fallbackIcon: Icons.history,
+                              size: isSmallScreen ? 40.w : 48.w,
                             ),
-                            SizedBox(height: 12.h),
+                            SizedBox(height: 8.h),
                             _buildIconCircleWithImage(
                               imagePath: 'assets/product_details.png',
                               onTap: _openTitleModal,
                               isLoading: _isProcessing,
                               fallbackIcon: Icons.info_outline,
+                              size: isSmallScreen ? 40.w : 48.w,
                             ),
                           ],
                         ),
@@ -1894,29 +2013,30 @@ class _ProductDetailsState extends State<ProductDetails>
                           icon: Icons.arrow_back,
                           onTap: () => Navigator.pop(context),
                           isLoading: false,
+                          size: isSmallScreen ? 40.w : 48.w,
                         ),
                       ),
                       // ============================================
-                      // COMMENTS SECTION - UPDATED: Latest at bottom, smaller font
+                      // COMMENTS SECTION - Updated: Longer height, latest at bottom
                       // ============================================
                       Positioned(
-                        bottom: 200.h,
-                        left: 16.w,
+                        bottom: 100.h,
+                        left: 12.w,
                         child: Container(
-                          width: _screenWidth * 0.75,
+                          width: _screenWidth * 0.78,
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20.r),
+                            borderRadius: BorderRadius.circular(16.r),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.15), width: 1.w),
                           ),
-                          padding: EdgeInsets.all(10.w),
+                          padding: EdgeInsets.all(8.w),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Comments List - SCROLLABLE
+                              // Comments List - SCROLLABLE - LONGER HEIGHT
                               Container(
-                                height: 160.h,
+                                height: commentsHeight,
                                 child: _comments.isEmpty
                                     ? Center(
                                         child: Text(
@@ -1928,19 +2048,19 @@ class _ProductDetailsState extends State<ProductDetails>
                                         ),
                                       )
                                     : ListView.builder(
+                                        controller: _commentsScrollController,
                                         physics: const AlwaysScrollableScrollPhysics(),
-                                        // Reverse the list so latest comments appear at bottom
                                         itemCount: _comments.length,
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
                                           return Padding(
-                                            padding: EdgeInsets.only(bottom: 6.h),
+                                            padding: EdgeInsets.only(bottom: 4.h),
                                             child: Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 CircleAvatar(
-                                                  radius: 14.w,
+                                                  radius: isSmallScreen ? 10.w : 14.w,
                                                   backgroundImage:
                                                       NetworkImage(comment
                                                               .userAvatar ??
@@ -1949,12 +2069,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                           .userAvatar ==
                                                       null
                                                       ? Icon(Icons.person,
-                                                          size: 12.sp,
+                                                          size: isSmallScreen ? 8.sp : 12.sp,
                                                           color: Colors
                                                               .white54)
                                                       : null,
                                                 ),
-                                                SizedBox(width: 8.w),
+                                                SizedBox(width: 6.w),
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -1999,7 +2119,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               ),
                                                             ),
                                                           ),
-                                                          SizedBox(width: 10.w),
+                                                          SizedBox(width: 8.w),
                                                           GestureDetector(
                                                             onTap: () =>
                                                                 _replyToComment(
@@ -2036,7 +2156,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         color: Colors.white
                                             .withOpacity(0.15),
                                         borderRadius:
-                                            BorderRadius.circular(12.r),
+                                            BorderRadius.circular(10.r),
                                       ),
                                       child: TextField(
                                         controller: _commentController,
@@ -2051,35 +2171,35 @@ class _ProductDetailsState extends State<ProductDetails>
                                           border: InputBorder.none,
                                           contentPadding:
                                               EdgeInsets.symmetric(
-                                                  horizontal: 10.w,
-                                                  vertical: 6.h),
+                                                  horizontal: 8.w,
+                                                  vertical: 4.h),
                                         ),
                                         onSubmitted: (value) =>
                                             _sendComment(),
                                       ),
                                     ),
                                   ),
-                                  SizedBox(width: 6.w),
+                                  SizedBox(width: 4.w),
                                   GestureDetector(
                                     onTap: _isProcessing ? null : _sendComment,
                                     child: Container(
-                                      width: 28.w,
-                                      height: 28.w,
+                                      width: isSmallScreen ? 24.w : 28.w,
+                                      height: isSmallScreen ? 24.w : 28.w,
                                       decoration: BoxDecoration(
                                         color: MyTheme.accent_color,
                                         shape: BoxShape.circle,
                                       ),
                                       child: _isProcessing
                                           ? SizedBox(
-                                              height: 12.w,
-                                              width: 12.w,
+                                              height: 10.w,
+                                              width: 10.w,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2.w,
                                                 color: Colors.white,
                                               ),
                                             )
                                           : Icon(Icons.send,
-                                              size: 14.sp,
+                                              size: isSmallScreen ? 12.sp : 14.sp,
                                               color: Colors.white),
                                     ),
                                   ),
@@ -2094,8 +2214,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       // ============================================
                       Positioned(
                         bottom: 90.h,
-                        left: 16.w,
-                        right: 16.w,
+                        left: 12.w,
+                        right: 12.w,
                         child: GestureDetector(
                           onTap: _openTitleModal,
                           child: Column(
@@ -2106,7 +2226,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       color: Colors.white,
                                       fontSize: nameFontSize,
                                       fontWeight: FontWeight.bold)),
-                              SizedBox(height: 4.h),
+                              SizedBox(height: 2.h),
                               Text(
                                   _product?.description
                                           ?.replaceAll(RegExp(r'<[^>]*>'),
@@ -2126,45 +2246,62 @@ class _ProductDetailsState extends State<ProductDetails>
                       // ============================================
                       Positioned(
                         bottom: 16.h,
-                        left: 16.w,
-                        right: 16.w,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Timer with short labels (d, h, m, s)
-                                _buildTimerRow(),
-                                // Current Bid Container
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w, vertical: 12.h),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    border: Border.all(
-                                        color: Colors.white.withOpacity(0.2), width: 1.w),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                        left: 12.w,
+                        right: 12.w,
+                        child: Container(
+                          padding: EdgeInsets.all(10.w),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F4F8), // Sky blue background
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: MyTheme.accent_color,
+                              width: 1.5.w,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // TIME LEFT Title
+                              Text(
+                                AppLocalizations.of(context)!.time_left,
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: timerTitleSize,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Timer with short labels (d, h, m, s) - Inside the box
+                                  _buildTimerRowWithLabels(),
+                                  // Current Bid - Centered
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      Text(AppLocalizations.of(context)!.current_bid,
-                                          style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 10.sp)),
-                                      Text(_formatPrice(_currentHighestBid),
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20.sp,
-                                              fontWeight: FontWeight.bold)),
+                                      Text(
+                                        AppLocalizations.of(context)!.current_bid,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: bidLabelSize,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatPrice(_currentHighestBid),
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: bidPriceSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 7.h),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -2195,25 +2332,39 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           Text(AppLocalizations.of(context)!.bid_information,
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16.sp)),
-                          SizedBox(height: 12.h),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 14.sp : 16.sp)),
+                          SizedBox(height: 10.h),
                           GridView.count(
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            crossAxisSpacing: 12.w,
-                            mainAxisSpacing: 12.h,
+                            crossAxisSpacing: 10.w,
+                            mainAxisSpacing: 10.h,
                             childAspectRatio: 3,
                             children: [
-                              _buildInfoItem(AppLocalizations.of(context)!.starting_bid,
-                                  _formatPrice(_startingBid)),
-                              _buildInfoItem(AppLocalizations.of(context)!.total_bidders, '$_totalBids'),
                               _buildInfoItem(
-                                  AppLocalizations.of(context)!.highest_bidder,
-                                  _highestBidder.isNotEmpty
-                                      ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                      : AppLocalizations.of(context)!.no_bids),
-                              _buildInfoItem(AppLocalizations.of(context)!.bid_now_at, '$_pointPerBid'),
+                                AppLocalizations.of(context)!.starting_bid,
+                                _formatPrice(_startingBid),
+                                isSmallScreen,
+                              ),
+                              _buildInfoItem(
+                                AppLocalizations.of(context)!.total_bidders,
+                                '$_totalBids',
+                                isSmallScreen,
+                              ),
+                              _buildInfoItem(
+                                AppLocalizations.of(context)!.highest_bidder,
+                                _highestBidder.isNotEmpty
+                                    ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                    : AppLocalizations.of(context)!.no_bids,
+                                isSmallScreen,
+                              ),
+                              _buildInfoItem(
+                                AppLocalizations.of(context)!.bid_now_at,
+                                '$_pointPerBid',
+                                isSmallScreen,
+                              ),
                             ],
                           ),
                         ],
@@ -2229,7 +2380,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(
-                        padding: EdgeInsets.all(16.w),
+                        padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16.r),
@@ -2252,45 +2403,46 @@ class _ProductDetailsState extends State<ProductDetails>
                                       index < _rating.round()
                                           ? Icons.star
                                           : Icons.star_border,
-                                      size: 16.sp,
+                                      size: isSmallScreen ? 14.sp : 16.sp,
                                       color: Colors.amber,
                                     );
                                   }),
                                 ),
-                                SizedBox(width: 8.w),
+                                SizedBox(width: 6.w),
                                 Text(_rating.toStringAsFixed(1),
                                     style: TextStyle(
-                                        fontSize: 16.sp,
+                                        fontSize: isSmallScreen ? 14.sp : 16.sp,
                                         fontWeight: FontWeight.bold)),
-                                SizedBox(width: 8.w),
+                                SizedBox(width: 6.w),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w, vertical: 4.h),
+                                      horizontal: 6.w, vertical: 2.h),
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade100,
                                     borderRadius: BorderRadius.circular(20.r),
                                   ),
-                                  child: Text('$_reviewsCount ${AppLocalizations.of(context)!.reviews_ucf}',
+                                  child: Text('$_reviewsCount',
                                       style: TextStyle(
-                                          fontSize: 12.sp, color: Colors.grey)),
+                                          fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                          color: Colors.grey)),
                                 ),
                               ],
                             ),
                             Icon(Icons.arrow_forward_ios,
-                                size: 16.sp, color: Colors.grey),
+                                size: isSmallScreen ? 14.sp : 16.sp, color: Colors.grey),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 10.h),
                   
                   // ============================================
                   // THUMBNAILS
                   // ============================================
                   Container(
-                    height: 70.h,
-                    margin: EdgeInsets.all(16.w),
+                    height: isSmallScreen ? 50.h : 70.h,
+                    margin: EdgeInsets.all(12.w),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: _productImages.length,
@@ -2300,11 +2452,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             setState(() => _currentImageIndex = index);
                           },
                           child: Container(
-                            width: 60.w,
-                            height: 60.w,
-                            margin: EdgeInsets.only(right: 8.w),
+                            width: isSmallScreen ? 44.w : 60.w,
+                            height: isSmallScreen ? 44.w : 60.w,
+                            margin: EdgeInsets.only(right: 6.w),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12.r),
+                              borderRadius: BorderRadius.circular(10.r),
                               border: Border.all(
                                 color: _currentImageIndex == index
                                     ? MyTheme.accent_color
@@ -2313,7 +2465,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10.r),
+                              borderRadius: BorderRadius.circular(8.r),
                               child: Image.network(
                                 _productImages[index],
                                 fit: BoxFit.cover,
@@ -2339,7 +2491,7 @@ class _ProductDetailsState extends State<ProductDetails>
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -2355,29 +2507,35 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: OutlinedButton(
                       onPressed: _showBidInputDialog,
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.r)),
                       ),
-                      child: Text(AppLocalizations.of(context)!.custom_ucf, style: TextStyle(fontSize: 14.sp)),
+                      child: Text(
+                        AppLocalizations.of(context)!.custom_ucf,
+                        style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
+                      ),
                     ),
                   ),
-                  SizedBox(width: 12.w),
+                  SizedBox(width: 10.w),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.r)),
                       ),
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
-                              '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
-                              style: TextStyle(fontSize: 14.sp, color: Colors.white),
+                              '${AppLocalizations.of(context)!.bid_now}',
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12.sp : 14.sp,
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   ),
@@ -2396,7 +2554,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 elevation: 20,
                 borderRadius: BorderRadius.circular(16.r),
                 child: Container(
-                  width: 180.w,
+                  width: isSmallScreen ? 150.w : 180.w,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16.r),
@@ -2418,6 +2576,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           setState(() => _showMoreMenu = false);
                           _shareProduct();
                         },
+                        isSmallScreen: isSmallScreen,
                       ),
                       _buildMoreMenuItem(
                         icon: _isInWishlist
@@ -2428,6 +2587,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           setState(() => _showMoreMenu = false);
                           _toggleWishlist();
                         },
+                        isSmallScreen: isSmallScreen,
                       ),
                       _buildMoreMenuItem(
                         icon: Icons.contact_mail,
@@ -2436,6 +2596,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           setState(() => _showMoreMenu = false);
                           _contactSeller();
                         },
+                        isSmallScreen: isSmallScreen,
                       ),
                     ],
                   ),
@@ -2448,7 +2609,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // Icon Circle with Custom Image
+  // Icon Circle with Custom Image - Updated with size param
   // ============================================
 
   Widget _buildIconCircleWithImage({
@@ -2456,12 +2617,16 @@ class _ProductDetailsState extends State<ProductDetails>
     required VoidCallback onTap,
     bool isLoading = false,
     IconData? fallbackIcon,
+    double size = 48.w,
   }) {
+    final isSmallScreen = size < 44.w;
+    final iconSize = isSmallScreen ? 18.sp : 22.sp;
+    
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: 48.w,
-        height: 48.w,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -2475,37 +2640,37 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: isLoading
             ? SizedBox(
-                height: 20.w,
-                width: 20.w,
+                height: 16.w,
+                width: 16.w,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.w,
                   color: MyTheme.accent_color,
                 ),
               )
             : Padding(
-                padding: EdgeInsets.all(10.w),
+                padding: EdgeInsets.all(isSmallScreen ? 6.w : 10.w),
                 child: Image.asset(
                   imagePath,
-                  height: 28.w,
-                  width: 28.w,
+                  height: iconSize,
+                  width: iconSize,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     if (imagePath.contains('product_details')) {
                       return Icon(
                         Icons.info_outline,
-                        size: 26.sp,
+                        size: iconSize,
                         color: Colors.black87,
                       );
                     } else if (imagePath.contains('bid_history')) {
                       return Icon(
                         Icons.history,
-                        size: 26.sp,
+                        size: iconSize,
                         color: Colors.black87,
                       );
                     }
                     return Icon(
                       Icons.image_not_supported,
-                      size: 26.sp,
+                      size: iconSize,
                       color: Colors.black87,
                     );
                   },
@@ -2515,8 +2680,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     }
                     return frame == null
                         ? SizedBox(
-                            height: 24.w,
-                            width: 24.w,
+                            height: iconSize,
+                            width: iconSize,
                             child: Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.w,
@@ -2533,7 +2698,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE WIDGETS
+  // MOBILE WIDGETS - Updated with responsive sizes
   // ============================================
 
   Widget _buildIconCircle({
@@ -2541,12 +2706,16 @@ class _ProductDetailsState extends State<ProductDetails>
     bool isActive = false,
     required VoidCallback onTap,
     bool isLoading = false,
+    double size = 48.w,
   }) {
+    final isSmallScreen = size < 44.w;
+    final iconSize = isSmallScreen ? 18.sp : 22.sp;
+    
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: 48.w,
-        height: 48.w,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -2560,8 +2729,8 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: isLoading
             ? SizedBox(
-                height: 20.w,
-                width: 20.w,
+                height: 16.w,
+                width: 16.w,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.w,
                   color: MyTheme.accent_color,
@@ -2570,7 +2739,7 @@ class _ProductDetailsState extends State<ProductDetails>
             : Icon(
                 icon,
                 color: isActive ? MyTheme.accent_color : Colors.black87,
-                size: 22.sp,
+                size: iconSize,
               ),
       ),
     );
@@ -2580,29 +2749,33 @@ class _ProductDetailsState extends State<ProductDetails>
     required IconData icon,
     required String text,
     required VoidCallback? onTap,
+    bool isSmallScreen = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12.w : 16.w, vertical: isSmallScreen ? 8.h : 12.h),
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18.sp, color: Colors.grey.shade700),
-            SizedBox(width: 12.w),
+            Icon(icon, size: isSmallScreen ? 14.sp : 18.sp, color: Colors.grey.shade700),
+            SizedBox(width: isSmallScreen ? 8.w : 12.w),
             Text(text,
-                style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade800)),
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 12.sp : 14.sp,
+                  color: Colors.grey.shade800,
+                )),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
+  Widget _buildInfoItem(String label, String value, bool isSmallScreen) {
     return Container(
-      padding: EdgeInsets.all(8.w),
+      padding: EdgeInsets.all(isSmallScreen ? 4.w : 8.w),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(8.r),
@@ -2611,26 +2784,33 @@ class _ProductDetailsState extends State<ProductDetails>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label,
-              style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600)),
-          SizedBox(height: 4.h),
+              style: TextStyle(
+                fontSize: isSmallScreen ? 9.sp : 11.sp,
+                color: Colors.grey.shade600,
+              )),
+          SizedBox(height: 2.h),
           Text(value,
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                fontSize: isSmallScreen ? 12.sp : 14.sp,
+                fontWeight: FontWeight.bold,
+              )),
         ],
       ),
     );
   }
 
   // ============================================
-  // DESKTOP LAYOUT
+  // DESKTOP LAYOUT - UPDATED
   // ============================================
 
   Widget _buildDesktopLayout() {
     final timeComponents = _getTimeComponents();
+    final isSmallScreen = _screenWidth < 1100;
 
     return SingleChildScrollView(
       physics: BouncingScrollPhysics(),
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2638,7 +2818,7 @@ class _ProductDetailsState extends State<ProductDetails>
             Expanded(
               flex: 2,
               child: Container(
-                padding: EdgeInsets.all(16.w),
+                padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20.r),
@@ -2652,7 +2832,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 child: Column(
                   children: [
                     Container(
-                      height: 400.h,
+                      height: isSmallScreen ? 300.h : 400.h,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16.r),
                         color: Colors.grey.shade100,
@@ -2673,9 +2853,9 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                     ),
-                    SizedBox(height: 16.h),
+                    SizedBox(height: 12.h),
                     SizedBox(
-                      height: 80.h,
+                      height: isSmallScreen ? 60.h : 80.h,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: _productImages.length,
@@ -2684,11 +2864,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             onTap: () =>
                                 setState(() => _currentImageIndex = index),
                             child: Container(
-                              width: 70.w,
-                              height: 70.w,
-                              margin: EdgeInsets.only(right: 8.w),
+                              width: isSmallScreen ? 50.w : 70.w,
+                              height: isSmallScreen ? 50.w : 70.w,
+                              margin: EdgeInsets.only(right: 6.w),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12.r),
+                                borderRadius: BorderRadius.circular(10.r),
                                 border: Border.all(
                                   color: _currentImageIndex == index
                                       ? MyTheme.accent_color
@@ -2697,7 +2877,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                               ),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10.r),
+                                borderRadius: BorderRadius.circular(8.r),
                                 child: Image.network(
                                   _productImages[index],
                                   fit: BoxFit.cover,
@@ -2715,7 +2895,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 12.w),
             // Column 2: Chat Section
             Expanded(
               flex: 2,
@@ -2735,7 +2915,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                       decoration: BoxDecoration(
                         border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                       ),
@@ -2744,16 +2924,18 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           Text(AppLocalizations.of(context)!.comments_ucf,
                               style: TextStyle(
-                                  fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                                  fontSize: isSmallScreen ? 14.sp : 16.sp,
+                                  fontWeight: FontWeight.bold)),
                           Text(AppLocalizations.of(context)!.ask_about_product,
                               style: TextStyle(
-                                  fontSize: 12.sp, color: Colors.grey)),
+                                  fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                  color: Colors.grey)),
                         ],
                       ),
                     ),
                     Expanded(
                       child: ListView.builder(
-                        padding: EdgeInsets.all(16.w),
+                        padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
@@ -2762,7 +2944,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               comment.userId == int.tryParse(userIdStr);
 
                           return Padding(
-                            padding: EdgeInsets.only(bottom: 16.h),
+                            padding: EdgeInsets.only(bottom: 12.h),
                             child: Row(
                               mainAxisAlignment: isOwn
                                   ? MainAxisAlignment.end
@@ -2771,33 +2953,34 @@ class _ProductDetailsState extends State<ProductDetails>
                               children: [
                                 if (!isOwn) ...[
                                   CircleAvatar(
-                                    radius: 16.w,
+                                    radius: isSmallScreen ? 12.w : 16.w,
                                     backgroundImage: NetworkImage(
                                         comment.userAvatar ?? ''),
                                     child: comment.userAvatar == null
-                                        ? Icon(Icons.person, size: 16.sp,
+                                        ? Icon(Icons.person, size: isSmallScreen ? 12.sp : 16.sp,
                                             color: Colors.grey)
                                         : null,
                                   ),
-                                  SizedBox(width: 8.w),
+                                  SizedBox(width: 6.w),
                                 ],
                                 Flexible(
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
-                                        horizontal: 12.w, vertical: 8.h),
+                                        horizontal: isSmallScreen ? 8.w : 12.w,
+                                        vertical: isSmallScreen ? 6.h : 8.h),
                                     decoration: BoxDecoration(
                                       color: isOwn
                                           ? MyTheme.accent_color
                                           : Colors.grey.shade100,
                                       borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(12.r),
-                                        topRight: Radius.circular(12.r),
+                                        topLeft: Radius.circular(10.r),
+                                        topRight: Radius.circular(10.r),
                                         bottomLeft: isOwn
-                                            ? Radius.circular(12.r)
+                                            ? Radius.circular(10.r)
                                             : Radius.circular(4.r),
                                         bottomRight: isOwn
                                             ? Radius.circular(4.r)
-                                            : Radius.circular(12.r),
+                                            : Radius.circular(10.r),
                                       ),
                                     ),
                                     child: Column(
@@ -2807,7 +2990,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         if (!isOwn)
                                           Text(comment.userName ?? AppLocalizations.of(context)!.user_ucf,
                                               style: TextStyle(
-                                                  fontSize: 11.sp,
+                                                  fontSize: isSmallScreen ? 9.sp : 11.sp,
                                                   fontWeight: FontWeight.w600,
                                                   color: Colors.grey
                                                       .shade600)),
@@ -2816,13 +2999,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                                 color: isOwn
                                                     ? Colors.white
                                                     : Colors.black87,
-                                                fontSize: 13.sp)),
+                                                fontSize: isSmallScreen ? 11.sp : 13.sp)),
                                         Align(
                                           alignment: Alignment.bottomRight,
                                           child: Text(
                                             _formatTime(comment.createdAt),
                                             style: TextStyle(
-                                                fontSize: 9.sp,
+                                                fontSize: isSmallScreen ? 7.sp : 9.sp,
                                                 color: isOwn
                                                     ? Colors.white70
                                                     : Colors.grey),
@@ -2832,7 +3015,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ),
                                 ),
-                                if (isOwn) SizedBox(width: 8.w),
+                                if (isOwn) SizedBox(width: 6.w),
                               ],
                             ),
                           );
@@ -2840,7 +3023,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                       decoration: BoxDecoration(
                         border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1.w)),
                       ),
@@ -2857,40 +3040,42 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: TextField(
                                 controller: _commentController,
                                 maxLines: null,
-                                style: TextStyle(fontSize: 14.sp),
+                                style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
                                 decoration: InputDecoration(
                                   hintText: AppLocalizations.of(context)!.type_message_hint,
                                   hintStyle:
-                                      TextStyle(fontSize: 14.sp, color: Colors.grey),
+                                      TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp,
+                                      color: Colors.grey),
                                   border: InputBorder.none,
                                   contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 16.w, vertical: 12.h),
+                                      horizontal: 12.w, vertical: 10.h),
                                 ),
                                 onSubmitted: (value) => _sendComment(),
                               ),
                             ),
                           ),
-                          SizedBox(width: 12.w),
+                          SizedBox(width: 8.w),
                           GestureDetector(
                             onTap: _isProcessing ? null : _sendComment,
                             child: Container(
-                              width: 44.w,
-                              height: 44.w,
+                              width: isSmallScreen ? 36.w : 44.w,
+                              height: isSmallScreen ? 36.w : 44.w,
                               decoration: BoxDecoration(
                                 color: MyTheme.accent_color,
                                 shape: BoxShape.circle,
                               ),
                               child: _isProcessing
                                   ? SizedBox(
-                                      height: 16.w,
-                                      width: 16.w,
+                                      height: 14.w,
+                                      width: 14.w,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.w,
                                         color: Colors.white,
                                       ),
                                     )
                                   : Icon(Icons.send,
-                                      color: Colors.white, size: 20.sp),
+                                      color: Colors.white,
+                                      size: isSmallScreen ? 16.sp : 20.sp),
                             ),
                           ),
                         ],
@@ -2900,16 +3085,16 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
               ),
             ),
-            SizedBox(width: 16.w),
-            // Column 3: Bidding & Details
+            SizedBox(width: 12.w),
+            // Column 3: Bidding & Details - UPDATED TIMER
             Expanded(
               flex: 1,
               child: Container(
-                width: 320.w,
+                width: isSmallScreen ? 240.w : 320.w,
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16.r),
@@ -2928,29 +3113,33 @@ class _ProductDetailsState extends State<ProductDetails>
                             onTap: _openTitleModal,
                             child: Text(_product?.name ?? '',
                                 style: TextStyle(
-                                    fontSize: 18.sp,
+                                    fontSize: isSmallScreen ? 16.sp : 18.sp,
                                     fontWeight: FontWeight.bold)),
                           ),
-                          SizedBox(height: 8.h),
+                          SizedBox(height: 6.h),
                           GestureDetector(
                             onTap: _openTitleModal,
                             child: Text(
                               _product?.description
                                       ?.replaceAll(RegExp(r'<[^>]*>'), '') ??
                                   '',
-                              style: TextStyle(fontSize: 13.sp, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 11.sp : 13.sp,
+                                color: Colors.grey,
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          SizedBox(height: 16.h),
+                          SizedBox(height: 12.h),
                           Wrap(
-                            spacing: 8.w,
+                            spacing: 6.w,
                             children: [
                               _buildDesktopIconButton(
                                 icon: Icons.share,
                                 label: AppLocalizations.of(context)!.share_ucf,
                                 onTap: _shareProduct,
+                                isSmallScreen: isSmallScreen,
                               ),
                               _buildDesktopIconButton(
                                 icon: _isInWishlist
@@ -2959,6 +3148,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 label: _isInWishlist ? AppLocalizations.of(context)!.saved_ucf : AppLocalizations.of(context)!.wishlist_ucf,
                                 onTap: _toggleWishlist,
                                 isActive: _isInWishlist,
+                                isSmallScreen: isSmallScreen,
                               ),
                               _buildDesktopIconButton(
                                 icon: Icons.more_horiz,
@@ -2966,6 +3156,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 onTap: () => setState(() =>
                                     _showDesktopMoreMenu =
                                         !_showDesktopMoreMenu),
+                                isSmallScreen: isSmallScreen,
                               ),
                             ],
                           ),
@@ -2993,6 +3184,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                           false);
                                       _openBidHistoryModal();
                                     },
+                                    isSmallScreen: isSmallScreen,
                                   ),
                                   _buildDesktopMenuItem(
                                     icon: Icons.info_outline,
@@ -3002,6 +3194,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                           false);
                                       _openTitleModal();
                                     },
+                                    isSmallScreen: isSmallScreen,
                                   ),
                                   _buildDesktopMenuItem(
                                     icon: Icons.contact_mail,
@@ -3011,62 +3204,82 @@ class _ProductDetailsState extends State<ProductDetails>
                                           false);
                                       _contactSeller();
                                     },
+                                    isSmallScreen: isSmallScreen,
                                   ),
                                 ],
                               ),
                             ),
-                          SizedBox(height: 16.h),
-                          // Timer & Price - UPDATED DESIGN
+                          SizedBox(height: 12.h),
+                          // ============================================
+                          // TIMER & PRICE - UPDATED: Sky blue background, accent border
+                          // ============================================
                           Container(
-                            padding: EdgeInsets.all(12.w),
+                            padding: EdgeInsets.all(10.w),
                             decoration: BoxDecoration(
-                              color: _isEndingSoon 
-                                  ? Colors.red.withOpacity(0.1) 
-                                  : MyTheme.accent_color.withOpacity(0.1),
+                              color: const Color(0xFFE8F4F8), // Sky blue background
                               borderRadius: BorderRadius.circular(12.r),
                               border: Border.all(
-                                color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
-                                width: 1.w,
+                                color: MyTheme.accent_color,
+                                width: 1.5.w,
                               ),
                             ),
                             child: Column(
                               children: [
+                                // TIME LEFT Title
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    AppLocalizations.of(context)!.time_left,
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 6.h),
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(AppLocalizations.of(context)!.time_left,
-                                        style: TextStyle(
-                                            fontSize: 10.sp,
-                                            color: Colors.grey,
-                                            fontWeight: FontWeight.w500)),
+                                    // Timer with short labels (d, h, m, s)
                                     Row(
                                       children: [
                                         _buildDesktopTimerUnit(
-                                            timeComponents['days']!, 'd'),
+                                            timeComponents['days']!, 'd',
+                                            isSmallScreen: isSmallScreen),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['hours']!, 'h'),
+                                            timeComponents['hours']!, 'h',
+                                            isSmallScreen: isSmallScreen),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['minutes']!, 'm'),
+                                            timeComponents['minutes']!, 'm',
+                                            isSmallScreen: isSmallScreen),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['seconds']!, 's'),
+                                            timeComponents['seconds']!, 's',
+                                            isSmallScreen: isSmallScreen),
                                       ],
                                     ),
-                                  ],
-                                ),
-                                SizedBox(height: 12.h),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(AppLocalizations.of(context)!.current_bid,
-                                        style: TextStyle(
-                                            fontSize: 11.sp, color: Colors.grey)),
-                                    Text(_formatPrice(_currentHighestBid),
-                                        style: TextStyle(
-                                            fontSize: 24.sp,
+                                    // Current Bid - Centered
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          AppLocalizations.of(context)!.current_bid,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: isSmallScreen ? 8.sp : 10.sp,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatPrice(_currentHighestBid),
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: isSmallScreen ? 16.sp : 20.sp,
                                             fontWeight: FontWeight.bold,
-                                            color: MyTheme.accent_color)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ],
@@ -3075,10 +3288,10 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                     ),
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 10.h),
                     // Bid Information Card
                     Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16.r),
@@ -3095,36 +3308,48 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           Text(AppLocalizations.of(context)!.bid_information,
                               style: TextStyle(
-                                  fontSize: 14.sp, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 12.h),
+                                  fontSize: isSmallScreen ? 12.sp : 14.sp,
+                                  fontWeight: FontWeight.bold)),
+                          SizedBox(height: 10.h),
                           GridView.count(
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            crossAxisSpacing: 12.w,
-                            mainAxisSpacing: 12.h,
+                            crossAxisSpacing: 8.w,
+                            mainAxisSpacing: 8.h,
                             childAspectRatio: 2.5,
                             children: [
-                              _buildDesktopInfoItem(AppLocalizations.of(context)!.starting_bid,
-                                  _formatPrice(_startingBid)),
-                              _buildDesktopInfoItem(AppLocalizations.of(context)!.total_bidders,
-                                  '$_totalBids'),
                               _buildDesktopInfoItem(
-                                  AppLocalizations.of(context)!.highest_bidder,
-                                  _highestBidder.isNotEmpty
-                                      ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                      : AppLocalizations.of(context)!.no_bids),
-                              _buildDesktopInfoItem(AppLocalizations.of(context)!.bid_now_at,
-                                  '$_pointPerBid'),
+                                AppLocalizations.of(context)!.starting_bid,
+                                _formatPrice(_startingBid),
+                                isSmallScreen,
+                              ),
+                              _buildDesktopInfoItem(
+                                AppLocalizations.of(context)!.total_bidders,
+                                '$_totalBids',
+                                isSmallScreen,
+                              ),
+                              _buildDesktopInfoItem(
+                                AppLocalizations.of(context)!.highest_bidder,
+                                _highestBidder.isNotEmpty
+                                    ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+                                    : AppLocalizations.of(context)!.no_bids,
+                                isSmallScreen,
+                              ),
+                              _buildDesktopInfoItem(
+                                AppLocalizations.of(context)!.bid_now_at,
+                                '$_pointPerBid',
+                                isSmallScreen,
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 10.h),
                     // Custom Bid Input
                     Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16.r),
@@ -3141,50 +3366,60 @@ class _ProductDetailsState extends State<ProductDetails>
                         children: [
                           Text(
                               '${AppLocalizations.of(context)!.enter_bid_amount} (${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom)',
-                              style: TextStyle(fontSize: 12.sp, color: Colors.grey)),
-                          SizedBox(height: 8.h),
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                color: Colors.grey,
+                              )),
+                          SizedBox(height: 6.h),
                           Row(
                             children: [
                               Expanded(
                                 child: TextField(
                                   controller: _bidController,
                                   keyboardType: TextInputType.number,
+                                  style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
                                   decoration: InputDecoration(
                                     hintText: AppLocalizations.of(context)!.enter_amount_hint,
-                                    hintStyle: TextStyle(fontSize: 14.sp),
+                                    hintStyle: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8.r),
                                     ),
                                     contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12.w, vertical: 12.h),
+                                        horizontal: 10.w, vertical: 10.h),
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 8.w),
+                              SizedBox(width: 6.w),
                               ElevatedButton(
                                 onPressed: _isProcessing ? null : _submitCustomBid,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: MyTheme.accent_color,
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w, vertical: 12.h),
+                                      horizontal: isSmallScreen ? 12.w : 16.w,
+                                      vertical: isSmallScreen ? 8.h : 10.h),
                                 ),
                                 child: _isProcessing
                                     ? _buildButtonLoader()
-                                    : Text(AppLocalizations.of(context)!.place_bid,
-                                        style: TextStyle(fontSize: 14.sp, color: Colors.white)),
+                                    : Text(
+                                        AppLocalizations.of(context)!.place_bid,
+                                        style: TextStyle(
+                                          fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 10.h),
                     // Bid Now Button
                     ElevatedButton(
                       onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.r)),
                         minimumSize: Size(double.infinity, 0),
@@ -3192,19 +3427,19 @@ class _ProductDetailsState extends State<ProductDetails>
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
-                              '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
+                              '${AppLocalizations.of(context)!.bid_now}',
                               style: TextStyle(
-                                  fontSize: 14.sp,
+                                  fontSize: isSmallScreen ? 12.sp : 14.sp,
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold),
                             ),
                     ),
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 10.h),
                     // Reviews Section
                     GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(
-                        padding: EdgeInsets.all(16.w),
+                        padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16.r),
@@ -3227,24 +3462,25 @@ class _ProductDetailsState extends State<ProductDetails>
                                       index < _rating.round()
                                           ? Icons.star
                                           : Icons.star_border,
-                                      size: 14.sp,
+                                      size: isSmallScreen ? 12.sp : 14.sp,
                                       color: Colors.amber,
                                     );
                                   }),
                                 ),
-                                SizedBox(width: 8.w),
+                                SizedBox(width: 6.w),
                                 Text(_rating.toStringAsFixed(1),
                                     style: TextStyle(
-                                        fontSize: 16.sp,
+                                        fontSize: isSmallScreen ? 14.sp : 16.sp,
                                         fontWeight: FontWeight.bold)),
                                 SizedBox(width: 4.w),
-                                Text('($_reviewsCount ${AppLocalizations.of(context)!.reviews_ucf})',
+                                Text('($_reviewsCount)',
                                     style: TextStyle(
-                                        fontSize: 12.sp, color: Colors.grey)),
+                                        fontSize: isSmallScreen ? 10.sp : 12.sp,
+                                        color: Colors.grey)),
                               ],
                             ),
                             Icon(Icons.arrow_forward_ios,
-                                size: 14.sp, color: Colors.grey),
+                                size: isSmallScreen ? 12.sp : 14.sp, color: Colors.grey),
                           ],
                         ),
                       ),
@@ -3260,7 +3496,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // DESKTOP WIDGETS
+  // DESKTOP WIDGETS - Updated with responsive sizes
   // ============================================
 
   Widget _buildDesktopIconButton({
@@ -3268,11 +3504,12 @@ class _ProductDetailsState extends State<ProductDetails>
     required String label,
     required VoidCallback onTap,
     bool isActive = false,
+    bool isSmallScreen = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8.w : 12.w, vertical: isSmallScreen ? 4.h : 6.h),
         decoration: BoxDecoration(
           color: isActive ? MyTheme.accent_color : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(20.r),
@@ -3282,12 +3519,12 @@ class _ProductDetailsState extends State<ProductDetails>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon,
-                size: 14.sp,
+                size: isSmallScreen ? 12.sp : 14.sp,
                 color: isActive ? Colors.white : Colors.grey.shade600),
             SizedBox(width: 4.w),
             Text(label,
                 style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: isSmallScreen ? 10.sp : 12.sp,
                     color: isActive ? Colors.white : Colors.grey.shade600)),
           ],
         ),
@@ -3299,38 +3536,41 @@ class _ProductDetailsState extends State<ProductDetails>
     required IconData icon,
     required String text,
     required VoidCallback? onTap,
+    bool isSmallScreen = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12.w : 16.w, vertical: isSmallScreen ? 8.h : 10.h),
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1.w)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16.sp, color: Colors.grey.shade600),
-            SizedBox(width: 12.w),
+            Icon(icon, size: isSmallScreen ? 14.sp : 16.sp, color: Colors.grey.shade600),
+            SizedBox(width: isSmallScreen ? 8.w : 12.w),
             Text(text,
-                style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade800)),
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 11.sp : 13.sp,
+                  color: Colors.grey.shade800,
+                )),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDesktopTimerUnit(String value, String label) {
-    // Hide seconds when there are days
+  Widget _buildDesktopTimerUnit(String value, String label, {bool isSmallScreen = false}) {
     if (label == 's' && _timeLeft.inDays > 0) {
       return SizedBox.shrink();
     }
     
     return Container(
-      margin: EdgeInsets.only(left: 8.w),
+      margin: EdgeInsets.only(left: isSmallScreen ? 4.w : 8.w),
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+            padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 4.w : 6.w, vertical: isSmallScreen ? 1.h : 2.h),
             decoration: BoxDecoration(
               color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
               borderRadius: BorderRadius.circular(6.r),
@@ -3338,20 +3578,23 @@ class _ProductDetailsState extends State<ProductDetails>
             child: Text(value,
                 style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14.sp,
+                    fontSize: isSmallScreen ? 12.sp : 14.sp,
                     fontWeight: FontWeight.bold)),
           ),
           SizedBox(height: 2.h),
           Text(label,
-              style: TextStyle(fontSize: 9.sp, color: Colors.grey)),
+              style: TextStyle(
+                fontSize: isSmallScreen ? 7.sp : 9.sp,
+                color: Colors.grey,
+              )),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopInfoItem(String label, String value) {
+  Widget _buildDesktopInfoItem(String label, String value, bool isSmallScreen) {
     return Container(
-      padding: EdgeInsets.all(8.w),
+      padding: EdgeInsets.all(isSmallScreen ? 4.w : 8.w),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(8.r),
@@ -3359,10 +3602,16 @@ class _ProductDetailsState extends State<ProductDetails>
       child: Column(
         children: [
           Text(label,
-              style: TextStyle(fontSize: 10.sp, color: Colors.grey)),
-          SizedBox(height: 4.h),
+              style: TextStyle(
+                fontSize: isSmallScreen ? 8.sp : 10.sp,
+                color: Colors.grey,
+              )),
+          SizedBox(height: 2.h),
           Text(value,
-              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                fontSize: isSmallScreen ? 11.sp : 13.sp,
+                fontWeight: FontWeight.bold,
+              )),
         ],
       ),
     );
