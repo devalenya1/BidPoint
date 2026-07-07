@@ -1028,19 +1028,19 @@ class _RegistrationState extends State<Registration> {
                     ),
                   ),
                 ),
-                // Twitter Button
-                Visibility(
-                  visible: allow_twitter_login.$,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w),
-                    child: _buildSocialLoginButtonSideBySide(
-                      label: "Twitter",
-                      iconPath: "assets/twitter_logo.png",
-                      onTap: onPressedTwitterLogin,
-                      isSmallScreen: isSmallScreen,
-                    ),
-                  ),
-                ),
+                // // Twitter Button
+                // Visibility(
+                //   visible: allow_twitter_login.$,
+                //   child: Padding(
+                //     padding: EdgeInsets.symmetric(horizontal: 6.w),
+                //     child: _buildSocialLoginButtonSideBySide(
+                //       label: "Twitter",
+                //       iconPath: "assets/twitter_logo.png",
+                //       onTap: onPressedTwitterLogin,
+                //       isSmallScreen: isSmallScreen,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
             
