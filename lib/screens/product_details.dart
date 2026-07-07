@@ -1856,757 +1856,757 @@ class _ProductDetailsState extends State<ProductDetails>
   // MOBILE LAYOUT - UPDATED
   // ============================================
 
-  Widget _buildMobileLayout() {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.85; // 85% of screen height
-    final isSmallScreen = _screenWidth < 380;
-    final isMediumScreen = _screenWidth >= 380 && _screenWidth < 480;
+  // Widget _buildMobileLayout() {
+  //   final screenHeight = MediaQuery.of(context).size.height;
+  //   final imageHeight = screenHeight * 0.85; // 85% of screen height
+  //   final isSmallScreen = _screenWidth < 380;
+  //   final isMediumScreen = _screenWidth >= 380 && _screenWidth < 480;
     
-    // Responsive font sizes - dynamically scale
-    final double nameFontSize = isSmallScreen ? 16.sp : (isMediumScreen ? 18.sp : 20.sp);
-    final double descFontSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
-    final double commentFontSize = isSmallScreen ? 8.sp : (isMediumScreen ? 9.sp : 10.sp);
-    final double commentNameFontSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
-    final double badgeFontSize = isSmallScreen ? 6.sp : (isMediumScreen ? 7.sp : 8.sp);
-    final double timerTitleSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
-    final double bidPriceSize = isSmallScreen ? 16.sp : (isMediumScreen ? 18.sp : 20.sp);
-    final double bidLabelSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
-    final double commentsHeight = isSmallScreen ? 200.h : 240.h; // Longer comment section
+  //   // Responsive font sizes - dynamically scale
+  //   final double nameFontSize = isSmallScreen ? 16.sp : (isMediumScreen ? 18.sp : 20.sp);
+  //   final double descFontSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
+  //   final double commentFontSize = isSmallScreen ? 8.sp : (isMediumScreen ? 9.sp : 10.sp);
+  //   final double commentNameFontSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
+  //   final double badgeFontSize = isSmallScreen ? 6.sp : (isMediumScreen ? 7.sp : 8.sp);
+  //   final double timerTitleSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
+  //   final double bidPriceSize = isSmallScreen ? 16.sp : (isMediumScreen ? 18.sp : 20.sp);
+  //   final double bidLabelSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
+  //   final double commentsHeight = isSmallScreen ? 200.h : 240.h; // Longer comment section
     
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Main scrollable content
-          RefreshIndicator(
-            color: MyTheme.accent_color,
-            backgroundColor: Colors.white,
-            onRefresh: _fetchAllData,
-            child: SingleChildScrollView(
-              controller: _mainScrollController,
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(bottom: 80.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ============================================
-                  // IMAGE CAROUSEL WITH OVERLAY
-                  // ============================================
-                  Stack(
-                    children: [
-                      CarouselSlider(
-                        options: CarouselOptions(
-                          height: imageHeight,
-                          viewportFraction: 1,
-                          autoPlay: true,
-                          onPageChanged: (index, reason) {
-                            setState(() => _currentImageIndex = index);
-                          },
-                        ),
-                        items: _productImages.map((image) {
-                          return Builder(
-                            builder: (context) => GestureDetector(
-                              onTap: () => _showFullImage(image),
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  image: DecorationImage(
-                                    image: NetworkImage(image),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      Container(
-                        height: imageHeight,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            stops: const [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
-                            colors: [
-                              Colors.black.withOpacity(0.9),
-                              Colors.black.withOpacity(0.5),
-                              Colors.black.withOpacity(0.2),
-                              Colors.black.withOpacity(0.1),
-                              Colors.black.withOpacity(0.3),
-                              Colors.black.withOpacity(0.7),
-                              Colors.black.withOpacity(0.95),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // TOP RIGHT ICONS
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + 8.h,
-                        right: 16.w,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Builder(
-                              builder: (context) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _showMoreMenu = !_showMoreMenu;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: isSmallScreen ? 40.w : 48.w,
-                                    height: isSmallScreen ? 40.w : 48.w,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 8.r,
-                                          offset: Offset(0, 2.h),
-                                        ),
-                                      ],
-                                    ),
-                                    child: _isProcessing
-                                        ? SizedBox(
-                                            height: 16.w,
-                                            width: 16.w,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2.w,
-                                              color: MyTheme.accent_color,
-                                            ),
-                                          )
-                                        : Icon(
-                                            Icons.more_vert,
-                                            color: Colors.black87,
-                                            size: isSmallScreen ? 18.sp : 22.sp,
-                                          ),
-                                  ),
-                                );
-                              },
-                            ),
-                            SizedBox(height: 8.h),
-                            _buildIconCircleWithImage(
-                              imagePath: 'assets/bid_history.png',
-                              onTap: _openBidHistoryModal,
-                              isLoading: _isProcessing,
-                              fallbackIcon: Icons.history,
-                              size: isSmallScreen ? 40.w : 48.w,
-                            ),
-                            SizedBox(height: 8.h),
-                            _buildIconCircleWithImage(
-                              imagePath: 'assets/product_details.png',
-                              onTap: _openTitleModal,
-                              isLoading: _isProcessing,
-                              fallbackIcon: Icons.info_outline,
-                              size: isSmallScreen ? 40.w : 48.w,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // LEFT ICON - Back Button
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + 8.h,
-                        left: 16.w,
-                        child: _buildIconCircle(
-                          icon: Icons.arrow_back,
-                          onTap: () => Navigator.pop(context),
-                          isLoading: false,
-                          size: isSmallScreen ? 40.w : 48.w,
-                        ),
-                      ),
-                      // ============================================
-                      // COMMENTS SECTION - Updated: Longer height, latest at bottom
-                      // ============================================
-                      Positioned(
-                        bottom: 100.h,
-                        left: 12.w,
-                        child: Container(
-                          width: _screenWidth * 0.78,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.15), width: 1.w),
-                          ),
-                          padding: EdgeInsets.all(8.w),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Comments List - SCROLLABLE - LONGER HEIGHT
-                              Container(
-                                height: commentsHeight,
-                                child: _comments.isEmpty
-                                    ? Center(
-                                        child: Text(
-                                          AppLocalizations.of(context)!.no_comments_yet,
-                                          style: TextStyle(
-                                            color: Colors.white54,
-                                            fontSize: commentFontSize,
-                                          ),
-                                        ),
-                                      )
-                                    : ListView.builder(
-                                        controller: _commentsScrollController,
-                                        physics: const AlwaysScrollableScrollPhysics(),
-                                        itemCount: _comments.length,
-                                        itemBuilder: (context, index) {
-                                          final comment = _comments[index];
-                                          return Padding(
-                                            padding: EdgeInsets.only(bottom: 4.h),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: isSmallScreen ? 10.w : 14.w,
-                                                  backgroundImage:
-                                                      NetworkImage(comment
-                                                              .userAvatar ??
-                                                          ''),
-                                                  child: comment
-                                                          .userAvatar ==
-                                                      null
-                                                      ? Icon(Icons.person,
-                                                          size: isSmallScreen ? 8.sp : 12.sp,
-                                                          color: Colors
-                                                              .white54)
-                                                      : null,
-                                                ),
-                                                SizedBox(width: 6.w),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        comment.userName ??
-                                                            AppLocalizations.of(context)!.user_ucf,
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .white,
-                                                          fontSize: commentNameFontSize,
-                                                          fontWeight:
-                                                              FontWeight
-                                                                  .w600,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        comment.comment ??
-                                                            '',
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .white70,
-                                                          fontSize: commentFontSize,
-                                                        ),
-                                                      ),
-                                                      Row(
-                                                        children: [
-                                                          GestureDetector(
-                                                            onTap: () =>
-                                                                _likeComment(
-                                                                    comment
-                                                                        .id ??
-                                                                        0),
-                                                            child: Text(
-                                                              '${comment.likesCount} ${AppLocalizations.of(context)!.likes_ucf}',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white54,
-                                                                fontSize: badgeFontSize,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          SizedBox(width: 8.w),
-                                                          GestureDetector(
-                                                            onTap: () =>
-                                                                _replyToComment(
-                                                                    comment
-                                                                        .userName ??
-                                                                    AppLocalizations.of(context)!.user_ucf),
-                                                            child: Text(
-                                                              AppLocalizations.of(context)!.reply_ucf,
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white54,
-                                                                fontSize: badgeFontSize,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                              ),
-                              SizedBox(height: 4.h),
-                              // Comment Input
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white
-                                            .withOpacity(0.15),
-                                        borderRadius:
-                                            BorderRadius.circular(10.r),
-                                      ),
-                                      child: TextField(
-                                        controller: _commentController,
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: commentFontSize),
-                                        decoration: InputDecoration(
-                                          hintText: AppLocalizations.of(context)!.add_comment_hint,
-                                          hintStyle: TextStyle(
-                                              color: Colors.white54,
-                                              fontSize: commentFontSize),
-                                          border: InputBorder.none,
-                                          contentPadding:
-                                              EdgeInsets.symmetric(
-                                                  horizontal: 8.w,
-                                                  vertical: 4.h),
-                                        ),
-                                        onSubmitted: (value) =>
-                                            _sendComment(),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 4.w),
-                                  GestureDetector(
-                                    onTap: _isProcessing ? null : _sendComment,
-                                    child: Container(
-                                      width: isSmallScreen ? 24.w : 28.w,
-                                      height: isSmallScreen ? 24.w : 28.w,
-                                      decoration: BoxDecoration(
-                                        color: MyTheme.accent_color,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: _isProcessing
-                                          ? SizedBox(
-                                              height: 10.w,
-                                              width: 10.w,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2.w,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Icon(Icons.send,
-                                              size: isSmallScreen ? 12.sp : 14.sp,
-                                              color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // ============================================
-                      // PRODUCT NAME & DESCRIPTION
-                      // ============================================
-                      Positioned(
-                        bottom: 90.h,
-                        left: 12.w,
-                        right: 12.w,
-                        child: GestureDetector(
-                          onTap: _openTitleModal,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(_product?.name ?? '',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: nameFontSize,
-                                      fontWeight: FontWeight.bold)),
-                              SizedBox(height: 2.h),
-                              Text(
-                                  _product?.description
-                                          ?.replaceAll(RegExp(r'<[^>]*>'),
-                                              '') ??
-                                      '',
-                                  style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: descFontSize),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // ============================================
-                      // TIMER & CURRENT BID - UPDATED DESIGN
-                      // ============================================
-                      Positioned(
-                        bottom: 16.h,
-                        left: 12.w,
-                        right: 12.w,
-                        child: Container(
-                          padding: EdgeInsets.all(10.w),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F4F8), // Sky blue background
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: MyTheme.accent_color,
-                              width: 1.5.w,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // TIME LEFT Title
-                              Text(
-                                AppLocalizations.of(context)!.time_left,
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: timerTitleSize,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(height: 6.h),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Timer with short labels (d, h, m, s) - Inside the box
-                                  _buildTimerRowWithLabels(),
-                                  // Current Bid - Centered
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        AppLocalizations.of(context)!.current_bid,
-                                        style: TextStyle(
-                                          color: Colors.grey.shade700,
-                                          fontSize: bidLabelSize,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatPrice(_currentHighestBid),
-                                        style: TextStyle(
-                                          color: Colors.black87,
-                                          fontSize: bidPriceSize,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+  //   return Scaffold(
+  //     backgroundColor: Colors.white,
+  //     body: Stack(
+  //       children: [
+  //         // Main scrollable content
+  //         RefreshIndicator(
+  //           color: MyTheme.accent_color,
+  //           backgroundColor: Colors.white,
+  //           onRefresh: _fetchAllData,
+  //           child: SingleChildScrollView(
+  //             controller: _mainScrollController,
+  //             physics: const BouncingScrollPhysics(),
+  //             padding: EdgeInsets.only(bottom: 80.h),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 // ============================================
+  //                 // IMAGE CAROUSEL WITH OVERLAY
+  //                 // ============================================
+  //                 Stack(
+  //                   children: [
+  //                     CarouselSlider(
+  //                       options: CarouselOptions(
+  //                         height: imageHeight,
+  //                         viewportFraction: 1,
+  //                         autoPlay: true,
+  //                         onPageChanged: (index, reason) {
+  //                           setState(() => _currentImageIndex = index);
+  //                         },
+  //                       ),
+  //                       items: _productImages.map((image) {
+  //                         return Builder(
+  //                           builder: (context) => GestureDetector(
+  //                             onTap: () => _showFullImage(image),
+  //                             child: Container(
+  //                               width: double.infinity,
+  //                               decoration: BoxDecoration(
+  //                                 image: DecorationImage(
+  //                                   image: NetworkImage(image),
+  //                                   fit: BoxFit.cover,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                         );
+  //                       }).toList(),
+  //                     ),
+  //                     Container(
+  //                       height: imageHeight,
+  //                       decoration: BoxDecoration(
+  //                         gradient: LinearGradient(
+  //                           begin: Alignment.topCenter,
+  //                           end: Alignment.bottomCenter,
+  //                           stops: const [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
+  //                           colors: [
+  //                             Colors.black.withOpacity(0.9),
+  //                             Colors.black.withOpacity(0.5),
+  //                             Colors.black.withOpacity(0.2),
+  //                             Colors.black.withOpacity(0.1),
+  //                             Colors.black.withOpacity(0.3),
+  //                             Colors.black.withOpacity(0.7),
+  //                             Colors.black.withOpacity(0.95),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     // TOP RIGHT ICONS
+  //                     Positioned(
+  //                       top: MediaQuery.of(context).padding.top + 8.h,
+  //                       right: 16.w,
+  //                       child: Column(
+  //                         mainAxisSize: MainAxisSize.min,
+  //                         children: [
+  //                           Builder(
+  //                             builder: (context) {
+  //                               return GestureDetector(
+  //                                 onTap: () {
+  //                                   setState(() {
+  //                                     _showMoreMenu = !_showMoreMenu;
+  //                                   });
+  //                                 },
+  //                                 child: Container(
+  //                                   width: isSmallScreen ? 40.w : 48.w,
+  //                                   height: isSmallScreen ? 40.w : 48.w,
+  //                                   decoration: BoxDecoration(
+  //                                     color: Colors.white,
+  //                                     shape: BoxShape.circle,
+  //                                     boxShadow: [
+  //                                       BoxShadow(
+  //                                         color: Colors.black.withOpacity(0.1),
+  //                                         blurRadius: 8.r,
+  //                                         offset: Offset(0, 2.h),
+  //                                       ),
+  //                                     ],
+  //                                   ),
+  //                                   child: _isProcessing
+  //                                       ? SizedBox(
+  //                                           height: 16.w,
+  //                                           width: 16.w,
+  //                                           child: CircularProgressIndicator(
+  //                                             strokeWidth: 2.w,
+  //                                             color: MyTheme.accent_color,
+  //                                           ),
+  //                                         )
+  //                                       : Icon(
+  //                                           Icons.more_vert,
+  //                                           color: Colors.black87,
+  //                                           size: isSmallScreen ? 18.sp : 22.sp,
+  //                                         ),
+  //                                 ),
+  //                               );
+  //                             },
+  //                           ),
+  //                           SizedBox(height: 8.h),
+  //                           _buildIconCircleWithImage(
+  //                             imagePath: 'assets/bid_history.png',
+  //                             onTap: _openBidHistoryModal,
+  //                             isLoading: _isProcessing,
+  //                             fallbackIcon: Icons.history,
+  //                             size: isSmallScreen ? 40.w : 48.w,
+  //                           ),
+  //                           SizedBox(height: 8.h),
+  //                           _buildIconCircleWithImage(
+  //                             imagePath: 'assets/product_details.png',
+  //                             onTap: _openTitleModal,
+  //                             isLoading: _isProcessing,
+  //                             fallbackIcon: Icons.info_outline,
+  //                             size: isSmallScreen ? 40.w : 48.w,
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                     // LEFT ICON - Back Button
+  //                     Positioned(
+  //                       top: MediaQuery.of(context).padding.top + 8.h,
+  //                       left: 16.w,
+  //                       child: _buildIconCircle(
+  //                         icon: Icons.arrow_back,
+  //                         onTap: () => Navigator.pop(context),
+  //                         isLoading: false,
+  //                         size: isSmallScreen ? 40.w : 48.w,
+  //                       ),
+  //                     ),
+  //                     // ============================================
+  //                     // COMMENTS SECTION - Updated: Longer height, latest at bottom
+  //                     // ============================================
+  //                     Positioned(
+  //                       bottom: 100.h,
+  //                       left: 12.w,
+  //                       child: Container(
+  //                         width: _screenWidth * 0.78,
+  //                         decoration: BoxDecoration(
+  //                           color: Colors.black.withOpacity(0.1),
+  //                           borderRadius: BorderRadius.circular(16.r),
+  //                           border: Border.all(
+  //                               color: Colors.white.withOpacity(0.15), width: 1.w),
+  //                         ),
+  //                         padding: EdgeInsets.all(8.w),
+  //                         child: Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             // Comments List - SCROLLABLE - LONGER HEIGHT
+  //                             Container(
+  //                               height: commentsHeight,
+  //                               child: _comments.isEmpty
+  //                                   ? Center(
+  //                                       child: Text(
+  //                                         AppLocalizations.of(context)!.no_comments_yet,
+  //                                         style: TextStyle(
+  //                                           color: Colors.white54,
+  //                                           fontSize: commentFontSize,
+  //                                         ),
+  //                                       ),
+  //                                     )
+  //                                   : ListView.builder(
+  //                                       controller: _commentsScrollController,
+  //                                       physics: const AlwaysScrollableScrollPhysics(),
+  //                                       itemCount: _comments.length,
+  //                                       itemBuilder: (context, index) {
+  //                                         final comment = _comments[index];
+  //                                         return Padding(
+  //                                           padding: EdgeInsets.only(bottom: 4.h),
+  //                                           child: Row(
+  //                                             crossAxisAlignment:
+  //                                                 CrossAxisAlignment.start,
+  //                                             children: [
+  //                                               CircleAvatar(
+  //                                                 radius: isSmallScreen ? 10.w : 14.w,
+  //                                                 backgroundImage:
+  //                                                     NetworkImage(comment
+  //                                                             .userAvatar ??
+  //                                                         ''),
+  //                                                 child: comment
+  //                                                         .userAvatar ==
+  //                                                     null
+  //                                                     ? Icon(Icons.person,
+  //                                                         size: isSmallScreen ? 8.sp : 12.sp,
+  //                                                         color: Colors
+  //                                                             .white54)
+  //                                                     : null,
+  //                                               ),
+  //                                               SizedBox(width: 6.w),
+  //                                               Expanded(
+  //                                                 child: Column(
+  //                                                   crossAxisAlignment:
+  //                                                       CrossAxisAlignment
+  //                                                           .start,
+  //                                                   children: [
+  //                                                     Text(
+  //                                                       comment.userName ??
+  //                                                           AppLocalizations.of(context)!.user_ucf,
+  //                                                       style: TextStyle(
+  //                                                         color: Colors
+  //                                                             .white,
+  //                                                         fontSize: commentNameFontSize,
+  //                                                         fontWeight:
+  //                                                             FontWeight
+  //                                                                 .w600,
+  //                                                       ),
+  //                                                     ),
+  //                                                     Text(
+  //                                                       comment.comment ??
+  //                                                           '',
+  //                                                       style: TextStyle(
+  //                                                         color: Colors
+  //                                                             .white70,
+  //                                                         fontSize: commentFontSize,
+  //                                                       ),
+  //                                                     ),
+  //                                                     Row(
+  //                                                       children: [
+  //                                                         GestureDetector(
+  //                                                           onTap: () =>
+  //                                                               _likeComment(
+  //                                                                   comment
+  //                                                                       .id ??
+  //                                                                       0),
+  //                                                           child: Text(
+  //                                                             '${comment.likesCount} ${AppLocalizations.of(context)!.likes_ucf}',
+  //                                                             style: TextStyle(
+  //                                                               color: Colors
+  //                                                                   .white54,
+  //                                                               fontSize: badgeFontSize,
+  //                                                             ),
+  //                                                           ),
+  //                                                         ),
+  //                                                         SizedBox(width: 8.w),
+  //                                                         GestureDetector(
+  //                                                           onTap: () =>
+  //                                                               _replyToComment(
+  //                                                                   comment
+  //                                                                       .userName ??
+  //                                                                   AppLocalizations.of(context)!.user_ucf),
+  //                                                           child: Text(
+  //                                                             AppLocalizations.of(context)!.reply_ucf,
+  //                                                             style: TextStyle(
+  //                                                               color: Colors
+  //                                                                   .white54,
+  //                                                               fontSize: badgeFontSize,
+  //                                                             ),
+  //                                                           ),
+  //                                                         ),
+  //                                                       ],
+  //                                                     ),
+  //                                                   ],
+  //                                                 ),
+  //                                               ),
+  //                                             ],
+  //                                           ),
+  //                                         );
+  //                                       },
+  //                                     ),
+  //                             ),
+  //                             SizedBox(height: 4.h),
+  //                             // Comment Input
+  //                             Row(
+  //                               children: [
+  //                                 Expanded(
+  //                                   child: Container(
+  //                                     decoration: BoxDecoration(
+  //                                       color: Colors.white
+  //                                           .withOpacity(0.15),
+  //                                       borderRadius:
+  //                                           BorderRadius.circular(10.r),
+  //                                     ),
+  //                                     child: TextField(
+  //                                       controller: _commentController,
+  //                                       style: TextStyle(
+  //                                           color: Colors.white,
+  //                                           fontSize: commentFontSize),
+  //                                       decoration: InputDecoration(
+  //                                         hintText: AppLocalizations.of(context)!.add_comment_hint,
+  //                                         hintStyle: TextStyle(
+  //                                             color: Colors.white54,
+  //                                             fontSize: commentFontSize),
+  //                                         border: InputBorder.none,
+  //                                         contentPadding:
+  //                                             EdgeInsets.symmetric(
+  //                                                 horizontal: 8.w,
+  //                                                 vertical: 4.h),
+  //                                       ),
+  //                                       onSubmitted: (value) =>
+  //                                           _sendComment(),
+  //                                     ),
+  //                                   ),
+  //                                 ),
+  //                                 SizedBox(width: 4.w),
+  //                                 GestureDetector(
+  //                                   onTap: _isProcessing ? null : _sendComment,
+  //                                   child: Container(
+  //                                     width: isSmallScreen ? 24.w : 28.w,
+  //                                     height: isSmallScreen ? 24.w : 28.w,
+  //                                     decoration: BoxDecoration(
+  //                                       color: MyTheme.accent_color,
+  //                                       shape: BoxShape.circle,
+  //                                     ),
+  //                                     child: _isProcessing
+  //                                         ? SizedBox(
+  //                                             height: 10.w,
+  //                                             width: 10.w,
+  //                                             child: CircularProgressIndicator(
+  //                                               strokeWidth: 2.w,
+  //                                               color: Colors.white,
+  //                                             ),
+  //                                           )
+  //                                         : Icon(Icons.send,
+  //                                             size: isSmallScreen ? 12.sp : 14.sp,
+  //                                             color: Colors.white),
+  //                                   ),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     // ============================================
+  //                     // PRODUCT NAME & DESCRIPTION
+  //                     // ============================================
+  //                     Positioned(
+  //                       bottom: 90.h,
+  //                       left: 12.w,
+  //                       right: 12.w,
+  //                       child: GestureDetector(
+  //                         onTap: _openTitleModal,
+  //                         child: Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             Text(_product?.name ?? '',
+  //                                 style: TextStyle(
+  //                                     color: Colors.white,
+  //                                     fontSize: nameFontSize,
+  //                                     fontWeight: FontWeight.bold)),
+  //                             SizedBox(height: 2.h),
+  //                             Text(
+  //                                 _product?.description
+  //                                         ?.replaceAll(RegExp(r'<[^>]*>'),
+  //                                             '') ??
+  //                                     '',
+  //                                 style: TextStyle(
+  //                                     color: Colors.white70,
+  //                                     fontSize: descFontSize),
+  //                                 maxLines: 2,
+  //                                 overflow: TextOverflow.ellipsis),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     // ============================================
+  //                     // TIMER & CURRENT BID - UPDATED DESIGN
+  //                     // ============================================
+  //                     Positioned(
+  //                       bottom: 16.h,
+  //                       left: 12.w,
+  //                       right: 12.w,
+  //                       child: Container(
+  //                         padding: EdgeInsets.all(10.w),
+  //                         decoration: BoxDecoration(
+  //                           color: const Color(0xFFE8F4F8), // Sky blue background
+  //                           borderRadius: BorderRadius.circular(16.r),
+  //                           border: Border.all(
+  //                             color: MyTheme.accent_color,
+  //                             width: 1.5.w,
+  //                           ),
+  //                         ),
+  //                         child: Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             // TIME LEFT Title
+  //                             Text(
+  //                               AppLocalizations.of(context)!.time_left,
+  //                               style: TextStyle(
+  //                                 color: Colors.black87,
+  //                                 fontSize: timerTitleSize,
+  //                                 fontWeight: FontWeight.w600,
+  //                               ),
+  //                             ),
+  //                             SizedBox(height: 6.h),
+  //                             Row(
+  //                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                               children: [
+  //                                 // Timer with short labels (d, h, m, s) - Inside the box
+  //                                 _buildTimerRowWithLabels(),
+  //                                 // Current Bid - Centered
+  //                                 Column(
+  //                                   crossAxisAlignment: CrossAxisAlignment.center,
+  //                                   children: [
+  //                                     Text(
+  //                                       AppLocalizations.of(context)!.current_bid,
+  //                                       style: TextStyle(
+  //                                         color: Colors.grey.shade700,
+  //                                         fontSize: bidLabelSize,
+  //                                         fontWeight: FontWeight.w500,
+  //                                       ),
+  //                                     ),
+  //                                     Text(
+  //                                       _formatPrice(_currentHighestBid),
+  //                                       style: TextStyle(
+  //                                         color: Colors.black87,
+  //                                         fontSize: bidPriceSize,
+  //                                         fontWeight: FontWeight.bold,
+  //                                       ),
+  //                                     ),
+  //                                   ],
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
                   
-                  // ============================================
-                  // BID INFORMATION SECTION
-                  // ============================================
-                  Transform.translate(
-                    offset: Offset(0, -15.h),
-                    child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: 16.w),
-                      padding: EdgeInsets.all(16.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(color: Colors.grey.shade200, width: 1.w),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 10.r,
-                            offset: Offset(0, 4.h),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(AppLocalizations.of(context)!.bid_information,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: isSmallScreen ? 14.sp : 16.sp)),
-                          SizedBox(height: 10.h),
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 10.w,
-                            mainAxisSpacing: 10.h,
-                            childAspectRatio: 3,
-                            children: [
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.starting_bid,
-                                _formatPrice(_startingBid),
-                                isSmallScreen,
-                              ),
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.total_bidders,
-                                '$_totalBids',
-                                isSmallScreen,
-                              ),
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.highest_bidder,
-                                _highestBidder.isNotEmpty
-                                    ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                    : AppLocalizations.of(context)!.no_bids,
-                                isSmallScreen,
-                              ),
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.bid_now_at,
-                                '$_pointPerBid',
-                                isSmallScreen,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+  //                 // ============================================
+  //                 // BID INFORMATION SECTION
+  //                 // ============================================
+  //                 Transform.translate(
+  //                   offset: Offset(0, -15.h),
+  //                   child: Container(
+  //                     margin: EdgeInsets.symmetric(horizontal: 16.w),
+  //                     padding: EdgeInsets.all(16.w),
+  //                     decoration: BoxDecoration(
+  //                       color: Colors.white,
+  //                       borderRadius: BorderRadius.circular(16.r),
+  //                       border: Border.all(color: Colors.grey.shade200, width: 1.w),
+  //                       boxShadow: [
+  //                         BoxShadow(
+  //                           color: Colors.black.withOpacity(0.08),
+  //                           blurRadius: 10.r,
+  //                           offset: Offset(0, 4.h),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     child: Column(
+  //                       crossAxisAlignment: CrossAxisAlignment.start,
+  //                       children: [
+  //                         Text(AppLocalizations.of(context)!.bid_information,
+  //                             style: TextStyle(
+  //                                 fontWeight: FontWeight.bold,
+  //                                 fontSize: isSmallScreen ? 14.sp : 16.sp)),
+  //                         SizedBox(height: 10.h),
+  //                         GridView.count(
+  //                           shrinkWrap: true,
+  //                           physics: NeverScrollableScrollPhysics(),
+  //                           crossAxisCount: 2,
+  //                           crossAxisSpacing: 10.w,
+  //                           mainAxisSpacing: 10.h,
+  //                           childAspectRatio: 3,
+  //                           children: [
+  //                             _buildInfoItem(
+  //                               AppLocalizations.of(context)!.starting_bid,
+  //                               _formatPrice(_startingBid),
+  //                               isSmallScreen,
+  //                             ),
+  //                             _buildInfoItem(
+  //                               AppLocalizations.of(context)!.total_bidders,
+  //                               '$_totalBids',
+  //                               isSmallScreen,
+  //                             ),
+  //                             _buildInfoItem(
+  //                               AppLocalizations.of(context)!.highest_bidder,
+  //                               _highestBidder.isNotEmpty
+  //                                   ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
+  //                                   : AppLocalizations.of(context)!.no_bids,
+  //                               isSmallScreen,
+  //                             ),
+  //                             _buildInfoItem(
+  //                               AppLocalizations.of(context)!.bid_now_at,
+  //                               '$_pointPerBid',
+  //                               isSmallScreen,
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ),
                   
-                  // ============================================
-                  // REVIEWS SECTION
-                  // ============================================
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 16.w),
-                    child: GestureDetector(
-                      onTap: _openReviewsModal,
-                      child: Container(
-                        padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(color: Colors.grey.shade200, width: 1.w),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4.r,
-                                offset: Offset(0, 2.h))
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Row(
-                                  children: List.generate(5, (index) {
-                                    return Icon(
-                                      index < _rating.round()
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      size: isSmallScreen ? 14.sp : 16.sp,
-                                      color: Colors.amber,
-                                    );
-                                  }),
-                                ),
-                                SizedBox(width: 6.w),
-                                Text(_rating.toStringAsFixed(1),
-                                    style: TextStyle(
-                                        fontSize: isSmallScreen ? 14.sp : 16.sp,
-                                        fontWeight: FontWeight.bold)),
-                                SizedBox(width: 6.w),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 6.w, vertical: 2.h),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(20.r),
-                                  ),
-                                  child: Text('$_reviewsCount',
-                                      style: TextStyle(
-                                          fontSize: isSmallScreen ? 10.sp : 12.sp,
-                                          color: Colors.grey)),
-                                ),
-                              ],
-                            ),
-                            Icon(Icons.arrow_forward_ios,
-                                size: isSmallScreen ? 14.sp : 16.sp, color: Colors.grey),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
+  //                 // ============================================
+  //                 // REVIEWS SECTION
+  //                 // ============================================
+  //                 Container(
+  //                   margin: EdgeInsets.symmetric(horizontal: 16.w),
+  //                   child: GestureDetector(
+  //                     onTap: _openReviewsModal,
+  //                     child: Container(
+  //                       padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
+  //                       decoration: BoxDecoration(
+  //                         color: Colors.white,
+  //                         borderRadius: BorderRadius.circular(16.r),
+  //                         border: Border.all(color: Colors.grey.shade200, width: 1.w),
+  //                         boxShadow: [
+  //                           BoxShadow(
+  //                               color: Colors.black.withOpacity(0.05),
+  //                               blurRadius: 4.r,
+  //                               offset: Offset(0, 2.h))
+  //                         ],
+  //                       ),
+  //                       child: Row(
+  //                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                         children: [
+  //                           Row(
+  //                             children: [
+  //                               Row(
+  //                                 children: List.generate(5, (index) {
+  //                                   return Icon(
+  //                                     index < _rating.round()
+  //                                         ? Icons.star
+  //                                         : Icons.star_border,
+  //                                     size: isSmallScreen ? 14.sp : 16.sp,
+  //                                     color: Colors.amber,
+  //                                   );
+  //                                 }),
+  //                               ),
+  //                               SizedBox(width: 6.w),
+  //                               Text(_rating.toStringAsFixed(1),
+  //                                   style: TextStyle(
+  //                                       fontSize: isSmallScreen ? 14.sp : 16.sp,
+  //                                       fontWeight: FontWeight.bold)),
+  //                               SizedBox(width: 6.w),
+  //                               Container(
+  //                                 padding: EdgeInsets.symmetric(
+  //                                     horizontal: 6.w, vertical: 2.h),
+  //                                 decoration: BoxDecoration(
+  //                                   color: Colors.grey.shade100,
+  //                                   borderRadius: BorderRadius.circular(20.r),
+  //                                 ),
+  //                                 child: Text('$_reviewsCount',
+  //                                     style: TextStyle(
+  //                                         fontSize: isSmallScreen ? 10.sp : 12.sp,
+  //                                         color: Colors.grey)),
+  //                               ),
+  //                             ],
+  //                           ),
+  //                           Icon(Icons.arrow_forward_ios,
+  //                               size: isSmallScreen ? 14.sp : 16.sp, color: Colors.grey),
+  //                         ],
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 SizedBox(height: 10.h),
                   
-                  // ============================================
-                  // THUMBNAILS
-                  // ============================================
-                  Container(
-                    height: isSmallScreen ? 50.h : 70.h,
-                    margin: EdgeInsets.all(12.w),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _productImages.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => _currentImageIndex = index);
-                          },
-                          child: Container(
-                            width: isSmallScreen ? 44.w : 60.w,
-                            height: isSmallScreen ? 44.w : 60.w,
-                            margin: EdgeInsets.only(right: 6.w),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10.r),
-                              border: Border.all(
-                                color: _currentImageIndex == index
-                                    ? MyTheme.accent_color
-                                    : Colors.grey.shade300,
-                                width: 2.w,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.r),
-                              child: Image.network(
-                                _productImages[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Icon(Icons.broken_image, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 20.h),
-                ],
-              ),
-            ),
-          ),
-          // ============================================
-          // FIXED BOTTOM BAR
-          // ============================================
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 8.r,
-                      offset: Offset(0, -2.h))
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _showBidInputDialog,
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.r)),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.custom_ucf,
-                        style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: _isProcessing ? null : _placeBidNow,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.r)),
-                      ),
-                      child: _isProcessing
-                          ? _buildButtonLoader()
-                          : Text(
-                              '${AppLocalizations.of(context)!.bid_now}',
-                              style: TextStyle(
-                                fontSize: isSmallScreen ? 12.sp : 14.sp,
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // ============================================
-          // MORE MENU OVERLAY
-          // ============================================
-          if (_showMoreMenu)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 80.h,
-              right: 16.w,
-              child: Material(
-                elevation: 20,
-                borderRadius: BorderRadius.circular(16.r),
-                child: Container(
-                  width: isSmallScreen ? 150.w : 180.w,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        blurRadius: 15.r,
-                        offset: Offset(0, 5.h),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildMoreMenuItem(
-                        icon: Icons.share,
-                        text: AppLocalizations.of(context)!.share_ucf,
-                        onTap: () {
-                          setState(() => _showMoreMenu = false);
-                          _shareProduct();
-                        },
-                        isSmallScreen: isSmallScreen,
-                      ),
-                      _buildMoreMenuItem(
-                        icon: _isInWishlist
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        text: _isInWishlist ? AppLocalizations.of(context)!.saved_ucf : AppLocalizations.of(context)!.save_ucf,
-                        onTap: () {
-                          setState(() => _showMoreMenu = false);
-                          _toggleWishlist();
-                        },
-                        isSmallScreen: isSmallScreen,
-                      ),
-                      _buildMoreMenuItem(
-                        icon: Icons.contact_mail,
-                        text: _isProcessing ? AppLocalizations.of(context)!.contacting : AppLocalizations.of(context)!.contact_seller,
-                        onTap: _isProcessing ? null : () {
-                          setState(() => _showMoreMenu = false);
-                          _contactSeller();
-                        },
-                        isSmallScreen: isSmallScreen,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+  //                 // ============================================
+  //                 // THUMBNAILS
+  //                 // ============================================
+  //                 Container(
+  //                   height: isSmallScreen ? 50.h : 70.h,
+  //                   margin: EdgeInsets.all(12.w),
+  //                   child: ListView.builder(
+  //                     scrollDirection: Axis.horizontal,
+  //                     itemCount: _productImages.length,
+  //                     itemBuilder: (context, index) {
+  //                       return GestureDetector(
+  //                         onTap: () {
+  //                           setState(() => _currentImageIndex = index);
+  //                         },
+  //                         child: Container(
+  //                           width: isSmallScreen ? 44.w : 60.w,
+  //                           height: isSmallScreen ? 44.w : 60.w,
+  //                           margin: EdgeInsets.only(right: 6.w),
+  //                           decoration: BoxDecoration(
+  //                             borderRadius: BorderRadius.circular(10.r),
+  //                             border: Border.all(
+  //                               color: _currentImageIndex == index
+  //                                   ? MyTheme.accent_color
+  //                                   : Colors.grey.shade300,
+  //                               width: 2.w,
+  //                             ),
+  //                           ),
+  //                           child: ClipRRect(
+  //                             borderRadius: BorderRadius.circular(8.r),
+  //                             child: Image.network(
+  //                               _productImages[index],
+  //                               fit: BoxFit.cover,
+  //                               errorBuilder: (context, error, stackTrace) =>
+  //                                   Icon(Icons.broken_image, color: Colors.grey),
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       );
+  //                     },
+  //                   ),
+  //                 ),
+  //                 SizedBox(height: 20.h),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //         // ============================================
+  //         // FIXED BOTTOM BAR
+  //         // ============================================
+  //         Positioned(
+  //           bottom: 0,
+  //           left: 0,
+  //           right: 0,
+  //           child: Container(
+  //             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                     color: Colors.black12,
+  //                     blurRadius: 8.r,
+  //                     offset: Offset(0, -2.h))
+  //               ],
+  //             ),
+  //             child: Row(
+  //               children: [
+  //                 Expanded(
+  //                   child: OutlinedButton(
+  //                     onPressed: _showBidInputDialog,
+  //                     style: OutlinedButton.styleFrom(
+  //                       padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
+  //                       shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(8.r)),
+  //                     ),
+  //                     child: Text(
+  //                       AppLocalizations.of(context)!.custom_ucf,
+  //                       style: TextStyle(fontSize: isSmallScreen ? 12.sp : 14.sp),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 SizedBox(width: 10.w),
+  //                 Expanded(
+  //                   flex: 2,
+  //                   child: ElevatedButton(
+  //                     onPressed: _isProcessing ? null : _placeBidNow,
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: MyTheme.accent_color,
+  //                       padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10.h : 14.h),
+  //                       shape: RoundedRectangleBorder(
+  //                           borderRadius: BorderRadius.circular(8.r)),
+  //                     ),
+  //                     child: _isProcessing
+  //                         ? _buildButtonLoader()
+  //                         : Text(
+  //                             '${AppLocalizations.of(context)!.bid_now}',
+  //                             style: TextStyle(
+  //                               fontSize: isSmallScreen ? 12.sp : 14.sp,
+  //                               color: Colors.white,
+  //                             ),
+  //                           ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //         // ============================================
+  //         // MORE MENU OVERLAY
+  //         // ============================================
+  //         if (_showMoreMenu)
+  //           Positioned(
+  //             top: MediaQuery.of(context).padding.top + 80.h,
+  //             right: 16.w,
+  //             child: Material(
+  //               elevation: 20,
+  //               borderRadius: BorderRadius.circular(16.r),
+  //               child: Container(
+  //                 width: isSmallScreen ? 150.w : 180.w,
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.white,
+  //                   borderRadius: BorderRadius.circular(16.r),
+  //                   boxShadow: [
+  //                     BoxShadow(
+  //                       color: Colors.black.withOpacity(0.25),
+  //                       blurRadius: 15.r,
+  //                       offset: Offset(0, 5.h),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 child: Column(
+  //                   mainAxisSize: MainAxisSize.min,
+  //                   children: [
+  //                     _buildMoreMenuItem(
+  //                       icon: Icons.share,
+  //                       text: AppLocalizations.of(context)!.share_ucf,
+  //                       onTap: () {
+  //                         setState(() => _showMoreMenu = false);
+  //                         _shareProduct();
+  //                       },
+  //                       isSmallScreen: isSmallScreen,
+  //                     ),
+  //                     _buildMoreMenuItem(
+  //                       icon: _isInWishlist
+  //                           ? Icons.favorite
+  //                           : Icons.favorite_border,
+  //                       text: _isInWishlist ? AppLocalizations.of(context)!.saved_ucf : AppLocalizations.of(context)!.save_ucf,
+  //                       onTap: () {
+  //                         setState(() => _showMoreMenu = false);
+  //                         _toggleWishlist();
+  //                       },
+  //                       isSmallScreen: isSmallScreen,
+  //                     ),
+  //                     _buildMoreMenuItem(
+  //                       icon: Icons.contact_mail,
+  //                       text: _isProcessing ? AppLocalizations.of(context)!.contacting : AppLocalizations.of(context)!.contact_seller,
+  //                       onTap: _isProcessing ? null : () {
+  //                         setState(() => _showMoreMenu = false);
+  //                         _contactSeller();
+  //                       },
+  //                       isSmallScreen: isSmallScreen,
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // ============================================
   // Icon Circle with Custom Image - Updated with size param
