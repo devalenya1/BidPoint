@@ -2426,73 +2426,56 @@ class _ProductDetailsState extends State<ProductDetails>
                         bottom: _getResponsiveSize(20, 30),
                         left: _getResponsiveSize(8, 12),
                         right: _getResponsiveSize(8, 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // TIME LEFT Title - COMMENTED OUT to prevent overlay
-                            // Text(
-                            //   AppLocalizations.of(context)!.time_left,
-                            //   style: TextStyle(
-                            //     color: Colors.white,
-                            //     fontSize: _getResponsiveFontSize(8, 12),
-                            //     fontWeight: FontWeight.w600,
-                            //   ),
-                            // ),
-                            // SizedBox(height: _getResponsiveSize(1, 4)),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // Timer - No outer box, just the units
-                                _buildTimerRow(),
-                                // Current Bid
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16), vertical: _getResponsivePadding(6, 12)),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.6),
-                                    borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
-                                      width: 1,
+                            // Timer - No outer box, just the units
+                            _buildTimerRow(),
+                            // Current Bid
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16), vertical: _getResponsivePadding(6, 12)),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.current_bid,
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: _getResponsiveFontSize(8, 11),
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        AppLocalizations.of(context)!.current_bid,
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: _getResponsiveFontSize(8, 11),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatPrice(_currentHighestBid),
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: _getResponsiveFontSize(14, 20),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                  Text(
+                                    _formatPrice(_currentHighestBid),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: _getResponsiveFontSize(14, 20),
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                        SizedBox(height: _getResponsiveSize(6, 9)),
                       ),
                     ],
                   ),
-                  
                   
                   // ============================================
                   // BID INFORMATION SECTION - Offset -10
                   // ============================================
                   Transform.translate(
-                    offset: Offset(0, -15),
+                    offset: Offset(0, -10),
                     child: Container(
                       margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16)),
                       padding: EdgeInsets.all(_getResponsivePadding(8, 16)),
