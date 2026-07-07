@@ -113,6 +113,9 @@ class _ProductDetailsState extends State<ProductDetails>
   // Loading state for buttons
   bool _isProcessing = false;
 
+  // Screen width for responsive sizing
+  double _screenWidth = 0;
+
   @override
   void initState() {
     super.initState();
@@ -202,7 +205,8 @@ class _ProductDetailsState extends State<ProductDetails>
       final response =
           await _productRepository.getProductComments(_product?.id ?? 0);
       if (response.success == true && response.comments != null) {
-        setState(() => _comments = response.comments!);
+        // Reverse comments so latest appears at bottom
+        setState(() => _comments = response.comments!.reversed.toList());
       }
     } catch (e) {
       print('Error fetching comments: $e');
@@ -331,7 +335,7 @@ class _ProductDetailsState extends State<ProductDetails>
         }
 
         if (response.comments != null && response.comments!.isNotEmpty) {
-          setState(() => _comments = response.comments!);
+          setState(() => _comments = response.comments!.reversed.toList());
         }
 
         if (response.reviews != null && response.reviews!.isNotEmpty) {
@@ -374,6 +378,7 @@ class _ProductDetailsState extends State<ProductDetails>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _screenWidth = MediaQuery.of(context).size.width;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndRefreshWishlist();
     });
@@ -858,6 +863,10 @@ class _ProductDetailsState extends State<ProductDetails>
     return FormatHelper.formatPrice(amount);
   }
 
+  // ============================================
+  // UPDATED TIMER METHODS
+  // ============================================
+
   String _formatTimeLeft() {
     if (_timeLeft.isNegative) return '00:00:00';
 
@@ -867,23 +876,33 @@ class _ProductDetailsState extends State<ProductDetails>
     final seconds = _timeLeft.inSeconds.remainder(60);
 
     if (days > 0) {
-      return '${days.toString().padLeft(2, '0')}d ${hours.toString().padLeft(2, '0')}h';
+      return '${days}d ${hours}h ${minutes}m';
     } else {
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
   }
 
-  Map<String, String> _getTimeComponents() {
+  Map<String, dynamic> _getTimeComponents() {
     final days = _timeLeft.inDays;
     final hours = _timeLeft.inHours.remainder(24);
     final minutes = _timeLeft.inMinutes.remainder(60);
     final seconds = _timeLeft.inSeconds.remainder(60);
+
+    // Determine which units to show based on time remaining
+    bool showDays = days > 0;
+    bool showHours = true;
+    bool showMinutes = true;
+    bool showSeconds = !showDays; // Show seconds only if less than a day
 
     return {
       'days': days.toString().padLeft(2, '0'),
       'hours': hours.toString().padLeft(2, '0'),
       'minutes': minutes.toString().padLeft(2, '0'),
       'seconds': seconds.toString().padLeft(2, '0'),
+      'showDays': showDays,
+      'showHours': showHours,
+      'showMinutes': showMinutes,
+      'showSeconds': showSeconds,
     };
   }
 
@@ -1598,8 +1617,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 992;
+    _screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = _screenWidth >= 992;
 
     return Scaffold(
       backgroundColor: isDesktop ? Color(0xFFF5F7FA) : Colors.white,
@@ -1644,13 +1663,98 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
+  // UPDATED TIMER UNIT WIDGET - WITH SHORT LABELS (d, h, m, s)
+  // ============================================
+
+  Widget _buildTimerUnit(String value, String label, {bool isEndingSoon = false}) {
+    // Determine if we should show this unit
+    if (label == 's' && _timeLeft.inDays > 0) {
+      // Hide seconds when there are days
+      return SizedBox.shrink();
+    }
+    
+    return Container(
+      margin: EdgeInsets.only(right: 6.w),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: isEndingSoon ? Colors.red : MyTheme.accent_color,
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          SizedBox(height: 1.h),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================
+  // UPDATED TIMER ROW WIDGET
+  // ============================================
+
+  Widget _buildTimerRow() {
+    final components = _getTimeComponents();
+    final days = components['days'] as String;
+    final hours = components['hours'] as String;
+    final minutes = components['minutes'] as String;
+    final seconds = components['seconds'] as String;
+    final showDays = components['showDays'] as bool;
+    final showSeconds = components['showSeconds'] as bool;
+
+    List<Widget> timerUnits = [];
+
+    if (showDays) {
+      timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon));
+    }
+    
+    timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon));
+    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon));
+    
+    if (showSeconds) {
+      timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon));
+    }
+
+    return Row(
+      children: timerUnits,
+    );
+  }
+
+  // ============================================
   // MOBILE LAYOUT
   // ============================================
 
   Widget _buildMobileLayout() {
-    final timeComponents = _getTimeComponents();
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.85; // Changed back to 70%
+    final imageHeight = screenHeight * 0.85;
+    final isSmallScreen = _screenWidth < 380;
+    final isMediumScreen = _screenWidth >= 380 && _screenWidth < 480;
+    
+    // Responsive font sizes
+    final double nameFontSize = isSmallScreen ? 18.sp : (isMediumScreen ? 20.sp : 22.sp);
+    final double descFontSize = isSmallScreen ? 11.sp : (isMediumScreen ? 12.sp : 13.sp);
+    final double timerFontSize = isSmallScreen ? 12.sp : (isMediumScreen ? 14.sp : 16.sp);
+    final double timerLabelFontSize = isSmallScreen ? 8.sp : (isMediumScreen ? 9.sp : 10.sp);
+    final double commentFontSize = isSmallScreen ? 9.sp : (isMediumScreen ? 10.sp : 11.sp);
+    final double commentNameFontSize = isSmallScreen ? 10.sp : (isMediumScreen ? 11.sp : 12.sp);
+    final double badgeFontSize = isSmallScreen ? 7.sp : (isMediumScreen ? 8.sp : 9.sp);
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1664,7 +1768,7 @@ class _ProductDetailsState extends State<ProductDetails>
             child: SingleChildScrollView(
               controller: _mainScrollController,
               physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(bottom: 80.h), // Space for fixed bottom bar
+              padding: EdgeInsets.only(bottom: 80.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1793,49 +1897,50 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // COMMENTS SECTION - ON THE IMAGE (75% WIDTH, LEFT ALIGNED)
+                      // COMMENTS SECTION - UPDATED: Latest at bottom, smaller font
                       // ============================================
                       Positioned(
                         bottom: 200.h,
                         left: 16.w,
                         child: Container(
-                          width: MediaQuery.of(context).size.width * 0.75,
+                          width: _screenWidth * 0.75,
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20.r),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.15), width: 1.w),
                           ),
-                          padding: EdgeInsets.all(12.w),
+                          padding: EdgeInsets.all(10.w),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Comments List - SCROLLABLE
                               Container(
-                                height: 160.h, // Fixed height for scrollable area
+                                height: 160.h,
                                 child: _comments.isEmpty
                                     ? Center(
                                         child: Text(
                                           AppLocalizations.of(context)!.no_comments_yet,
                                           style: TextStyle(
                                             color: Colors.white54,
-                                            fontSize: 11.sp,
+                                            fontSize: commentFontSize,
                                           ),
                                         ),
                                       )
                                     : ListView.builder(
-                                        physics: const AlwaysScrollableScrollPhysics(), // Enable scrolling
+                                        physics: const AlwaysScrollableScrollPhysics(),
+                                        // Reverse the list so latest comments appear at bottom
                                         itemCount: _comments.length,
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
                                           return Padding(
-                                            padding: EdgeInsets.only(bottom: 8.h),
+                                            padding: EdgeInsets.only(bottom: 6.h),
                                             child: Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 CircleAvatar(
-                                                  radius: 18.w,
+                                                  radius: 14.w,
                                                   backgroundImage:
                                                       NetworkImage(comment
                                                               .userAvatar ??
@@ -1844,12 +1949,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                           .userAvatar ==
                                                       null
                                                       ? Icon(Icons.person,
-                                                          size: 14.sp,
+                                                          size: 12.sp,
                                                           color: Colors
                                                               .white54)
                                                       : null,
                                                 ),
-                                                SizedBox(width: 10.w),
+                                                SizedBox(width: 8.w),
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -1862,7 +1967,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white,
-                                                          fontSize: 12.sp,
+                                                          fontSize: commentNameFontSize,
                                                           fontWeight:
                                                               FontWeight
                                                                   .w600,
@@ -1874,7 +1979,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white70,
-                                                          fontSize: 11.sp,
+                                                          fontSize: commentFontSize,
                                                         ),
                                                       ),
                                                       Row(
@@ -1890,11 +1995,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: 10.sp,
+                                                                fontSize: badgeFontSize,
                                                               ),
                                                             ),
                                                           ),
-                                                          SizedBox(width: 12.w),
+                                                          SizedBox(width: 10.w),
                                                           GestureDetector(
                                                             onTap: () =>
                                                                 _replyToComment(
@@ -1906,7 +2011,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: 10.sp,
+                                                                fontSize: badgeFontSize,
                                                               ),
                                                             ),
                                                           ),
@@ -1937,12 +2042,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                         controller: _commentController,
                                         style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 11.sp),
+                                            fontSize: commentFontSize),
                                         decoration: InputDecoration(
                                           hintText: AppLocalizations.of(context)!.add_comment_hint,
                                           hintStyle: TextStyle(
                                               color: Colors.white54,
-                                              fontSize: 11.sp),
+                                              fontSize: commentFontSize),
                                           border: InputBorder.none,
                                           contentPadding:
                                               EdgeInsets.symmetric(
@@ -1985,7 +2090,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // PRODUCT NAME & DESCRIPTION - ON THE IMAGE
+                      // PRODUCT NAME & DESCRIPTION
                       // ============================================
                       Positioned(
                         bottom: 90.h,
@@ -1999,7 +2104,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               Text(_product?.name ?? '',
                                   style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 22.sp,
+                                      fontSize: nameFontSize,
                                       fontWeight: FontWeight.bold)),
                               SizedBox(height: 4.h),
                               Text(
@@ -2008,7 +2113,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                               '') ??
                                       '',
                                   style: TextStyle(
-                                      color: Colors.white70, fontSize: 13.sp),
+                                      color: Colors.white70,
+                                      fontSize: descFontSize),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis),
                             ],
@@ -2016,10 +2122,9 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // TIMER & CURRENT BID - ON THE IMAGE
+                      // TIMER & CURRENT BID - UPDATED DESIGN
                       // ============================================
                       Positioned(
-                        // top: 5.w,
                         bottom: 16.h,
                         left: 16.w,
                         right: 16.w,
@@ -2029,33 +2134,12 @@ class _ProductDetailsState extends State<ProductDetails>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Text(AppLocalizations.of(context)!.time_left,
-                                    //     style: TextStyle(
-                                    //         color: Colors.white70,
-                                    //         fontSize: 11.sp)),
-                                    SizedBox(height: 4.h),
-                                    Row(
-                                      children: [
-                                        _buildTimerUnitBig(
-                                            timeComponents['days']!, AppLocalizations.of(context)!.days_short),
-                                        _buildTimerUnitBig(
-                                            timeComponents['hours']!, AppLocalizations.of(context)!.hours_short),
-                                        _buildTimerUnitBig(
-                                            timeComponents['minutes']!,
-                                            AppLocalizations.of(context)!.minutes_short),
-                                        _buildTimerUnitBig(
-                                            timeComponents['seconds']!,
-                                            AppLocalizations.of(context)!.seconds_short),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                // Timer with short labels (d, h, m, s)
+                                _buildTimerRow(),
+                                // Current Bid Container
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 20.w, vertical: 16.h),
+                                      horizontal: 16.w, vertical: 12.h),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.6),
                                     borderRadius: BorderRadius.circular(16.r),
@@ -2068,20 +2152,17 @@ class _ProductDetailsState extends State<ProductDetails>
                                       Text(AppLocalizations.of(context)!.current_bid,
                                           style: TextStyle(
                                               color: Colors.white70,
-                                              fontSize: 12.sp)),
+                                              fontSize: 10.sp)),
                                       Text(_formatPrice(_currentHighestBid),
                                           style: TextStyle(
                                               color: Colors.white,
-                                              fontSize: 24.sp,
+                                              fontSize: 20.sp,
                                               fontWeight: FontWeight.bold)),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
-                            // ============================================
-                            // 10px SPACE BELOW TIMER & CURRENT BID
-                            // ============================================
                             SizedBox(height: 7.h),
                           ],
                         ),
@@ -2090,10 +2171,10 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   
                   // ============================================
-                  // BID INFORMATION SECTION - WITH OVERLAY OFFSET
+                  // BID INFORMATION SECTION
                   // ============================================
                   Transform.translate(
-                    offset: Offset(0, -15.h), // Pull the card up by 15
+                    offset: Offset(0, -15.h),
                     child: Container(
                       margin: EdgeInsets.symmetric(horizontal: 16.w),
                       padding: EdgeInsets.all(16.w),
@@ -2251,7 +2332,7 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           // ============================================
-          // FIXED BOTTOM BAR - Bid Now & Custom
+          // FIXED BOTTOM BAR
           // ============================================
           Positioned(
             bottom: 0,
@@ -2515,31 +2596,6 @@ class _ProductDetailsState extends State<ProductDetails>
                 style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade800)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTimerUnitBig(String value, String label) {
-    return Container(
-      margin: EdgeInsets.only(right: 8.w),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Text(value,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.bold)),
-          ),
-          SizedBox(height: 2.h),
-          Text(label,
-              style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
-        ],
       ),
     );
   }
@@ -2960,12 +3016,18 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                           SizedBox(height: 16.h),
-                          // Timer & Price
+                          // Timer & Price - UPDATED DESIGN
                           Container(
                             padding: EdgeInsets.all(12.w),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: _isEndingSoon 
+                                  ? Colors.red.withOpacity(0.1) 
+                                  : MyTheme.accent_color.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: _isEndingSoon ? Colors.red : MyTheme.accent_color,
+                                width: 1.w,
+                              ),
                             ),
                             child: Column(
                               children: [
@@ -2981,13 +3043,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Row(
                                       children: [
                                         _buildDesktopTimerUnit(
-                                            timeComponents['days']!, AppLocalizations.of(context)!.days_short),
+                                            timeComponents['days']!, 'd'),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['hours']!, AppLocalizations.of(context)!.hours_short),
+                                            timeComponents['hours']!, 'h'),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['minutes']!, AppLocalizations.of(context)!.minutes_short),
+                                            timeComponents['minutes']!, 'm'),
                                         _buildDesktopTimerUnit(
-                                            timeComponents['seconds']!, AppLocalizations.of(context)!.seconds_short),
+                                            timeComponents['seconds']!, 's'),
                                       ],
                                     ),
                                   ],
@@ -3258,6 +3320,11 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Widget _buildDesktopTimerUnit(String value, String label) {
+    // Hide seconds when there are days
+    if (label == 's' && _timeLeft.inDays > 0) {
+      return SizedBox.shrink();
+    }
+    
     return Container(
       margin: EdgeInsets.only(left: 8.w),
       child: Column(
