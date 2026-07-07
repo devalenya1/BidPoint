@@ -419,7 +419,7 @@ class _LoginState extends State<Login> {
             // Heading: "Login Your Account" - GRAY COLOR
             // ============================================
             Padding(
-              padding: EdgeInsets.only(top: 20.h, bottom: 30.h),
+              padding: EdgeInsets.only(top: 12.h, bottom: 30.h),
               child: Text(
                 AppLocalizations.of(context)!.login_your_account,
                 style: TextStyle(
@@ -806,18 +806,18 @@ class _LoginState extends State<Login> {
                   ),
                 ),
                 // Twitter Button
-                Visibility(
-                  visible: allow_twitter_login.$,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w),
-                    child: _buildSocialLoginButtonSideBySide(
-                      label: "Twitter",
-                      iconPath: "assets/twitter_logo.png",
-                      onTap: onPressedTwitterLogin,
-                      isSmallScreen: isSmallScreen,
-                    ),
-                  ),
-                ),
+                // Visibility(
+                //   visible: allow_twitter_login.$,
+                //   child: Padding(
+                //     padding: EdgeInsets.symmetric(horizontal: 6.w),
+                //     child: _buildSocialLoginButtonSideBySide(
+                //       label: "Twitter",
+                //       iconPath: "assets/twitter_logo.png",
+                //       onTap: onPressedTwitterLogin,
+                //       isSmallScreen: isSmallScreen,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
             
