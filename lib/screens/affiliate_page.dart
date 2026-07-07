@@ -109,7 +109,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
   String get _referralCode => _userInfo?.referralCode ?? "";
   
   // UPDATED: Use AppConfig.RAW_BASE_URL for referral link
-  String get _referralLink => "${AppConfig.RAW_BASE_URL}/ref/$_referralCode";
+  String get _referralLink => "${AppConfig.RAW_BASE_URL}/registration?referral_code=$_referralCode";
   
   void _copyToClipboard(String text, String type) {
     Clipboard.setData(ClipboardData(text: text));

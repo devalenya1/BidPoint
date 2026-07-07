@@ -1650,7 +1650,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildMobileLayout() {
     final timeComponents = _getTimeComponents();
     final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.70; // Changed back to 70%
+    final imageHeight = screenHeight * 0.85; // Changed back to 70%
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1796,7 +1796,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // COMMENTS SECTION - ON THE IMAGE (75% WIDTH, LEFT ALIGNED)
                       // ============================================
                       Positioned(
-                        bottom: 150.h,
+                        bottom: 200.h,
                         left: 16.w,
                         child: Container(
                           width: MediaQuery.of(context).size.width * 0.75,

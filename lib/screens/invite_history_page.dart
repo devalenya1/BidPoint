@@ -44,7 +44,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   double get _totalEarnings => _userInfo?.affiliateBalance ?? 0.0;
   String get _referralCode => _userInfo?.referralCode ?? "";
   
-  String get _referralLink => "${AppConfig.RAW_BASE_URL}/ref/$_referralCode";
+  String get _referralLink => "${AppConfig.RAW_BASE_URL}/registration?referral_code=$_referralCode";
   
   // Display list (paginated)
   List<AffiliateLog> get _displayHistory => _allInviteHistory;

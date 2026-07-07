@@ -49,21 +49,50 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   bool _isRefreshingCounts = false;
   UserInformation? _userInfo;
   
-  // Display counts
+  // ============================================================
+  // UPDATED COUNT LOGIC:
+  // - Show NOTHING (no badge) when isLoadingCounts == true
+  // - Show count only when isLoadingCounts == false
+  // - If count is 0, show 0
+  // ============================================================
   int get _unreadNotificationCount {
     if (is_logged_in.$ != true) return 0;
-    if (_userInfo == null) return 1;
-    return _userInfo!.unreadNotificationsCount ?? 0;
+    return _userInfo?.unreadNotificationsCount ?? 0;
   }
   
   int get _unreadMessageCount {
     if (is_logged_in.$ != true) return 0;
-    if (_userInfo == null) return 1;
-    return _userInfo!.unreadMessagesCount ?? 0;
+    return _userInfo?.unreadMessagesCount ?? 0;
   }
   
-  bool get _showNotificationBadge => is_logged_in.$ && _unreadNotificationCount > 0;
-  bool get _showMessageBadge => is_logged_in.$ && _unreadMessageCount > 0;
+  // Badge visibility:
+  // - Show ONLY when NOT loading AND logged in AND count > 0
+  bool get _shouldShowNotificationBadge {
+    if (!is_logged_in.$) return false;
+    if (_isLoadingCounts) return false;  // Don't show while loading
+    return _unreadNotificationCount > 0;
+  }
+  
+  bool get _shouldShowMessageBadge {
+    if (!is_logged_in.$) return false;
+    if (_isLoadingCounts) return false;  // Don't show while loading
+    return _unreadMessageCount > 0;
+  }
+  
+  // Display text for badge:
+  // - Show count only when NOT loading
+  // - If count is 0, show "0"
+  String get _notificationBadgeText {
+    if (_isLoadingCounts) return '';  // Don't show anything while loading
+    if (_unreadNotificationCount > 99) return '99+';
+    return '$_unreadNotificationCount';
+  }
+  
+  String get _messageBadgeText {
+    if (_isLoadingCounts) return '';  // Don't show anything while loading
+    if (_unreadMessageCount > 99) return '99+';
+    return '$_unreadMessageCount';
+  }
   
   @override
   void initState() {
@@ -894,21 +923,35 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           color: MyTheme.dark_grey,
                         ),
                       ),
-                      if (_showNotificationBadge)
+                      // ==========================================================
+                      // UPDATED BADGE LOGIC:
+                      // - Show only when NOT loading AND logged in AND count > 0
+                      // - Count is only shown after data is fetched from server
+                      // - If count is 0, show 0
+                      // ==========================================================
+                      if (_shouldShowNotificationBadge)
                         Positioned(
                           top: 2.h,
                           right: 2.w,
                           child: Container(
                             padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10.r)),
+                            decoration: BoxDecoration(
+                              color: MyTheme.accent_color,
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
                             constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.h),
                             child: Text(
-                              _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
-                              style: TextStyle(fontSize: 9.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                              _notificationBadgeText,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
                         ),
+                      // When loading, show nothing (no badge)
                     ],
                   ),
                 ),
@@ -932,21 +975,35 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   child: Stack(
                     children: [
                       Center(child: Image.asset('assets/message.png', height: 22.w, width: 22.w)),
-                      if (_showMessageBadge)
+                      // ==========================================================
+                      // UPDATED BADGE LOGIC:
+                      // - Show only when NOT loading AND logged in AND count > 0
+                      // - Count is only shown after data is fetched from server
+                      // - If count is 0, show 0
+                      // ==========================================================
+                      if (_shouldShowMessageBadge)
                         Positioned(
                           top: 2.h,
                           right: 2.w,
                           child: Container(
                             padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-                            decoration: BoxDecoration(color: MyTheme.accent_color, borderRadius: BorderRadius.circular(10.r)),
+                            decoration: BoxDecoration(
+                              color: MyTheme.accent_color,
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
                             constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.h),
                             child: Text(
-                              _unreadMessageCount > 99 ? '99+' : '$_unreadMessageCount',
-                              style: TextStyle(fontSize: 9.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                              _messageBadgeText,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
                         ),
+                      // When loading, show nothing (no badge)
                     ],
                   ),
                 ),
