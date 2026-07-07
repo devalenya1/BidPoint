@@ -1779,12 +1779,12 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // TIMER WIDGETS - UPDATED
+  // TIMER WIDGETS - FIXED
   // ============================================
 
   Widget _buildTimerUnitWithLabel(String value, String label, {bool isEndingSoon = false}) {
     if (label == 's' && _timeLeft.inDays > 0) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink(); 
     }
     
     final isSmallScreen = _screenWidth < 400;
@@ -2617,16 +2617,17 @@ class _ProductDetailsState extends State<ProductDetails>
     required VoidCallback onTap,
     bool isLoading = false,
     IconData? fallbackIcon,
-    double size = 48.w,
+    double size = 48,
   }) {
-    final isSmallScreen = size < 44.w;
+    final isSmallScreen = size < 44;
     final iconSize = isSmallScreen ? 18.sp : 22.sp;
+    final double width = size.w;  
     
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: size,
-        height: size,
+        width: width,
+        height: width,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -2706,16 +2707,17 @@ class _ProductDetailsState extends State<ProductDetails>
     bool isActive = false,
     required VoidCallback onTap,
     bool isLoading = false,
-    double size = 48.w,
+    double size = 48,
   }) {
-    final isSmallScreen = size < 44.w;
+    final isSmallScreen = size < 44;
     final iconSize = isSmallScreen ? 18.sp : 22.sp;
+    final double width = size.w;
     
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        width: size,
-        height: size,
+        width: width,
+        height: width,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -2808,7 +2810,7 @@ class _ProductDetailsState extends State<ProductDetails>
     final isSmallScreen = _screenWidth < 1100;
 
     return SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
+      physics: const BouncingScrollPhysics(),
       child: Padding(
         padding: EdgeInsets.all(isSmallScreen ? 12.w : 16.w),
         child: Row(
@@ -3562,7 +3564,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildDesktopTimerUnit(String value, String label, {bool isSmallScreen = false}) {
     if (label == 's' && _timeLeft.inDays > 0) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     
     return Container(

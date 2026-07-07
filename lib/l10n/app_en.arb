@@ -1239,7 +1239,16 @@
   "previous_ucf": "Previous",
   "next_ucf": "Next",
   "total_ucf": "Total",
-  
+  "login_your_account": "Login Your Account",
+  "password": "Password",
+  "forgot_password": "Forgot Password?",
+  "sign_up": "Sign Up",
+  "or_log_in_with": "Or Log In With",
+  "create_your_account": "Create Your Account",
+  "full_name": "Full Name",
+  "confirm_password": "Confirm Password",
+  "or_sign_up_with": "Or Sign Up With",
+  "please_agree_to_terms": "Please agree to the Terms, Conditions & Privacy Policy",
 
 
   "no_file_chosen_ucf": "No File Chosen",
