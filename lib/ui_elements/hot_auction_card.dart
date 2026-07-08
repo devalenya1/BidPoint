@@ -272,11 +272,11 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
           'Login Required',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Please login to place a bid',
-          style: TextStyle(fontSize: 14.sp),
+          style: TextStyle(fontSize: 13.sp),
         ),
         actions: [
           TextButton(
@@ -385,7 +385,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                       Text(
                         _timeLeft,
                         style: TextStyle(
-                          fontSize: 9.sp,
+                          fontSize: 8.sp,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -425,7 +425,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   child: Text(
                     widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 9.sp,
                       color: const Color(0xFF8F9AA7),
                     ),
                     maxLines: 1,
@@ -444,14 +444,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         Text(
                           'Current Bid',
                           style: TextStyle(
-                            fontSize: 9.sp,
+                            fontSize: 7.sp,
                             color: const Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
                           style: TextStyle(
-                            fontSize: 13.sp,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
@@ -459,7 +459,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                       ],
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                       decoration: BoxDecoration(
                         color: const Color(0xFFB5E7F5),
                         borderRadius: BorderRadius.circular(30.r),
@@ -469,15 +469,15 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         children: [
                           Icon(
                             Icons.access_time,
-                            size: 10.sp,
+                            size: 9.sp,
                             color: const Color(0xFF0092AC),
                           ),
                           SizedBox(width: 2.w),
                           Text(
                             '1 Bid = ${widget.pointPerBid ?? 0}',
                             style: TextStyle(
-                              fontSize: 7.sp,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 6.sp,
+                              fontWeight: FontWeight.w500,
                               color: MyTheme.accent_color,
                             ),
                           ),
@@ -496,7 +496,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   onTap: _navigateToProductDetails,
                   child: Container(
                     width: double.infinity,
-                    height: 40.h,
+                    height: 35.h,
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7.r),
@@ -541,8 +541,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                                       Text(
                                         'Swipe to Bid',
                                         style: TextStyle(
-                                          fontSize: 11.sp,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w500,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -550,8 +550,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                                       Text(
                                         'Quick Bid',
                                         style: TextStyle(
-                                          fontSize: 11.sp,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w500,
                                           color: Colors.white,
                                         ),
                                       ),

@@ -308,8 +308,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       Text(
                         _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.user_ucf,
                         style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -321,8 +321,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
                         child: Text(
                           '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_referralEarnings)}',
                           style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 8.sp,
+                            fontWeight: FontWeight.w600,
                             color: MyTheme.accent_color,
                           ),
                         ),
@@ -336,7 +336,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
           GestureDetector(
             onTap: _navigateToWithdrawHistory,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
               decoration: BoxDecoration(
                 color: MyTheme.accent_color,
                 borderRadius: BorderRadius.circular(7.r),
@@ -344,8 +344,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
               child: Text(
                 AppLocalizations.of(context)!.withdraw_ucf,
                 style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
@@ -377,7 +377,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       Text(
                         AppLocalizations.of(context)!.points_balance,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 10.sp,
                           color: const Color(0xFF666666),
                         ),
                       ),
@@ -399,7 +399,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       Text(
                         _pointsVisible ? '$_pointsBalance' : '****',
                         style: TextStyle(
-                          fontSize: 19.sp,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
                           color: Colors.black,
                         ),
@@ -408,7 +408,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                       Text(
                         AppLocalizations.of(context)!.points_ucf,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.w400,
                           color: const Color(0xFF666666),
                         ),
@@ -454,7 +454,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   Text(
                     AppLocalizations.of(context)!.cash_earnings,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 10.sp,
                       color: const Color(0xFF666666),
                     ),
                   ),
@@ -462,7 +462,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   Text(
                     FormatHelper.formatPrice(_cashEarnings),
                     style: TextStyle(
-                      fontSize: 19.sp,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),

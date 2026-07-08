@@ -509,8 +509,8 @@ class _WishlistState extends State<Wishlist> {
     final isTablet = screenWidth >= 600;
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 32.w : 16.w),
-      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: isTablet ? 30.w : 13.w),
+      margin: EdgeInsets.only(bottom: 13.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -525,8 +525,8 @@ class _WishlistState extends State<Wishlist> {
               child: Container(
                 margin: EdgeInsets.only(right: 4.w),
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 24.w : 20.w,
-                  vertical: isTablet ? 12.h : 10.h,
+                  horizontal: isTablet ? 24.w : 18.w,
+                  vertical: isTablet ? 12.h : 8.h,
                 ),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
@@ -535,8 +535,8 @@ class _WishlistState extends State<Wishlist> {
                 child: Text(
                   tabs[index],
                   style: TextStyle(
-                    fontSize: isTablet ? 15.sp : 13.sp,
-                    fontWeight: FontWeight.w600,
+                    fontSize: isTablet ? 15.sp : 11.sp,
+                    fontWeight: FontWeight.w500,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
                 ),
@@ -594,8 +594,8 @@ class _WishlistState extends State<Wishlist> {
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-    final imageSize = isTablet ? 120.w : 100.w;
-    final imageHeight = isTablet ? 140.h : 120.h;
+    final imageSize = isTablet ? 130.w : 120.w;
+    final imageHeight = isTablet ? 160.h : 150.h;
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -629,6 +629,11 @@ class _WishlistState extends State<Wishlist> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12.r),
+                    padding: EdgeInsets.only(
+                      top: -10.w,
+                      right: -10.w,
+                      bottom: -10.w,
+                    ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12.r),
@@ -730,7 +735,7 @@ class _WishlistState extends State<Wishlist> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: isTablet ? 15.sp : 13.sp,
+                      fontSize: isTablet ? 15.sp : 12.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -769,7 +774,7 @@ class _WishlistState extends State<Wishlist> {
                       : AppLocalizations.of(context)!.final_bid,
                   style: TextStyle(
                     fontSize: isTablet ? 10.sp : 9.sp,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                     color: const Color(0xFF94A3B8),
                   ),
                 ),
@@ -782,8 +787,8 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                         style: TextStyle(
-                          fontSize: isTablet ? 18.sp : 16.sp,
-                          fontWeight: FontWeight.w800,
+                          fontSize: isTablet ? 16.sp : 12.sp,
+                          fontWeight: FontWeight.w600,
                           color: const Color(0xFF0F172A),
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -798,37 +803,14 @@ class _WishlistState extends State<Wishlist> {
                       child: Text(
                         AppLocalizations.of(context)!.bid_points(pointPerBid),
                         style: TextStyle(
-                          fontSize: isTablet ? 10.sp : 9.sp,
-                          fontWeight: FontWeight.w600,
+                          fontSize: isTablet ? 10.sp : 7.sp,
+                          fontWeight: FontWeight.w500,
                           color: const Color(0xFF0092AC),
                         ),
                       ),
                     ),
                   ],
                 ),
-                // // Show time remaining if live
-                // if (isAuction && isLive && item.auctionEndDate != null && item.auctionEndDate!.isNotEmpty)
-                //   Padding(
-                //     padding: EdgeInsets.only(top: 4.h),
-                //     child: Row(
-                //       children: [
-                //         Icon(
-                //           Icons.timer_outlined,
-                //           size: isTablet ? 12.sp : 10.sp,
-                //           color: const Color(0xFF94A3B8),
-                //         ),
-                //         SizedBox(width: 4.w),
-                //         Text(
-                //           '${AppLocalizations.of(context)!.time_left}: ${_timeLeft[item.id] ?? AppLocalizations.of(context)!.loading}',
-                //           style: TextStyle(
-                //             fontSize: isTablet ? 10.sp : 9.sp,
-                //             fontWeight: FontWeight.w400,
-                //             color: const Color(0xFF94A3B8),
-                //           ),
-                //         ),
-                //       ],
-                //     ),
-                //   ),
                 SizedBox(height: 8.h),
                 // Action Button - White with accent border and text
                 GestureDetector(
@@ -857,8 +839,8 @@ class _WishlistState extends State<Wishlist> {
                           : AppLocalizations.of(context)!.view_details,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: isTablet ? 12.sp : 11.sp,
-                        fontWeight: FontWeight.w600,
+                        fontSize: isTablet ? 12.sp : 10.sp,
+                        fontWeight: FontWeight.w00,
                         color: MyTheme.accent_color,
                       ),
                     ),

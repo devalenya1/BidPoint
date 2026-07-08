@@ -841,7 +841,7 @@ class _LoginState extends State<Login> {
   }
   
   // ============================================
-  // Social Login Button - SIDE BY SIDE (icon and text)
+  // Social Login Buttons - SIDE BY SIDE (icon and text)
   // ============================================
   Widget _buildSocialLoginButtonSideBySide({
     required String label,
@@ -850,7 +850,8 @@ class _LoginState extends State<Login> {
     bool isSmallScreen = false,
   }) {
     return SizedBox(
-      height: 44.h,
+      width: 120.w,  // Fixed width for all buttons
+      height: 44.h,   // Fixed height for all buttons
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
@@ -858,11 +859,12 @@ class _LoginState extends State<Login> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.r),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.grey.shade100,  // Light gray background
           padding: EdgeInsets.symmetric(horizontal: 12.w),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
               width: isSmallScreen ? 18.w : 22.w,
@@ -886,4 +888,5 @@ class _LoginState extends State<Login> {
       ),
     );
   }
+  
 }

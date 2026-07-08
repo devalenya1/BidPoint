@@ -402,8 +402,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
       child: Row(
         children: [
           Container(
-            width: 55.w,
-            height: 55.w,
+            width: 50.w,
+            height: 50.w,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
@@ -440,7 +440,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                 Text(
                   _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.user_ucf,
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w700,
                     color: Colors.black,
                   ),
@@ -453,7 +453,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     Text(
                       AppLocalizations.of(context)!.cash_earnings,
                       style: TextStyle(
-                        fontSize: 10.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF64748B),
                       ),
@@ -462,7 +462,7 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
                     Text(
                       FormatHelper.formatPrice(_cashEarnings),
                       style: TextStyle(
-                        fontSize: 18.sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF10B981),
                       ),

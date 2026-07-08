@@ -521,8 +521,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                                           AppLocalizations.of(context)!.buy_now_ucf,
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -729,8 +729,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           Row(
             children: [
               Container(
-                width: 72.w,
-                height: 72.w,
+                width: 70.w,
+                height: 70.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
@@ -767,8 +767,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.guest_user,
                       style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w600,
                         color: const Color(0xFF0F172A),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -778,7 +778,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       _userEmail,
                       style: TextStyle(
-                        fontSize: 13.sp,
+                        fontSize: 11.sp,
                         color: const Color(0xFF64748B),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -800,7 +800,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       AppLocalizations.of(context)!.referral_and_points,
                       style: TextStyle(
-                        fontSize: 10.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w700,
                         color: MyTheme.accent_color,
                         letterSpacing: 0.5,
@@ -813,8 +813,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         Text(
                           '$_userPoints',
                           style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 23.sp,
+                            fontWeight: FontWeight.w700,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
@@ -822,8 +822,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         Text(
                           AppLocalizations.of(context)!.points_ucf,
                           style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w500,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
@@ -843,7 +843,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   child: Text(
                     AppLocalizations.of(context)!.buy_point,
                     style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -866,7 +866,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         Text(
           '${AppLocalizations.of(context)!.purchase_history} (${history.length})',
           style: TextStyle(
-            fontSize: 15.sp,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF0F172A),
           ),
@@ -941,8 +941,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       Text(
                         packageName.isNotEmpty ? packageName : AppLocalizations.of(context)!.package_purchase,
                         style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
                           color: const Color(0xFF0F172A),
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -952,8 +952,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       Text(
                         '$packagePoints ${AppLocalizations.of(context)!.points_ucf.toLowerCase()}',
                         style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
                           color: MyTheme.accent_color,
                         ),
                       ),
@@ -967,7 +967,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         child: Text(
                           item.paymentMethod ?? AppLocalizations.of(context)!.unknown,
                           style: TextStyle(
-                            fontSize: 10.sp,
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF64748B),
                           ),
@@ -985,8 +985,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               Text(
                 _formatPrice(amount),
                 style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
                   color: const Color(0xFF0F172A),
                 ),
               ),
@@ -994,7 +994,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               Text(
                 item.createdAt != null ? _formatDate(item.createdAt!) : '',
                 style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 10.sp,
                   color: const Color(0xFF64748B),
                 ),
               ),

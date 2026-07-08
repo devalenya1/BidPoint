@@ -460,7 +460,7 @@ class _ProfileState extends State<Profile> {
                   Text(
                     _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
                     style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -471,8 +471,8 @@ class _ProfileState extends State<Profile> {
                   Text(
                     '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
                     style: TextStyle(
-                      fontSize: 9.sp,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 7.sp,
+                      fontWeight: FontWeight.w600,
                       color: MyTheme.accent_color,
                     ),
                   ),
@@ -485,7 +485,7 @@ class _ProfileState extends State<Profile> {
         // Points section full width
         Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.r),
@@ -498,8 +498,8 @@ class _ProfileState extends State<Profile> {
                   Text(
                     AppLocalizations.of(context)!.referral_point,
                     style: TextStyle(
-                      fontSize: 8.sp,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 7.sp,
+                      fontWeight: FontWeight.w600,
                       color: const Color(0xFF64748B),
                     ),
                   ),
@@ -515,7 +515,7 @@ class _ProfileState extends State<Profile> {
                       ),
                       child: Icon(
                         _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                        size: 16.sp,
+                        size: 15.sp,
                         color: MyTheme.accent_color,
                       ),
                     ),
@@ -530,8 +530,8 @@ class _ProfileState extends State<Profile> {
                         ? (_userInfo?.balance?.toInt() ?? 0).toString() 
                         : '****',
                     style: TextStyle(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
                   ),
@@ -539,8 +539,8 @@ class _ProfileState extends State<Profile> {
                   Text(
                     AppLocalizations.of(context)!.points_ucf,
                     style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w400,
                       color: Colors.black,
                     ),
                   ),
@@ -951,7 +951,7 @@ class _ProfileState extends State<Profile> {
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 14.sp,
+          fontSize: 13.sp,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF000417),
         ),
@@ -972,12 +972,12 @@ class _ProfileState extends State<Profile> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: isDesktop ? 14.h : 12.h, horizontal: 8.w),
+        padding: EdgeInsets.symmetric(vertical: isDesktop ? 14.h : 11.h, horizontal: 8.w),
         child: Row(
           children: [
             Container(
-              width: isDesktop ? 40.w : 36.w,
-              height: isDesktop ? 40.w : 36.w,
+              width: isDesktop ? 40.w : 34.w,
+              height: isDesktop ? 40.w : 34.w,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -993,7 +993,7 @@ class _ProfileState extends State<Profile> {
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: isDesktop ? 16.sp : 14.sp,
+                  fontSize: isDesktop ? 16.sp : 12.sp,
                   fontWeight: FontWeight.w500,
                   color: isActive ? MyTheme.accent_color : const Color(0xFF334155),
                 ),
@@ -1004,7 +1004,7 @@ class _ProfileState extends State<Profile> {
             Text(
               '›',
               style: TextStyle(
-                fontSize: isDesktop ? 28.sp : 24.sp,
+                fontSize: isDesktop ? 28.sp : 20.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF334155),
               ),

@@ -635,7 +635,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       );
     } else if (homeData.featuredCategoryList.isNotEmpty) {
       return SizedBox(
-        height: 40.h,
+        height: 35.h,
         child: ListView.builder(
           padding: EdgeInsets.only(left: 16.w, right: 16.w),
           scrollDirection: Axis.horizontal,
@@ -658,7 +658,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 margin: EdgeInsets.only(right: 8.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(10.r),
+                  borderRadius: BorderRadius.circular(15.r),
                   border: Border.all(color: const Color.fromRGBO(237, 242, 247, 1), width: 1.w),
                 ),
                 child: Row(
@@ -669,12 +669,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         placeholder: 'assets/placeholder.png',
                         image: category.banner ?? '',
                         fit: BoxFit.cover,
-                        width: 40.w,
-                        height: 40.h,
+                        width: 35.w,
+                        height: 35.h,
                         imageErrorBuilder: (context, error, stackTrace) {
                           return Container(
-                            width: 40.w,
-                            height: 40.h,
+                            width: 35.w,
+                            height: 35.h,
                             color: const Color.fromRGBO(245, 247, 250, 1),
                             child: Icon(Icons.category, size: 25.sp, color: const Color.fromRGBO(107, 115, 119, 1)),
                           );
@@ -686,7 +686,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         padding: EdgeInsets.symmetric(horizontal: 8.w),
                         child: Text(
                           category.name ?? '',
-                          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color.fromRGBO(0, 0, 0, 1)),
+                          style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w500, color: const Color.fromRGBO(0, 0, 0, 1)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1052,7 +1052,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             children: [
               Text(
                 AppLocalizations.of(context)!.search_anything,
-                style: TextStyle(fontSize: 13.sp, color: MyTheme.textfield_grey),
+                style: TextStyle(fontSize: 11.sp, color: MyTheme.textfield_grey),
               ),
               Image.asset('assets/search.png', height: 16.w, color: MyTheme.dark_grey),
             ],

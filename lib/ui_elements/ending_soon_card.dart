@@ -379,7 +379,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   top: 4.h,
                   right: 4.w,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
                     decoration: BoxDecoration(
                       color: _timeLeft == "Ended" 
                           ? Colors.red 
@@ -400,15 +400,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           _timeLeft == "Ended" 
                               ? Icons.cancel 
                               : Icons.access_time,
-                          size: 10.sp, 
+                          size: 8.sp, 
                           color: Colors.white,
                         ),
                         SizedBox(width: 3.w),
                         Text(
                           _timeLeft,
                           style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 7.sp,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                           ),
                         ),
@@ -431,8 +431,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     child: Text(
                       widget.name ?? 'Product',
                       style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                       maxLines: 1,
@@ -449,22 +449,22 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           Text(
                             'Current Bid',
                             style: TextStyle(
-                              fontSize: 8.sp,
+                              fontSize: 6.sp,
                               color: const Color(0xFF80818B),
                             ),
                           ),
                           Text(
                             _formatPrice(displayBid),
                             style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w700,
                               color: Colors.black,
                             ),
                           ),
                         ],
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
                         decoration: BoxDecoration(
                           color: const Color(0xFFB5E7F5),
                           borderRadius: BorderRadius.circular(30.r),
@@ -474,14 +474,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           children: [
                             Icon(
                               Icons.access_time,
-                              size: 8.sp,
+                              size: 7.sp,
                               color: const Color(0xFF0092AC),
                             ),
                             SizedBox(width: 2.w),
                             Text(
                               '1 Bid = ${widget.pointPerBid ?? 0}',
                               style: TextStyle(
-                                fontSize: 6.sp,
+                                fontSize: 5.sp,
                                 fontWeight: FontWeight.w600,
                                 color: MyTheme.accent_color,
                               ),
@@ -541,8 +541,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Swipe to Bid',
                                           style: TextStyle(
-                                            fontSize: 9.sp,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 8.sp,
+                                            fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -550,8 +550,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Quick Bid',
                                           style: TextStyle(
-                                            fontSize: 9.sp,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 8.sp,
+                                            fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -622,7 +622,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   top: 6.h,
                   right: 6.w,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
                     decoration: BoxDecoration(
                       color: _timeLeft == "Ended" 
                           ? Colors.red 
@@ -643,15 +643,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           _timeLeft == "Ended" 
                               ? Icons.cancel 
                               : Icons.access_time,
-                          size: 10.sp, 
+                          size: 7.sp, 
                           color: Colors.white,
                         ),
                         SizedBox(width: 3.w),
                         Text(
                           _timeLeft,
                           style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 6.sp,
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                           ),
                         ),
@@ -678,8 +678,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                         child: Text(
                           widget.name ?? 'Product',
                           style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w600,
                             color: Colors.black,
                           ),
                           maxLines: 2,
@@ -698,14 +698,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           children: [
                             Icon(
                               Icons.access_time,
-                              size: 8.sp,
+                              size: 7.sp,
                               color: const Color(0xFF0092AC),
                             ),
                             SizedBox(width: 2.w),
                             Text(
                               '1 Bid = ${widget.pointPerBid ?? 0}',
                               style: TextStyle(
-                                fontSize: 6.sp,
+                                fontSize: 5.sp,
                                 fontWeight: FontWeight.w600,
                                 color: MyTheme.accent_color,
                               ),
@@ -720,14 +720,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                           Text(
                             'Current Bid',
                             style: TextStyle(
-                              fontSize: 9.sp,
+                              fontSize: 6.sp,
                               color: const Color(0xFF80818B),
                             ),
                           ),
                           Text(
                             _formatPrice(displayBid),
                             style: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w800,
                               color: Colors.black,
                             ),
@@ -785,8 +785,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Swipe to Bid',
                                           style: TextStyle(
-                                            fontSize: 9.sp,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 6.sp,
+                                            fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -794,8 +794,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Quick Bid',
                                           style: TextStyle(
-                                            fontSize: 9.sp,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 6.sp,
+                                            fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
                                         ),

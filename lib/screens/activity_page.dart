@@ -503,8 +503,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     ];
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 13.w),
+      margin: EdgeInsets.only(bottom: 13.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -518,7 +518,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               },
               child: Container(
                 margin: EdgeInsets.only(right: 4.w),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -526,8 +526,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 child: Text(
                   tabNames[index],
                   style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w500,
                     color: isActive ? Colors.white : const Color(0xFF64748B),
                   ),
                 ),
@@ -661,21 +661,22 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               }
             },
             child: Container(
-              width: 100.w,
-              height: 120.h,
-              margin: EdgeInsets.only(right: 12.w),
+              width: 120.w,
+              height: 150.h,
+              // margin: EdgeInsets.only(right: 12.w),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: ClipRRect(
+                
                 borderRadius: BorderRadius.circular(12.r),
                 child: productImage != null && productImage.isNotEmpty
                     ? Image.network(
                         productImage,
                         fit: BoxFit.cover,
-                        width: 100.w,
-                        height: 120.h,
+                        width: 120.w,
+                        height: 150.h,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: const Color(0xFFE2E8F0),
@@ -706,8 +707,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 Text(
                   statusText, 
                   style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w500,
                     color: Colors.black,
                   ),
                 ),
@@ -717,7 +718,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 Text(
                   productName,
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
@@ -731,7 +732,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   Text(
                     descriptionText,
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: 9.sp,
                       fontWeight: FontWeight.w400,
                       color: const Color(0xFF80818B),
                     ),
@@ -746,8 +747,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       ? AppLocalizations.of(context)!.final_bid
                       : AppLocalizations.of(context)!.current_bid,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 9.sp,
+                    fontWeight: FontWeight.w400,
                     color: const Color(0xFF80818B),
                   ),
                 ),
@@ -761,8 +762,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       child: Text(
                         _formatPrice(currentBid),
                         style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
                           color: MyTheme.dark_font_grey,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -777,8 +778,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       child: Text(
                         '${AppLocalizations.of(context)!.one_bid_equals} $pointPerBid',
                         style: TextStyle(
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 7.sp,
+                          fontWeight: FontWeight.w500,
                           color: const Color(0xFF0092AC),
                         ),
                       ),
@@ -826,8 +827,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           AppLocalizations.of(context)!.bid_again,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w500,
             color: Colors.white,
           ),
         ),
@@ -857,8 +858,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           isWinning ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w500,
             color: Colors.white,
           ),
         ),
