@@ -608,7 +608,7 @@ class _WishlistState extends State<Wishlist> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image - Clickable
+          // Product Image - Clickable - WITH padding/margin on left, top, bottom
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
@@ -621,23 +621,29 @@ class _WishlistState extends State<Wishlist> {
                 );
               }
             },
-            child: Stack(
-              children: [
-                Container(
-                  width: imageSize,
-                  height: imageHeight,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12.r),
-                    // padding: EdgeInsets.only(
-                    //   top: -10.w,
-                    //   right: -10.w,
-                    //   bottom: -10.w,
-                    // ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: item.productImage != null && item.productImage!.isNotEmpty
+            child: Container(
+              width: imageSize,
+              height: imageHeight,
+              margin: EdgeInsets.only(
+                left: 0,
+                top: 0,
+                bottom: 0,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
+                ),
+                child: Stack(
+                  children: [
+                    item.productImage != null && item.productImage!.isNotEmpty
                         ? Image.network(
                             item.productImage!,
                             fit: BoxFit.cover,
@@ -662,59 +668,30 @@ class _WishlistState extends State<Wishlist> {
                               color: const Color(0xFF94A3B8),
                             ),
                           ),
-                  ),
-                ),
-                // "Ending Soon" Badge
-                if (showEndingSoonBadge)
-                  Positioned(
-                    top: 4.w,
-                    left: 4.w,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.ending_soon_ucf,
-                        style: TextStyle(
-                          fontSize: isTablet ? 8.sp : 7.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                    // "Ending Soon" Badge - Now on the image
+                    if (showEndingSoonBadge)
+                      Positioned(
+                        top: 8.w,
+                        left: 8.w,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)!.ending_soon_ucf,
+                            style: TextStyle(
+                              fontSize: isTablet ? 10.sp : 8.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                // Remove from wishlist - FULL HEART (black)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: () => _removeFromWishlist(item.productId!),
-                    child: Container(
-                      width: isTablet ? 32.w : 28.w,
-                      height: isTablet ? 32.w : 28.w,
-                      margin: EdgeInsets.all(4.w),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.favorite,
-                        size: isTablet ? 16.sp : 14.sp,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           SizedBox(width: isTablet ? 14.w : 10.w),
@@ -723,23 +700,56 @@ class _WishlistState extends State<Wishlist> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name - Clickable
-                GestureDetector(
-                  onTap: () {
-                    if (productSlug.isNotEmpty) {
-                      _navigateToProductDetails(productSlug);
-                    }
-                  },
-                  child: Text(
-                    item.productName ?? AppLocalizations.of(context)!.unknown_product,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: isTablet ? 15.sp : 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
+                // Product Name Row with Remove Icon on the right
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Product Name - Clickable
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (productSlug.isNotEmpty) {
+                            _navigateToProductDetails(productSlug);
+                          }
+                        },
+                        child: Text(
+                          item.productName ?? AppLocalizations.of(context)!.unknown_product,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: isTablet ? 15.sp : 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    // Remove from Wishlist Icon - Now on the right side after title
+                    GestureDetector(
+                      onTap: () => _removeFromWishlist(item.productId!),
+                      child: Container(
+                        width: isTablet ? 32.w : 28.w,
+                        height: isTablet ? 32.w : 28.w,
+                        margin: EdgeInsets.only(left: 8.w),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.favorite,
+                          size: isTablet ? 16.sp : 14.sp,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 4.h),
                 // Status Text - Black
