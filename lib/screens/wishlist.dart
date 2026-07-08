@@ -737,7 +737,7 @@ class _WishlistState extends State<Wishlist> {
                         child: Container(
                           width: isTablet ? 32.w : 28.w,
                           height: isTablet ? 32.w : 28.w,
-                          margin: EdgeInsets.only(left: 8.w),
+                          // margin: EdgeInsets.only(left: 8.w),
                           padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
                           decoration: const BoxDecoration(
                             color: Colors.white,
@@ -766,7 +766,7 @@ class _WishlistState extends State<Wishlist> {
                 Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: isTablet ? 12.sp : 11.sp,
+                    fontSize: isTablet ? 12.sp : 10.sp,
                     fontWeight: FontWeight.w500,
                     color: Colors.black,
                   ),
@@ -783,7 +783,7 @@ class _WishlistState extends State<Wishlist> {
                       Text(
                         descriptionText,
                         style: TextStyle(
-                          fontSize: isTablet ? 12.sp : 11.sp,
+                          fontSize: isTablet ? 12.sp : 9.sp,
                           fontWeight: FontWeight.w600,
                           color: isOutbid 
                               ? Colors.grey.shade700 
@@ -807,7 +807,7 @@ class _WishlistState extends State<Wishlist> {
                           ? AppLocalizations.of(context)!.current_bid
                           : AppLocalizations.of(context)!.final_bid,
                       style: TextStyle(
-                        fontSize: isTablet ? 10.sp : 9.sp,
+                        fontSize: isTablet ? 10.sp : 7.sp,
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFF94A3B8),
                       ),
@@ -820,7 +820,7 @@ class _WishlistState extends State<Wishlist> {
                           child: Text(
                             _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                             style: TextStyle(
-                              fontSize: isTablet ? 16.sp : 13.sp,
+                              fontSize: isTablet ? 16.sp : 11.sp,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF0F172A),
                             ),

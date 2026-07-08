@@ -737,7 +737,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                     Text(
                       descriptionText,
                       style: TextStyle(
-                        fontSize: 12.sp, // Same as product name font size
+                        fontSize: 9.sp, // Same as product name font size
                         fontWeight: FontWeight.w600,
                         color: isOutbidStatus 
                             ? Colors.grey.shade700 
@@ -753,12 +753,12 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 12.sp, // Same as description
+                      fontSize: 9.sp, // Same as description
                       fontWeight: FontWeight.w600,
                       color: isOutbidStatus 
-                          ? Colors.red.shade700 
+                          ? Colors.grey.shade700 
                           : (isWinningStatus || isWonStatus 
-                              ? Colors.green.shade700 
+                              ? Colors.grey.shade700 
                               : Colors.grey.shade600),
                     ),
                     maxLines: 1,
@@ -779,7 +779,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                                   ? AppLocalizations.of(context)!.final_bid
                                   : AppLocalizations.of(context)!.current_bid,
                               style: TextStyle(
-                                fontSize: 9.sp,
+                                fontSize: 7.sp,
                                 fontWeight: FontWeight.w400,
                                 color: const Color(0xFF80818B),
                               ),
@@ -788,7 +788,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                             Text(
                               _formatPrice(currentBid),
                               style: TextStyle(
-                                fontSize: 14.sp,
+                                fontSize: 12.sp,
                                 fontWeight: FontWeight.w700,
                                 color: MyTheme.dark_font_grey,
                               ),
