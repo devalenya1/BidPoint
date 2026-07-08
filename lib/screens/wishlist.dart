@@ -840,7 +840,7 @@ class _WishlistState extends State<Wishlist> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: isTablet ? 12.sp : 10.sp,
-                        fontWeight: FontWeight.600,
+                        fontWeight: FontWeight.w600,
                         color: MyTheme.accent_color,
                       ),
                     ),
