@@ -485,7 +485,7 @@ class _ProfileState extends State<Profile> {
         // Points section full width
         Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 10.h),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.r),
