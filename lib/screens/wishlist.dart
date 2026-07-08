@@ -752,7 +752,7 @@ class _WishlistState extends State<Wishlist> {
                           ),
                           child: Icon(
                             Icons.favorite,
-                            size: isTablet ? 16.sp : 14.sp,
+                            size: isTablet ? 20.sp : 18.sp,
                             color: Colors.black,
                           ),
                         ),
@@ -760,7 +760,7 @@ class _WishlistState extends State<Wishlist> {
                     ],
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h),
                 
                 // 1️⃣ Status Text - BLACK color
                 Text(
