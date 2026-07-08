@@ -435,7 +435,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             children: List.generate(4, (index) => 
               Expanded(
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 4.w),
+                  margin: EdgeInsets.symmetric(horizontal: 2.w), // Reduced margin
                   height: 42.h,
                   decoration: BoxDecoration(
                     color: MyTheme.shimmer_base,
@@ -508,6 +508,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: List.generate(tabNames.length, (index) {
             final isActive = _selectedTab == index;
             return GestureDetector(
@@ -517,8 +518,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 4.w),
-                padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
+                margin: EdgeInsets.only(right: 2.w), // Reduced margin for closer tabs
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h), // Reduced padding
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -599,216 +600,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       ),
     );
   }
-  
-  // Widget _buildActivityCard(AuctionBid activity) {
-  //   final productId = activity.productId ?? 0;
-  //   final productName = _getProductNameForBid(activity);
-  //   final productImage = _getProductImageForBid(activity);
-  //   final productSlug = _getProductSlugForBid(activity);
-  //   final pointPerBid = _getPointPerBidForProduct(productId);
-    
-  //   // ✅ USE API FIELDS DIRECTLY
-  //   final isEnded = activity.recentlyEnded ?? false;
-  //   final isWinning = activity.isWinning ?? false;
-  //   final isHighestBidder = activity.highestBidder ?? false;
-  //   final currentBid = activity.highestBid ?? 0.0;
-  //   final hasBid = (activity.amount ?? 0) > 0;
-    
-  //   // Determine statuses based on API data
-  //   final isWinningStatus = !isEnded && (isWinning || isHighestBidder);
-  //   final isOutbidStatus = !isEnded && !isWinning && !isHighestBidder && hasBid;
-  //   final isWonStatus = isEnded && (isWinning || isHighestBidder);
-  //   final isLostStatus = isEnded && !isWinning && !isHighestBidder;
-    
-  //   // Status Text in BLACK
-  //   String statusText;
-  //   String descriptionText;
-  //   Color statusColor = Colors.black;
-    
-  //   if (isOutbidStatus) {
-  //     statusText = AppLocalizations.of(context)!.you_were_outbid;
-  //     descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-  //   } else if (isWinningStatus) {
-  //     statusText = AppLocalizations.of(context)!.currently_winning;
-  //     descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
-  //   } else if (isWonStatus) {
-  //     statusText = AppLocalizations.of(context)!.you_won_auction;
-  //     descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
-  //   } else if (isLostStatus) {
-  //     statusText = AppLocalizations.of(context)!.auction_ended;
-  //     descriptionText = AppLocalizations.of(context)!.you_didnt_win;
-  //   } else {
-  //     statusText = '';
-  //     descriptionText = '';
-  //   }
-    
-  //   return Container(
-  //     margin: EdgeInsets.only(bottom: 16.h),
-  //     padding: EdgeInsets.all(12.w),
-  //     decoration: BoxDecoration(
-  //       color: const Color(0xFFF1F1F1),
-  //       borderRadius: BorderRadius.circular(16.r),
-  //       border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
-  //     ),
-  //     child: Row(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         // Product Image - Clickable
-  //         GestureDetector(
-  //           onTap: () {
-  //             if (productSlug.isNotEmpty) {
-  //               _navigateToProductDetails(productSlug);
-  //             }
-  //           },
-  //           child: Container(
-  //             width: 120.w,
-  //             height: 150.h,
-  //             margin: EdgeInsets.only(
-  //               right: 12.w,
-  //               left: -12.w,
-  //               top: -12.w,
-  //               bottom: -12.w,
-  //             ),
-  //             decoration: BoxDecoration(
-  //               color: const Color(0xFFF8FAFC),
-  //               borderRadius: BorderRadius.circular(12.r),
-  //             ),
-  //             child: ClipRRect(
-
-  //               borderRadius: BorderRadius.circular(12.r),
-  //               child: productImage != null && productImage.isNotEmpty
-  //                   ? Image.network(
-  //                       productImage,
-  //                       fit: BoxFit.cover,
-  //                       width: 120.w,
-  //                       height: 150.h,
-  //                       errorBuilder: (context, error, stackTrace) {
-  //                         return Container(
-  //                           color: const Color(0xFFE2E8F0),
-  //                           child: Icon(
-  //                             Icons.inventory_2,
-  //                             size: 40.sp,
-  //                             color: const Color(0xFF94A3B8),
-  //                           ),
-  //                         );
-  //                       },
-  //                     )
-  //                   : Container(
-  //                       color: const Color(0xFFE2E8F0),
-  //                       child: Icon(
-  //                         Icons.inventory_2,
-  //                         size: 40.sp,
-  //                         color: const Color(0xFF94A3B8),
-  //                       ),
-  //                     ),
-  //             ),
-  //           ),
-  //         ),
-  //         Expanded(
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               // Status Text - Black
-  //               Text(
-  //                 statusText, 
-  //                 style: TextStyle(
-  //                   fontSize: 11.sp,
-  //                   fontWeight: FontWeight.w500,
-  //                   color: Colors.black,
-  //                 ),
-  //               ),
-  //               SizedBox(height: 2.h),
-                
-  //               // Product Name
-  //               Text(
-  //                 productName,
-  //                 style: TextStyle(
-  //                   fontSize: 12.sp,
-  //                   fontWeight: FontWeight.w600,
-  //                   color: Colors.black,
-  //                 ),
-  //                 maxLines: 1,
-  //                 overflow: TextOverflow.ellipsis,
-  //               ),
-  //               SizedBox(height: 2.h),
-                
-  //               // Description Text
-  //               if (descriptionText.isNotEmpty)
-  //                 Text(
-  //                   descriptionText,
-  //                   style: TextStyle(
-  //                     fontSize: 9.sp,
-  //                     fontWeight: FontWeight.w400,
-  //                     color: const Color(0xFF80818B),
-  //                   ),
-  //                   maxLines: 1,
-  //                   overflow: TextOverflow.ellipsis,
-  //                 ),
-  //               SizedBox(height: 6.h),
-                
-  //               // Current Bid Label
-  //               Text(
-  //                 isEnded 
-  //                     ? AppLocalizations.of(context)!.final_bid
-  //                     : AppLocalizations.of(context)!.current_bid,
-  //                 style: TextStyle(
-  //                   fontSize: 9.sp,
-  //                   fontWeight: FontWeight.w400,
-  //                   color: const Color(0xFF80818B),
-  //                 ),
-  //               ),
-  //               SizedBox(height: 2.h),
-                
-  //               // Bid Amount and Points
-  //               Row(
-  //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                 children: [
-  //                   Flexible(
-  //                     child: Text(
-  //                       _formatPrice(currentBid),
-  //                       style: TextStyle(
-  //                         fontSize: 12.sp,
-  //                         fontWeight: FontWeight.w600,
-  //                         color: MyTheme.dark_font_grey,
-  //                       ),
-  //                       overflow: TextOverflow.ellipsis,
-  //                     ),
-  //                   ),
-  //                   Container(
-  //                     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-  //                     decoration: BoxDecoration(
-  //                       color: const Color(0xFFB5E7F5),
-  //                       borderRadius: BorderRadius.circular(14.r),
-  //                     ),
-  //                     child: Text(
-  //                       '${AppLocalizations.of(context)!.one_bid_equals} $pointPerBid',
-  //                       style: TextStyle(
-  //                         fontSize: 7.sp,
-  //                         fontWeight: FontWeight.w500,
-  //                         color: const Color(0xFF0092AC),
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //               SizedBox(height: 10.h),
-                
-  //               // Action Button based on status
-  //               if (isOutbidStatus)
-  //                 _buildBidAgainButton(productSlug)
-  //               else if (isWinningStatus || isWonStatus)
-  //                 _buildViewDetailsButton(productSlug, isWinning: true)
-  //               else if (isLostStatus)
-  //                 _buildViewDetailsButton(productSlug, isWinning: false)
-  //               else
-  //                 _buildViewDetailsButton(productSlug, isWinning: false),
-  //             ],
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildActivityCard(AuctionBid activity) {
     final productId = activity.productId ?? 0;
@@ -830,10 +621,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final isWonStatus = isEnded && (isWinning || isHighestBidder);
     final isLostStatus = isEnded && !isWinning && !isHighestBidder;
     
-    // Status Text in BLACK
+    // Status Text in BLACK (first line)
     String statusText;
+    // Description Text (second line)
     String descriptionText;
-    Color statusColor = Colors.black;
     
     if (isOutbidStatus) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
@@ -854,7 +645,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      // padding: EdgeInsets.all(12.w),
       padding: EdgeInsets.only(
         right: 12.w,
         left: 0.w,
@@ -867,9 +657,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch, // Changed to stretch for full height
         children: [
-          // Product Image - Clickable - NO MARGINS on left, top, bottom
+          // Product Image - Clickable - Full height of card
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
@@ -878,8 +668,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             },
             child: Container(
               width: 120.w,
-              height: 150.h,
-              // Removed margin - image now touches the card edges
+              constraints: BoxConstraints(
+                minHeight: 150.h,
+              ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.only(
@@ -893,21 +684,43 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   bottomLeft: Radius.circular(12.r),
                 ),
                 child: productImage != null && productImage.isNotEmpty
-                    ? Image.network(
-                        productImage,
-                        fit: BoxFit.cover,
-                        width: 120.w,
-                        height: 150.h,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: const Color(0xFFE2E8F0),
-                            child: Icon(
-                              Icons.inventory_2,
-                              size: 40.sp,
-                              color: const Color(0xFF94A3B8),
+                    ? Stack(
+                        children: [
+                          Image.network(
+                            productImage,
+                            fit: BoxFit.cover,
+                            width: 120.w,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: const Color(0xFFE2E8F0),
+                                child: Icon(
+                                  Icons.inventory_2,
+                                  size: 40.sp,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              );
+                            },
+                          ),
+                          // Dark overlay on image
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  stops: const [0.0, 0.5, 0.8, 1.0],
+                                  colors: [
+                                    Colors.black.withOpacity(0.35),
+                                    Colors.black.withOpacity(0.20),
+                                    Colors.black.withOpacity(0.30),
+                                    Colors.black.withOpacity(0.50),
+                                  ],
+                                ),
+                              ),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       )
                     : Container(
                         color: const Color(0xFFE2E8F0),
@@ -929,32 +742,20 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  // Status Text - Black
-                  Text(
-                    statusText, 
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                  // 1) Status Text - BLACK color (first line)
+                  if (statusText.isNotEmpty)
+                    Text(
+                      statusText, 
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 2.h),
                   
-                  // Product Name
-                  Text(
-                    productName,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 2.h),
-                  
-                  // Description Text
+                  // 2) Description Text - Original color (second line)
                   if (descriptionText.isNotEmpty)
                     Text(
                       descriptionText,
@@ -966,22 +767,37 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  
+                  SizedBox(height: 4.h),
+                  
+                  // 3) Product Name - Same style as description
+                  Text(
+                    productName,
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF80818B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  
                   SizedBox(height: 6.h),
                   
-                  // Current Bid Label
+                  // 4) Current Bid Label
                   Text(
                     isEnded 
                         ? AppLocalizations.of(context)!.final_bid
                         : AppLocalizations.of(context)!.current_bid,
                     style: TextStyle(
-                      fontSize: 9.sp,
+                      fontSize: 6.sp,
                       fontWeight: FontWeight.w400,
                       color: const Color(0xFF80818B),
                     ),
                   ),
                   SizedBox(height: 2.h),
                   
-                  // Bid Amount and Points
+                  // Bid Amount and Points (side by side)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -989,7 +805,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                         child: Text(
                           _formatPrice(currentBid),
                           style: TextStyle(
-                            fontSize: 12.sp,
+                            fontSize: 13.sp,
                             fontWeight: FontWeight.w600,
                             color: MyTheme.dark_font_grey,
                           ),
@@ -1005,7 +821,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                         child: Text(
                           '${AppLocalizations.of(context)!.one_bid_equals} $pointPerBid',
                           style: TextStyle(
-                            fontSize: 7.sp,
+                            fontSize: 6.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF0092AC),
                           ),
@@ -1013,17 +829,18 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       ),
                     ],
                   ),
+                  
                   SizedBox(height: 10.h),
                   
-                  // Action Button based on status
+                  // 5) Action Button based on status
                   if (isOutbidStatus)
                     _buildBidAgainButton(productSlug)
-                  else if (isWinningStatus || isWonStatus)
-                    _buildViewDetailsButton(productSlug, isWinning: true)
-                  else if (isLostStatus)
-                    _buildViewDetailsButton(productSlug, isWinning: false)
+                  else if (isWinningStatus)
+                    _buildViewProductButton(productSlug)
+                  else if (isWonStatus || isLostStatus)
+                    _buildViewDetailsButton(productSlug)
                   else
-                    _buildViewDetailsButton(productSlug, isWinning: false),
+                    _buildViewDetailsButton(productSlug),
                 ],
               ),
             ),
@@ -1064,7 +881,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     );
   }
   
-  Widget _buildViewDetailsButton(String productSlug, {bool isWinning = false}) {
+  Widget _buildViewProductButton(String productSlug) {
     return GestureDetector(
       onTap: () {
         if (productSlug.isNotEmpty) {
@@ -1083,7 +900,38 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          isWinning ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.view_details,
+          AppLocalizations.of(context)!.view_product,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildViewDetailsButton(String productSlug) {
+    return GestureDetector(
+      onTap: () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        } else {
+          ToastComponent.showWarning(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: 10.h),
+        decoration: BoxDecoration(
+          color: MyTheme.accent_color,
+          borderRadius: BorderRadius.circular(7.r),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 10.sp,

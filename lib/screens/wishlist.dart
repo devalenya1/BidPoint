@@ -385,7 +385,7 @@ class _WishlistState extends State<Wishlist> {
             child: Row(
               children: List.generate(4, (index) => 
                 Container(
-                  margin: EdgeInsets.only(right: 4.w),
+                  margin: EdgeInsets.only(right: 2.w),
                   width: isTablet ? 120.w : 100.w,
                   height: isTablet ? 48.h : 42.h,
                   decoration: BoxDecoration(
@@ -514,6 +514,7 @@ class _WishlistState extends State<Wishlist> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: List.generate(tabs.length, (index) {
             final isActive = _selectedTab == index;
             return GestureDetector(
@@ -523,9 +524,9 @@ class _WishlistState extends State<Wishlist> {
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 4.w),
+                margin: EdgeInsets.only(right: 2.w),
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 24.w : 18.w,
+                  horizontal: isTablet ? 18.w : 14.w,
                   vertical: isTablet ? 12.h : 8.h,
                 ),
                 decoration: BoxDecoration(
@@ -548,7 +549,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  // ============ WISHLIST CARD ============
+  // ============ WISHLIST CARD - UPDATED ============
   Widget _buildWishlistCard(WishlistItem item) {
     final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
     final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
@@ -561,13 +562,12 @@ class _WishlistState extends State<Wishlist> {
     final bool isOutbid = item.outbid ?? false;
     final bool isWinning = item.isWinning ?? false;
     final bool isAuction = item.isAuction ?? false;
+    final bool isHighestBidder = item.highestBidder ?? false;
     
     // Determine status text and description
     String statusText;
     String descriptionText = '';
-    Color statusColor = Colors.black;
     
-    // Determine the primary status for display
     if (!isAuction) {
       // Non-auction product
       statusText = AppLocalizations.of(context)!.view_details;
@@ -578,7 +578,7 @@ class _WishlistState extends State<Wishlist> {
       // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-    } else if (isWinning && isLive) {
+    } else if ((isWinning || isHighestBidder) && isLive) {
       // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
@@ -594,14 +594,12 @@ class _WishlistState extends State<Wishlist> {
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-    final imageSize = isTablet ? 130.w : 120.w;
-    final imageHeight = isTablet ? 160.h : 150.h;
+    final imageWidth = isTablet ? 130.w : 120.w;
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      // padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
       padding: EdgeInsets.only(
-        right: 10.w,
+        right: isTablet ? 14.w : 10.w,
         left: 0.w,
         top: 0.w,
         bottom: 0.w,
@@ -612,9 +610,9 @@ class _WishlistState extends State<Wishlist> {
         border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Product Image - Clickable - WITH padding/margin on left, top, bottom
+          // Product Image - Full height with dark overlay
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
@@ -628,12 +626,9 @@ class _WishlistState extends State<Wishlist> {
               }
             },
             child: Container(
-              width: imageSize,
-              height: imageHeight,
-              margin: EdgeInsets.only(
-                left: 0,
-                top: 0,
-                bottom: 0,
+              width: imageWidth,
+              constraints: BoxConstraints(
+                minHeight: isTablet ? 160.h : 150.h,
               ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
@@ -650,21 +645,43 @@ class _WishlistState extends State<Wishlist> {
                 child: Stack(
                   children: [
                     item.productImage != null && item.productImage!.isNotEmpty
-                        ? Image.network(
-                            item.productImage!,
-                            fit: BoxFit.cover,
-                            width: imageSize,
-                            height: imageHeight,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: const Color(0xFFE2E8F0),
-                                child: Icon(
-                                  Icons.inventory_2,
-                                  size: 40.sp,
-                                  color: const Color(0xFF94A3B8),
+                        ? Stack(
+                            children: [
+                              Image.network(
+                                item.productImage!,
+                                fit: BoxFit.cover,
+                                width: imageWidth,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: const Color(0xFFE2E8F0),
+                                    child: Icon(
+                                      Icons.inventory_2,
+                                      size: 40.sp,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                  );
+                                },
+                              ),
+                              // Dark overlay on image
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      stops: const [0.0, 0.5, 0.8, 1.0],
+                                      colors: [
+                                        Colors.black.withOpacity(0.35),
+                                        Colors.black.withOpacity(0.20),
+                                        Colors.black.withOpacity(0.30),
+                                        Colors.black.withOpacity(0.50),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              );
-                            },
+                              ),
+                            ],
                           )
                         : Container(
                             color: const Color(0xFFE2E8F0),
@@ -674,7 +691,7 @@ class _WishlistState extends State<Wishlist> {
                               color: const Color(0xFF94A3B8),
                             ),
                           ),
-                    // "Ending Soon" Badge - Now on the image
+                    // "Ending Soon" Badge
                     if (showEndingSoonBadge)
                       Positioned(
                         top: 8.w,
@@ -703,43 +720,39 @@ class _WishlistState extends State<Wishlist> {
           SizedBox(width: isTablet ? 14.w : 10.w),
           // Content
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Name Row with Remove Icon on the right - WITH TOP PADDING
-                Padding(
-                  padding: EdgeInsets.only(top: 10.h),
-                  child: Row(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: 10.h,
+                bottom: 10.h,
+                right: 4.w,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // 1) Product Name - Bold, Black, same size as amount
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Product Name - Clickable
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (productSlug.isNotEmpty) {
-                              _navigateToProductDetails(productSlug);
-                            }
-                          },
-                          child: Text(
-                            item.productName ?? AppLocalizations.of(context)!.unknown_product,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: isTablet ? 15.sp : 12.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                            ),
+                        child: Text(
+                          item.productName ?? AppLocalizations.of(context)!.unknown_product,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.sp : 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
                           ),
                         ),
                       ),
-                      // Remove from Wishlist Icon - Now on the right side after title
+                      // Remove from Wishlist Icon - Clean, no padding issues
                       GestureDetector(
                         onTap: () => _removeFromWishlist(item.productId!),
                         child: Container(
                           width: isTablet ? 32.w : 28.w,
                           height: isTablet ? 32.w : 28.w,
                           margin: EdgeInsets.only(left: 8.w),
-                          padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
@@ -751,128 +764,207 @@ class _WishlistState extends State<Wishlist> {
                               ),
                             ],
                           ),
-                          child: Icon(
-                            Icons.favorite,
-                            size: isTablet ? 16.sp : 14.sp,
-                            color: Colors.black,
+                          child: Center(
+                            child: Icon(
+                              Icons.favorite,
+                              size: isTablet ? 16.sp : 14.sp,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: 4.h),
-                // Status Text - Black
-                Text(
-                  statusText,
-                  style: TextStyle(
-                    fontSize: isTablet ? 12.sp : 11.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-                // Description Text (if any)
-                if (descriptionText.isNotEmpty && isAuction)
-                  Padding(
-                    padding: EdgeInsets.only(top: 2.h),
-                    child: Text(
-                      descriptionText,
+                  SizedBox(height: 4.h),
+                  
+                  // 2) Status Text - Original color and font
+                  if (statusText.isNotEmpty)
+                    Text(
+                      statusText,
                       style: TextStyle(
-                        fontSize: isTablet ? 10.sp : 9.sp,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF80818B),
+                        fontSize: isTablet ? 12.sp : 11.sp,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                SizedBox(height: 6.h),
-                // Bid Label
-                Text(
-                  isLive && isAuction 
-                      ? AppLocalizations.of(context)!.current_bid
-                      : AppLocalizations.of(context)!.final_bid,
-                  style: TextStyle(
-                    fontSize: isTablet ? 10.sp : 9.sp,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF94A3B8),
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                // Bid Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
+                  
+                  // 3) Description Text - Same style as status
+                  if (descriptionText.isNotEmpty && isAuction)
+                    Padding(
+                      padding: EdgeInsets.only(top: 1.h),
                       child: Text(
-                        _formatPrice(item.highestBid ?? item.productPrice ?? 0),
+                        descriptionText,
                         style: TextStyle(
-                          fontSize: isTablet ? 16.sp : 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF0F172A),
+                          fontSize: isTablet ? 11.sp : 10.sp,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF80818B),
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.bid_points(pointPerBid),
-                        style: TextStyle(
-                          fontSize: isTablet ? 10.sp : 7.sp,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF0092AC),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8.h),
-                // Action Button - White with accent border and text - WITH BOTTOM PADDING
-                Padding(
-                  padding: EdgeInsets.only(bottom: 10.h),
-                  child: GestureDetector(
-                    onTap: () {
-                      if (productSlug.isNotEmpty) {
-                        _navigateToProductDetails(productSlug);
-                      } else {
-                        ToastComponent.showWarning(
-                          AppLocalizations.of(context)!.product_details_not_available,
-                          gravity: Toast.center,
-                          duration: Toast.lengthShort,
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: MyTheme.accent_color, width: 1.w),
-                        borderRadius: BorderRadius.circular(7.r),
-                      ),
-                      child: Text(
-                        isAuction && isLive 
-                            ? AppLocalizations.of(context)!.bid_now
-                            : AppLocalizations.of(context)!.view_details,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: isTablet ? 12.sp : 10.sp,
-                          fontWeight: FontWeight.w600,
-                          color: MyTheme.accent_color,
-                        ),
-                      ),
+                  
+                  SizedBox(height: 6.h),
+                  
+                  // 4) Current Bid Label - Smallest font, same as points
+                  Text(
+                    isLive && isAuction 
+                        ? AppLocalizations.of(context)!.current_bid
+                        : AppLocalizations.of(context)!.final_bid,
+                    style: TextStyle(
+                      fontSize: isTablet ? 10.sp : 9.sp,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF94A3B8),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 2.h),
+                  
+                  // Bid Amount and Points
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _formatPrice(item.highestBid ?? item.productPrice ?? 0),
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.sp : 13.sp,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF0F172A),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB5E7F5),
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.bid_points(pointPerBid),
+                          style: TextStyle(
+                            fontSize: isTablet ? 10.sp : 7.sp,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF0092AC),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  SizedBox(height: 8.h),
+                  
+                  // 5) Action Button based on status
+                  if (!isAuction)
+                    _buildViewDetailsButton(productSlug, isTablet: isTablet)
+                  else if (!isLive)
+                    _buildViewDetailsButton(productSlug, isTablet: isTablet)
+                  else if (isOutbid && isLive)
+                    _buildBidAgainButton(productSlug, isTablet: isTablet)
+                  else if ((isWinning || isHighestBidder) && isLive)
+                    _buildViewAuctionButton(productSlug, isTablet: isTablet)
+                  else
+                    _buildViewDetailsButton(productSlug, isTablet: isTablet),
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+  
+  // ============ BUTTONS ============
+  Widget _buildBidAgainButton(String productSlug, {bool isTablet = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        } else {
+          ToastComponent.showWarning(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
+        decoration: BoxDecoration(
+          color: MyTheme.accent_color,
+          borderRadius: BorderRadius.circular(7.r),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.bid_again,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isTablet ? 12.sp : 10.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildViewAuctionButton(String productSlug, {bool isTablet = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        } else {
+          ToastComponent.showWarning(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
+        decoration: BoxDecoration(
+          color: MyTheme.accent_color,
+          borderRadius: BorderRadius.circular(7.r),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.view_auction,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isTablet ? 12.sp : 10.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildViewDetailsButton(String productSlug, {bool isTablet = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        } else {
+          ToastComponent.showWarning(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: MyTheme.accent_color, width: 1.w),
+          borderRadius: BorderRadius.circular(7.r),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.view_details,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isTablet ? 12.sp : 10.sp,
+            fontWeight: FontWeight.w600,
+            color: MyTheme.accent_color,
+          ),
+        ),
       ),
     );
   }
