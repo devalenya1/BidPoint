@@ -1093,7 +1093,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _showProductDetailsModal() {
-    final modalWidth = _screenWidth * 0.9;
+    final modalWidth = _screenWidth * 0.95;
     
     showDialog(
       context: context,
@@ -1101,8 +1101,8 @@ class _ProductDetailsState extends State<ProductDetails>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
           width: modalWidth,
-          height: MediaQuery.of(context).size.height * 0.85,
-          padding: EdgeInsets.all(_getResponsivePadding(12, 20)),
+          height: MediaQuery.of(context).size.height * 0.80,
+          padding: EdgeInsets.all(_getResponsivePadding(6, 10)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1156,7 +1156,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _showBidHistoryModalDialog() {
-    final modalWidth = _screenWidth * 0.9;
+    final modalWidth = _screenWidth * 0.95;
     
     showDialog(
       context: context,
@@ -1164,11 +1164,11 @@ class _ProductDetailsState extends State<ProductDetails>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
           width: modalWidth,
-          height: MediaQuery.of(context).size.height * 0.85,
+          height: MediaQuery.of(context).size.height * 0.80,
           child: Column(
             children: [
               Container(
-                padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
+                padding: EdgeInsets.all(_getResponsivePadding(6, 8)),
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
                 ),
@@ -1200,7 +1200,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         AppLocalizations.of(context)!.bidder_ucf,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: _getResponsiveFontSize(9, 12),
+                          fontSize: _getResponsiveFontSize(7, 10),
                         ),
                       ),
                     ),
@@ -1210,7 +1210,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         AppLocalizations.of(context)!.amount_ucf,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: _getResponsiveFontSize(9, 12),
+                          fontSize: _getResponsiveFontSize(7, 10),
                         ),
                       ),
                     ),
@@ -1220,7 +1220,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         AppLocalizations.of(context)!.date_time_ucf,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: _getResponsiveFontSize(9, 12),
+                          fontSize: _getResponsiveFontSize(7, 10),
                         ),
                         textAlign: TextAlign.end,
                       ),
@@ -1251,7 +1251,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   flex: 2,
                                   child: Text(
                                     bid.userName ?? AppLocalizations.of(context)!.user_ucf,
-                                    style: TextStyle(fontSize: _getResponsiveFontSize(10, 13)),
+                                    style: TextStyle(fontSize: _getResponsiveFontSize(7, 12)),
                                   ),
                                 ),
                                 Expanded(
@@ -1259,7 +1259,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   child: Text(
                                     _formatPrice(bid.amount ?? 0),
                                     style: TextStyle(
-                                      fontSize: _getResponsiveFontSize(10, 13),
+                                      fontSize: _getResponsiveFontSize(7, 12),
                                       fontWeight: FontWeight.bold,
                                       color: MyTheme.accent_color,
                                     ),
@@ -1270,7 +1270,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   child: Text(
                                     _formatDateTime(bid.createdAt),
                                     style: TextStyle(
-                                      fontSize: _getResponsiveFontSize(8, 11),
+                                      fontSize: _getResponsiveFontSize(5, 9),
                                       color: Colors.grey,
                                     ),
                                     textAlign: TextAlign.end,
@@ -1290,7 +1290,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _showReviewsModalDialog() {
-    final modalWidth = _screenWidth * 0.9;
+    final modalWidth = _screenWidth * 0.95;
     
     showDialog(
       context: context,
@@ -1300,11 +1300,11 @@ class _ProductDetailsState extends State<ProductDetails>
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Container(
               width: modalWidth,
-              height: MediaQuery.of(context).size.height * 0.85,
+              height: MediaQuery.of(context).size.height * 0.80,
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
+                    padding: EdgeInsets.all(_getResponsivePadding(6, 8)),
                     decoration: BoxDecoration(
                       border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
                     ),
@@ -1796,8 +1796,8 @@ class _ProductDetailsState extends State<ProductDetails>
     
     List<Widget> children = [
       Container(
-        margin: EdgeInsets.only(right: _getResponsiveSize(8, 14)),
-        padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(12, 18), vertical: _getResponsiveSize(6, 10)),
+        margin: EdgeInsets.only(right: _getResponsiveSize(4, 7)),
+        padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(6, 9), vertical: _getResponsiveSize(6, 10)),
         decoration: BoxDecoration(
           color: const Color(0xFFE8F4F8), // Sky blue background
           borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
@@ -1813,7 +1813,7 @@ class _ProductDetailsState extends State<ProductDetails>
               value,
               style: TextStyle(
                 color: Colors.black87,
-                fontSize: _getResponsiveFontSize(16, 22),
+                fontSize: _getResponsiveFontSize(13, 20),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1822,7 +1822,7 @@ class _ProductDetailsState extends State<ProductDetails>
               label,
               style: TextStyle(
                 color: Colors.black87,
-                fontSize: _getResponsiveFontSize(10, 14),
+                fontSize: _getResponsiveFontSize(9, 13),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1831,16 +1831,46 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     ];
     
-    if (showColon && label != 'd') {
+    if (showColon && label == 'd') {
       children.add(
         Padding(
-          padding: EdgeInsets.only(right: _getResponsiveSize(4, 8)),
+          padding: EdgeInsets.only(right: _getResponsiveSize(2, 4)),
           child: Text(
             ':',
             style: TextStyle(
               color: Colors.white,
-              fontSize: _getResponsiveFontSize(18, 26),
-              fontWeight: FontWeight.bold,
+              fontSize: _getResponsiveFontSize(13, 20),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }   
+    if (showColon && label != 'd') {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(right: _getResponsiveSize(2, 4)),
+          child: Text(
+            ':',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: _getResponsiveFontSize(13, 20),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
+    if (showColon && label != 's') {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(right: _getResponsiveSize(2, 4)),
+          child: Text(
+            '',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: _getResponsiveFontSize(13, 20),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -2221,7 +2251,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // COMMENTS SECTION - Larger, with margin from title
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(100, 160),
+                        bottom: _getResponsiveSize(130, 170),
                         left: _getResponsiveSize(10, 16),
                         child: Container(
                           width: _screenWidth * 0.74,
@@ -2439,6 +2469,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       fontSize: _getResponsiveFontSize(10, 13)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
+                              SizedBox(height: _getResponsiveSize(1, 2)),
                             ],
                           ),
                         ),
@@ -2448,8 +2479,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       // ============================================
                       Positioned(
                         bottom: _getResponsiveSize(16, 24),
-                        left: _getResponsiveSize(10, 16),
-                        right: _getResponsiveSize(10, 16),
+                        left: _getResponsiveSize(6, 10),
+                        right: _getResponsiveSize(6, 10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -2457,9 +2488,9 @@ class _ProductDetailsState extends State<ProductDetails>
                             // Timer - With proper margins
                             Padding(
                               padding: EdgeInsets.only(
-                                left: _getResponsiveSize(4, 8),
-                                right: _getResponsiveSize(4, 8),
-                                top: _getResponsiveSize(2, 4),
+                                left: _getResponsiveSize(1, 3),
+                                right: _getResponsiveSize(1, 3),
+                                top: _getResponsiveSize(1, 1),
                               ),
                               child: _buildTimerRow(),
                             ),
@@ -2485,7 +2516,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     AppLocalizations.of(context)!.current_bid,
                                     style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(9, 12),
+                                      fontSize: _getResponsiveFontSize(7, 10),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -2493,7 +2524,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _formatPrice(_currentHighestBid),
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(16, 22),
+                                      fontSize: _getResponsiveFontSize(13, 20),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
