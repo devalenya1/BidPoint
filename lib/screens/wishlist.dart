@@ -738,7 +738,7 @@ class _WishlistState extends State<Wishlist> {
                           width: isTablet ? 32.w : 28.w,
                           height: isTablet ? 32.w : 28.w,
                           // margin: EdgeInsets.only(left: 8.w),
-                          padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
+                          padding: EdgeInsets.all(isTablet ? 12.w : 8.w),
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
