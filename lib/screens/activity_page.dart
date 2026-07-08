@@ -854,7 +854,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(12.w),
+      // padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.only(
+        right: 12.w,
+        left: 0.w,
+        top: 0.w,
+        bottom: 0.w,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F1F1),
         borderRadius: BorderRadius.circular(16.r),
@@ -916,7 +922,11 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(left: 12.w), // Add padding only to the right side content
+              padding: EdgeInsets.only(
+                left: 12.w,
+                top: 10.h,
+                bottom: 10.h,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -599,7 +599,13 @@ class _WishlistState extends State<Wishlist> {
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
+      // padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
+      padding: EdgeInsets.only(
+        right: 10.w,
+        left: 0.w,
+        top: 0.w,
+        bottom: 0.w,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(16.r),
@@ -700,56 +706,60 @@ class _WishlistState extends State<Wishlist> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Name Row with Remove Icon on the right
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Product Name - Clickable
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (productSlug.isNotEmpty) {
-                            _navigateToProductDetails(productSlug);
-                          }
-                        },
-                        child: Text(
-                          item.productName ?? AppLocalizations.of(context)!.unknown_product,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: isTablet ? 15.sp : 12.sp,
-                            fontWeight: FontWeight.w700,
+                // Product Name Row with Remove Icon on the right - WITH TOP PADDING
+                Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Product Name - Clickable
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (productSlug.isNotEmpty) {
+                              _navigateToProductDetails(productSlug);
+                            }
+                          },
+                          child: Text(
+                            item.productName ?? AppLocalizations.of(context)!.unknown_product,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: isTablet ? 15.sp : 12.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Remove from Wishlist Icon - Now on the right side after title
+                      GestureDetector(
+                        onTap: () => _removeFromWishlist(item.productId!),
+                        child: Container(
+                          width: isTablet ? 32.w : 28.w,
+                          height: isTablet ? 32.w : 28.w,
+                          margin: EdgeInsets.only(left: 8.w),
+                          padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.favorite,
+                            size: isTablet ? 16.sp : 14.sp,
                             color: Colors.black,
                           ),
                         ),
                       ),
-                    ),
-                    // Remove from Wishlist Icon - Now on the right side after title
-                    GestureDetector(
-                      onTap: () => _removeFromWishlist(item.productId!),
-                      child: Container(
-                        width: isTablet ? 32.w : 28.w,
-                        height: isTablet ? 32.w : 28.w,
-                        margin: EdgeInsets.only(left: 8.w),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.favorite,
-                          size: isTablet ? 16.sp : 14.sp,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 SizedBox(height: 4.h),
                 // Status Text - Black
@@ -822,36 +832,39 @@ class _WishlistState extends State<Wishlist> {
                   ],
                 ),
                 SizedBox(height: 8.h),
-                // Action Button - White with accent border and text
-                GestureDetector(
-                  onTap: () {
-                    if (productSlug.isNotEmpty) {
-                      _navigateToProductDetails(productSlug);
-                    } else {
-                      ToastComponent.showWarning(
-                        AppLocalizations.of(context)!.product_details_not_available,
-                        gravity: Toast.center,
-                        duration: Toast.lengthShort,
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: MyTheme.accent_color, width: 1.w),
-                      borderRadius: BorderRadius.circular(7.r),
-                    ),
-                    child: Text(
-                      isAuction && isLive 
-                          ? AppLocalizations.of(context)!.bid_now
-                          : AppLocalizations.of(context)!.view_details,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: isTablet ? 12.sp : 10.sp,
-                        fontWeight: FontWeight.w600,
-                        color: MyTheme.accent_color,
+                // Action Button - White with accent border and text - WITH BOTTOM PADDING
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: GestureDetector(
+                    onTap: () {
+                      if (productSlug.isNotEmpty) {
+                        _navigateToProductDetails(productSlug);
+                      } else {
+                        ToastComponent.showWarning(
+                          AppLocalizations.of(context)!.product_details_not_available,
+                          gravity: Toast.center,
+                          duration: Toast.lengthShort,
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: MyTheme.accent_color, width: 1.w),
+                        borderRadius: BorderRadius.circular(7.r),
+                      ),
+                      child: Text(
+                        isAuction && isLive 
+                            ? AppLocalizations.of(context)!.bid_now
+                            : AppLocalizations.of(context)!.view_details,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isTablet ? 12.sp : 10.sp,
+                          fontWeight: FontWeight.w600,
+                          color: MyTheme.accent_color,
+                        ),
                       ),
                     ),
                   ),

@@ -2515,11 +2515,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             // Current Bid - Larger, centered
                             Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(16, 26), 
+                                horizontal: _getResponsivePadding(17, 26), 
                                 vertical: _getResponsivePadding(16, 21)
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade700,
+                                color: Colors.black.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.2),
@@ -2534,7 +2534,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     AppLocalizations.of(context)!.current_bid,
                                     style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(6, 8),
+                                      fontSize: _getResponsiveFontSize(7, 10),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
