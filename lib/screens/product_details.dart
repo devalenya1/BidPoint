@@ -2263,7 +2263,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // COMMENTS SECTION - Larger, with margin from title
+                      // COMMENTS SECTION - Fixed input field padding
                       // ============================================
                       Positioned(
                         bottom: _getResponsiveSize(130, 170),
@@ -2393,36 +2393,37 @@ class _ProductDetailsState extends State<ProductDetails>
                                       ),
                               ),
                               SizedBox(height: _getResponsiveSize(4, 6)),
-                              // Comment Input - Reduced height
+                              // Comment Input - Fixed with proper padding
                               Row(
                                 children: [
                                   Expanded(
                                     child: Container(
-                                      height: _getResponsiveSize(23, 30),
+                                      height: _getResponsiveSize(30, 38),
                                       decoration: BoxDecoration(
-                                        color: Colors.white
-                                            .withOpacity(0.15),
-                                        borderRadius:
-                                            BorderRadius.circular(_getResponsiveSize(8, 12)),
+                                        color: Colors.white.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(_getResponsiveSize(8, 12)),
                                       ),
                                       child: TextField(
                                         controller: _commentController,
                                         style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: _getResponsiveFontSize(6, 10)),
+                                          color: Colors.white,
+                                          fontSize: _getResponsiveFontSize(9, 12),
+                                        ),
                                         decoration: InputDecoration(
                                           hintText: AppLocalizations.of(context)!.add_comment_hint,
                                           hintStyle: TextStyle(
-                                              color: Colors.white54,
-                                              fontSize: _getResponsiveFontSize(6, 10)),
+                                            color: Colors.white54,
+                                            fontSize: _getResponsiveFontSize(9, 12),
+                                          ),
                                           border: InputBorder.none,
-                                          contentPadding:
-                                              EdgeInsets.symmetric(
-                                                  horizontal: _getResponsiveSize(6, 10),
-                                                  vertical: _getResponsiveSize(2, 4)),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: _getResponsiveSize(12, 16),  // Proper horizontal padding
+                                            vertical: _getResponsiveSize(6, 10),      // Proper vertical padding
+                                          ),
+                                          isDense: true,  // Makes the input field more compact
                                         ),
-                                        onSubmitted: (value) =>
-                                            _sendComment(),
+                                        onSubmitted: (value) => _sendComment(),
+                                        textAlignVertical: TextAlignVertical.center,  // Centers the text vertically
                                       ),
                                     ),
                                   ),
@@ -2445,9 +2446,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                                 color: Colors.white,
                                               ),
                                             )
-                                          : Icon(Icons.send,
+                                          : Icon(
+                                              Icons.send,
                                               size: _getResponsiveSize(12, 16),
-                                              color: Colors.white),
+                                              color: Colors.white,
+                                            ),
                                     ),
                                   ),
                                 ],
