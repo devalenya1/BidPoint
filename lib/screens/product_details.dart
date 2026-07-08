@@ -1800,10 +1800,10 @@ class _ProductDetailsState extends State<ProductDetails>
         padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(5, 9), vertical: _getResponsiveSize(5, 9)),
         decoration: BoxDecoration(
           color: const Color(0xFFE8F4F8), // Sky blue background
-          borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
+          borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
           border: Border.all(
             color: MyTheme.accent_color,
-            width: 1,
+            width: 1.5,
           ),
         ),
         child: Row(
@@ -1813,7 +1813,7 @@ class _ProductDetailsState extends State<ProductDetails>
               value,
               style: TextStyle(
                 color: Colors.black87,
-                fontSize: _getResponsiveFontSize(12, 19),
+                fontSize: _getResponsiveFontSize(14, 19),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1935,8 +1935,8 @@ class _ProductDetailsState extends State<ProductDetails>
     bool isLoading = false,
     IconData? fallbackIcon,
   }) {
-    final size = _getResponsiveSize(44, 56);
-    final iconSize = _getResponsiveSize(20, 28);
+    final size = _getResponsiveSize(45, 56);
+    final iconSize = _getResponsiveSize(22, 28);
     
     return GestureDetector(
       onTap: isLoading ? null : onTap,
@@ -2023,8 +2023,8 @@ class _ProductDetailsState extends State<ProductDetails>
     required VoidCallback onTap,
     bool isLoading = false,
   }) {
-    final size = _getResponsiveSize(44, 56);
-    final iconSize = _getResponsiveSize(20, 28);
+    final size = _getResponsiveSize(45, 56);
+    final iconSize = _getResponsiveSize(22, 28);
     
     return GestureDetector(
       onTap: isLoading ? null : onTap,
@@ -2460,7 +2460,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // PRODUCT NAME & DESCRIPTION - With margin bottom
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(80, 115),
+                        bottom: _getResponsiveSize(85, 115),
                         left: _getResponsiveSize(10, 16),
                         right: _getResponsiveSize(10, 16),
                         child: GestureDetector(
@@ -2471,7 +2471,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               Text(_product?.name ?? '',
                                   style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(16, 22),
+                                      fontSize: _getResponsiveFontSize(17, 23),
                                       fontWeight: FontWeight.bold)),
                               SizedBox(height: _getResponsiveSize(2, 4)),
                               Text(
@@ -2493,9 +2493,9 @@ class _ProductDetailsState extends State<ProductDetails>
                       // TIMER & CURRENT BID - Larger, centered
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(18, 27),
-                        left: _getResponsiveSize(6, 10),
-                        right: _getResponsiveSize(6, 10),
+                        bottom: _getResponsiveSize(22, 27),
+                        left: _getResponsiveSize(10, 10),
+                        right: _getResponsiveSize(10, 10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -2512,11 +2512,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             // Current Bid - Larger, centered
                             Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(14, 26), 
-                                vertical: _getResponsivePadding(14, 21)
+                                horizontal: _getResponsivePadding(16, 26), 
+                                vertical: _getResponsivePadding(16, 21)
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.95),
+                                color: Colors.black.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.2),
@@ -2749,7 +2749,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       onPressed: _showBidInputDialog,
                       style: OutlinedButton.styleFrom(
                         backgroundColor: const Color(0xFFE8F4F8),
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 16)),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(12, 17)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
                       ),
@@ -2766,14 +2766,14 @@ class _ProductDetailsState extends State<ProductDetails>
                       onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 16)),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(12, 17)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
                       ),
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
-                              '${AppLocalizations.of(context)!.bid_now} (${_formatPrice(_minNextBidNow)})',
+                              '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
                               style: TextStyle(
                                 fontSize: _getResponsiveFontSize(11, 16),
                                 color: Colors.white,
@@ -2798,7 +2798,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 child: Container(
                   width: _getResponsiveSize(140, 190),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF334155),
+                    color: const Color(0xFFE8F4F8),
                     borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                     boxShadow: [
                       BoxShadow(

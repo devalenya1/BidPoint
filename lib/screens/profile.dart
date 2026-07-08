@@ -678,8 +678,8 @@ class _ProfileState extends State<Profile> {
                   Text(
                     AppLocalizations.of(context)!.points_ucf,
                     style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 8.sp,
+                      fontWeight: FontWeight.w400,
                       color: Colors.black,
                     ),
                   ),
