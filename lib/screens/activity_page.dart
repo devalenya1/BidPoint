@@ -69,6 +69,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       
       var response = await ProfileRepository().getUserInfoResponse();
       
+      print("📡 Activity API Response: ${response.success}");
+      print("📡 Data count: ${response.data?.length ?? 0}");
+      
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
           _userInfo = response.data![0];
@@ -103,60 +106,47 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   void _processActivityData() {
     if (_userInfo == null) return;
     
-    final auctionBids = _userInfo!.auctionBids ?? [];
+    // Get the distinct auction bids (these are unique products with latest bids)
+    final distinctBids = _userInfo!.distinctAuctionBids ?? [];
     
-    // Get the latest bid for each product
-    final Map<int, AuctionBid> latestBidsByProduct = {};
-    for (var bid in auctionBids) {
-      if (bid.productId != null) {
-        final existing = latestBidsByProduct[bid.productId!];
-        if (existing == null || (bid.createdAt != null && existing.createdAt != null && bid.createdAt!.isAfter(existing.createdAt!))) {
-          latestBidsByProduct[bid.productId!] = bid;
-        }
-      }
-    }
+    print("📊 Distinct Auction Bids count: ${distinctBids.length}");
     
     List<AuctionBid> allActivities = [];
     List<AuctionBid> outbid = [];
     List<AuctionBid> winning = [];
     List<AuctionBid> ended = [];
     
-    for (var entry in latestBidsByProduct.entries) {
-      final latestBid = entry.value;
-      
+    for (var bid in distinctBids) {
       // Get values directly from the API
-      final isEnded = latestBid.recentlyEnded ?? false;
-      final isWinning = latestBid.isWinning ?? false;
-      final isHighestBidder = latestBid.highestBidder ?? false;
-      final hasBid = (latestBid.amount ?? 0) > 0;
+      final isEnded = bid.recentlyEnded ?? false;
+      final isWinning = bid.isWinning ?? false;
+      final isHighestBidder = bid.highestBidder ?? false;
+      final hasBid = (bid.amount ?? 0) > 0;
       
       // Determine status based on API fields
       String status;
       
       if (isEnded) {
-        // Auction has ended
         status = 'ended';
       } else if (isWinning || isHighestBidder) {
-        // User is winning (either by isWinning or highestBidder)
         status = 'winning';
       } else if (!isWinning && !isHighestBidder && hasBid) {
-        // User is NOT winning and has placed a bid → OUTBID
         status = 'outbid';
       } else {
-        // No bid placed or other cases
         status = 'pending';
       }
       
-      allActivities.add(latestBid);
+      print("📌 Product: ${bid.productName}, Status: $status, isEnded: $isEnded, isWinning: $isWinning, isHighestBidder: $isHighestBidder");
+      
+      allActivities.add(bid);
       
       if (status == 'outbid') {
-        outbid.add(latestBid);
+        outbid.add(bid);
       } else if (status == 'winning') {
-        winning.add(latestBid);
+        winning.add(bid);
       } else if (status == 'ended') {
-        ended.add(latestBid);
+        ended.add(bid);
       }
-      // Pending items don't go to any tab
     }
     
     // Sort all activities by created_at (newest first)
@@ -190,6 +180,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       _winningActivities = winning;
       _endedActivities = ended;
     });
+    
+    print("✅ All: ${_allActivities.length}, Outbid: ${_outbidActivities.length}, Winning: ${_winningActivities.length}, Ended: ${_endedActivities.length}");
   }
   
   // ============ PULL TO REFRESH ============
@@ -251,24 +243,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   }
   
   // ============ PRODUCT DATA HELPERS ============
-  DistinctAuctionBid? _getProductInfoForBid(AuctionBid bid) {
-    if (_userInfo?.distinctAuctionBids == null || bid.productId == null) return null;
-    
-    try {
-      final product = _userInfo!.distinctAuctionBids!.firstWhere(
-        (p) => p.productId == bid.productId,
-      );
-      return product;
-    } catch (e) {
-      return null;
-    }
-  }
-
   String _getProductNameForBid(AuctionBid bid) {
-    final product = _getProductInfoForBid(bid);
-    if (product != null && product.productName != null && product.productName!.isNotEmpty) {
-      return product.productName!;
-    }
     if (bid.productName != null && bid.productName!.isNotEmpty) {
       return bid.productName!;
     }
@@ -276,10 +251,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   }
 
   String? _getProductImageForBid(AuctionBid bid) {
-    final product = _getProductInfoForBid(bid);
-    if (product != null && product.productImage != null && product.productImage!.isNotEmpty) {
-      return product.productImage;
-    }
     if (bid.productImage != null && bid.productImage!.isNotEmpty) {
       return bid.productImage;
     }
@@ -287,58 +258,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   }
 
   String _getProductSlugForBid(AuctionBid bid) {
-    final product = _getProductInfoForBid(bid);
-    if (product != null && product.productSlug != null && product.productSlug!.isNotEmpty) {
-      return product.productSlug!;
+    if (bid.productSlug != null && bid.productSlug!.isNotEmpty) {
+      return bid.productSlug!;
     }
     return '';
   }
 
-  double _getCurrentBidForProduct(int productId) {
-    final product = _getProductInfoById(productId);
-    if (product != null) {
-      return product.amount ?? 0.0;
-    }
-    return 0.0;
-  }
-
-  double _getUserHighestBidForProduct(int productId) {
-    if (_userInfo?.auctionBids == null) return 0.0;
-    
-    final userBids = _userInfo!.auctionBids!.where((b) => b.productId == productId).toList();
-    if (userBids.isEmpty) return 0.0;
-    
-    return userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
-  }
-
-  int _getPointPerBidForProduct(int productId) {
-    if (_userInfo?.auctionBids == null) return 10;
-    
-    final userBids = _userInfo!.auctionBids!.where((b) => b.productId == productId).toList();
-    if (userBids.isEmpty) return 10;
-    
-    return userBids.first.pointPerBid ?? 10;
-  }
-
-  DistinctAuctionBid? _getProductInfoById(int productId) {
-    if (_userInfo?.distinctAuctionBids == null) return null;
-    
-    try {
-      final product = _userInfo!.distinctAuctionBids!.firstWhere(
-        (p) => p.productId == productId,
-      );
-      return product;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  double _getCurrentBidById(int productId) {
-    final product = _getProductInfoById(productId);
-    if (product != null) {
-      return product.amount ?? 0.0;
-    }
-    return 0.0;
+  int _getPointPerBidForProduct(AuctionBid bid) {
+    return bid.pointPerBid ?? 10;
   }
   
   List<AuctionBid> _getCurrentActivities() {
@@ -367,19 +294,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       ToastComponent.showWarning(
         AppLocalizations.of(context)!.product_details_not_available,
       );
-    }
-  }
-
-  bool _isAuctionEndedForProduct(int productId) {
-    final product = _getProductInfoById(productId);
-    if (product == null || product.auctionEndDate == null || product.auctionEndDate!.isEmpty) {
-      return false;
-    }
-    try {
-      final endDate = DateTime.parse(product.auctionEndDate!);
-      return endDate.isBefore(DateTime.now());
-    } catch (e) {
-      return false;
     }
   }
   
@@ -602,11 +516,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   }
 
   Widget _buildActivityCard(AuctionBid activity) {
-    final productId = activity.productId ?? 0;
-    final productName = _getProductNameForBid(activity);
-    final productImage = _getProductImageForBid(activity);
-    final productSlug = _getProductSlugForBid(activity);
-    final pointPerBid = _getPointPerBidForProduct(productId);
+    final productName = activity.productName ?? AppLocalizations.of(context)!.unknown_product;
+    final productImage = activity.productImage;
+    final productSlug = activity.productSlug ?? '';
+    final pointPerBid = activity.pointPerBid ?? 10;
     
     // ✅ USE API FIELDS DIRECTLY
     final isEnded = activity.recentlyEnded ?? false;

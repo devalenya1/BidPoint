@@ -72,6 +72,9 @@ class _WishlistState extends State<Wishlist> {
       
       var response = await _profileRepository.getUserInfoResponse();
       
+      print("📡 Wishlist API Response: ${response.success}");
+      print("📡 Data count: ${response.data?.length ?? 0}");
+      
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
           _userInfo = response.data![0];
@@ -106,12 +109,12 @@ class _WishlistState extends State<Wishlist> {
     
     final wishlist = _userInfo!.wishlist ?? [];
     
+    print("📊 Wishlist items count: ${wishlist.length}");
+    
     List<WishlistItem> allItems = [];
     List<WishlistItem> live = [];
     List<WishlistItem> endingSoon = [];
     List<WishlistItem> outbid = [];
-    
-    final now = DateTime.now();
     
     for (var item in wishlist) {
       // Use API data directly
@@ -119,6 +122,8 @@ class _WishlistState extends State<Wishlist> {
       final isEndingSoon = item.endingSoon ?? false;
       final isOutbid = item.outbid ?? false;
       final isAuction = item.isAuction ?? false;
+      
+      print("📌 Product: ${item.productName}, isLive: $isLive, isEndingSoon: $isEndingSoon, isOutbid: $isOutbid, isAuction: $isAuction");
       
       // Add to all items
       allItems.add(item);
@@ -168,6 +173,8 @@ class _WishlistState extends State<Wishlist> {
       _endingSoonItems = endingSoon;
       _outbidItems = outbid;
     });
+    
+    print("✅ All: ${_wishlistItems.length}, Live: ${_liveItems.length}, Ending Soon: ${_endingSoonItems.length}, Outbid: ${_outbidItems.length}");
   }
   
   // ============ PULL TO REFRESH ============
@@ -549,11 +556,8 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  // ============ WISHLIST CARD - UPDATED ============
+  // ============ WISHLIST CARD ============
   Widget _buildWishlistCard(WishlistItem item) {
-    final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
-    final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
-    
     final int pointPerBid = item.pointPerBid ?? 10;
     
     // Use API data directly
@@ -562,8 +566,6 @@ class _WishlistState extends State<Wishlist> {
     final bool isOutbid = item.outbid ?? false;
     final bool isWinning = item.isWinning ?? false;
     final bool isAuction = item.isAuction ?? false;
-    // highestBidder is not available in WishlistItem, use isWinning as fallback
-    final bool isHighestBidder = item.isWinning ?? false;
     
     // Determine status text and description
     String statusText;
@@ -579,7 +581,7 @@ class _WishlistState extends State<Wishlist> {
       // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-    } else if ((isWinning || isHighestBidder) && isLive) {
+    } else if (isWinning && isLive) {
       // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
@@ -592,6 +594,9 @@ class _WishlistState extends State<Wishlist> {
     final bool showEndingSoonBadge = isAuction && isLive && isEndingSoon;
     
     final String productSlug = item.slug ?? '';
+    final String productName = item.productName ?? AppLocalizations.of(context)!.unknown_product;
+    final String? productImage = item.productImage;
+    final double currentBid = item.highestBid ?? item.productPrice ?? 0;
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
@@ -645,11 +650,11 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 child: Stack(
                   children: [
-                    item.productImage != null && item.productImage!.isNotEmpty
+                    productImage != null && productImage.isNotEmpty
                         ? Stack(
                             children: [
                               Image.network(
-                                item.productImage!,
+                                productImage,
                                 fit: BoxFit.cover,
                                 width: imageWidth,
                                 height: double.infinity,
@@ -737,7 +742,7 @@ class _WishlistState extends State<Wishlist> {
                     children: [
                       Expanded(
                         child: Text(
-                          item.productName ?? AppLocalizations.of(context)!.unknown_product,
+                          productName,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -826,7 +831,7 @@ class _WishlistState extends State<Wishlist> {
                     children: [
                       Flexible(
                         child: Text(
-                          _formatPrice(item.highestBid ?? item.productPrice ?? 0),
+                          _formatPrice(currentBid),
                           style: TextStyle(
                             fontSize: isTablet ? 16.sp : 13.sp,
                             fontWeight: FontWeight.w600,
@@ -862,8 +867,8 @@ class _WishlistState extends State<Wishlist> {
                     _buildViewDetailsButton(productSlug, isTablet: isTablet)
                   else if (isOutbid && isLive)
                     _buildBidAgainButton(productSlug, isTablet: isTablet)
-                  else if ((isWinning || isHighestBidder) && isLive)
-                    _buildViewAuctionButton(productSlug, isTablet: isTablet)
+                  else if (isWinning && isLive)
+                    _buildViewDetailsButton(productSlug, isTablet: isTablet, isWinning: true)
                   else
                     _buildViewDetailsButton(productSlug, isTablet: isTablet),
                 ],
@@ -907,7 +912,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  Widget _buildViewAuctionButton(String productSlug, {bool isTablet = false}) {
+  Widget _buildViewDetailsButton(String productSlug, {bool isTablet = false, bool isWinning = false}) {
     return GestureDetector(
       onTap: () {
         if (productSlug.isNotEmpty) {
@@ -922,48 +927,17 @@ class _WishlistState extends State<Wishlist> {
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
         decoration: BoxDecoration(
-          color: MyTheme.accent_color,
-          borderRadius: BorderRadius.circular(7.r),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.view_details,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isTablet ? 12.sp : 10.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildViewDetailsButton(String productSlug, {bool isTablet = false}) {
-    return GestureDetector(
-      onTap: () {
-        if (productSlug.isNotEmpty) {
-          _navigateToProductDetails(productSlug);
-        } else {
-          ToastComponent.showWarning(
-            AppLocalizations.of(context)!.product_details_not_available
-          );
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
+          color: isWinning ? MyTheme.accent_color : Colors.white,
           border: Border.all(color: MyTheme.accent_color, width: 1.w),
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          AppLocalizations.of(context)!.view_details,
+          isWinning ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: isTablet ? 12.sp : 10.sp,
             fontWeight: FontWeight.w600,
-            color: MyTheme.accent_color,
+            color: isWinning ? Colors.white : MyTheme.accent_color,
           ),
         ),
       ),
