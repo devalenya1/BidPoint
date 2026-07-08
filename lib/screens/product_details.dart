@@ -2445,7 +2445,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // PRODUCT NAME & DESCRIPTION - With margin bottom
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(70, 100),
+                        bottom: _getResponsiveSize(75, 110),
                         left: _getResponsiveSize(10, 16),
                         right: _getResponsiveSize(10, 16),
                         child: GestureDetector(
