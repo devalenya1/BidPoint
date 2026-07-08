@@ -629,11 +629,11 @@ class _WishlistState extends State<Wishlist> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12.r),
-                    padding: EdgeInsets.only(
-                      top: -10.w,
-                      right: -10.w,
-                      bottom: -10.w,
-                    ),
+                    // padding: EdgeInsets.only(
+                    //   top: -10.w,
+                    //   right: -10.w,
+                    //   bottom: -10.w,
+                    // ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12.r),
@@ -840,7 +840,7 @@ class _WishlistState extends State<Wishlist> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: isTablet ? 12.sp : 10.sp,
-                        fontWeight: FontWeight.w00,
+                        fontWeight: FontWeight.600,
                         color: MyTheme.accent_color,
                       ),
                     ),

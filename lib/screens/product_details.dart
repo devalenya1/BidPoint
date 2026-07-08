@@ -2480,7 +2480,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                               '') ??
                                       '',
                                   style: TextStyle(
-                                      color: Colors.white50,
+                                      color: Colors.white70,
                                       fontSize: _getResponsiveFontSize(8, 11)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
