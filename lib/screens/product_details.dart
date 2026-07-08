@@ -2231,7 +2231,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Container(
                           width: _screenWidth * 0.74,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.015),
+                            color: Colors.black.withOpacity(0.025),
                             borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.015), width: 1),
@@ -2266,7 +2266,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 CircleAvatar(
-                                                  radius: _getResponsiveSize(10, 16),
+                                                  radius: _getResponsiveSize(11, 17),
                                                   backgroundImage:
                                                       NetworkImage(comment
                                                               .userAvatar ??
@@ -2293,7 +2293,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white,
-                                                          fontSize: _getResponsiveFontSize(7, 10),
+                                                          fontSize: _getResponsiveFontSize(8, 10),
                                                           fontWeight:
                                                               FontWeight
                                                                   .w600,
@@ -2305,7 +2305,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white70,
-                                                          fontSize: _getResponsiveFontSize(6, 9),
+                                                          fontSize: _getResponsiveFontSize(7, 10),
                                                         ),
                                                       ),
                                                       Row(
@@ -2321,11 +2321,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: _getResponsiveFontSize(5, 8),
+                                                                fontSize: _getResponsiveFontSize(6, 9),
                                                               ),
                                                             ),
                                                           ),
-                                                          SizedBox(width: _getResponsiveSize(5, 8)),
+                                                          SizedBox(width: _getResponsiveSize(6, 9)),
                                                           GestureDetector(
                                                             onTap: () =>
                                                                 _replyToComment(
@@ -2337,7 +2337,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: _getResponsiveFontSize(5, 8),
+                                                                fontSize: _getResponsiveFontSize(6, 9),
                                                               ),
                                                             ),
                                                           ),

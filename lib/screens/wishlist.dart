@@ -80,11 +80,20 @@ class _WishlistState extends State<Wishlist> {
           _userInfo = response.data![0];
         });
         
+        // Print wishlist data for debugging
+        print("📊 Wishlist raw data: ${_userInfo?.wishlist?.length ?? 0} items");
+        if (_userInfo?.wishlist != null && _userInfo!.wishlist!.isNotEmpty) {
+          for (var item in _userInfo!.wishlist!) {
+            print("📌 Wishlist item: ${item.productName}, isAuction: ${item.isAuction}, isLive: ${item.isLive}");
+          }
+        }
+        
         _processWishlistData();
         
         wishlist_count.$ = _userInfo?.wishlistCount ?? 0;
         wishlist_count.save();
       } else {
+        print("❌ No wishlist data in response");
         setState(() {
           _wishlistItems = [];
           _liveItems = [];
@@ -109,7 +118,7 @@ class _WishlistState extends State<Wishlist> {
     
     final wishlist = _userInfo!.wishlist ?? [];
     
-    print("📊 Wishlist items count: ${wishlist.length}");
+    print("📊 Processing ${wishlist.length} wishlist items");
     
     List<WishlistItem> allItems = [];
     List<WishlistItem> live = [];
@@ -122,21 +131,25 @@ class _WishlistState extends State<Wishlist> {
       final isEndingSoon = item.endingSoon ?? false;
       final isOutbid = item.outbid ?? false;
       final isAuction = item.isAuction ?? false;
+      final isWinning = item.isWinning ?? false;
       
-      print("📌 Product: ${item.productName}, isLive: $isLive, isEndingSoon: $isEndingSoon, isOutbid: $isOutbid, isAuction: $isAuction");
+      print("📌 Product: ${item.productName}, isAuction: $isAuction, isLive: $isLive, isEndingSoon: $isEndingSoon, isOutbid: $isOutbid, isWinning: $isWinning");
       
       // Add to all items
       allItems.add(item);
       
       // Categorize based on API data
+      // Live auctions
       if (isAuction && isLive) {
         live.add(item);
       }
       
+      // Ending soon auctions
       if (isAuction && isEndingSoon && isLive) {
         endingSoon.add(item);
       }
       
+      // Outbid auctions
       if (isAuction && isOutbid && isLive) {
         outbid.add(item);
       }
@@ -556,7 +569,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  // ============ WISHLIST CARD - UPDATED ============
+  // ============ WISHLIST CARD ============
   Widget _buildWishlistCard(WishlistItem item) {
     final int pointPerBid = item.pointPerBid ?? 10;
     
@@ -572,20 +585,27 @@ class _WishlistState extends State<Wishlist> {
     String descriptionText = '';
     
     if (!isAuction) {
+      // Non-auction product
       statusText = AppLocalizations.of(context)!.view_details;
     } else if (!isLive) {
+      // Auction has ended (not live)
       statusText = AppLocalizations.of(context)!.auction_has_ended;
     } else if (isOutbid && isLive) {
+      // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
     } else if (isWinning && isLive) {
+      // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
     } else {
+      // Default
       statusText = AppLocalizations.of(context)!.place_your_bid_now;
     }
     
+    // Show "Ending Soon" badge if applicable
     final bool showEndingSoonBadge = isAuction && isLive && isEndingSoon;
+    
     final String productSlug = item.slug ?? '';
     final String productName = item.productName ?? AppLocalizations.of(context)!.unknown_product;
     final String? productImage = item.productImage;
