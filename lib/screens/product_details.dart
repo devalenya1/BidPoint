@@ -1786,47 +1786,70 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // TIMER WIDGETS - UPDATED: Label inside box beside counter
+  // TIMER WIDGETS - UPDATED: Larger boxes, with colon separator
   // ============================================
 
-  Widget _buildTimerUnit(String value, String label, {bool isEndingSoon = false}) {
+  Widget _buildTimerUnit(String value, String label, {bool isEndingSoon = false, bool showColon = false}) {
     if (label == 's' && _timeLeft.inDays > 0) {
       return const SizedBox.shrink(); 
     }
     
-    return Container(
-      margin: EdgeInsets.only(right: _getResponsiveSize(3, 6)),
-      padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(6, 10), vertical: _getResponsiveSize(3, 6)),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F4F8), // Sky blue background
-        borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8)),
-        border: Border.all(
-          color: MyTheme.accent_color,
-          width: 1.5,
+    List<Widget> children = [
+      Container(
+        margin: EdgeInsets.only(right: _getResponsiveSize(8, 14)),
+        padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(12, 18), vertical: _getResponsiveSize(6, 10)),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F4F8), // Sky blue background
+          borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
+          border: Border.all(
+            color: MyTheme.accent_color,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: _getResponsiveFontSize(16, 22),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(width: _getResponsiveSize(2, 4)),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: _getResponsiveFontSize(10, 14),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
+    ];
+    
+    if (showColon && label != 'd') {
+      children.add(
+        Padding(
+          padding: EdgeInsets.only(right: _getResponsiveSize(4, 8)),
+          child: Text(
+            ':',
             style: TextStyle(
-              color: Colors.black87,
-              fontSize: _getResponsiveFontSize(12, 16),
+              color: Colors.white,
+              fontSize: _getResponsiveFontSize(18, 26),
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(width: _getResponsiveSize(1, 3)),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.black87,
-              fontSize: _getResponsiveFontSize(8, 12),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+        ),
+      );
+    }
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: children,
     );
   }
 
@@ -1842,14 +1865,14 @@ class _ProductDetailsState extends State<ProductDetails>
     List<Widget> timerUnits = [];
 
     if (showDays) {
-      timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon));
+      timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon, showColon: true));
     }
     
-    timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon));
-    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon));
+    timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon, showColon: true));
+    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon, showColon: true));
     
     if (showSeconds) {
-      timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon));
+      timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon, showColon: false));
     }
 
     return Row(
@@ -1858,7 +1881,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // Icon Circle with Custom Image
+  // Icon Circle with Custom Image - Larger icons
   // ============================================
 
   Widget _buildIconCircleWithImage({
@@ -1867,8 +1890,8 @@ class _ProductDetailsState extends State<ProductDetails>
     bool isLoading = false,
     IconData? fallbackIcon,
   }) {
-    final size = _getResponsiveSize(36, 48);
-    final iconSize = _getResponsiveSize(16, 22);
+    final size = _getResponsiveSize(44, 56);
+    final iconSize = _getResponsiveSize(20, 28);
     
     return GestureDetector(
       onTap: isLoading ? null : onTap,
@@ -1888,15 +1911,15 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: isLoading
             ? SizedBox(
-                height: _getResponsiveSize(12, 16),
-                width: _getResponsiveSize(12, 16),
+                height: _getResponsiveSize(14, 18),
+                width: _getResponsiveSize(14, 18),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: MyTheme.accent_color,
                 ),
               )
             : Padding(
-                padding: EdgeInsets.all(_getResponsiveSize(6, 10)),
+                padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
                 child: Image.asset(
                   imagePath,
                   height: iconSize,
@@ -1946,7 +1969,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE WIDGETS
+  // MOBILE WIDGETS - Larger icons and fonts
   // ============================================
 
   Widget _buildIconCircle({
@@ -1955,8 +1978,8 @@ class _ProductDetailsState extends State<ProductDetails>
     required VoidCallback onTap,
     bool isLoading = false,
   }) {
-    final size = _getResponsiveSize(36, 48);
-    final iconSize = _getResponsiveSize(16, 22);
+    final size = _getResponsiveSize(44, 56);
+    final iconSize = _getResponsiveSize(20, 28);
     
     return GestureDetector(
       onTap: isLoading ? null : onTap,
@@ -1976,8 +1999,8 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: isLoading
             ? SizedBox(
-                height: _getResponsiveSize(12, 16),
-                width: _getResponsiveSize(12, 16),
+                height: _getResponsiveSize(14, 18),
+                width: _getResponsiveSize(14, 18),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: MyTheme.accent_color,
@@ -2006,11 +2029,11 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: Row(
           children: [
-            Icon(icon, size: _getResponsiveSize(14, 18), color: Colors.grey.shade700),
+            Icon(icon, size: _getResponsiveSize(16, 20), color: Colors.grey.shade700),
             SizedBox(width: _getResponsiveSize(8, 12)),
             Text(text,
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(11, 14),
+                  fontSize: _getResponsiveFontSize(12, 15),
                   color: Colors.grey.shade800,
                 )),
           ],
@@ -2021,23 +2044,23 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _buildInfoItem(String label, String value) {
     return Container(
-      padding: EdgeInsets.all(_getResponsivePadding(4, 8)),
+      padding: EdgeInsets.all(_getResponsivePadding(6, 10)),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8)),
+        borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(8, 11),
+                fontSize: _getResponsiveFontSize(9, 12),
                 color: Colors.grey.shade600,
               )),
           SizedBox(height: 1),
           Text(value,
               style: TextStyle(
-                fontSize: _getResponsiveFontSize(10, 14),
+                fontSize: _getResponsiveFontSize(12, 16),
                 fontWeight: FontWeight.bold,
               )),
         ],
@@ -2046,7 +2069,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE LAYOUT - UPDATED: Responsive sizing
+  // MOBILE LAYOUT - UPDATED: All requested changes
   // ============================================
 
   Widget _buildMobileLayout() {
@@ -2120,10 +2143,10 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      // TOP RIGHT ICONS
+                      // TOP RIGHT ICONS - Larger
                       Positioned(
-                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(4, 8),
-                        right: _getResponsiveSize(8, 16),
+                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
+                        right: _getResponsiveSize(10, 18),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -2136,8 +2159,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     });
                                   },
                                   child: Container(
-                                    width: _getResponsiveSize(36, 48),
-                                    height: _getResponsiveSize(36, 48),
+                                    width: _getResponsiveSize(44, 56),
+                                    height: _getResponsiveSize(44, 56),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       shape: BoxShape.circle,
@@ -2151,8 +2174,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                     child: _isProcessing
                                         ? SizedBox(
-                                            height: _getResponsiveSize(12, 16),
-                                            width: _getResponsiveSize(12, 16),
+                                            height: _getResponsiveSize(14, 18),
+                                            width: _getResponsiveSize(14, 18),
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                               color: MyTheme.accent_color,
@@ -2161,20 +2184,20 @@ class _ProductDetailsState extends State<ProductDetails>
                                         : Icon(
                                             Icons.more_vert,
                                             color: Colors.black87,
-                                            size: _getResponsiveSize(16, 22),
+                                            size: _getResponsiveSize(20, 28),
                                           ),
                                   ),
                                 );
                               },
                             ),
-                            SizedBox(height: _getResponsiveSize(4, 8)),
+                            SizedBox(height: _getResponsiveSize(6, 10)),
                             _buildIconCircleWithImage(
                               imagePath: 'assets/bid_history.png',
                               onTap: _openBidHistoryModal,
                               isLoading: _isProcessing,
                               fallbackIcon: Icons.history,
                             ),
-                            SizedBox(height: _getResponsiveSize(4, 8)),
+                            SizedBox(height: _getResponsiveSize(6, 10)),
                             _buildIconCircleWithImage(
                               imagePath: 'assets/product_details.png',
                               onTap: _openTitleModal,
@@ -2184,10 +2207,10 @@ class _ProductDetailsState extends State<ProductDetails>
                           ],
                         ),
                       ),
-                      // LEFT ICON - Back Button
+                      // LEFT ICON - Back Button - Larger
                       Positioned(
-                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(4, 8),
-                        left: _getResponsiveSize(8, 16),
+                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
+                        left: _getResponsiveSize(10, 18),
                         child: _buildIconCircle(
                           icon: Icons.arrow_back,
                           onTap: () => Navigator.pop(context),
@@ -2195,33 +2218,33 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // COMMENTS SECTION - Longer height (up to 260)
+                      // COMMENTS SECTION - Larger, with margin from title
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(150, 180),
-                        left: _getResponsiveSize(8, 12),
+                        bottom: _getResponsiveSize(100, 160),
+                        left: _getResponsiveSize(10, 16),
                         child: Container(
                           width: _screenWidth * 0.74,
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(_getResponsiveSize(8, 14)),
+                            borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.15), width: 1),
                           ),
-                          padding: EdgeInsets.all(_getResponsiveSize(4, 8)),
+                          padding: EdgeInsets.all(_getResponsiveSize(6, 10)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Comments List
+                              // Comments List - Increased height
                               Container(
-                                height: _getResponsiveSize(180, 260),
+                                height: _getResponsiveSize(200, 280),
                                 child: _comments.isEmpty
                                     ? Center(
                                         child: Text(
                                           AppLocalizations.of(context)!.no_comments_yet,
                                           style: TextStyle(
                                             color: Colors.white54,
-                                            fontSize: _getResponsiveFontSize(8, 11),
+                                            fontSize: _getResponsiveFontSize(9, 12),
                                           ),
                                         ),
                                       )
@@ -2232,13 +2255,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
                                           return Padding(
-                                            padding: EdgeInsets.only(bottom: _getResponsiveSize(2, 4)),
+                                            padding: EdgeInsets.only(bottom: _getResponsiveSize(3, 5)),
                                             child: Row(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 CircleAvatar(
-                                                  radius: _getResponsiveSize(8, 14),
+                                                  radius: _getResponsiveSize(10, 16),
                                                   backgroundImage:
                                                       NetworkImage(comment
                                                               .userAvatar ??
@@ -2247,12 +2270,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                                           .userAvatar ==
                                                       null
                                                       ? Icon(Icons.person,
-                                                          size: _getResponsiveSize(6, 12),
+                                                          size: _getResponsiveSize(8, 14),
                                                           color: Colors
                                                               .white54)
                                                       : null,
                                                 ),
-                                                SizedBox(width: _getResponsiveSize(3, 6)),
+                                                SizedBox(width: _getResponsiveSize(4, 8)),
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -2265,7 +2288,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white,
-                                                          fontSize: _getResponsiveFontSize(8, 11),
+                                                          fontSize: _getResponsiveFontSize(9, 13),
                                                           fontWeight:
                                                               FontWeight
                                                                   .w600,
@@ -2277,7 +2300,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                         style: TextStyle(
                                                           color: Colors
                                                               .white70,
-                                                          fontSize: _getResponsiveFontSize(7, 10),
+                                                          fontSize: _getResponsiveFontSize(8, 11),
                                                         ),
                                                       ),
                                                       Row(
@@ -2293,11 +2316,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: _getResponsiveFontSize(6, 8),
+                                                                fontSize: _getResponsiveFontSize(7, 9),
                                                               ),
                                                             ),
                                                           ),
-                                                          SizedBox(width: _getResponsiveSize(4, 8)),
+                                                          SizedBox(width: _getResponsiveSize(6, 10)),
                                                           GestureDetector(
                                                             onTap: () =>
                                                                 _replyToComment(
@@ -2309,7 +2332,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                                               style: TextStyle(
                                                                 color: Colors
                                                                     .white54,
-                                                                fontSize: _getResponsiveFontSize(6, 8),
+                                                                fontSize: _getResponsiveFontSize(7, 9),
                                                               ),
                                                             ),
                                                           ),
@@ -2324,32 +2347,33 @@ class _ProductDetailsState extends State<ProductDetails>
                                         },
                                       ),
                               ),
-                              SizedBox(height: _getResponsiveSize(2, 4)),
-                              // Comment Input
+                              SizedBox(height: _getResponsiveSize(4, 6)),
+                              // Comment Input - Reduced height
                               Row(
                                 children: [
                                   Expanded(
                                     child: Container(
+                                      height: _getResponsiveSize(32, 40),
                                       decoration: BoxDecoration(
                                         color: Colors.white
                                             .withOpacity(0.15),
                                         borderRadius:
-                                            BorderRadius.circular(_getResponsiveSize(6, 10)),
+                                            BorderRadius.circular(_getResponsiveSize(8, 12)),
                                       ),
                                       child: TextField(
                                         controller: _commentController,
                                         style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: _getResponsiveFontSize(8, 11)),
+                                            fontSize: _getResponsiveFontSize(9, 12)),
                                         decoration: InputDecoration(
                                           hintText: AppLocalizations.of(context)!.add_comment_hint,
                                           hintStyle: TextStyle(
                                               color: Colors.white54,
-                                              fontSize: _getResponsiveFontSize(8, 11)),
+                                              fontSize: _getResponsiveFontSize(9, 12)),
                                           border: InputBorder.none,
                                           contentPadding:
                                               EdgeInsets.symmetric(
-                                                  horizontal: _getResponsiveSize(4, 8),
+                                                  horizontal: _getResponsiveSize(6, 10),
                                                   vertical: _getResponsiveSize(2, 4)),
                                         ),
                                         onSubmitted: (value) =>
@@ -2357,27 +2381,27 @@ class _ProductDetailsState extends State<ProductDetails>
                                       ),
                                     ),
                                   ),
-                                  SizedBox(width: _getResponsiveSize(2, 4)),
+                                  SizedBox(width: _getResponsiveSize(4, 6)),
                                   GestureDetector(
                                     onTap: _isProcessing ? null : _sendComment,
                                     child: Container(
-                                      width: _getResponsiveSize(20, 28),
-                                      height: _getResponsiveSize(20, 28),
+                                      width: _getResponsiveSize(32, 40),
+                                      height: _getResponsiveSize(32, 40),
                                       decoration: BoxDecoration(
                                         color: MyTheme.accent_color,
                                         shape: BoxShape.circle,
                                       ),
                                       child: _isProcessing
                                           ? SizedBox(
-                                              height: _getResponsiveSize(6, 10),
-                                              width: _getResponsiveSize(6, 10),
+                                              height: _getResponsiveSize(8, 12),
+                                              width: _getResponsiveSize(8, 12),
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
                                                 color: Colors.white,
                                               ),
                                             )
                                           : Icon(Icons.send,
-                                              size: _getResponsiveSize(10, 14),
+                                              size: _getResponsiveSize(14, 18),
                                               color: Colors.white),
                                     ),
                                   ),
@@ -2388,12 +2412,12 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // PRODUCT NAME & DESCRIPTION - Below comments with space
+                      // PRODUCT NAME & DESCRIPTION - With margin bottom
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(60, 90),
-                        left: _getResponsiveSize(8, 12),
-                        right: _getResponsiveSize(8, 12),
+                        bottom: _getResponsiveSize(70, 100),
+                        left: _getResponsiveSize(10, 16),
+                        right: _getResponsiveSize(10, 16),
                         child: GestureDetector(
                           onTap: _openTitleModal,
                           child: Column(
@@ -2402,9 +2426,9 @@ class _ProductDetailsState extends State<ProductDetails>
                               Text(_product?.name ?? '',
                                   style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(14, 20),
+                                      fontSize: _getResponsiveFontSize(16, 22),
                                       fontWeight: FontWeight.bold)),
-                              SizedBox(height: 1),
+                              SizedBox(height: _getResponsiveSize(2, 4)),
                               Text(
                                   _product?.description
                                           ?.replaceAll(RegExp(r'<[^>]*>'),
@@ -2412,7 +2436,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       '',
                                   style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(9, 12)),
+                                      fontSize: _getResponsiveFontSize(10, 13)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                             ],
@@ -2420,37 +2444,48 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // TIMER & CURRENT BID
+                      // TIMER & CURRENT BID - Larger, centered
                       // ============================================
                       Positioned(
-                        bottom: _getResponsiveSize(20, 30),
-                        left: _getResponsiveSize(8, 12),
-                        right: _getResponsiveSize(8, 12),
+                        bottom: _getResponsiveSize(16, 24),
+                        left: _getResponsiveSize(10, 16),
+                        right: _getResponsiveSize(10, 16),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Timer - No outer box, just the units
-                            _buildTimerRow(),
-                            // Current Bid
+                            // Timer - With proper margins
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: _getResponsiveSize(4, 8),
+                                right: _getResponsiveSize(4, 8),
+                                top: _getResponsiveSize(2, 4),
+                              ),
+                              child: _buildTimerRow(),
+                            ),
+                            // Current Bid - Larger, centered
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16), vertical: _getResponsivePadding(6, 12)),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: _getResponsivePadding(12, 20), 
+                                vertical: _getResponsivePadding(8, 14)
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
+                                borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.2),
                                   width: 1,
                                 ),
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     AppLocalizations.of(context)!.current_bid,
                                     style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(8, 11),
+                                      fontSize: _getResponsiveFontSize(9, 12),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -2458,7 +2493,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     _formatPrice(_currentHighestBid),
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(14, 20),
+                                      fontSize: _getResponsiveFontSize(16, 22),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -2472,16 +2507,16 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   
                   // ============================================
-                  // BID INFORMATION SECTION - Offset -10
+                  // BID INFORMATION SECTION
                   // ============================================
                   Transform.translate(
                     offset: Offset(0, -10),
                     child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16)),
-                      padding: EdgeInsets.all(_getResponsivePadding(8, 16)),
+                      margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 18)),
+                      padding: EdgeInsets.all(_getResponsivePadding(10, 18)),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
+                        borderRadius: BorderRadius.circular(_getResponsiveSize(10, 18)),
                         border: Border.all(color: Colors.grey.shade200, width: 1),
                         boxShadow: [
                           BoxShadow(
@@ -2497,14 +2532,14 @@ class _ProductDetailsState extends State<ProductDetails>
                           Text(AppLocalizations.of(context)!.bid_information,
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: _getResponsiveFontSize(11, 16))),
-                          SizedBox(height: _getResponsiveSize(6, 10)),
+                                  fontSize: _getResponsiveFontSize(13, 18))),
+                          SizedBox(height: _getResponsiveSize(8, 12)),
                           GridView.count(
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            crossAxisSpacing: _getResponsiveSize(4, 10),
-                            mainAxisSpacing: _getResponsiveSize(4, 10),
+                            crossAxisSpacing: _getResponsiveSize(6, 12),
+                            mainAxisSpacing: _getResponsiveSize(6, 12),
                             childAspectRatio: 3,
                             children: [
                               _buildInfoItem(
@@ -2533,17 +2568,17 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   
                   // ============================================
-                  // REVIEWS SECTION
+                  // REVIEWS SECTION - Increased height
                   // ============================================
                   Container(
-                    margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 16)),
+                    margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 18)),
                     child: GestureDetector(
                       onTap: _openReviewsModal,
                       child: Container(
-                        padding: EdgeInsets.all(_getResponsivePadding(8, 16)),
+                        padding: EdgeInsets.all(_getResponsivePadding(12, 18)),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
+                          borderRadius: BorderRadius.circular(_getResponsiveSize(10, 18)),
                           border: Border.all(color: Colors.grey.shade200, width: 1),
                           boxShadow: [
                             BoxShadow(
@@ -2563,46 +2598,46 @@ class _ProductDetailsState extends State<ProductDetails>
                                       index < _rating.round()
                                           ? Icons.star
                                           : Icons.star_border,
-                                      size: _getResponsiveSize(10, 16),
+                                      size: _getResponsiveSize(12, 18),
                                       color: Colors.amber,
                                     );
                                   }),
                                 ),
-                                SizedBox(width: _getResponsiveSize(2, 6)),
+                                SizedBox(width: _getResponsiveSize(4, 8)),
                                 Text(_rating.toStringAsFixed(1),
                                     style: TextStyle(
-                                        fontSize: _getResponsiveFontSize(11, 16),
+                                        fontSize: _getResponsiveFontSize(13, 18),
                                         fontWeight: FontWeight.bold)),
-                                SizedBox(width: _getResponsiveSize(2, 6)),
+                                SizedBox(width: _getResponsiveSize(4, 8)),
                                 Container(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: _getResponsiveSize(3, 6), vertical: _getResponsiveSize(1, 2)),
+                                      horizontal: _getResponsiveSize(4, 8), vertical: _getResponsiveSize(2, 4)),
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(_getResponsiveSize(12, 20)),
+                                    borderRadius: BorderRadius.circular(_getResponsiveSize(14, 22)),
                                   ),
                                   child: Text('$_reviewsCount',
                                       style: TextStyle(
-                                          fontSize: _getResponsiveFontSize(8, 12),
+                                          fontSize: _getResponsiveFontSize(9, 13),
                                           color: Colors.grey)),
                                 ),
                               ],
                             ),
                             Icon(Icons.arrow_forward_ios,
-                                size: _getResponsiveSize(12, 16), color: Colors.grey),
+                                size: _getResponsiveSize(14, 20), color: Colors.grey),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: _getResponsiveSize(6, 10)),
+                  SizedBox(height: _getResponsiveSize(8, 14)),
                   
                   // ============================================
                   // THUMBNAILS
                   // ============================================
                   Container(
-                    height: _getResponsiveSize(50, 70),
-                    margin: EdgeInsets.all(_getResponsivePadding(8, 12)),
+                    height: _getResponsiveSize(60, 80),
+                    margin: EdgeInsets.all(_getResponsivePadding(10, 14)),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: _productImages.length,
@@ -2612,11 +2647,11 @@ class _ProductDetailsState extends State<ProductDetails>
                             setState(() => _currentImageIndex = index);
                           },
                           child: Container(
-                            width: _getResponsiveSize(40, 60),
-                            height: _getResponsiveSize(40, 60),
-                            margin: EdgeInsets.only(right: _getResponsiveSize(4, 6)),
+                            width: _getResponsiveSize(48, 68),
+                            height: _getResponsiveSize(48, 68),
+                            margin: EdgeInsets.only(right: _getResponsiveSize(6, 8)),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10)),
+                              borderRadius: BorderRadius.circular(_getResponsiveSize(8, 12)),
                               border: Border.all(
                                 color: _currentImageIndex == index
                                     ? MyTheme.accent_color
@@ -2625,7 +2660,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8)),
+                              borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10)),
                               child: Image.network(
                                 _productImages[index],
                                 fit: BoxFit.cover,
@@ -2638,7 +2673,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       },
                     ),
                   ),
-                  SizedBox(height: _getResponsiveSize(12, 20)),
+                  SizedBox(height: _getResponsiveSize(14, 22)),
                 ],
               ),
             ),
@@ -2651,7 +2686,7 @@ class _ProductDetailsState extends State<ProductDetails>
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 12), vertical: _getResponsivePadding(6, 10)),
+              padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 14), vertical: _getResponsivePadding(8, 12)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -2667,33 +2702,33 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: OutlinedButton(
                       onPressed: _showBidInputDialog,
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(8, 14)),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 16)),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8))),
+                            borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.custom_ucf,
-                        style: TextStyle(fontSize: _getResponsiveFontSize(10, 14)),
+                        style: TextStyle(fontSize: _getResponsiveFontSize(12, 16)),
                       ),
                     ),
                   ),
-                  SizedBox(width: _getResponsiveSize(6, 10)),
+                  SizedBox(width: _getResponsiveSize(8, 12)),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: _isProcessing ? null : _placeBidNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(8, 14)),
+                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 16)),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(_getResponsiveSize(4, 8))),
+                            borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
                       ),
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
                               '${AppLocalizations.of(context)!.bid_now} (${_formatPrice(_minNextBidNow)})',
                               style: TextStyle(
-                                fontSize: _getResponsiveFontSize(10, 14),
+                                fontSize: _getResponsiveFontSize(12, 16),
                                 color: Colors.white,
                               ),
                             ),
@@ -2708,16 +2743,16 @@ class _ProductDetailsState extends State<ProductDetails>
           // ============================================
           if (_showMoreMenu)
             Positioned(
-              top: MediaQuery.of(context).padding.top + _getResponsiveSize(60, 80),
-              right: _getResponsiveSize(8, 16),
+              top: MediaQuery.of(context).padding.top + _getResponsiveSize(70, 90),
+              right: _getResponsiveSize(10, 18),
               child: Material(
                 elevation: 16,
-                borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
+                borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                 child: Container(
-                  width: _getResponsiveSize(130, 180),
+                  width: _getResponsiveSize(140, 190),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
+                    borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.2),
