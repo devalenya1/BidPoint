@@ -562,7 +562,8 @@ class _WishlistState extends State<Wishlist> {
     final bool isOutbid = item.outbid ?? false;
     final bool isWinning = item.isWinning ?? false;
     final bool isAuction = item.isAuction ?? false;
-    final bool isHighestBidder = item.highestBidder ?? false;
+    // highestBidder is not available in WishlistItem, use isWinning as fallback
+    final bool isHighestBidder = item.isWinning ?? false;
     
     // Determine status text and description
     String statusText;
@@ -925,7 +926,7 @@ class _WishlistState extends State<Wishlist> {
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          AppLocalizations.of(context)!.view_auction,
+          AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: isTablet ? 12.sp : 10.sp,

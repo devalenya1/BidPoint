@@ -435,7 +435,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
             children: List.generate(4, (index) => 
               Expanded(
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 2.w), // Reduced margin
+                  margin: EdgeInsets.symmetric(horizontal: 2.w),
                   height: 42.h,
                   decoration: BoxDecoration(
                     color: MyTheme.shimmer_base,
@@ -518,8 +518,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 2.w), // Reduced margin for closer tabs
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h), // Reduced padding
+                margin: EdgeInsets.only(right: 2.w),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -657,7 +657,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch, // Changed to stretch for full height
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Product Image - Clickable - Full height of card
           GestureDetector(
@@ -900,7 +900,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          AppLocalizations.of(context)!.view_product,
+          AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 10.sp,
