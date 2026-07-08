@@ -65,12 +65,6 @@ class _MainState extends State<Main> {
             },
           ),
         ),
-      
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => const Main(),
-      //   ),
       ).then((_) {
         if (mounted && is_logged_in.$ && _pendingIndex != null) {
           setState(() {
@@ -101,7 +95,7 @@ class _MainState extends State<Main> {
         is_base_category: true,
       ),
       PointsPage(),
-      ActivityPage(),
+      ActivityPage(), // Now properly imported
       Profile(),
     ];
     
