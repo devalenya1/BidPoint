@@ -556,7 +556,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  // ============ WISHLIST CARD ============
+  // ============ WISHLIST CARD - UPDATED ============
   Widget _buildWishlistCard(WishlistItem item) {
     final int pointPerBid = item.pointPerBid ?? 10;
     
@@ -572,27 +572,20 @@ class _WishlistState extends State<Wishlist> {
     String descriptionText = '';
     
     if (!isAuction) {
-      // Non-auction product
       statusText = AppLocalizations.of(context)!.view_details;
     } else if (!isLive) {
-      // Auction has ended (not live)
       statusText = AppLocalizations.of(context)!.auction_has_ended;
     } else if (isOutbid && isLive) {
-      // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
     } else if (isWinning && isLive) {
-      // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
     } else {
-      // Default
       statusText = AppLocalizations.of(context)!.place_your_bid_now;
     }
     
-    // Show "Ending Soon" badge if applicable
     final bool showEndingSoonBadge = isAuction && isLive && isEndingSoon;
-    
     final String productSlug = item.slug ?? '';
     final String productName = item.productName ?? AppLocalizations.of(context)!.unknown_product;
     final String? productImage = item.productImage;
@@ -752,7 +745,7 @@ class _WishlistState extends State<Wishlist> {
                           ),
                         ),
                       ),
-                      // Remove from Wishlist Icon - Clean, no padding issues
+                      // Remove from Wishlist Icon - Clean
                       GestureDetector(
                         onTap: () => _removeFromWishlist(item.productId!),
                         child: Container(
@@ -783,7 +776,7 @@ class _WishlistState extends State<Wishlist> {
                   ),
                   SizedBox(height: 4.h),
                   
-                  // 2) Status Text - Original color and font
+                  // 2) Status Text - Black
                   if (statusText.isNotEmpty)
                     Text(
                       statusText,
@@ -794,7 +787,7 @@ class _WishlistState extends State<Wishlist> {
                       ),
                     ),
                   
-                  // 3) Description Text - Same style as status
+                  // 3) Description Text
                   if (descriptionText.isNotEmpty && isAuction)
                     Padding(
                       padding: EdgeInsets.only(top: 1.h),
@@ -812,7 +805,7 @@ class _WishlistState extends State<Wishlist> {
                   
                   SizedBox(height: 6.h),
                   
-                  // 4) Current Bid Label - Smallest font, same as points
+                  // 4) Current Bid Label - Smallest font
                   Text(
                     isLive && isAuction 
                         ? AppLocalizations.of(context)!.current_bid
@@ -868,7 +861,7 @@ class _WishlistState extends State<Wishlist> {
                   else if (isOutbid && isLive)
                     _buildBidAgainButton(productSlug, isTablet: isTablet)
                   else if (isWinning && isLive)
-                    _buildViewDetailsButton(productSlug, isTablet: isTablet, isWinning: true)
+                    _buildViewAuctionButton(productSlug, isTablet: isTablet)
                   else
                     _buildViewDetailsButton(productSlug, isTablet: isTablet),
                 ],
@@ -912,7 +905,7 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  Widget _buildViewDetailsButton(String productSlug, {bool isTablet = false, bool isWinning = false}) {
+  Widget _buildViewAuctionButton(String productSlug, {bool isTablet = false}) {
     return GestureDetector(
       onTap: () {
         if (productSlug.isNotEmpty) {
@@ -927,17 +920,48 @@ class _WishlistState extends State<Wishlist> {
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
         decoration: BoxDecoration(
-          color: isWinning ? MyTheme.accent_color : Colors.white,
+          color: MyTheme.accent_color,
+          borderRadius: BorderRadius.circular(7.r),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.view_details,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isTablet ? 12.sp : 10.sp,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildViewDetailsButton(String productSlug, {bool isTablet = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        } else {
+          ToastComponent.showWarning(
+            AppLocalizations.of(context)!.product_details_not_available
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
           border: Border.all(color: MyTheme.accent_color, width: 1.w),
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          isWinning ? AppLocalizations.of(context)!.view_details : AppLocalizations.of(context)!.view_details,
+          AppLocalizations.of(context)!.view_details,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: isTablet ? 12.sp : 10.sp,
             fontWeight: FontWeight.w600,
-            color: isWinning ? Colors.white : MyTheme.accent_color,
+            color: MyTheme.accent_color,
           ),
         ),
       ),

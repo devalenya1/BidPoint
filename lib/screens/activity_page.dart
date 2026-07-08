@@ -106,17 +106,34 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   void _processActivityData() {
     if (_userInfo == null) return;
     
-    // Get the distinct auction bids (these are unique products with latest bids)
-    final distinctBids = _userInfo!.distinctAuctionBids ?? [];
+    // Use auctionBids directly - these contain all bids with product info
+    final auctionBids = _userInfo!.auctionBids ?? [];
     
-    print("📊 Distinct Auction Bids count: ${distinctBids.length}");
+    print("📊 Auction Bids count: ${auctionBids.length}");
+    
+    // Group bids by product ID to get the latest bid for each product
+    final Map<int, AuctionBid> latestBidsByProduct = {};
+    for (var bid in auctionBids) {
+      if (bid.productId != null) {
+        final existing = latestBidsByProduct[bid.productId!];
+        if (existing == null || 
+            (bid.createdAt != null && existing.createdAt != null && 
+             bid.createdAt!.isAfter(existing.createdAt!))) {
+          latestBidsByProduct[bid.productId!] = bid;
+        }
+      }
+    }
+    
+    print("📊 Unique products with bids: ${latestBidsByProduct.length}");
     
     List<AuctionBid> allActivities = [];
     List<AuctionBid> outbid = [];
     List<AuctionBid> winning = [];
     List<AuctionBid> ended = [];
     
-    for (var bid in distinctBids) {
+    for (var entry in latestBidsByProduct.entries) {
+      final bid = entry.value;
+      
       // Get values directly from the API
       final isEnded = bid.recentlyEnded ?? false;
       final isWinning = bid.isWinning ?? false;
@@ -512,7 +529,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           ),
         ],
       ),
-    );
+    ); 
   }
 
   Widget _buildActivityCard(AuctionBid activity) {

@@ -507,15 +507,15 @@ class _ProfileState extends State<Profile> {
                   GestureDetector(
                     onTap: _togglePointsVisibility,
                     child: Container(
-                      width: 27.w,
-                      height: 27.w,
+                      width: 24.w,
+                      height: 24.w,
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Icon(
                         _pointsVisible ? Icons.visibility : Icons.visibility_off,
-                        size: 15.sp,
+                        size: 13.sp,
                         color: MyTheme.accent_color,
                       ),
                     ),
@@ -530,7 +530,7 @@ class _ProfileState extends State<Profile> {
                         ? (_userInfo?.balance?.toInt() ?? 0).toString() 
                         : '****',
                     style: TextStyle(
-                      fontSize: 15.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -539,7 +539,7 @@ class _ProfileState extends State<Profile> {
                   Text(
                     AppLocalizations.of(context)!.points_ucf,
                     style: TextStyle(
-                      fontSize: 9.sp,
+                      fontSize: 5.sp,
                       fontWeight: FontWeight.w400,
                       color: Colors.black,
                     ),
