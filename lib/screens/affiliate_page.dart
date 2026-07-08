@@ -462,7 +462,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                   Text(
                     FormatHelper.formatPrice(_cashEarnings),
                     style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
