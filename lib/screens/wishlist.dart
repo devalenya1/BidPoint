@@ -72,28 +72,16 @@ class _WishlistState extends State<Wishlist> {
       
       var response = await _profileRepository.getUserInfoResponse();
       
-      print("📡 Wishlist API Response: ${response.success}");
-      print("📡 Data count: ${response.data?.length ?? 0}");
-      
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         setState(() {
           _userInfo = response.data![0];
         });
-        
-        // Print wishlist data for debugging
-        print("📊 Wishlist raw data: ${_userInfo?.wishlist?.length ?? 0} items");
-        if (_userInfo?.wishlist != null && _userInfo!.wishlist!.isNotEmpty) {
-          for (var item in _userInfo!.wishlist!) {
-            print("📌 Wishlist item: ${item.productName}, isAuction: ${item.isAuction}, isLive: ${item.isLive}");
-          }
-        }
         
         _processWishlistData();
         
         wishlist_count.$ = _userInfo?.wishlistCount ?? 0;
         wishlist_count.save();
       } else {
-        print("❌ No wishlist data in response");
         setState(() {
           _wishlistItems = [];
           _liveItems = [];
@@ -118,12 +106,12 @@ class _WishlistState extends State<Wishlist> {
     
     final wishlist = _userInfo!.wishlist ?? [];
     
-    print("📊 Processing ${wishlist.length} wishlist items");
-    
     List<WishlistItem> allItems = [];
     List<WishlistItem> live = [];
     List<WishlistItem> endingSoon = [];
     List<WishlistItem> outbid = [];
+    
+    final now = DateTime.now();
     
     for (var item in wishlist) {
       // Use API data directly
@@ -131,25 +119,19 @@ class _WishlistState extends State<Wishlist> {
       final isEndingSoon = item.endingSoon ?? false;
       final isOutbid = item.outbid ?? false;
       final isAuction = item.isAuction ?? false;
-      final isWinning = item.isWinning ?? false;
-      
-      print("📌 Product: ${item.productName}, isAuction: $isAuction, isLive: $isLive, isEndingSoon: $isEndingSoon, isOutbid: $isOutbid, isWinning: $isWinning");
       
       // Add to all items
       allItems.add(item);
       
       // Categorize based on API data
-      // Live auctions
       if (isAuction && isLive) {
         live.add(item);
       }
       
-      // Ending soon auctions
       if (isAuction && isEndingSoon && isLive) {
         endingSoon.add(item);
       }
       
-      // Outbid auctions
       if (isAuction && isOutbid && isLive) {
         outbid.add(item);
       }
@@ -186,8 +168,6 @@ class _WishlistState extends State<Wishlist> {
       _endingSoonItems = endingSoon;
       _outbidItems = outbid;
     });
-    
-    print("✅ All: ${_wishlistItems.length}, Live: ${_liveItems.length}, Ending Soon: ${_endingSoonItems.length}, Outbid: ${_outbidItems.length}");
   }
   
   // ============ PULL TO REFRESH ============
@@ -399,7 +379,7 @@ class _WishlistState extends State<Wishlist> {
       children: [
         Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
-          margin: EdgeInsets.only(bottom: 16.h),
+          margin: EdgeInsets.only(bottom: 6.h),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -407,7 +387,7 @@ class _WishlistState extends State<Wishlist> {
                 Container(
                   margin: EdgeInsets.only(right: 2.w),
                   width: isTablet ? 120.w : 100.w,
-                  height: isTablet ? 48.h : 42.h,
+                  height: isTablet ? 38.h : 32.h,
                   decoration: BoxDecoration(
                     color: MyTheme.shimmer_base,
                     borderRadius: BorderRadius.circular(7.r),
@@ -461,7 +441,7 @@ class _WishlistState extends State<Wishlist> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
-                SizedBox(height: 16.h),
+                SizedBox(height: 12.h),
                 if (currentItems.isEmpty)
                   _buildEmptyState()
                 else
@@ -493,7 +473,7 @@ class _WishlistState extends State<Wishlist> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               children: [
-                SizedBox(height: 16.h),
+                SizedBox(height: 12.h),
                 if (currentItems.isEmpty)
                   _buildEmptyState()
                 else
@@ -530,11 +510,10 @@ class _WishlistState extends State<Wishlist> {
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isTablet ? 30.w : 13.w),
-      margin: EdgeInsets.only(bottom: 13.h),
+      margin: EdgeInsets.only(bottom: 6.h), // Reduced from 13.h to 6.h
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: List.generate(tabs.length, (index) {
             final isActive = _selectedTab == index;
             return GestureDetector(
@@ -544,10 +523,10 @@ class _WishlistState extends State<Wishlist> {
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 2.w),
+                margin: EdgeInsets.only(right: 3.w), // Reduced from 4.w to 3.w
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 18.w : 14.w,
-                  vertical: isTablet ? 12.h : 8.h,
+                  horizontal: isTablet ? 20.w : 14.w,
+                  vertical: isTablet ? 8.h : 6.h, // Reduced vertical padding
                 ),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
@@ -569,8 +548,11 @@ class _WishlistState extends State<Wishlist> {
     );
   }
   
-  // ============ WISHLIST CARD - WITH STRETCH IMAGE ============
+  // ============ WISHLIST CARD ============
   Widget _buildWishlistCard(WishlistItem item) {
+    final timeLeft = _timeLeft[item.id] ?? AppLocalizations.of(context)!.loading;
+    final isTimerEnded = timeLeft == AppLocalizations.of(context)!.ended_ucf;
+    
     final int pointPerBid = item.pointPerBid ?? 10;
     
     // Use API data directly
@@ -583,35 +565,42 @@ class _WishlistState extends State<Wishlist> {
     // Determine status text and description
     String statusText;
     String descriptionText = '';
+    Color statusColor = Colors.black;
     
+    // Determine the primary status for display
     if (!isAuction) {
+      // Non-auction product
       statusText = AppLocalizations.of(context)!.view_details;
     } else if (!isLive) {
+      // Auction has ended (not live)
       statusText = AppLocalizations.of(context)!.auction_has_ended;
     } else if (isOutbid && isLive) {
+      // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
     } else if (isWinning && isLive) {
+      // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
     } else {
+      // Default
       statusText = AppLocalizations.of(context)!.place_your_bid_now;
     }
     
+    // Show "Ending Soon" badge if applicable
     final bool showEndingSoonBadge = isAuction && isLive && isEndingSoon;
+    
     final String productSlug = item.slug ?? '';
-    final String productName = item.productName ?? AppLocalizations.of(context)!.unknown_product;
-    final String? productImage = item.productImage;
-    final double currentBid = item.highestBid ?? item.productPrice ?? 0;
     
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-    final imageWidth = isTablet ? 130.w : 120.w;
+    final imageSize = isTablet ? 130.w : 120.w;
+    final imageHeight = isTablet ? 160.h : 150.h;
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.only(
-        right: isTablet ? 14.w : 10.w,
+        right: 10.w,
         left: 0.w,
         top: 0.w,
         bottom: 0.w,
@@ -621,169 +610,198 @@ class _WishlistState extends State<Wishlist> {
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Product Image - Stretches to full height
-            GestureDetector(
-              onTap: () {
-                if (productSlug.isNotEmpty) {
-                  _navigateToProductDetails(productSlug);
-                } else {
-                  ToastComponent.showWarning(
-                    AppLocalizations.of(context)!.product_details_not_available,
-                    gravity: Toast.center,
-                    duration: Toast.lengthShort,
-                  );
-                }
-              },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product Image - Clickable
+          GestureDetector(
+            onTap: () {
+              if (productSlug.isNotEmpty) {
+                _navigateToProductDetails(productSlug);
+              } else {
+                ToastComponent.showWarning(
+                  AppLocalizations.of(context)!.product_details_not_available,
+                  gravity: Toast.center,
+                  duration: Toast.lengthShort,
+                );
+              }
+            },
+            child: Container(
+              width: imageSize,
+              height: imageHeight,
+              margin: EdgeInsets.only(
+                left: 0,
+                top: 0,
+                bottom: 0,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
+                ),
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(12.r),
                   bottomLeft: Radius.circular(12.r),
                 ),
-                child: Container(
-                  width: imageWidth,
-                  height: double.infinity,
-                  color: const Color(0xFFE2E8F0),
-                  child: Stack(
-                    children: [
-                      productImage != null && productImage.isNotEmpty
-                          ? Image.network(
-                              productImage,
-                              fit: BoxFit.cover,
-                              width: imageWidth,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
+                child: Stack(
+                  children: [
+                    item.productImage != null && item.productImage!.isNotEmpty
+                        ? Image.network(
+                            item.productImage!,
+                            fit: BoxFit.cover,
+                            width: imageSize,
+                            height: imageHeight,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: const Color(0xFFE2E8F0),
+                                child: Icon(
                                   Icons.inventory_2,
                                   size: 40.sp,
                                   color: const Color(0xFF94A3B8),
-                                );
-                              },
-                            )
-                          : Icon(
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: const Color(0xFFE2E8F0),
+                            child: Icon(
                               Icons.inventory_2,
                               size: 40.sp,
                               color: const Color(0xFF94A3B8),
                             ),
-                      // "Ending Soon" Badge
-                      if (showEndingSoonBadge)
-                        Positioned(
-                          top: 8.w,
-                          left: 8.w,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(6.r),
-                            ),
-                            child: Text(
-                              AppLocalizations.of(context)!.ending_soon_ucf,
-                              style: TextStyle(
-                                fontSize: isTablet ? 10.sp : 8.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
+                          ),
+                    // "Ending Soon" Badge on the image
+                    if (showEndingSoonBadge)
+                      Positioned(
+                        top: 8.w,
+                        left: 8.w,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)!.ending_soon_ucf,
+                            style: TextStyle(
+                              fontSize: isTablet ? 10.sp : 8.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            SizedBox(width: isTablet ? 14.w : 10.w),
-            // Content
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  top: 10.h,
-                  bottom: 10.h,
-                  right: 4.w,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    // 1) Product Name - Bold, Black, same size as amount
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
+          ),
+          SizedBox(width: isTablet ? 14.w : 10.w),
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Product Name Row with Remove Icon on the right
+                Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Product Name - Clickable
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (productSlug.isNotEmpty) {
+                              _navigateToProductDetails(productSlug);
+                            }
+                          },
                           child: Text(
-                            productName,
+                            item.productName ?? AppLocalizations.of(context)!.unknown_product,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: isTablet ? 16.sp : 13.sp,
+                              fontSize: isTablet ? 15.sp : 12.sp,
                               fontWeight: FontWeight.w700,
                               color: Colors.black,
                             ),
                           ),
                         ),
-                        // Remove from Wishlist Icon
-                        GestureDetector(
-                          onTap: () => _removeFromWishlist(item.productId!),
-                          child: Container(
-                            width: isTablet ? 32.w : 28.w,
-                            height: isTablet ? 32.w : 28.w,
-                            margin: EdgeInsets.only(left: 8.w),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.favorite,
-                                size: isTablet ? 16.sp : 14.sp,
-                                color: Colors.black,
+                      ),
+                      // Remove from Wishlist Icon
+                      GestureDetector(
+                        onTap: () => _removeFromWishlist(item.productId!),
+                        child: Container(
+                          width: isTablet ? 32.w : 28.w,
+                          height: isTablet ? 32.w : 28.w,
+                          margin: EdgeInsets.only(left: 8.w),
+                          padding: EdgeInsets.all(isTablet ? 14.w : 10.w),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
                               ),
-                            ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.favorite,
+                            size: isTablet ? 16.sp : 14.sp,
+                            color: Colors.black,
                           ),
                         ),
-                      ],
-                    ),
-                    SizedBox(height: 4.h),
-                    
-                    // 2) Status Text - Black
-                    if (statusText.isNotEmpty)
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                
+                // 1️⃣ Status Text - BLACK color
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: isTablet ? 12.sp : 11.sp,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                
+                // 2️⃣ Description Text - Same color as the status text's actual meaning
+                // 3️⃣ Product Name - Same color and font size as description
+                if (descriptionText.isNotEmpty && isAuction)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Description Text
                       Text(
-                        statusText,
+                        descriptionText,
                         style: TextStyle(
                           fontSize: isTablet ? 12.sp : 11.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                          color: isOutbid 
+                              ? Colors.grey.shade700 
+                              : (isWinning 
+                                  ? Colors.grey.shade700 
+                                  : Colors.grey.shade600),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    
-                    // 3) Description Text
-                    if (descriptionText.isNotEmpty && isAuction)
-                      Padding(
-                        padding: EdgeInsets.only(top: 1.h),
-                        child: Text(
-                          descriptionText,
-                          style: TextStyle(
-                            fontSize: isTablet ? 11.sp : 10.sp,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF80818B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    
-                    SizedBox(height: 6.h),
-                    
-                    // 4) Current Bid Label - Smallest font
+                      SizedBox(height: 4.h),
+                    ],
+                  ),
+                
+                // 4️⃣ Current Bid with price below and point per bid at the side
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
                       isLive && isAuction 
                           ? AppLocalizations.of(context)!.current_bid
@@ -795,17 +813,15 @@ class _WishlistState extends State<Wishlist> {
                       ),
                     ),
                     SizedBox(height: 2.h),
-                    
-                    // Bid Amount and Points
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Flexible(
                           child: Text(
-                            _formatPrice(currentBid),
+                            _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                             style: TextStyle(
                               fontSize: isTablet ? 16.sp : 13.sp,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               color: const Color(0xFF0F172A),
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -828,119 +844,106 @@ class _WishlistState extends State<Wishlist> {
                         ),
                       ],
                     ),
-                    
-                    SizedBox(height: 8.h),
-                    
-                    // 5) Action Button based on status
-                    if (!isAuction)
-                      _buildViewDetailsButton(productSlug, isTablet: isTablet)
-                    else if (!isLive)
-                      _buildViewDetailsButton(productSlug, isTablet: isTablet)
-                    else if (isOutbid && isLive)
-                      _buildBidAgainButton(productSlug, isTablet: isTablet)
-                    else if (isWinning && isLive)
-                      _buildViewAuctionButton(productSlug, isTablet: isTablet)
-                    else
-                      _buildViewDetailsButton(productSlug, isTablet: isTablet),
                   ],
                 ),
-              ),
+                SizedBox(height: 8.h),
+                
+                // 5️⃣ Action Button based on status
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: _buildActionButton(item),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
   
-  // ============ BUTTONS ============
-  Widget _buildBidAgainButton(String productSlug, {bool isTablet = false}) {
+  // ============ ACTION BUTTON ============
+  Widget _buildActionButton(WishlistItem item) {
+    final bool isLive = item.isLive ?? false;
+    final bool isAuction = item.isAuction ?? false;
+    final bool isOutbid = item.outbid ?? false;
+    final bool isWinning = item.isWinning ?? false;
+    final bool isEnded = !isLive && isAuction;
+    final String productSlug = item.slug ?? '';
+    
+    String buttonText;
+    VoidCallback onTap;
+    
+    // Determine button text and action based on status
+    if (!isAuction) {
+      // Non-auction product
+      buttonText = AppLocalizations.of(context)!.view_details;
+      onTap = () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        }
+      };
+    } else if (isOutbid && isLive) {
+      // OUTBID → "Bid Again"
+      buttonText = AppLocalizations.of(context)!.bid_again;
+      onTap = () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        }
+      };
+    } else if (isWinning && isLive) {
+      // WINNING → "View Product"
+      buttonText = AppLocalizations.of(context)!.view_product;
+      onTap = () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        }
+      };
+    } else if (isEnded) {
+      // WON or LOST → "View Details"
+      buttonText = AppLocalizations.of(context)!.view_details;
+      onTap = () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        }
+      };
+    } else {
+      // Default → "Bid Now" or "View Details"
+      buttonText = isAuction && isLive 
+          ? AppLocalizations.of(context)!.bid_now
+          : AppLocalizations.of(context)!.view_details;
+      onTap = () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        }
+      };
+    }
+    
     return GestureDetector(
       onTap: () {
         if (productSlug.isNotEmpty) {
           _navigateToProductDetails(productSlug);
         } else {
           ToastComponent.showWarning(
-            AppLocalizations.of(context)!.product_details_not_available
+            AppLocalizations.of(context)!.product_details_not_available,
+            gravity: Toast.center,
+            duration: Toast.lengthShort,
           );
         }
       },
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
+        padding: EdgeInsets.symmetric(vertical: 8.h),
         decoration: BoxDecoration(
           color: MyTheme.accent_color,
           borderRadius: BorderRadius.circular(7.r),
         ),
         child: Text(
-          AppLocalizations.of(context)!.bid_again,
+          buttonText,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: isTablet ? 12.sp : 10.sp,
+            fontSize: 10.sp,
             fontWeight: FontWeight.w500,
             color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildViewAuctionButton(String productSlug, {bool isTablet = false}) {
-    return GestureDetector(
-      onTap: () {
-        if (productSlug.isNotEmpty) {
-          _navigateToProductDetails(productSlug);
-        } else {
-          ToastComponent.showWarning(
-            AppLocalizations.of(context)!.product_details_not_available
-          );
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
-        decoration: BoxDecoration(
-          color: MyTheme.accent_color,
-          borderRadius: BorderRadius.circular(7.r),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.view_details,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isTablet ? 12.sp : 10.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildViewDetailsButton(String productSlug, {bool isTablet = false}) {
-    return GestureDetector(
-      onTap: () {
-        if (productSlug.isNotEmpty) {
-          _navigateToProductDetails(productSlug);
-        } else {
-          ToastComponent.showWarning(
-            AppLocalizations.of(context)!.product_details_not_available
-          );
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: isTablet ? 10.h : 8.h),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: MyTheme.accent_color, width: 1.w),
-          borderRadius: BorderRadius.circular(7.r),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.view_details,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isTablet ? 12.sp : 10.sp,
-            fontWeight: FontWeight.w600,
-            color: MyTheme.accent_color,
           ),
         ),
       ),
