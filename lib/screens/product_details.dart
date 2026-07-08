@@ -1831,57 +1831,13 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     ];
     
-    if (showColon && label == 'd') {
+    // Show colon after d, h, and m (but only if there is a next unit)
+    if (showColon) {
       children.add(
         Padding(
           padding: EdgeInsets.only(right: _getResponsiveSize(1.5, 3)),
           child: Text(
             ':',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: _getResponsiveFontSize(12, 19),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      );
-    }   
-    if (showColon && label == 'm') {
-      children.add(
-        Padding(
-          padding: EdgeInsets.only(right: _getResponsiveSize(1.5, 3)),
-          child: Text(
-            '',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: _getResponsiveFontSize(12, 19),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      );
-    }   
-    if (showColon && label != 'd') {
-      children.add(
-        Padding(
-          padding: EdgeInsets.only(right: _getResponsiveSize(1.5, 3)),
-          child: Text(
-            ':',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: _getResponsiveFontSize(12, 19),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      );
-    }
-    if (showColon && label != 's') {
-      children.add(
-        Padding(
-          padding: EdgeInsets.only(right: _getResponsiveSize(1.5, 3)),
-          child: Text(
-            '',
             style: TextStyle(
               color: Colors.white,
               fontSize: _getResponsiveFontSize(12, 19),
@@ -1910,11 +1866,15 @@ class _ProductDetailsState extends State<ProductDetails>
     List<Widget> timerUnits = [];
 
     if (showDays) {
+      // Show colon after days if hours exist
       timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon, showColon: true));
     }
     
+    // Show colon after hours if minutes exist
     timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon, showColon: true));
-    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon, showColon: true));
+    
+    // Show colon after minutes ONLY IF seconds exist
+    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon, showColon: showSeconds));
     
     if (showSeconds) {
       timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon, showColon: false));
