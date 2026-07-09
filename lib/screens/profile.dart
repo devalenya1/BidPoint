@@ -536,15 +536,15 @@ class _ProfileState extends State<Profile> {
                       color: Colors.black,
                     ),
                   ),
-                  SizedBox(width: 4.w),
-                  Text(
-                    AppLocalizations.of(context)!.points_ucf,
-                    style: TextStyle(
-                      fontSize: 5.sp,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black,
-                    ),
-                  ),
+                  // SizedBox(width: 4.w),
+                  // Text(
+                  //   AppLocalizations.of(context)!.points_ucf,
+                  //   style: TextStyle(
+                  //     fontSize: 5.sp,
+                  //     fontWeight: FontWeight.w400,
+                  //     color: Colors.black,
+                  //   ),
+                  // ),
                 ],
               ),
             ],
