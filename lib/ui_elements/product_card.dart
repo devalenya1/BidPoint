@@ -174,7 +174,7 @@ class _ProductCardState extends State<ProductCard> {
     }
     return 0.0;
   }
-  
+   
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
     final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
@@ -288,7 +288,7 @@ class _ProductCardState extends State<ProductCard> {
                         Text(
                           _timeLeft,
                           style: TextStyle(
-                            fontSize: 9.sp,
+                            fontSize: 8.sp,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -328,7 +328,7 @@ class _ProductCardState extends State<ProductCard> {
                   child: Text(
                     widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
                     style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 9.sp,
                       color: const Color(0xFF8F9AA7),
                     ),
                     maxLines: 1,
@@ -348,14 +348,14 @@ class _ProductCardState extends State<ProductCard> {
                         Text(
                           _timeLeft == "Upcoming" ? 'Starting Bid' : 'Current Bid',
                           style: TextStyle(
-                            fontSize: 9.sp,
+                            fontSize: 7.sp,
                             color: const Color(0xFF80818B),
                           ),
                         ),
                         Text(
                           _formatPrice(displayBid),
                           style: TextStyle(
-                            fontSize: 13.sp,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
                           ),
@@ -374,14 +374,14 @@ class _ProductCardState extends State<ProductCard> {
                         children: [
                           Icon(
                             Icons.access_time,
-                            size: 10.sp,
+                            size: 9.sp,
                             color: const Color(0xFF0092AC),
                           ),
                           SizedBox(width: 2.w),
                           Text(
                             '1 Bid = ${widget.pointPerBid ?? 0}',
                             style: TextStyle(
-                              fontSize: 7.sp,
+                              fontSize: 6.sp,
                               fontWeight: FontWeight.w600,
                               color: MyTheme.accent_color,
                             ),
@@ -398,7 +398,7 @@ class _ProductCardState extends State<ProductCard> {
                   onTap: _navigateToProduct,
                   child: Container(
                     width: double.infinity,
-                    height: 40.h,
+                    height: 35.h,
                     decoration: BoxDecoration(
                       color: MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7.r),
@@ -410,7 +410,7 @@ class _ProductCardState extends State<ProductCard> {
                           Text(
                             'View Product',
                             style: TextStyle(
-                              fontSize: 11.sp,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
@@ -418,7 +418,7 @@ class _ProductCardState extends State<ProductCard> {
                           SizedBox(width: 4.w),
                           Icon(
                             Icons.arrow_forward,
-                            size: 12.sp,
+                            size: 11.sp,
                             color: Colors.white,
                           ),
                         ],

@@ -15,6 +15,7 @@ import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/ui_elements/hot_auction_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/ending_soon_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/upcoming_card.dart';
+import 'package:active_ecommerce_flutter/ui_elements/product_card.dart'; // ADDED for Ended Auctions
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -226,6 +227,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         child: _buildUpcomingSection(),
                       ),
 
+                      // ============================================================
+                      // NEW: Ended Auctions Section (using ProductCard)
+                      // ============================================================
+                      SliverToBoxAdapter(
+                        child: _buildEndedAuctionsSection(),
+                      ),
                       
                       SliverToBoxAdapter(child: SizedBox(height: 30.h)),
                     ],
@@ -380,6 +387,76 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 pointPerBid: product.pointPerBid ?? 0,
                 auctionEndDate: auctionStartTimestamp ?? product.auctionStartDate,
                 currentBid: product.startingBid,
+                startingBid: product.startingBid,
+                isAuctionActive: false,
+              );
+            },
+          ),
+        SizedBox(height: 20.h),
+      ],
+    );
+  }
+
+  // ============ ENDED AUCTIONS SECTION (NEW) ============
+  Widget _buildEndedAuctionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.ended_auctions_ucf,
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CategoryProducts(slug: 'ended-auctions');
+                  }));
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.view_all,
+                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        if (homeData.endedProductList.isEmpty)
+          Container(
+            height: 50.h,
+            child: Center(
+              child: Text(
+                AppLocalizations.of(context)!.no_ended_auctions,
+                style: TextStyle(fontSize: 14.sp),
+              ),
+            ),
+          )
+        else
+          _buildStaticHorizontalGrid(
+            products: homeData.endedProductList,
+            cardBuilder: (context, product) {
+              // Use ProductCard for ended auctions
+              return ProductCard(
+                id: product.id ?? 0,
+                slug: product.slug ?? '',
+                image: product.thumbnailImage,
+                name: product.name,
+                description: product.description,
+                pointPerBid: product.pointPerBid ?? 0,
+                auctionEndDate: 'Ended', // Mark as ended
+                currentBid: product.highestBid,
                 startingBid: product.startingBid,
                 isAuctionActive: false,
               );
