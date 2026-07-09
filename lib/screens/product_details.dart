@@ -275,7 +275,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Future<void> _pollData() async {
     if (_product == null) return;
 
-    try {
+    try { 
       final response =
           await _productRepository.pollProductData(_product!.id ?? 0);
 
@@ -2040,6 +2040,85 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Widget _buildTimerRow() {
+    // Check if product is upcoming
+    final bool isUpcoming = _product?.isAuctionUpcoming ?? false;
+    
+    if (isUpcoming && _product?.auctionStartDate != null) {
+      // Show "Starting at" countdown
+      return _buildUpcomingTimerRow();
+    } else {
+      // Show ending countdown (existing logic)
+      return _buildEndingTimerRow();
+    }
+  }
+
+  Widget _buildUpcomingTimerRow() {
+    // Get start date
+    DateTime? startDateTime = _product?.getAuctionStartDateTime();
+    if (startDateTime == null) {
+      return _buildTimerRowFallback();
+    }
+    
+    final now = DateTime.now();
+    final timeUntilStart = startDateTime.difference(now);
+    
+    if (timeUntilStart.isNegative) {
+      // Auction should have started, refresh
+      return _buildTimerRowFallback();
+    }
+    
+    final days = timeUntilStart.inDays;
+    final hours = timeUntilStart.inHours.remainder(24);
+    final minutes = timeUntilStart.inMinutes.remainder(60);
+    final seconds = timeUntilStart.inSeconds.remainder(60);
+    
+    List<Widget> timerUnits = [];
+    
+    // Show days if > 0
+    if (days > 0) {
+      timerUnits.add(_buildTimerUnit(
+        days.toString().padLeft(2, '0'), 
+        'd', 
+        showColon: true
+      ));
+    }
+    
+    // Always show hours, minutes, seconds
+    timerUnits.add(_buildTimerUnit(
+      hours.toString().padLeft(2, '0'), 
+      'h', 
+      showColon: true
+    ));
+    timerUnits.add(_buildTimerUnit(
+      minutes.toString().padLeft(2, '0'), 
+      'm', 
+      showColon: true
+    ));
+    timerUnits.add(_buildTimerUnit(
+      seconds.toString().padLeft(2, '0'), 
+      's', 
+      showColon: false
+    ));
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.starts_in,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: _getResponsiveFontSize(8, 11),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Row(
+          children: timerUnits,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEndingTimerRow() {
     final components = _getTimeComponents();
     final days = components['days'] as String;
     final hours = components['hours'] as String;
@@ -2051,22 +2130,42 @@ class _ProductDetailsState extends State<ProductDetails>
     List<Widget> timerUnits = [];
 
     if (showDays) {
-      // Show colon after days if hours exist
       timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon, showColon: true));
     }
-    
-    // Show colon after hours if minutes exist
     timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon, showColon: true));
-    
-    // Show colon after minutes ONLY IF seconds exist
     timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon, showColon: showSeconds));
-    
     if (showSeconds) {
       timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon, showColon: false));
     }
 
-    return Row(
-      children: timerUnits,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _isEndingSoon 
+              ? AppLocalizations.of(context)!.ending_soon_ucf
+              : AppLocalizations.of(context)!.time_left,
+          style: TextStyle(
+            color: _isEndingSoon ? Colors.red : Colors.white70,
+            fontSize: _getResponsiveFontSize(8, 11),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Row(
+          children: timerUnits,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimerRowFallback() {
+    return Text(
+      AppLocalizations.of(context)!.starting,
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: _getResponsiveFontSize(12, 16),
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 
@@ -2640,7 +2739,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       // ============================================
-                      // TIMER & CURRENT BID - Larger, centered
+                      // TIMER & CURRENT BID - Shows "Starting at" or "Ending"
                       // ============================================
                       Positioned(
                         bottom: _getResponsiveSize(22, 27),
@@ -2650,7 +2749,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Timer - With proper margins
+                            // Timer - Shows "Starting at" for upcoming, "Ending" for active
                             Padding(
                               padding: EdgeInsets.only(
                                 left: _getResponsiveSize(1, 3),
@@ -2659,7 +2758,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                               child: _buildTimerRow(),
                             ),
-                            // Current Bid - Larger, centered
+                            // Current Bid / Starting Bid
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: _getResponsivePadding(18, 28), 
@@ -2678,7 +2777,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    AppLocalizations.of(context)!.current_bid,
+                                    _product?.isAuctionUpcoming ?? false
+                                        ? AppLocalizations.of(context)!.starting_bid
+                                        : AppLocalizations.of(context)!.current_bid,
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: _getResponsiveFontSize(7, 10),
@@ -2686,7 +2787,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ),
                                   Text(
-                                    _formatPrice(_currentHighestBid),
+                                    _formatPrice(_product?.isAuctionUpcoming ?? false 
+                                        ? _startingBid 
+                                        : _currentHighestBid),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: _getResponsiveFontSize(11, 18),
