@@ -25,7 +25,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
   // ============ LOCAL STATE ============
   bool _isLoading = true;
   bool _isRefreshing = false;
-  bool _isMarkingAllAsRead = false;
   bool _isLoadingMore = false;
 
   model.UserInformation? _userInfo; // Store the complete user info response
@@ -128,8 +127,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
         });
 
-        // Mark all as read in background (only on first load)
-        if (!loadMore) {
+        // ✅ FIX: Mark all as read in background (only on first load, after data is loaded)
+        if (!loadMore && _allNotifications.isNotEmpty) {
           _markAllAsReadInBackground();
         }
       } else {
@@ -206,39 +205,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     await _fetchNotifications(loadMore: false);
   }
 
-  // ============ MARK ALL AS READ (BACKGROUND - NO UI BLOCKING) ============
+  // ============ MARK ALL AS READ (BACKGROUND - AFTER DATA IS LOADED) ============
   void _markAllAsReadInBackground() {
     if (_userInfo == null || (_userInfo?.unreadNotificationsCount ?? 0) <= 0) {
       return;
     }
 
-    if (_isMarkingAllAsRead) return;
-
-    setState(() {
-      _isMarkingAllAsRead = true;
-    });
-
-    // Optimistic update - mark all as read locally
-    setState(() {
-      _allNotifications = _allNotifications.map((n) {
-        return model.Notification(
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          readAt: DateTime.now().toIso8601String(),
-          createdAt: n.createdAt,
-          isRead: true,
-        );
-      }).toList();
-
-      _updateFilteredLists();
-
-      unread_notifications_count.$ = 0;
-      unread_notifications_count.save();
-    });
-
-    // Send background request
+    // Send background request to mark all as read
     _sendMarkAllAsReadRequest();
   }
 
@@ -246,24 +219,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     try {
       final Map<String, dynamic> response = await ProfileRepository().markAllNotificationsAsRead();
 
-      setState(() {
-        _isMarkingAllAsRead = false;
-      });
-
       if (response['success'] == true) {
         print('✅ All notifications marked as read in background');
       } else {
         print('❌ Failed to mark all notifications as read: ${response['message']}');
-        ToastComponent.showWarning(response['message'] ?? AppLocalizations.of(context)!.failed_to_mark_notifications_read);
-        await _fetchNotifications(loadMore: false);
       }
     } catch (e) {
       print('❌ Failed to mark all notifications as read: $e');
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_mark_notifications_read);
-      setState(() {
-        _isMarkingAllAsRead = false;
-      });
-      await _fetchNotifications(loadMore: false);
     }
   }
 
@@ -415,15 +377,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             }
           },
         ),
-        actions: [
-          // Mark all as read button (only show if there are unread notifications)
-          if ((_userInfo?.unreadNotificationsCount ?? 0) > 0)
-            IconButton(
-              icon: Icon(Icons.done_all, size: 22.sp, color: MyTheme.accent_color),
-              onPressed: _isMarkingAllAsRead ? null : _markAllAsReadInBackground,
-              tooltip: AppLocalizations.of(context)!.mark_all_read,
-            ),
-        ],
+        // ✅ REMOVED: Mark all as read button from AppBar
       ),
       body: RefreshIndicator(
         color: MyTheme.accent_color,
@@ -582,11 +536,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // UPDATED: Notification Item with "New" Badge
+  // ✅ FIXED: Notification Item with "New" Badge based on readAt
   // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
-    final isRead = notification.isRead ?? false; // ✅ Now correctly computed from readAt
+    
+    // ✅ FIX: Check readAt directly - if null, it's unread (NEW)
+    final bool isUnread = notification.readAt == null;
 
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -653,9 +609,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
 
           // ============================================================
-          // ✅ "NEW" BADGE - Shows when read_at is null (unread)
+          // ✅ "NEW" BADGE - Shows when readAt is null (unread)
           // ============================================================
-          if (!isRead)
+          if (isUnread)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
@@ -707,7 +663,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       child: Column(
         children: [
-          Text( 
+          Text(
             icon,
             style: TextStyle(fontSize: 48.sp),
           ),
