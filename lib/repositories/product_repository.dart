@@ -286,7 +286,7 @@ class ProductRepository {
   }
 
 
-  Future<ProductMiniResponse> getEndingSoonProducts({int page = 1}) async {
+  Future<ProductMiniResponse> getEndedProducts({int page = 1}) async {
     String url = "${AppConfig.BASE_URL}/products/ended?page=${page}";
     final response = await ApiRequest.get(
       url: url,

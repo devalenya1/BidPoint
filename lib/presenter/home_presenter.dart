@@ -60,6 +60,15 @@ class HomePresenter extends ChangeNotifier {
   int upcomingPage = 1;
   bool showUpcomingLoadingContainer = false;
 
+  // ============================================================
+  // ✅ ADDED: Ended Auctions Products
+  // ============================================================
+  var endedProductList = [];
+  bool isEndedInitial = true;
+  int? totalEndedData = 0;
+  int endedPage = 1;
+  bool showEndedLoadingContainer = false;
+
   bool isTodayDeal = false;
   bool isFlashDeal = false;
 
@@ -82,6 +91,7 @@ class HomePresenter extends ChangeNotifier {
     fetchHotAuctionProducts();
     fetchEndingSoonProducts();
     fetchUpcomingProducts();
+    fetchEndedProducts(); // ✅ ADDED
     fetchTodayDealData();
     fetchFlashDealData();
   }
@@ -210,6 +220,28 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
+  // ============================================================
+  // ✅ ADDED: Fetch Ended Products
+  // ============================================================
+  fetchEndedProducts() async {
+    try {
+      var productResponse = await _productRepository.getEndedProducts(
+        page: endedPage,
+      );
+      endedPage++;
+      endedProductList.addAll(productResponse.products!);
+      isEndedInitial = false;
+      totalEndedData = productResponse.meta?.total ?? 0;
+      showEndedLoadingContainer = false;
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching ended products: $e");
+      isEndedInitial = false;
+      totalEndedData = 0;
+      notifyListeners();
+    }
+  }
+
   fetchAllProducts() async {
     var productResponse = await _productRepository.getFilteredProducts(page: allProductPage);
     
@@ -237,6 +269,7 @@ class HomePresenter extends ChangeNotifier {
     resetHotAuctionProductList();
     resetEndingSoonProductList();
     resetUpcomingProductList();
+    resetEndedProductList(); // ✅ ADDED
   }
 
   Future<void> onRefresh() async {
@@ -286,6 +319,18 @@ class HomePresenter extends ChangeNotifier {
     totalUpcomingData = 0;
     upcomingPage = 1;
     showUpcomingLoadingContainer = false;
+    notifyListeners();
+  }
+
+  // ============================================================
+  // ✅ ADDED: Reset Ended Products
+  // ============================================================
+  resetEndedProductList() {
+    endedProductList.clear();
+    isEndedInitial = true;
+    totalEndedData = 0;
+    endedPage = 1;
+    showEndedLoadingContainer = false;
     notifyListeners();
   }
 
@@ -343,6 +388,14 @@ class HomePresenter extends ChangeNotifier {
         }
       });
     }
+  }
+
+  // ============================================================
+  // ✅ ADDED: Ended Products Scroll Listener
+  // ============================================================
+  endedScrollListener() {
+    // You can add a scroll controller for ended products if needed
+    // For now, it's optional since we only show a few in the home page
   }
 
   void initScrollControllers() {
