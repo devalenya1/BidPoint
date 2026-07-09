@@ -83,8 +83,9 @@ class _ProductCardState extends State<ProductCard> {
     // ============================================
     // STEP 1: Check if auction is UPCOMING
     // ============================================
+    // This should be checked FIRST before anything else
     if (widget.auctionStartDate != null) {
-      // Case 1: Server returns string "Upcoming"
+      // Case 1: Server returns string "Upcoming" - THIS IS THE MOST IMPORTANT CASE
       if (widget.auctionStartDate is String && widget.auctionStartDate == "Upcoming") {
         _auctionStatus = "upcoming";
         _timeLeft = "Upcoming";
@@ -115,6 +116,7 @@ class _ProductCardState extends State<ProductCard> {
     // ============================================
     // STEP 2: Check if auction is ENDED
     // ============================================
+    // Only check this if NOT upcoming
     if (widget.auctionEndDate != null) {
       // Case 1: Server returns string "Ended"
       if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
@@ -148,9 +150,12 @@ class _ProductCardState extends State<ProductCard> {
     // STEP 3: If we get here, auction is ACTIVE
     // ============================================
     _auctionStatus = "active";
+    // Start the countdown timer for active auctions
+    _startTimer();
   }
 
   void _startTimer() {
+    _timer?.cancel();
     _updateTimer();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateTimer();
@@ -329,52 +334,52 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                 ),
               ),
-              if (showTimer)
-                Positioned(
-                  top: 6.h,
-                  right: 6.w,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                    decoration: BoxDecoration(
-                      color: isEnded 
-                          ? Colors.red 
-                          : (isUpcoming 
-                              ? Colors.orange 
-                              : const Color(0xFF009572)),
-                      borderRadius: BorderRadius.circular(30.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4.r,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isEnded 
-                              ? Icons.cancel 
-                              : (isUpcoming
-                                  ? Icons.schedule
-                                  : Icons.access_time),
-                          size: 10.sp, 
+              // Timer Badge - Always show for all auction types
+              Positioned(
+                top: 6.h,
+                right: 6.w,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: isEnded 
+                        ? Colors.red 
+                        : (isUpcoming 
+                            ? Colors.orange 
+                            : const Color(0xFF009572)),
+                    borderRadius: BorderRadius.circular(30.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4.r,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isEnded 
+                            ? Icons.cancel 
+                            : (isUpcoming
+                                ? Icons.schedule
+                                : Icons.access_time),
+                        size: 10.sp, 
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 3.w),
+                      Text(
+                        isUpcoming ? "Upcoming" : _timeLeft,
+                        style: TextStyle(
+                          fontSize: 8.sp,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
-                        SizedBox(width: 3.w),
-                        Text(
-                          _timeLeft,
-                          style: TextStyle(
-                            fontSize: 8.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
           
@@ -424,7 +429,7 @@ class _ProductCardState extends State<ProductCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isUpcoming ? 'Starting Bid' : 'Current Bid',
+                          isUpcoming ? 'Starting Bid' : (isEnded ? 'Final Bid' : 'Current Bid'),
                           style: TextStyle(
                             fontSize: 7.sp,
                             color: isEnded ? Colors.grey : const Color(0xFF80818B),
@@ -487,7 +492,7 @@ class _ProductCardState extends State<ProductCard> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            isEnded ? 'Ended' : 'View Product',
+                            isEnded ? 'Ended' : (isUpcoming ? 'Upcoming' : 'View Product'),
                             style: TextStyle(
                               fontSize: 10.sp,
                               fontWeight: FontWeight.w600,
