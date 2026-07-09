@@ -8,6 +8,7 @@ import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 
 class HotAuctionCard extends StatefulWidget {
   final int id;
