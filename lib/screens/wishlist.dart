@@ -224,7 +224,19 @@ class _WishlistState extends State<Wishlist> {
     }
   }
   
-  // NEW - Uses FormatHelper
+  // ============ PRICE HELPER METHODS ============
+  double _parsePrice(dynamic price) {
+    if (price == null) return 0.0;
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
+  }
+  
+  // Uses FormatHelper for formatted price
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
     return FormatHelper.formatPrice(doubleValue);
@@ -509,7 +521,7 @@ class _WishlistState extends State<Wishlist> {
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isTablet ? 30.w : 13.w),
-      margin: EdgeInsets.only(bottom: 6.h), // Reduced from 13.h to 6.h
+      margin: EdgeInsets.only(bottom: 6.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -522,10 +534,10 @@ class _WishlistState extends State<Wishlist> {
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 3.w), // Reduced from 4.w to 3.w
+                margin: EdgeInsets.only(right: 3.w),
                 padding: EdgeInsets.symmetric(
                   horizontal: isTablet ? 20.w : 14.w,
-                  vertical: isTablet ? 8.h : 6.h, // Reduced vertical padding
+                  vertical: isTablet ? 8.h : 6.h,
                 ),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
@@ -747,7 +759,7 @@ class _WishlistState extends State<Wishlist> {
                               ),
                             ],
                           ),
-                          child: Center(  // ✅ Center the icon
+                          child: Center(
                             child: Icon(
                               Icons.favorite,
                               size: isTablet ? 16.sp : 14.sp,
@@ -773,7 +785,6 @@ class _WishlistState extends State<Wishlist> {
                 SizedBox(height: 2.h),
                 
                 // 2️⃣ Description Text - Same color as the status text's actual meaning
-                // 3️⃣ Product Name - Same color and font size as description
                 if (descriptionText.isNotEmpty && isAuction)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
