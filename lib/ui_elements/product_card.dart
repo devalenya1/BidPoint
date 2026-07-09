@@ -19,7 +19,7 @@ class ProductCard extends StatefulWidget {
   final String? description;
   final int? pointPerBid;
   final dynamic auctionEndDate;
-  final dynamic auctionStartDate; // Added for upcoming check
+  final dynamic auctionStartDate;
   final dynamic currentBid;
   final dynamic startingBid;
   final bool isAuctionActive;
@@ -39,7 +39,7 @@ class ProductCard extends StatefulWidget {
     this.description,
     this.pointPerBid,
     this.auctionEndDate,
-    this.auctionStartDate, // Added
+    this.auctionStartDate,
     this.currentBid,
     this.startingBid,
     this.isAuctionActive = true,
@@ -80,56 +80,73 @@ class _ProductCardState extends State<ProductCard> {
   void _determineAuctionStatus() {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     
-    // Check if auction is upcoming
+    // ============================================
+    // STEP 1: Check if auction is UPCOMING
+    // ============================================
     if (widget.auctionStartDate != null) {
-      int startDate;
-      if (widget.auctionStartDate is int) {
-        startDate = widget.auctionStartDate;
-      } else if (widget.auctionStartDate is String) {
-        if (widget.auctionStartDate == "Upcoming") {
-          _auctionStatus = "upcoming";
-          _timeLeft = "Upcoming";
-          return;
-        }
-        startDate = int.tryParse(widget.auctionStartDate) ?? 0;
-      } else {
-        startDate = 0;
-      }
-      
-      // If start date is in the future, it's upcoming
-      if (startDate > now) {
+      // Case 1: Server returns string "Upcoming"
+      if (widget.auctionStartDate is String && widget.auctionStartDate == "Upcoming") {
         _auctionStatus = "upcoming";
         _timeLeft = "Upcoming";
         return;
       }
+      
+      // Case 2: Server returns timestamp as int
+      if (widget.auctionStartDate is int) {
+        final startDate = widget.auctionStartDate as int;
+        if (startDate > now) {
+          _auctionStatus = "upcoming";
+          _timeLeft = "Upcoming";
+          return;
+        }
+      }
+      
+      // Case 3: Server returns timestamp as string
+      if (widget.auctionStartDate is String) {
+        final startDate = int.tryParse(widget.auctionStartDate);
+        if (startDate != null && startDate > now) {
+          _auctionStatus = "upcoming";
+          _timeLeft = "Upcoming";
+          return;
+        }
+      }
     }
     
-    // Check if auction has ended
+    // ============================================
+    // STEP 2: Check if auction is ENDED
+    // ============================================
     if (widget.auctionEndDate != null) {
+      // Case 1: Server returns string "Ended"
       if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
         _auctionStatus = "ended";
         _timeLeft = "Ended";
         return;
       }
       
-      int endDate;
+      // Case 2: Server returns timestamp as int
       if (widget.auctionEndDate is int) {
-        endDate = widget.auctionEndDate;
-      } else if (widget.auctionEndDate is String) {
-        endDate = int.tryParse(widget.auctionEndDate) ?? 0;
-      } else {
-        endDate = 0;
+        final endDate = widget.auctionEndDate as int;
+        if (endDate <= 0 || endDate <= now) {
+          _auctionStatus = "ended";
+          _timeLeft = "Ended";
+          return;
+        }
       }
       
-      // If end date is in the past or 0, it's ended
-      if (endDate <= 0 || endDate < now) {
-        _auctionStatus = "ended";
-        _timeLeft = "Ended";
-        return;
+      // Case 3: Server returns timestamp as string
+      if (widget.auctionEndDate is String) {
+        final endDate = int.tryParse(widget.auctionEndDate);
+        if (endDate != null && (endDate <= 0 || endDate <= now)) {
+          _auctionStatus = "ended";
+          _timeLeft = "Ended";
+          return;
+        }
       }
     }
     
-    // If we get here, auction is active
+    // ============================================
+    // STEP 3: If we get here, auction is ACTIVE
+    // ============================================
     _auctionStatus = "active";
   }
 
