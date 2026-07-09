@@ -3,6 +3,7 @@ import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 
 class ListProductCard extends StatefulWidget {
   int? id;
