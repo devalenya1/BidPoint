@@ -365,7 +365,7 @@ class UserInformation {
 }
 
 // =============================================
-// NOTIFICATION MODEL
+// NOTIFICATION MODEL (FIXED)
 // =============================================
 class Notification {
   int? id;
@@ -393,7 +393,8 @@ class Notification {
     message: json["message"],
     readAt: json["read_at"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
-    isRead: json["is_read"],
+    // ✅ FIX: isRead = true if read_at is NOT null, false if read_at is null
+    isRead: json["read_at"] != null,
   );
 
   Map<String, dynamic> toJson() => {

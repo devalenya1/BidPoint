@@ -175,10 +175,10 @@ class _ProductCardState extends State<ProductCard> {
     return 0.0;
   }
    
+  // NEW - Uses FormatHelper
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
-    final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
-    return '$symbol${doubleValue.toStringAsFixed(2)}';
+    return FormatHelper.formatPrice(doubleValue);
   }
 
   double _getDisplayBid() {

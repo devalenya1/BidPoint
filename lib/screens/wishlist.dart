@@ -224,11 +224,10 @@ class _WishlistState extends State<Wishlist> {
     }
   }
   
+  // NEW - Uses FormatHelper
   String _formatPrice(dynamic price) {
-    if (price == null) return FormatHelper.formatPrice(0);
-    if (price is double) return FormatHelper.formatPrice(price);
-    if (price is int) return FormatHelper.formatPrice(price.toDouble());
-    return FormatHelper.formatPrice(double.tryParse(price.toString()) ?? 0);
+    final doubleValue = _parsePrice(price);
+    return FormatHelper.formatPrice(doubleValue);
   }
   
   // ============ NAVIGATION HELPERS ============

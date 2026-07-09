@@ -582,11 +582,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // UPDATED: Notification Item with "New" Badge (like HTML)
+  // UPDATED: Notification Item with "New" Badge
   // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
-    final isRead = notification.isRead ?? false;
+    final isRead = notification.isRead ?? false; // ✅ Now correctly computed from readAt
 
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -653,14 +653,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
 
           // ============================================================
-          // NEW BADGE - Red "New" badge for unread notifications
-          // Matches HTML: <div class="pr-notification-badge new-badge">{{ translate('New') }}</div>
+          // ✅ "NEW" BADGE - Shows when read_at is null (unread)
           // ============================================================
           if (!isRead)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30), // Red color matching HTML
+                color: const Color(0xFFFF3B30), // Red color
                 borderRadius: BorderRadius.circular(20.r),
               ),
               child: Text(
@@ -708,7 +707,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       child: Column(
         children: [
-          Text(
+          Text( 
             icon,
             style: TextStyle(fontSize: 48.sp),
           ),

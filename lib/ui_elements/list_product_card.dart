@@ -45,10 +45,10 @@ class _ListProductCardState extends State<ListProductCard> {
   }
   
   /// Format price with currency symbol
+  // NEW - Uses FormatHelper
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
-    final symbol = SystemConfig.systemCurrency?.symbol ?? '\$';
-    return '$symbol${doubleValue.toStringAsFixed(2)}';
+    return FormatHelper.formatPrice(doubleValue);
   }
   
   /// Get the display price with proper formatting
