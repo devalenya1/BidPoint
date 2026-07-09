@@ -737,8 +737,6 @@ class _WishlistState extends State<Wishlist> {
                         child: Container(
                           width: isTablet ? 32.w : 28.w,
                           height: isTablet ? 32.w : 28.w,
-                          // margin: EdgeInsets.only(left: 8.w),
-                          padding: EdgeInsets.all(isTablet ? 12.w : 8.w),
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
@@ -750,10 +748,12 @@ class _WishlistState extends State<Wishlist> {
                               ),
                             ],
                           ),
-                          child: Icon(
-                            Icons.favorite,
-                            size: isTablet ? 20.sp : 18.sp,
-                            color: Colors.black,
+                          child: Center(  // ✅ Center the icon
+                            child: Icon(
+                              Icons.favorite,
+                              size: isTablet ? 16.sp : 14.sp,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ),
