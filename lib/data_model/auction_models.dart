@@ -379,6 +379,7 @@ class PollDataResponse {
   int? totalBids;
   String? lastBidderName;
   double? lastBidAmount;
+  bool? isAuctionUpcoming; // ADD THIS LINE
   Winner? winner;
   List<Comment>? comments;
   List<Review>? reviews;
@@ -401,6 +402,7 @@ class PollDataResponse {
     this.totalBids,
     this.lastBidderName,
     this.lastBidAmount,
+    this.isAuctionUpcoming, // ADD THIS
     this.winner,
     this.comments,
     this.reviews,
@@ -428,6 +430,7 @@ class PollDataResponse {
       totalBids: data['total_bids'],
       lastBidderName: data['last_bidder_name'],
       lastBidAmount: (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
+      isAuctionUpcoming: data['is_auction_upcoming'] ?? false, // ADD THIS
       winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
       comments: data['comments'] != null 
           ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))
@@ -458,6 +461,7 @@ class PollDataResponse {
     'total_bids': totalBids,
     'last_bidder_name': lastBidderName,
     'last_bid_amount': lastBidAmount,
+    'is_auction_upcoming': isAuctionUpcoming, // ADD THIS
     'winner': winner?.toJson(),
     'comments': comments?.map((x) => x.toJson()).toList(),
     'reviews': reviews?.map((x) => x.toJson()).toList(),

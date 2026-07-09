@@ -46,7 +46,10 @@ class ProductDetailsResponse {
       };
 }
 
+
 class DetailedProduct {
+  bool? _isAuctionUpcoming; // ADDED: Private field for upcoming status
+
   DetailedProduct({
     this.id,
     this.name,
@@ -107,7 +110,8 @@ class DetailedProduct {
     this.comments,
     this.reviews,
     this.bidHistory,
-  });
+    bool? isAuctionUpcoming, // ADDED: Parameter for constructor
+  }) : _isAuctionUpcoming = isAuctionUpcoming; // ADDED: Initialize private field
 
   int? id;
   String? name;
@@ -170,6 +174,44 @@ class DetailedProduct {
   List<Map<String, dynamic>>? comments;
   List<Map<String, dynamic>>? reviews;
   List<Map<String, dynamic>>? bidHistory;
+
+  // ============ GETTERS AND SETTERS FOR isAuctionUpcoming ============
+  bool get isAuctionUpcoming {
+    // Return cached value if set
+    if (_isAuctionUpcoming != null) {
+      return _isAuctionUpcoming!;
+    }
+    
+    // Fallback: Calculate from auctionStartDate
+    if (auctionStartDate == null) return false;
+    
+    // If it's a string 'Upcoming' from server
+    if (auctionStartDate is String && auctionStartDate == 'Upcoming') {
+      return true;
+    }
+    
+    // If it's a timestamp, check if it's in the future
+    if (auctionStartDate is int) {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return auctionStartDate > now;
+    }
+    
+    // If it's a string that can be parsed as int
+    if (auctionStartDate is String) {
+      final timestamp = int.tryParse(auctionStartDate);
+      if (timestamp != null) {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        return timestamp > now;
+      }
+    }
+    
+    return false;
+  }
+
+  set isAuctionUpcoming(bool value) {
+    _isAuctionUpcoming = value;
+  }
+  // ============ END GETTERS AND SETTERS ============
 
   // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
   String? get added_by => addedBy;
@@ -287,6 +329,7 @@ class DetailedProduct {
         bidHistory: json["bid_history"] != null
             ? List<Map<String, dynamic>>.from(json["bid_history"])
             : [],
+        isAuctionUpcoming: json["is_auction_upcoming"] ?? false, // ADDED: Parse from JSON
       );
 
   Map<String, dynamic> toJson() => {
@@ -356,6 +399,7 @@ class DetailedProduct {
         "comments": comments,
         "reviews": reviews,
         "bid_history": bidHistory,
+        "is_auction_upcoming": _isAuctionUpcoming, // ADDED: Include in JSON
       };
 
   // ============ HELPER METHODS ============
@@ -381,42 +425,6 @@ class DetailedProduct {
     }
     return false;
   }
-  
-  // bool get isAuctionUpcoming {
-  //   if (!isAuctionProduct) return false;
-  //   if (auctionStartDate is String && auctionStartDate == 'Upcoming') return true;
-  //   if (auctionStartDate is int && (auctionStartDate as int) > 0) {
-  //     final now = DateTime.now().millisecondsSinceEpoch / 1000;
-  //     return (auctionStartDate as int) > now;
-  //   }
-  //   return false;
-  // }
-
-  bool get isAuctionUpcoming {
-    if (auctionStartDate == null) return false;
-    
-    // If it's a string 'Upcoming' from server
-    if (auctionStartDate is String && auctionStartDate == 'Upcoming') {
-      return true;
-    }
-    
-    // If it's a timestamp, check if it's in the future
-    if (auctionStartDate is int) {
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      return auctionStartDate > now;
-    }
-    
-    // If it's a string that can be parsed as int
-    if (auctionStartDate is String) {
-      final timestamp = int.tryParse(auctionStartDate);
-      if (timestamp != null) {
-        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        return timestamp > now;
-      }
-    }
-    
-    return false;
-  } 
   
   String getAuctionStatus() {
     if (!isAuctionProduct) return 'Regular Product';
@@ -542,13 +550,6 @@ class DetailedProduct {
     }
     return null;
   }
-  
-  // DateTime? getAuctionStartDateTime() {
-  //   if (auctionStartDate is int && (auctionStartDate as int) > 0) {
-  //     return DateTime.fromMillisecondsSinceEpoch((auctionStartDate as int) * 1000);
-  //   }
-  //   return null;
-  // }
 
   DateTime? getAuctionStartDateTime() {
     if (auctionStartDate == null) return null;
