@@ -460,7 +460,7 @@ class _ProfileState extends State<Profile> {
                   Text(
                     _userInfo?.name?.isNotEmpty == true ? _userInfo!.name! : AppLocalizations.of(context)!.guest_user,
                     style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
                     ),
@@ -471,7 +471,7 @@ class _ProfileState extends State<Profile> {
                   Text(
                     '${AppLocalizations.of(context)!.referral_earnings} ${FormatHelper.formatPrice(_userInfo?.affiliateBalance ?? 0.0)}',
                     style: TextStyle(
-                      fontSize: 7.sp,
+                      fontSize: 8.sp,
                       fontWeight: FontWeight.w600,
                       color: MyTheme.accent_color,
                     ),
