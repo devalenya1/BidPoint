@@ -154,65 +154,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // API CALLS
   // ============================================
 
-  Future<void> _fetchAllData() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final productData =
-          await _productRepository.getProductDetails(slug: widget.slug);
-
-      if (productData.detailedProducts != null &&
-          productData.detailedProducts!.isNotEmpty) {
-        _product = productData.detailedProducts![0];
-        _productImages = _product!.getAllImageUrls();
-
-        _startingBid = _product!.startingBid != null
-            ? double.tryParse(_product!.startingBid!) ?? 0
-            : 0;
-        _currentHighestBid = _product!.highestBid != null
-            ? double.tryParse(_product!.highestBid!) ?? 0
-            : 0;
-        
-        _totalBids = _product!.totalBids ?? 0;
-        _highestBidder = _product!.lastBidderName ?? '';
-        
-        _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
-        _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
-        _reviewsCount = _product!.ratingCount ?? 0;
-        _rating = (_product!.rating ?? 0).toDouble();
-        _isWishlisted = false;
-        _isInWishlist = false;
-        _endingSeconds = _product!.swipeLeft ?? 10;
-
-        _minNextBidNow = _currentHighestBid + 0.01;
-        _minNextBid = _currentHighestBid + 1;
-
-        if (_product!.getAuctionEndDateTime() != null) {
-          final endTime = _product!.getAuctionEndDateTime()!;
-          final now = DateTime.now();
-          _timeLeft = endTime.difference(now);
-          if (_timeLeft.isNegative) _timeLeft = Duration.zero;
-          _startCountdown(endTime);
-        }
-      }
-
-      await _fetchComments();
-      await _fetchReviews();
-      await _fetchBidHistory();
-      await _fetchWishlistStatus();
-
-      setState(() => _isLoading = false);
-      
-      // Auto-scroll to bottom after comments load
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
-    } catch (e) {
-      print('Error fetching data: $e');
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
-      setState(() => _isLoading = false);
-    }
-  }
 
   void _scrollToBottom() {
     if (_commentsScrollController.hasClients) {
@@ -272,6 +213,78 @@ class _ProductDetailsState extends State<ProductDetails>
     });
   }
 
+  Future<void> _fetchAllData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final productData =
+          await _productRepository.getProductDetails(slug: widget.slug);
+
+      if (productData.detailedProducts != null &&
+          productData.detailedProducts!.isNotEmpty) {
+        _product = productData.detailedProducts![0];
+        _productImages = _product!.getAllImageUrls();
+
+        _startingBid = _product!.startingBid != null
+            ? double.tryParse(_product!.startingBid!) ?? 0
+            : 0;
+        _currentHighestBid = _product!.highestBid != null
+            ? double.tryParse(_product!.highestBid!) ?? 0
+            : 0;
+        
+        _totalBids = _product!.totalBids ?? 0;
+        _highestBidder = _product!.lastBidderName ?? '';
+        
+        _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
+        _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
+        _reviewsCount = _product!.ratingCount ?? 0;
+        _rating = (_product!.rating ?? 0).toDouble();
+        _isWishlisted = false;
+        _isInWishlist = false;
+        _endingSeconds = _product!.swipeLeft ?? 10;
+
+        _minNextBidNow = _currentHighestBid + 0.01;
+        _minNextBid = _currentHighestBid + 1;
+
+        // ============================================
+        // FIX: Handle upcoming auctions properly
+        // ============================================
+        // Check if auction is upcoming
+        final bool isUpcoming = _product?.isAuctionUpcoming ?? false;
+        
+        if (isUpcoming) {
+          // Upcoming auction - show "Starting at" countdown
+          // Timer for upcoming is handled in the UI, not here
+          _timeLeft = Duration.zero;
+          // Don't start the ending countdown
+        } else if (_product!.getAuctionEndDateTime() != null) {
+          // Active auction - start ending countdown
+          final endTime = _product!.getAuctionEndDateTime()!;
+          final now = DateTime.now();
+          _timeLeft = endTime.difference(now);
+          if (_timeLeft.isNegative) _timeLeft = Duration.zero;
+          _startCountdown(endTime);
+        }
+      }
+
+      await _fetchComments();
+      await _fetchReviews();
+      await _fetchBidHistory();
+      await _fetchWishlistStatus();
+
+      setState(() => _isLoading = false);
+      
+      // Auto-scroll to bottom after comments load
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } catch (e) {
+      print('Error fetching data: $e');
+      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _pollData() async {
     if (_product == null) return;
 
@@ -315,7 +328,30 @@ class _ProductDetailsState extends State<ProductDetails>
         _minNextBid = _currentHighestBid + 1;
         setState(() {});
 
-        if (response.auctionEndDate != null) {
+        // ============================================
+        // FIX: Handle auction status changes in polling
+        // ============================================
+        // Check if auction status changed from upcoming to active
+        if (response.isAuctionUpcoming != null && 
+            _product!.isAuctionUpcoming != response.isAuctionUpcoming) {
+          setState(() {
+            _product!.isAuctionUpcoming = response.isAuctionUpcoming!;
+          });
+          
+          // If no longer upcoming, start the ending timer
+          if (!response.isAuctionUpcoming! && response.auctionEndDate != null) {
+            try {
+              final endTime = DateTime.parse(response.auctionEndDate!);
+              _startCountdown(endTime);
+            } catch (e) {
+              print('Error parsing auction end date: $e');
+            }
+          }
+        }
+
+        // Update auction end date and timer for active auctions
+        if (response.auctionEndDate != null && 
+            !(_product?.isAuctionUpcoming ?? false)) {
           try {
             final newEndTime = DateTime.parse(response.auctionEndDate!);
             final now = DateTime.now();
@@ -2040,30 +2076,35 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Widget _buildTimerRow() {
-    // Check if product is upcoming
+    // Check if product is upcoming - using the correct logic
     final bool isUpcoming = _product?.isAuctionUpcoming ?? false;
     
-    if (isUpcoming && _product?.auctionStartDate != null) {
-      // Show "Starting at" countdown
-      return _buildUpcomingTimerRow();
+    // For upcoming auctions, get the start date time
+    if (isUpcoming) {
+      DateTime? startDateTime = _product?.getAuctionStartDateTime();
+      if (startDateTime != null) {
+        final now = DateTime.now();
+        final timeUntilStart = startDateTime.difference(now);
+        
+        // If start time is in the future
+        if (!timeUntilStart.isNegative) {
+          return _buildUpcomingTimerRow(startDateTime);
+        }
+      }
+      // Fallback if no date available
+      return _buildTimerRowFallback();
     } else {
-      // Show ending countdown (existing logic)
+      // Show ending countdown for active/ended auctions
       return _buildEndingTimerRow();
     }
   }
 
-  Widget _buildUpcomingTimerRow() {
-    // Get start date
-    DateTime? startDateTime = _product?.getAuctionStartDateTime();
-    if (startDateTime == null) {
-      return _buildTimerRowFallback();
-    }
-    
+  // Update _buildUpcomingTimerRow to accept DateTime parameter
+  Widget _buildUpcomingTimerRow(DateTime startDateTime) {
     final now = DateTime.now();
     final timeUntilStart = startDateTime.difference(now);
     
     if (timeUntilStart.isNegative) {
-      // Auction should have started, refresh
       return _buildTimerRowFallback();
     }
     

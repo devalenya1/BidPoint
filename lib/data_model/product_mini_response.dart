@@ -195,17 +195,44 @@ class Product {
     return false;
   }
   
+  // bool get isAuctionUpcoming {
+  //   if (!isAuctionProduct) return false;
+  //   if (auctionStartDate is String && auctionStartDate == 'Upcoming') return true;
+  //   if (auctionStartDate is int) {
+  //     final startTimestamp = auctionStartDate as int;
+  //     if (startTimestamp <= 0) return false;
+  //     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  //     return startTimestamp > now;
+  //   }
+  //   return false;
+  // }
+
+
   bool get isAuctionUpcoming {
-    if (!isAuctionProduct) return false;
-    if (auctionStartDate is String && auctionStartDate == 'Upcoming') return true;
-    if (auctionStartDate is int) {
-      final startTimestamp = auctionStartDate as int;
-      if (startTimestamp <= 0) return false;
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      return startTimestamp > now;
+    if (auctionStartDate == null) return false;
+    
+    // If it's a string 'Upcoming' from server
+    if (auctionStartDate is String && auctionStartDate == 'Upcoming') {
+      return true;
     }
+    
+    // If it's a timestamp, check if it's in the future
+    if (auctionStartDate is int) {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      return auctionStartDate > now;
+    }
+    
+    // If it's a string that can be parsed as int
+    if (auctionStartDate is String) {
+      final timestamp = int.tryParse(auctionStartDate);
+      if (timestamp != null) {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        return timestamp > now;
+      }
+    }
+    
     return false;
-  }
+  }   
   
   String getAuctionStatus() {
     if (!isAuctionProduct) return 'Regular Product';
@@ -343,16 +370,37 @@ class Product {
     return null;
   }
   
+  // DateTime? getAuctionStartDateTime() {
+  //   if (auctionStartDate is int) {
+  //     final timestamp = auctionStartDate as int;
+  //     if (timestamp > 0) {
+  //       return DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+  //     }
+  //   }
+  //   return null;
+  // }
+
   DateTime? getAuctionStartDateTime() {
-    if (auctionStartDate is int) {
-      final timestamp = auctionStartDate as int;
-      if (timestamp > 0) {
-        return DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-      }
+    if (auctionStartDate == null) return null;
+    
+    // If it's a string 'Upcoming', we don't have a real date
+    if (auctionStartDate is String && auctionStartDate == 'Upcoming') {
+      return null;
     }
-    return null;
+    
+    int timestamp;
+    if (auctionStartDate is int) {
+      timestamp = auctionStartDate;
+    } else if (auctionStartDate is String) {
+      timestamp = int.tryParse(auctionStartDate) ?? 0;
+    } else {
+      return null;
+    }
+    
+    if (timestamp <= 0) return null;
+    return DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
   }
-  
+
   String getFormattedAuctionEndDate() {
     final dateTime = getAuctionEndDateTime();
     if (dateTime != null) {

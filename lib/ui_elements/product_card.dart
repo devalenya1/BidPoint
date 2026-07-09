@@ -19,6 +19,7 @@ class ProductCard extends StatefulWidget {
   final String? description;
   final int? pointPerBid;
   final dynamic auctionEndDate;
+  final dynamic auctionStartDate; // Added for upcoming check
   final dynamic currentBid;
   final dynamic startingBid;
   final bool isAuctionActive;
@@ -38,6 +39,7 @@ class ProductCard extends StatefulWidget {
     this.description,
     this.pointPerBid,
     this.auctionEndDate,
+    this.auctionStartDate, // Added
     this.currentBid,
     this.startingBid,
     this.isAuctionActive = true,
@@ -55,6 +57,7 @@ class ProductCard extends StatefulWidget {
 class _ProductCardState extends State<ProductCard> {
   Timer? _timer;
   String _timeLeft = "Loading...";
+  String _auctionStatus = "active"; // "upcoming", "active", "ended"
   bool _isProcessing = false;
   
   final ProductRepository _productRepository = ProductRepository();
@@ -62,7 +65,8 @@ class _ProductCardState extends State<ProductCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.auctionEndDate != null) {
+    _determineAuctionStatus();
+    if (_auctionStatus == "active" && widget.auctionEndDate != null) {
       _startTimer();
     }
   }
@@ -73,6 +77,62 @@ class _ProductCardState extends State<ProductCard> {
     super.dispose();
   }
 
+  void _determineAuctionStatus() {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    
+    // Check if auction is upcoming
+    if (widget.auctionStartDate != null) {
+      int startDate;
+      if (widget.auctionStartDate is int) {
+        startDate = widget.auctionStartDate;
+      } else if (widget.auctionStartDate is String) {
+        if (widget.auctionStartDate == "Upcoming") {
+          _auctionStatus = "upcoming";
+          _timeLeft = "Upcoming";
+          return;
+        }
+        startDate = int.tryParse(widget.auctionStartDate) ?? 0;
+      } else {
+        startDate = 0;
+      }
+      
+      // If start date is in the future, it's upcoming
+      if (startDate > now) {
+        _auctionStatus = "upcoming";
+        _timeLeft = "Upcoming";
+        return;
+      }
+    }
+    
+    // Check if auction has ended
+    if (widget.auctionEndDate != null) {
+      if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
+        _auctionStatus = "ended";
+        _timeLeft = "Ended";
+        return;
+      }
+      
+      int endDate;
+      if (widget.auctionEndDate is int) {
+        endDate = widget.auctionEndDate;
+      } else if (widget.auctionEndDate is String) {
+        endDate = int.tryParse(widget.auctionEndDate) ?? 0;
+      } else {
+        endDate = 0;
+      }
+      
+      // If end date is in the past or 0, it's ended
+      if (endDate <= 0 || endDate < now) {
+        _auctionStatus = "ended";
+        _timeLeft = "Ended";
+        return;
+      }
+    }
+    
+    // If we get here, auction is active
+    _auctionStatus = "active";
+  }
+
   void _startTimer() {
     _updateTimer();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -81,6 +141,11 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _updateTimer() {
+    // Don't update if not active
+    if (_auctionStatus != "active") {
+      return;
+    }
+    
     if (widget.auctionEndDate == null) {
       if (mounted) {
         setState(() {
@@ -90,44 +155,36 @@ class _ProductCardState extends State<ProductCard> {
       return;
     }
 
-    if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
-      if (mounted) {
-        setState(() {
-          _timeLeft = "Ended";
-        });
+    // Handle string values
+    if (widget.auctionEndDate is String) {
+      if (widget.auctionEndDate == "Ended") {
+        if (mounted) {
+          setState(() {
+            _timeLeft = "Ended";
+            _auctionStatus = "ended";
+          });
+        }
+        _timer?.cancel();
+        return;
       }
-      _timer?.cancel();
+      // Try to parse string as int
+      final parsed = int.tryParse(widget.auctionEndDate);
+      if (parsed == null) {
+        return;
+      }
+      // Continue with parsed value
+      _handleCountdown(parsed);
       return;
     }
 
-    if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
-      if (mounted) {
-        setState(() {
-          _timeLeft = "Upcoming";
-        });
-      }
-      return;
-    }
-
-    int endDate;
+    // Handle int values
     if (widget.auctionEndDate is int) {
-      endDate = widget.auctionEndDate;
-    } else if (widget.auctionEndDate is String) {
-      endDate = int.tryParse(widget.auctionEndDate) ?? 0;
-    } else {
+      _handleCountdown(widget.auctionEndDate);
       return;
     }
+  }
 
-    if (endDate <= 0) {
-      if (mounted) {
-        setState(() {
-          _timeLeft = "Ended";
-        });
-      }
-      _timer?.cancel();
-      return;
-    }
-
+  void _handleCountdown(int endDate) {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final distance = endDate - now;
 
@@ -135,6 +192,7 @@ class _ProductCardState extends State<ProductCard> {
       if (mounted) {
         setState(() {
           _timeLeft = "Ended";
+          _auctionStatus = "ended";
         });
       }
       _timer?.cancel();
@@ -177,7 +235,6 @@ class _ProductCardState extends State<ProductCard> {
     return 0.0;
   }
    
-  // NEW - Uses FormatHelper
   String _formatPrice(dynamic price) {
     final doubleValue = _parsePrice(price);
     return FormatHelper.formatPrice(doubleValue);
@@ -208,10 +265,12 @@ class _ProductCardState extends State<ProductCard> {
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
     final showTimer = _timeLeft != "No Timer";
+    final isUpcoming = _auctionStatus == "upcoming";
+    final isEnded = _auctionStatus == "ended";
+    final isActive = _auctionStatus == "active";
 
     return Container(
       decoration: BoxDecoration(
-        // ✅ Changed to #F2F2F3
         color: const Color(0xFFF2F2F3),
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
@@ -260,9 +319,9 @@ class _ProductCardState extends State<ProductCard> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                     decoration: BoxDecoration(
-                      color: _timeLeft == "Ended" 
+                      color: isEnded 
                           ? Colors.red 
-                          : (_timeLeft == "Upcoming" 
+                          : (isUpcoming 
                               ? Colors.orange 
                               : const Color(0xFF009572)),
                       borderRadius: BorderRadius.circular(30.r),
@@ -278,9 +337,9 @@ class _ProductCardState extends State<ProductCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          _timeLeft == "Ended" 
+                          isEnded 
                               ? Icons.cancel 
-                              : (_timeLeft == "Upcoming"
+                              : (isUpcoming
                                   ? Icons.schedule
                                   : Icons.access_time),
                           size: 10.sp, 
@@ -343,15 +402,15 @@ class _ProductCardState extends State<ProductCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Current Bid
+                    // Current Bid / Starting Bid
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _timeLeft == "Upcoming" ? 'Starting Bid' : 'Current Bid',
+                          isUpcoming ? 'Starting Bid' : 'Current Bid',
                           style: TextStyle(
                             fontSize: 7.sp,
-                            color: const Color(0xFF80818B),
+                            color: isEnded ? Colors.grey : const Color(0xFF80818B),
                           ),
                         ),
                         Text(
@@ -359,38 +418,39 @@ class _ProductCardState extends State<ProductCard> {
                           style: TextStyle(
                             fontSize: 11.sp,
                             fontWeight: FontWeight.w800,
-                            color: Colors.black,
+                            color: isEnded ? Colors.grey : Colors.black,
                           ),
                         ),
                       ],
                     ),
-                    // Points Badge
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(30.r),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 9.sp,
-                            color: const Color(0xFF0092AC),
-                          ),
-                          SizedBox(width: 2.w),
-                          Text(
-                            '1 Bid = ${widget.pointPerBid ?? 0}',
-                            style: TextStyle(
-                              fontSize: 6.sp,
-                              fontWeight: FontWeight.w600,
-                              color: MyTheme.accent_color,
+                    // Points Badge - Hide for ended auctions
+                    if (!isEnded)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB5E7F5),
+                          borderRadius: BorderRadius.circular(30.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 9.sp,
+                              color: const Color(0xFF0092AC),
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 2.w),
+                            Text(
+                              '1 Bid = ${widget.pointPerBid ?? 0}',
+                              style: TextStyle(
+                                fontSize: 6.sp,
+                                fontWeight: FontWeight.w600,
+                                color: MyTheme.accent_color,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 SizedBox(height: 12.h),
@@ -402,7 +462,7 @@ class _ProductCardState extends State<ProductCard> {
                     width: double.infinity,
                     height: 35.h,
                     decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
+                      color: isEnded ? Colors.grey : MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Center(
@@ -410,19 +470,21 @@ class _ProductCardState extends State<ProductCard> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'View Product',
+                            isEnded ? 'Ended' : 'View Product',
                             style: TextStyle(
                               fontSize: 10.sp,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(width: 4.w),
-                          Icon(
-                            Icons.arrow_forward,
-                            size: 11.sp,
-                            color: Colors.white,
-                          ),
+                          if (!isEnded) ...[
+                            SizedBox(width: 4.w),
+                            Icon(
+                              Icons.arrow_forward,
+                              size: 11.sp,
+                              color: Colors.white,
+                            ),
+                          ],
                         ],
                       ),
                     ),
