@@ -496,9 +496,10 @@ class _ProfileState extends State<Profile> {
               Row(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.referral_point,
+                    // AppLocalizations.of(context)!.referral_point,
+                    AppLocalizations.of(context)!.referral_point1,
                     style: TextStyle(
-                      fontSize: 7.sp,
+                      fontSize: 8.5.sp,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF64748B),
                     ),

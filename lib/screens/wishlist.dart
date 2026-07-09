@@ -724,7 +724,7 @@ class _WishlistState extends State<Wishlist> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: isTablet ? 15.sp : 12.sp,
+                              fontSize: isTablet ? 16.sp : 13.sp,
                               fontWeight: FontWeight.w700,
                               color: Colors.black,
                             ),
@@ -766,7 +766,7 @@ class _WishlistState extends State<Wishlist> {
                 Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: isTablet ? 12.sp : 10.sp,
+                    fontSize: isTablet ? 14.sp : 11.sp,
                     fontWeight: FontWeight.w500,
                     color: Colors.black,
                   ),
@@ -783,7 +783,7 @@ class _WishlistState extends State<Wishlist> {
                       Text(
                         descriptionText,
                         style: TextStyle(
-                          fontSize: isTablet ? 12.sp : 9.sp,
+                          fontSize: isTablet ? 12.sp : 10.sp,
                           fontWeight: FontWeight.w600,
                           color: isOutbid 
                               ? Colors.grey.shade700 
@@ -807,7 +807,7 @@ class _WishlistState extends State<Wishlist> {
                           ? AppLocalizations.of(context)!.current_bid
                           : AppLocalizations.of(context)!.final_bid,
                       style: TextStyle(
-                        fontSize: isTablet ? 10.sp : 7.sp,
+                        fontSize: isTablet ? 10.sp : 8.sp,
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFF94A3B8),
                       ),
@@ -820,7 +820,7 @@ class _WishlistState extends State<Wishlist> {
                           child: Text(
                             _formatPrice(item.highestBid ?? item.productPrice ?? 0),
                             style: TextStyle(
-                              fontSize: isTablet ? 16.sp : 11.sp,
+                              fontSize: isTablet ? 16.sp : 12.sp,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF0F172A),
                             ),

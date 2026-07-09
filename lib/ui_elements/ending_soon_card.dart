@@ -541,7 +541,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Swipe to Bid',
                                           style: TextStyle(
-                                            fontSize: 8.sp,
+                                            fontSize: 9.sp,
                                             fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
@@ -550,7 +550,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Quick Bid',
                                           style: TextStyle(
-                                            fontSize: 8.sp,
+                                            fontSize: 9.sp,
                                             fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
@@ -783,9 +783,9 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                       if (_swipeAmount < 20) ...[
                                         SizedBox(width: 20.w),
                                         Text(
-                                          'Swipe to Bid',
+                                          'Swipe',
                                           style: TextStyle(
-                                            fontSize: 6.sp,
+                                            fontSize: 8.sp,
                                             fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),
@@ -794,7 +794,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                         Text(
                                           'Quick Bid',
                                           style: TextStyle(
-                                            fontSize: 6.sp,
+                                            fontSize: 8.sp,
                                             fontWeight: FontWeight.w500,
                                             color: Colors.white,
                                           ),

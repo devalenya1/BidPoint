@@ -726,7 +726,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       color: Colors.black,
                     ),
                   ),
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 10.h),
                   
                   // 2️⃣ Description Text - Same color as the status text's actual meaning
                   // For outbid: use a color that indicates being outbid (e.g., red/orange)
@@ -737,7 +737,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                     Text(
                       descriptionText,
                       style: TextStyle(
-                        fontSize: 9.sp, // Same as product name font size
+                        fontSize: 10.sp, // Same as product name font size
                         fontWeight: FontWeight.w600,
                         color: isOutbidStatus 
                             ? Colors.grey.shade700 
@@ -753,7 +753,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 9.sp, // Same as description
+                      fontSize: 10.sp, // Same as description
                       fontWeight: FontWeight.w600,
                       color: isOutbidStatus 
                           ? Colors.grey.shade700 
@@ -779,7 +779,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                                   ? AppLocalizations.of(context)!.final_bid
                                   : AppLocalizations.of(context)!.current_bid,
                               style: TextStyle(
-                                fontSize: 7.sp,
+                                fontSize: 8.sp,
                                 fontWeight: FontWeight.w400,
                                 color: const Color(0xFF80818B),
                               ),
@@ -788,7 +788,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                             Text(
                               _formatPrice(currentBid),
                               style: TextStyle(
-                                fontSize: 12.sp,
+                                fontSize: 13.sp,
                                 fontWeight: FontWeight.w700,
                                 color: MyTheme.dark_font_grey,
                               ),
@@ -815,7 +815,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                       ),
                     ],
                   ),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 8.h),
                   
                   // 5️⃣ Action Button based on status
                   if (isOutbidStatus)

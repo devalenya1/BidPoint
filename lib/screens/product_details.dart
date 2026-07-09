@@ -2164,8 +2164,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                     });
                                   },
                                   child: Container(
-                                    width: _getResponsiveSize(44, 56),
-                                    height: _getResponsiveSize(44, 56),
+                                    width: _getResponsiveSize(45, 57),
+                                    height: _getResponsiveSize(45, 57),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       shape: BoxShape.circle,
@@ -2215,7 +2215,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       // LEFT ICON - Back Button - Larger
                       Positioned(
                         top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
-                        left: _getResponsiveSize(10, 18),
+                        left: _getResponsiveSize(11, 19),
                         child: _buildIconCircle(
                           icon: Icons.arrow_back,
                           onTap: () => Navigator.pop(context),
@@ -2434,7 +2434,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               Text(_product?.name ?? '',
                                   style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(17, 23),
+                                      fontSize: _getResponsiveFontSize(18, 25),
                                       fontWeight: FontWeight.bold)),
                               SizedBox(height: _getResponsiveSize(2, 4)),
                               Text(
@@ -2444,7 +2444,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       '',
                                   style: TextStyle(
                                       color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(8, 11)),
+                                      fontSize: _getResponsiveFontSize(9, 12)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                               SizedBox(height: _getResponsiveSize(2, 4)),
@@ -2475,8 +2475,8 @@ class _ProductDetailsState extends State<ProductDetails>
                             // Current Bid - Larger, centered
                             Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(17, 26), 
-                                vertical: _getResponsivePadding(16, 21)
+                                horizontal: _getResponsivePadding(18, 28), 
+                                vertical: _getResponsivePadding(17, 26)
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.1),
