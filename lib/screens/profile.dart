@@ -496,10 +496,10 @@ class _ProfileState extends State<Profile> {
               Row(
                 children: [
                   Text(
-                    // AppLocalizations.of(context)!.referral_point,
-                    AppLocalizations.of(context)!.referral_point1,
+                    AppLocalizations.of(context)!.referral_point,
+                    // AppLocalizations.of(context)!.referral_point1,
                     style: TextStyle(
-                      fontSize: 8.5.sp,
+                      fontSize: 8.sp,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF64748B),
                     ),
@@ -536,15 +536,15 @@ class _ProfileState extends State<Profile> {
                       color: Colors.black,
                     ),
                   ),
-                  // SizedBox(width: 4.w),
-                  // Text(
-                  //   AppLocalizations.of(context)!.points_ucf,
-                  //   style: TextStyle(
-                  //     fontSize: 5.sp,
-                  //     fontWeight: FontWeight.w400,
-                  //     color: Colors.black,
-                  //   ),
-                  // ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    AppLocalizations.of(context)!.points_ucf,
+                    style: TextStyle(
+                      fontSize: 5.sp,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black,
+                    ),
+                  ),
                 ],
               ),
             ],
