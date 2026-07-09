@@ -72,6 +72,8 @@ class _RegistrationState extends State<Registration> {
   TextEditingController _phoneNumberController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
   TextEditingController _passwordConfirmController = TextEditingController();
+  // NEW: Referral code controller
+  TextEditingController _referralCodeController = TextEditingController();
 
   @override
   void initState() {
@@ -158,6 +160,7 @@ class _RegistrationState extends State<Registration> {
     var email = _emailController.text.toString();
     var password = _passwordController.text.toString();
     var password_confirm = _passwordConfirmController.text.toString();
+    var referral_code = _referralCodeController.text.toString(); // NEW: Get referral code
 
     if (name == "") {
       ToastComponent.showWarning(AppLocalizations.of(context)!.enter_your_name,
@@ -220,7 +223,8 @@ class _RegistrationState extends State<Registration> {
         password,
         password_confirm,
         _register_by,
-        googleRecaptchaKey);
+        googleRecaptchaKey,
+        referral_code); // NEW: Pass referral code to API
     Loading.close();
 
     if (signupResponse.result == false) {
@@ -780,6 +784,38 @@ class _RegistrationState extends State<Registration> {
                         _obscureConfirmPassword = !_obscureConfirmPassword;
                       });
                     },
+                  ),
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 16.h),
+            
+            // ============================================
+            // NEW: Referral Code Input Field (Optional)
+            // ============================================
+            Container(
+              height: 48.h,
+              decoration: BoxDecoration(
+                border: Border.all(color: inputBorderColor, width: 1.w),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: TextField(
+                controller: _referralCodeController,
+                autofocus: false,
+                style: TextStyle(fontSize: 14.sp),
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.referral_code_optional,
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 14.sp,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 0),
+                  prefixIcon: Icon(
+                    Icons.card_giftcard_outlined,
+                    color: Colors.grey.shade400,
+                    size: 20.sp,
                   ),
                 ),
               ),

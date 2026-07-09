@@ -98,7 +98,7 @@ class AuthRepository {
         "App-Language": app_language.$!,
       },
     );
-    // print(response.body);
+    // print(response.body); 
     return commonResponseFromJson(response.body);
   }
 
@@ -109,6 +109,7 @@ class AuthRepository {
     String passowrd_confirmation,
     String register_by,
     String capchaKey,
+    String referralCode,
   ) async {
     var post_body = jsonEncode({
       "name": "$name",
@@ -117,6 +118,7 @@ class AuthRepository {
       "password_confirmation": "${passowrd_confirmation}",
       "register_by": "$register_by",
       "g-recaptcha-response": "$capchaKey",
+      "referral_code": "$referralCode",
     });
 
     String url = ("${AppConfig.BASE_URL}/auth/signup");
