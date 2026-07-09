@@ -581,6 +581,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
+  // ============================================================
+  // UPDATED: Notification Item with "New" Badge (like HTML)
+  // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     final isRead = notification.isRead ?? false;
@@ -649,12 +652,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ),
 
-          // New Badge
+          // ============================================================
+          // NEW BADGE - Red "New" badge for unread notifications
+          // Matches HTML: <div class="pr-notification-badge new-badge">{{ translate('New') }}</div>
+          // ============================================================
           if (!isRead)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30),
+                color: const Color(0xFFFF3B30), // Red color matching HTML
                 borderRadius: BorderRadius.circular(20.r),
               ),
               child: Text(

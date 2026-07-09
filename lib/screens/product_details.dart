@@ -118,12 +118,16 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Scroll controller for comments to auto-scroll to bottom
   final ScrollController _commentsScrollController = ScrollController();
+  
+  late CarouselController _fullScreenCarouselController;
 
+  // In initState, initialize the controller
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _mainScrollController = ScrollController();
+    _fullScreenCarouselController = CarouselController(); // Add this
     _fetchAllData();
     _startPolling();
     
@@ -144,6 +148,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _commentsScrollController.dispose();
     super.dispose();
   }
+
 
   // ============================================
   // API CALLS
@@ -1697,6 +1702,186 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
+  // FULL-SCREEN IMAGE VIEWER FROM THUMBNAIL
+  // ============================================
+
+  void _showFullImageFromThumbnail(int selectedIndex) {
+    // Show all images in a carousel starting from the selected index
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          int currentIndex = selectedIndex;
+          
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.zero,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black,
+              child: Stack(
+                children: [
+                  // Image Carousel
+                  CarouselSlider(
+                    carouselController: _fullScreenCarouselController,
+                    options: CarouselOptions(
+                      height: double.infinity,
+                      viewportFraction: 1.0,
+                      enableInfiniteScroll: false,
+                      initialPage: selectedIndex,
+                      autoPlay: false,
+                      enlargeCenterPage: false,
+                      scrollPhysics: const BouncingScrollPhysics(),
+                      onPageChanged: (index, reason) {
+                        currentIndex = index;
+                        setModalState(() {});
+                      },
+                    ),
+                    items: _productImages.map((image) {
+                      return Builder(
+                        builder: (context) => Center(
+                          child: PhotoView(
+                            imageProvider: NetworkImage(image),
+                            backgroundDecoration: const BoxDecoration(
+                              color: Colors.black,
+                            ),
+                            minScale: PhotoViewComputedScale.contained,
+                            maxScale: PhotoViewComputedScale.covered * 2.0,
+                            initialScale: PhotoViewComputedScale.contained,
+                            heroAttributes: PhotoViewHeroAttributes(tag: image),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  // Close Button
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
+                    right: _getResponsiveSize(11, 19),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: _getResponsiveSize(18, 24),
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Image Counter
+                  Positioned(
+                    bottom: _getResponsiveSize(30, 50),
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _getResponsivePadding(12, 18),
+                          vertical: _getResponsivePadding(4, 8),
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(_getResponsiveSize(12, 20)),
+                        ),
+                        child: Text(
+                          '${currentIndex + 1} / ${_productImages.length}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: _getResponsiveFontSize(10, 14),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Navigation arrows
+                  if (_productImages.length > 1) ...[
+                    // Left arrow
+                    Positioned(
+                      left: _getResponsiveSize(6, 12),
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (currentIndex > 0) {
+                              _fullScreenCarouselController.previousPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
+                            decoration: BoxDecoration(
+                              color: currentIndex > 0 
+                                  ? Colors.black54 
+                                  : Colors.black26,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_back_ios,
+                              size: _getResponsiveSize(16, 22),
+                              color: currentIndex > 0 
+                                  ? Colors.white 
+                                  : Colors.white38,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Right arrow
+                    Positioned(
+                      right: _getResponsiveSize(6, 12),
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (currentIndex < _productImages.length - 1) {
+                              _fullScreenCarouselController.nextPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
+                            decoration: BoxDecoration(
+                              color: currentIndex < _productImages.length - 1 
+                                  ? Colors.black54 
+                                  : Colors.black26,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              size: _getResponsiveSize(16, 22),
+                              color: currentIndex < _productImages.length - 1 
+                                  ? Colors.white 
+                                  : Colors.white38,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ============================================
   // HELPER METHODS
   // ============================================
 
@@ -2072,6 +2257,8 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     );
   }
+
+
 
   // ============================================
   // MOBILE LAYOUT - UPDATED: All requested changes
@@ -2642,7 +2829,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   SizedBox(height: _getResponsiveSize(8, 14)),
                   
                   // ============================================
-                  // THUMBNAILS
+                  // THUMBNAILS - CLICKABLE WITH FULL-SCREEN VIEW
                   // ============================================
                   Container(
                     height: _getResponsiveSize(60, 80),
@@ -2653,7 +2840,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       itemBuilder: (context, index) {
                         return GestureDetector(
                           onTap: () {
-                            setState(() => _currentImageIndex = index);
+                            // Navigate to the selected image in full-screen view
+                            _showFullImageFromThumbnail(index);
                           },
                           child: Container(
                             width: _getResponsiveSize(48, 68),
