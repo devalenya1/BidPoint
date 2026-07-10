@@ -161,6 +161,12 @@ class ProfileRepository {
     int cashPerPage = 10,
     int withdrawPage = 1,
     int withdrawPerPage = 10,
+    int wishlistPage = 1,
+    int wishlistPerPage = 20,
+    int auctionBidPage = 1,
+    int auctionBidPerPage = 20,
+    int distinctPage = 1,
+    int distinctPerPage = 20,
   }) async {
     String url = "${AppConfig.BASE_URL}/customer/info"
         "?notification_page=$notificationPage"
@@ -170,7 +176,13 @@ class ProfileRepository {
         "&cash_page=$cashPage"
         "&cash_per_page=$cashPerPage"
         "&withdraw_page=$withdrawPage"
-        "&withdraw_per_page=$withdrawPerPage";
+        "&withdraw_per_page=$withdrawPerPage"
+        "&wishlist_page=$wishlistPage"
+        "&wishlist_per_page=$wishlistPerPage"
+        "&auction_bid_page=$auctionBidPage"
+        "&auction_bid_per_page=$auctionBidPerPage"
+        "&distinct_page=$distinctPage"
+        "&distinct_per_page=$distinctPerPage";
     
     try {
       final response = await ApiRequest.get(
@@ -971,6 +983,4 @@ class ProfileRepository {
       perPage: perPage,
     );
   }
-
-
 }
