@@ -48,7 +48,8 @@ class ProductDetailsResponse {
 
 
 class DetailedProduct {
-  bool? _isAuctionUpcoming; // ADDED: Private field for upcoming status
+  bool? _isAuctionUpcoming; // Private field for upcoming status
+  String? _upcomingStatus; // NEW: Store upcoming_status from API
 
   DetailedProduct({
     this.id,
@@ -110,8 +111,10 @@ class DetailedProduct {
     this.comments,
     this.reviews,
     this.bidHistory,
-    bool? isAuctionUpcoming, // ADDED: Parameter for constructor
-  }) : _isAuctionUpcoming = isAuctionUpcoming; // ADDED: Initialize private field
+    bool? isAuctionUpcoming,
+    String? upcomingStatus, // NEW: Parameter for upcoming_status
+  })  : _isAuctionUpcoming = isAuctionUpcoming,
+        _upcomingStatus = upcomingStatus; // NEW: Initialize private field
 
   int? id;
   String? name;
@@ -213,6 +216,26 @@ class DetailedProduct {
   }
   // ============ END GETTERS AND SETTERS ============
 
+  // ============ GETTERS AND SETTERS FOR upcomingStatus ============
+  String? get upcomingStatus => _upcomingStatus;
+
+  set upcomingStatus(String? value) {
+    _upcomingStatus = value;
+  }
+
+  bool get isUpcomingStatus {
+    return _upcomingStatus == 'Upcoming';
+  }
+
+  bool get isLiveStatus {
+    return _upcomingStatus == 'Live' || _upcomingStatus == null;
+  }
+
+  bool get isEndedStatus {
+    return _upcomingStatus == 'Ended';
+  }
+  // ============ END GETTERS AND SETTERS ============
+
   // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
   String? get added_by => addedBy;
   int? get seller_id => sellerId;
@@ -245,6 +268,7 @@ class DetailedProduct {
   // List<Map<String, dynamic>>? get comments => comments;
   // List<Map<String, dynamic>>? get reviews => reviews;
   List<Map<String, dynamic>>? get bid_history => bidHistory;
+  String? get upcoming_status => _upcomingStatus; // NEW: Snake case getter
   // ============ END SNAKE_CASE GETTERS ============
 
   factory DetailedProduct.fromJson(Map<String, dynamic> json) => DetailedProduct(
@@ -329,7 +353,8 @@ class DetailedProduct {
         bidHistory: json["bid_history"] != null
             ? List<Map<String, dynamic>>.from(json["bid_history"])
             : [],
-        isAuctionUpcoming: json["is_auction_upcoming"] ?? false, // ADDED: Parse from JSON
+        isAuctionUpcoming: json["is_auction_upcoming"] ?? false,
+        upcomingStatus: json["upcoming_status"], // NEW: Parse upcoming_status from JSON
       );
 
   Map<String, dynamic> toJson() => {
@@ -399,7 +424,8 @@ class DetailedProduct {
         "comments": comments,
         "reviews": reviews,
         "bid_history": bidHistory,
-        "is_auction_upcoming": _isAuctionUpcoming, // ADDED: Include in JSON
+        "is_auction_upcoming": _isAuctionUpcoming,
+        "upcoming_status": _upcomingStatus, // NEW: Include in JSON
       };
 
   // ============ HELPER METHODS ============
@@ -426,8 +452,18 @@ class DetailedProduct {
     return false;
   }
   
+  // NEW: Get auction status using upcoming_status first
   String getAuctionStatus() {
     if (!isAuctionProduct) return 'Regular Product';
+    
+    // Use upcoming_status from API if available
+    if (_upcomingStatus != null) {
+      if (_upcomingStatus == 'Upcoming') return 'Upcoming';
+      if (_upcomingStatus == 'Live') return 'Live Auction';
+      if (_upcomingStatus == 'Ended') return 'Auction Ended';
+    }
+    
+    // Fallback to calculated status
     if (isAuctionUpcoming) return 'Upcoming';
     if (isAuctionActive) return 'Live Auction';
     if (isAuctionEnded) return 'Auction Ended';
@@ -436,9 +472,9 @@ class DetailedProduct {
   
   Color getAuctionStatusColor() {
     if (!isAuctionProduct) return Colors.grey;
-    if (isAuctionUpcoming) return Colors.orange;
-    if (isAuctionActive) return Colors.green;
-    if (isAuctionEnded) return Colors.red;
+    if (isUpcomingStatus) return Colors.orange;
+    if (isLiveStatus) return Colors.green;
+    if (isEndedStatus) return Colors.red;
     return Colors.grey;
   }
   
