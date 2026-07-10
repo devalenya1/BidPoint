@@ -625,7 +625,7 @@ class ProfileRepository {
     try {
       final response = await ApiRequest.post(
         url: url,
-        headers: {
+        headers: { 
           "Content-Type": "application/json",
           "Authorization": "Bearer ${access_token.$}",
           "App-Language": app_language.$!,
@@ -784,4 +784,193 @@ class ProfileRepository {
       };
     }
   }
+
+  // =============================================
+  // GET WISHLIST WITH PAGINATION
+  // =============================================
+  Future<WishlistPaginatedResponse> getWishlistPaginated({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/customer/info?wishlist_page=$page&wishlist_per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        // Extract the first customer's data (assuming single user)
+        if (responseData['data'] != null && responseData['data'].isNotEmpty) {
+          final customerData = responseData['data'][0];
+          return WishlistPaginatedResponse.fromJson(customerData);
+        }
+        return WishlistPaginatedResponse(
+          success: true,
+          data: [],
+          pagination: WishlistPagination(currentPage: page, perPage: perPage, total: 0),
+          wishlistCount: 0,
+        );
+      } else {
+        return WishlistPaginatedResponse(
+          success: false,
+          data: [],
+          pagination: WishlistPagination(currentPage: page, perPage: perPage, total: 0),
+          wishlistCount: 0,
+        );
+      }
+    } catch (e) {
+      print("Error loading wishlist: $e");
+      return WishlistPaginatedResponse(
+        success: false,
+        data: [],
+        pagination: WishlistPagination(currentPage: page, perPage: perPage, total: 0),
+        wishlistCount: 0,
+      );
+    }
+  }
+
+  // =============================================
+  // GET AUCTION BIDS WITH PAGINATION
+  // =============================================
+  Future<AuctionBidsPaginatedResponse> getAuctionBidsPaginated({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/customer/info?auction_bid_page=$page&auction_bid_per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        if (responseData['data'] != null && responseData['data'].isNotEmpty) {
+          final customerData = responseData['data'][0];
+          return AuctionBidsPaginatedResponse.fromJson(customerData);
+        }
+        return AuctionBidsPaginatedResponse(
+          success: true,
+          data: [],
+          pagination: AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          auctionBidsCount: 0,
+        );
+      } else {
+        return AuctionBidsPaginatedResponse(
+          success: false,
+          data: [],
+          pagination: AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          auctionBidsCount: 0,
+        );
+      }
+    } catch (e) {
+      print("Error loading auction bids: $e");
+      return AuctionBidsPaginatedResponse(
+        success: false,
+        data: [],
+        pagination: AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+        auctionBidsCount: 0,
+      );
+    }
+  }
+
+  // =============================================
+  // GET DISTINCT AUCTION BIDS WITH PAGINATION
+  // =============================================
+  Future<DistinctAuctionBidsPaginatedResponse> getDistinctAuctionBidsPaginated({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String url = "${AppConfig.BASE_URL}/customer/info?distinct_page=$page&distinct_per_page=$perPage";
+    
+    try {
+      final response = await ApiRequest.get(
+        url: url,
+        headers: {
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        if (responseData['data'] != null && responseData['data'].isNotEmpty) {
+          final customerData = responseData['data'][0];
+          return DistinctAuctionBidsPaginatedResponse.fromJson(customerData);
+        }
+        return DistinctAuctionBidsPaginatedResponse(
+          success: true,
+          data: [],
+          pagination: DistinctAuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          distinctAuctionBidsCount: 0,
+        );
+      } else {
+        return DistinctAuctionBidsPaginatedResponse(
+          success: false,
+          data: [],
+          pagination: DistinctAuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          distinctAuctionBidsCount: 0,
+        );
+      }
+    } catch (e) {
+      print("Error loading distinct auction bids: $e");
+      return DistinctAuctionBidsPaginatedResponse(
+        success: false,
+        data: [],
+        pagination: DistinctAuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+        distinctAuctionBidsCount: 0,
+      );
+    }
+  }
+
+  // =============================================
+  // LOAD MORE WISHLIST ITEMS
+  // =============================================
+  Future<WishlistPaginatedResponse> loadMoreWishlistItems({
+    required int currentPage,
+    int perPage = 20,
+  }) async {
+    return await getWishlistPaginated(
+      page: currentPage + 1,
+      perPage: perPage,
+    );
+  }
+
+  // =============================================
+  // LOAD MORE AUCTION BIDS
+  // =============================================
+  Future<AuctionBidsPaginatedResponse> loadMoreAuctionBids({
+    required int currentPage,
+    int perPage = 20,
+  }) async {
+    return await getAuctionBidsPaginated(
+      page: currentPage + 1,
+      perPage: perPage,
+    );
+  }
+
+  // =============================================
+  // LOAD MORE DISTINCT AUCTION BIDS
+  // =============================================
+  Future<DistinctAuctionBidsPaginatedResponse> loadMoreDistinctAuctionBids({
+    required int currentPage,
+    int perPage = 20,
+  }) async {
+    return await getDistinctAuctionBidsPaginated(
+      page: currentPage + 1,
+      perPage: perPage,
+    );
+  }
+
+
 }

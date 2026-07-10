@@ -31,12 +31,20 @@ class _WishlistState extends State<Wishlist> {
   bool _isRefreshing = false;
   UserInformation? _userInfo;
   
+  // ============ PAGINATION STATE ============
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  int _perPage = 20;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  
   // Processed wishlist data
   List<WishlistItem> _wishlistItems = [];
   List<WishlistItem> _liveItems = [];
   List<WishlistItem> _endingSoonItems = [];
   List<WishlistItem> _outbidItems = [];
-  List<WishlistItem> _recentlyEndedItems = []; // NEW: For won/lost items
+  List<WishlistItem> _recentlyEndedItems = [];
   
   // Timer controllers
   final Map<int, Timer> _timers = {};
@@ -64,18 +72,65 @@ class _WishlistState extends State<Wishlist> {
     super.dispose();
   }
   
-  // ============ FETCH DATA FROM API ============
-  Future<void> _fetchWishlistData() async {
+  // ============ FETCH DATA FROM API WITH PAGINATION ============
+  Future<void> _fetchWishlistData({bool loadMore = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      if (loadMore) {
+        if (_isLoadingMore || !_hasMore) return;
+        setState(() {
+          _isLoadingMore = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _currentPage = 1;
+          _hasMore = true;
+          _wishlistItems.clear();
+          _liveItems.clear();
+          _endingSoonItems.clear();
+          _outbidItems.clear();
+          _recentlyEndedItems.clear();
+        });
+      }
+
+      final page = loadMore ? _currentPage + 1 : 1;
       
-      var response = await _profileRepository.getUserInfoResponse();
+      var response = await _profileRepository.getUserInfoResponse(
+        notificationPage: 1,
+        notificationPerPage: 10,
+        pointPage: 1,
+        pointPerPage: 10,
+        cashPage: 1,
+        cashPerPage: 10,
+        withdrawPage: 1,
+        withdrawPerPage: 10,
+        wishlistPage: page,
+        wishlistPerPage: _perPage,
+      );
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        final newUserInfo = response.data![0];
+        
+        // Update pagination info
+        final pagination = newUserInfo.wishlistPagination;
+        if (pagination != null) {
+          _currentPage = pagination.currentPage;
+          _totalPages = pagination.totalPages;
+          _totalItems = pagination.total;
+          _perPage = pagination.perPage;
+          _hasMore = pagination.hasNext;
+        }
+        
         setState(() {
-          _userInfo = response.data![0];
+          if (loadMore) {
+            // Append new items to existing list
+            final newItems = newUserInfo.wishlist ?? [];
+            _wishlistItems.addAll(newItems);
+          } else {
+            // First page - replace all data
+            _userInfo = newUserInfo;
+            _wishlistItems = newUserInfo.wishlist ?? [];
+          }
         });
         
         _processWishlistData();
@@ -83,13 +138,15 @@ class _WishlistState extends State<Wishlist> {
         wishlist_count.$ = _userInfo?.wishlistCount ?? 0;
         wishlist_count.save();
       } else {
-        setState(() {
-          _wishlistItems = [];
-          _liveItems = [];
-          _endingSoonItems = [];
-          _outbidItems = [];
-          _recentlyEndedItems = [];
-        });
+        if (!loadMore) {
+          setState(() {
+            _wishlistItems = [];
+            _liveItems = [];
+            _endingSoonItems = [];
+            _outbidItems = [];
+            _recentlyEndedItems = [];
+          });
+        }
       }
     } catch (e) {
       print("Error loading wishlist data: $e");
@@ -98,17 +155,23 @@ class _WishlistState extends State<Wishlist> {
       setState(() {
         _isLoading = false;
         _isRefreshing = false;
+        _isLoadingMore = false;
       });
     }
+  }
+  
+  // ============ LOAD MORE (INFINITE SCROLL) ============
+  Future<void> _loadMore() async {
+    if (!_hasMore || _isLoadingMore) return;
+    await _fetchWishlistData(loadMore: true);
   }
   
   // ============ PROCESS WISHLIST DATA ============
   void _processWishlistData() {
     if (_userInfo == null) return;
     
-    final wishlist = _userInfo!.wishlist ?? [];
+    final wishlist = _wishlistItems;
     
-    List<WishlistItem> allItems = [];
     List<WishlistItem> live = [];
     List<WishlistItem> endingSoon = [];
     List<WishlistItem> outbid = [];
@@ -123,9 +186,6 @@ class _WishlistState extends State<Wishlist> {
       final isOutbid = item.outbid ?? false;
       final isWinning = item.isWinning ?? false;
       final isAuction = item.isAuction ?? false;
-      
-      // Add to all items
-      allItems.add(item);
       
       // 🔥 NEW LOGIC: Check if auction is not live
       if (isAuction && !isLive) {
@@ -145,13 +205,7 @@ class _WishlistState extends State<Wishlist> {
       }
     }
     
-    // Sort all items by created_at (newest first)
-    allItems.sort((a, b) {
-      final aDate = a.createdAt ?? DateTime.now();
-      final bDate = b.createdAt ?? DateTime.now();
-      return bDate.compareTo(aDate);
-    });
-    
+    // Sort by created_at (newest first)
     live.sort((a, b) {
       final aDate = a.createdAt ?? DateTime.now();
       final bDate = b.createdAt ?? DateTime.now();
@@ -177,7 +231,6 @@ class _WishlistState extends State<Wishlist> {
     });
     
     setState(() {
-      _wishlistItems = allItems;
       _liveItems = live;
       _endingSoonItems = endingSoon;
       _outbidItems = outbid;
@@ -190,7 +243,7 @@ class _WishlistState extends State<Wishlist> {
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchWishlistData();
+    await _fetchWishlistData(loadMore: false);
   }
   
   // ============ TIMER HELPERS ============
@@ -463,22 +516,63 @@ class _WishlistState extends State<Wishlist> {
       children: [
         _buildTabs(),
         Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                SizedBox(height: 12.h),
-                if (currentItems.isEmpty)
-                  _buildEmptyState()
-                else
-                  Column(
-                    children: currentItems.map((item) => 
-                      _buildWishlistCard(item)
-                    ).toList(),
-                  ),
-                SizedBox(height: 30.h),
-              ],
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              // Detect when user scrolls to bottom
+              if (!_isLoadingMore &&
+                  _hasMore &&
+                  scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                _loadMore();
+              }
+              return true;
+            },
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  SizedBox(height: 12.h),
+                  if (currentItems.isEmpty)
+                    _buildEmptyState()
+                  else
+                    Column(
+                      children: [
+                        ...currentItems.map((item) => 
+                          _buildWishlistCard(item)
+                        ).toList(),
+                        // Loading indicator at bottom
+                        if (_isLoadingMore)
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            child: Center(
+                              child: SizedBox(
+                                height: 24.w,
+                                width: 24.w,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.w,
+                                  color: MyTheme.accent_color,
+                                ),
+                              ),
+                            ),
+                          ),
+                        // End of list message
+                        if (!_hasMore && currentItems.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 16.h),
+                            child: Text(
+                              AppLocalizations.of(context)!.no_more_items,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: const Color(0xFF999999),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                      ],
+                    ),
+                  SizedBox(height: 30.h),
+                ],
+              ),
             ),
           ),
         ),
@@ -495,27 +589,67 @@ class _WishlistState extends State<Wishlist> {
       children: [
         _buildTabs(),
         Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 32.w),
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                SizedBox(height: 12.h),
-                if (currentItems.isEmpty)
-                  _buildEmptyState()
-                else
-                  Wrap(
-                    spacing: 16.w,
-                    runSpacing: 16.h,
-                    children: currentItems.map((item) => 
-                      SizedBox(
-                        width: (screenWidth - 80.w) / 2,
-                        child: _buildWishlistCard(item),
-                      ),
-                    ).toList(),
-                  ),
-                SizedBox(height: 30.h),
-              ],
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (!_isLoadingMore &&
+                  _hasMore &&
+                  scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                _loadMore();
+              }
+              return true;
+            },
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 32.w),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  SizedBox(height: 12.h),
+                  if (currentItems.isEmpty)
+                    _buildEmptyState()
+                  else
+                    Wrap(
+                      spacing: 16.w,
+                      runSpacing: 16.h,
+                      children: [
+                        ...currentItems.map((item) => 
+                          SizedBox(
+                            width: (screenWidth - 80.w) / 2,
+                            child: _buildWishlistCard(item),
+                          ),
+                        ).toList(),
+                        // Loading indicator at bottom
+                        if (_isLoadingMore)
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            child: Center(
+                              child: SizedBox(
+                                height: 24.w,
+                                width: 24.w,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.w,
+                                  color: MyTheme.accent_color,
+                                ),
+                              ),
+                            ),
+                          ),
+                        // End of list message
+                        if (!_hasMore && currentItems.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 16.h),
+                            child: Text(
+                              AppLocalizations.of(context)!.no_more_items,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: const Color(0xFF999999),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                      ],
+                    ),
+                  SizedBox(height: 30.h),
+                ],
+              ),
             ),
           ),
         ),

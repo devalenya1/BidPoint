@@ -30,6 +30,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   bool _isRefreshing = false;
   UserInformation? _userInfo;
   
+  // ============ PAGINATION STATE ============
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  int _perPage = 20;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  
   // Processed activity data
   List<AuctionBid> _allActivities = [];
   List<AuctionBid> _outbidActivities = [];
@@ -40,6 +48,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   final Map<int, Timer> _timers = {};
   final Map<int, String> _timeLeft = {};
   
+  final ProfileRepository _profileRepository = ProfileRepository();
+
   @override
   void initState() {
     super.initState();
@@ -60,18 +70,64 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     super.dispose();
   }
   
-  // ============ FETCH DATA FROM API ============
-  Future<void> _fetchActivityData() async {
+  // ============ FETCH DATA FROM API WITH PAGINATION ============
+  Future<void> _fetchActivityData({bool loadMore = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      if (loadMore) {
+        if (_isLoadingMore || !_hasMore) return;
+        setState(() {
+          _isLoadingMore = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+          _currentPage = 1;
+          _hasMore = true;
+          _allActivities.clear();
+          _outbidActivities.clear();
+          _winningActivities.clear();
+          _endedActivities.clear();
+        });
+      }
+
+      final page = loadMore ? _currentPage + 1 : 1;
       
-      var response = await ProfileRepository().getUserInfoResponse();
+      var response = await _profileRepository.getUserInfoResponse(
+        notificationPage: 1,
+        notificationPerPage: 10,
+        pointPage: 1,
+        pointPerPage: 10,
+        cashPage: 1,
+        cashPerPage: 10,
+        withdrawPage: 1,
+        withdrawPerPage: 10,
+        auctionBidPage: page,
+        auctionBidPerPage: _perPage,
+      );
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        final newUserInfo = response.data![0];
+        
+        // Update pagination info
+        final pagination = newUserInfo.auctionBidsPagination;
+        if (pagination != null) {
+          _currentPage = pagination.currentPage;
+          _totalPages = pagination.totalPages;
+          _totalItems = pagination.total;
+          _perPage = pagination.perPage;
+          _hasMore = pagination.hasNext;
+        }
+        
         setState(() {
-          _userInfo = response.data![0];
+          if (loadMore) {
+            // Append new items to existing list
+            final newBids = newUserInfo.auctionBids ?? [];
+            _allActivities.addAll(newBids);
+          } else {
+            // First page - replace all data
+            _userInfo = newUserInfo;
+            _allActivities = newUserInfo.auctionBids ?? [];
+          }
         });
         
         _processActivityData();
@@ -81,12 +137,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         distinct_auction_bids_count.$ = _userInfo?.distinctAuctionBidsCount ?? 0;
         distinct_auction_bids_count.save();
       } else {
-        setState(() {
-          _allActivities = [];
-          _outbidActivities = [];
-          _winningActivities = [];
-          _endedActivities = [];
-        });
+        if (!loadMore) {
+          setState(() {
+            _allActivities = [];
+            _outbidActivities = [];
+            _winningActivities = [];
+            _endedActivities = [];
+          });
+        }
       }
     } catch (e) {
       print("Error loading activities: $e");
@@ -95,19 +153,24 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       setState(() {
         _isLoading = false;
         _isRefreshing = false;
+        _isLoadingMore = false;
       });
     }
+  }
+  
+  // ============ LOAD MORE (INFINITE SCROLL) ============
+  Future<void> _loadMore() async {
+    if (!_hasMore || _isLoadingMore) return;
+    await _fetchActivityData(loadMore: true);
   }
   
   // ============ PROCESS ACTIVITY DATA ============
   void _processActivityData() {
     if (_userInfo == null) return;
     
-    final auctionBids = _userInfo!.auctionBids ?? [];
-    
     // Get the latest bid for each product
     final Map<int, AuctionBid> latestBidsByProduct = {};
-    for (var bid in auctionBids) {
+    for (var bid in _allActivities) {
       if (bid.productId != null) {
         final existing = latestBidsByProduct[bid.productId!];
         if (existing == null || (bid.createdAt != null && existing.createdAt != null && bid.createdAt!.isAfter(existing.createdAt!))) {
@@ -116,7 +179,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       }
     }
     
-    List<AuctionBid> allActivities = [];
     List<AuctionBid> outbid = [];
     List<AuctionBid> winning = [];
     List<AuctionBid> ended = [];
@@ -130,24 +192,21 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       final isHighestBidder = latestBid.highestBidder ?? false;
       final hasBid = (latestBid.amount ?? 0) > 0;
       
-      // 🔥 NEW LOGIC: If recently_ended == true, it goes to ended tab
+      // 🔥 CRITICAL: If recently_ended == true, it ALWAYS goes to ended tab
       if (isEnded) {
         ended.add(latestBid);
-        allActivities.add(latestBid);
       } else if (isWinning || isHighestBidder) {
-        // User is winning (either by isWinning or highestBidder)
+        // User is winning (either by isWinning or highestBidder) - ONLY if NOT ended
         winning.add(latestBid);
-        allActivities.add(latestBid);
       } else if (!isWinning && !isHighestBidder && hasBid) {
-        // User is NOT winning and has placed a bid → OUTBID
+        // User is NOT winning and has placed a bid → OUTBID - ONLY if NOT ended
         outbid.add(latestBid);
-        allActivities.add(latestBid);
       }
       // Pending items (no bid placed) don't go to any tab
     }
     
-    // Sort all activities by created_at (newest first)
-    allActivities.sort((a, b) {
+    // Sort by created_at (newest first)
+    _allActivities.sort((a, b) {
       final aDate = a.createdAt ?? DateTime.now();
       final bDate = b.createdAt ?? DateTime.now();
       return bDate.compareTo(aDate);
@@ -172,7 +231,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     });
     
     setState(() {
-      _allActivities = allActivities;
       _outbidActivities = outbid;
       _winningActivities = winning;
       _endedActivities = ended;
@@ -184,7 +242,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     setState(() {
       _isRefreshing = true;
     });
-    await _fetchActivityData();
+    await _fetchActivityData(loadMore: false);
   }
   
   // ============ TIMER HELPERS ============
@@ -281,23 +339,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     return '';
   }
 
-  double _getCurrentBidForProduct(int productId) {
-    final product = _getProductInfoById(productId);
-    if (product != null) {
-      return product.amount ?? 0.0;
-    }
-    return 0.0;
-  }
-
-  double _getUserHighestBidForProduct(int productId) {
-    if (_userInfo?.auctionBids == null) return 0.0;
-    
-    final userBids = _userInfo!.auctionBids!.where((b) => b.productId == productId).toList();
-    if (userBids.isEmpty) return 0.0;
-    
-    return userBids.map((b) => b.amount ?? 0.0).reduce((a, b) => a > b ? a : b);
-  }
-
   int _getPointPerBidForProduct(int productId) {
     if (_userInfo?.auctionBids == null) return 10;
     
@@ -318,14 +359,6 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     } catch (e) {
       return null;
     }
-  }
-
-  double _getCurrentBidById(int productId) {
-    final product = _getProductInfoById(productId);
-    if (product != null) {
-      return product.amount ?? 0.0;
-    }
-    return 0.0;
   }
   
   List<AuctionBid> _getCurrentActivities() {
@@ -407,7 +440,18 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         onRefresh: _onPageRefresh,
         child: _isLoading
             ? _buildShimmer()
-            : _buildBody(),
+            : NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  // Detect when user scrolls to bottom
+                  if (!_isLoadingMore &&
+                      _hasMore &&
+                      scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                    _loadMore();
+                  }
+                  return true;
+                },
+                child: _buildBody(),
+              ),
       ),
     );
   }
@@ -459,6 +503,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         _buildTabs(),
         Expanded(
           child: SingleChildScrollView(
+            controller: ScrollController(),
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
@@ -468,9 +513,39 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   _buildEmptyState(_selectedTab)
                 else
                   Column(
-                    children: currentActivities.map((activity) => 
-                      _buildActivityCard(activity)
-                    ).toList(),
+                    children: [
+                      ...currentActivities.map((activity) => 
+                        _buildActivityCard(activity)
+                      ).toList(),
+                      // Loading indicator at bottom
+                      if (_isLoadingMore)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          child: Center(
+                            child: SizedBox(
+                              height: 24.w,
+                              width: 24.w,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.w,
+                                color: MyTheme.accent_color,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // End of list message
+                      if (!_hasMore && currentActivities.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: 16.h, bottom: 30.h),
+                          child: Text(
+                            AppLocalizations.of(context)!.no_more_activities,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: const Color(0xFF999999),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
                   ),
                 SizedBox(height: 30.h),
               ],
@@ -601,8 +676,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final currentBid = activity.highestBid ?? 0.0;
     final hasBid = (activity.amount ?? 0) > 0;
     
-    // 🔥 Determine status based on API fields
-    // When recently_ended == true, it's always in ended tab
+    // 🔥 Determine win/loss status based on API fields
+    // If recently_ended == true AND isWinning == true → WON
+    // If recently_ended == true AND isWinning == false → LOST
     final isWonStatus = isEnded && (isWinning || isHighestBidder);
     final isLostStatus = isEnded && !isWinning && !isHighestBidder;
     final isWinningStatus = !isEnded && (isWinning || isHighestBidder);
@@ -613,20 +689,19 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     String descriptionText;
     bool showWinLossIcon = false;
     String winLossIcon = '';
-    Color winLossColor = Colors.transparent;
     
     if (isWonStatus) {
+      // 🏆 YOU WON!
       statusText = AppLocalizations.of(context)!.you_won_auction;
       descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
       showWinLossIcon = true;
       winLossIcon = '🏆';
-      winLossColor = Colors.green.shade50;
     } else if (isLostStatus) {
+      // ❌ YOU LOST
       statusText = AppLocalizations.of(context)!.auction_ended;
       descriptionText = AppLocalizations.of(context)!.you_didnt_win;
       showWinLossIcon = true;
       winLossIcon = '❌';
-      winLossColor = Colors.red.shade50;
     } else if (isOutbidStatus) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
@@ -657,7 +732,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image - Clickable (removed left side win/loss indicator)
+          // Product Image - Clickable
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
@@ -785,7 +860,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ],
                         ),
                       ),
-                      // 🔥 NEW: Show win/loss icon OR point per bid
+                      // 🔥 Show win/loss icon OR point per bid
                       if (showWinLossIcon)
                         // 🏆 WIN or ❌ LOSS icon
                         Container(

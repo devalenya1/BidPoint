@@ -84,7 +84,7 @@ class Pagination {
 }
 
 // =============================================
-// USER INFORMATION MODEL (UPDATED)
+// USER INFORMATION MODEL
 // =============================================
 class UserInformation {
   int? id;
@@ -103,7 +103,7 @@ class UserInformation {
   dynamic? packageId;
   String? packageName;
   
-  // ============ AFFILIATE LOGS (ADDED) ============
+  // ============ AFFILIATE LOGS ============
   List<AffiliateLog>? affiliateLogs;
   double? totalAffiliateEarnings;
   
@@ -134,12 +134,21 @@ class UserInformation {
   int? defaultAddressCount;
   List<CustomerPackagePayment>? customerPackagePayments;
   double? totalPackagePayments;
+  
+  // Wishlist with pagination
   List<WishlistItem>? wishlist;
   int? wishlistCount;
+  WishlistPagination? wishlistPagination;
+  
+  // Auction Bids with pagination
   List<AuctionBid>? auctionBids;
   int? auctionBidsCount;
+  AuctionBidsPagination? auctionBidsPagination;
+  
+  // Distinct Auction Bids with pagination
   List<DistinctAuctionBid>? distinctAuctionBids;
   int? distinctAuctionBidsCount;
+  DistinctAuctionBidsPagination? distinctAuctionBidsPagination;
   
   // Affiliate Info
   String? affiliateId;
@@ -191,10 +200,13 @@ class UserInformation {
     this.totalPackagePayments,
     this.wishlist,
     this.wishlistCount,
+    this.wishlistPagination,
     this.auctionBids,
     this.auctionBidsCount,
+    this.auctionBidsPagination,
     this.distinctAuctionBids,
     this.distinctAuctionBidsCount,
+    this.distinctAuctionBidsPagination,
     this.affiliateId,
     this.paypalEmail,
     this.bankName,
@@ -280,23 +292,38 @@ class UserInformation {
         : [],
     totalPackagePayments: json["total_package_payments"]?.toDouble(),
     
-    // Wishlist
+    // =============================================
+    // WISHLIST WITH PAGINATION
+    // =============================================
     wishlist: json["wishlist"] != null
         ? List<WishlistItem>.from(json["wishlist"].map((x) => WishlistItem.fromJson(x)))
         : [],
     wishlistCount: json["wishlist_count"],
+    wishlistPagination: json["wishlist_pagination"] != null
+        ? WishlistPagination.fromJson(json["wishlist_pagination"])
+        : null,
     
-    // Auction Bids
+    // =============================================
+    // AUCTION BIDS WITH PAGINATION
+    // =============================================
     auctionBids: json["auction_bids"] != null
         ? List<AuctionBid>.from(json["auction_bids"].map((x) => AuctionBid.fromJson(x)))
         : [],
     auctionBidsCount: json["auction_bids_count"],
+    auctionBidsPagination: json["auction_bids_pagination"] != null
+        ? AuctionBidsPagination.fromJson(json["auction_bids_pagination"])
+        : null,
     
-    // Distinct Auction Bids
+    // =============================================
+    // DISTINCT AUCTION BIDS WITH PAGINATION
+    // =============================================
     distinctAuctionBids: json["distinct_auction_bids"] != null
         ? List<DistinctAuctionBid>.from(json["distinct_auction_bids"].map((x) => DistinctAuctionBid.fromJson(x)))
         : [],
     distinctAuctionBidsCount: json["distinct_auction_bids_count"],
+    distinctAuctionBidsPagination: json["distinct_auction_bids_pagination"] != null
+        ? DistinctAuctionBidsPagination.fromJson(json["distinct_auction_bids_pagination"])
+        : null,
     
     // Affiliate Info
     affiliateId: json["affiliate_id"]?.toString(),
@@ -347,12 +374,25 @@ class UserInformation {
     "default_address_count": defaultAddressCount,
     "customer_package_payments": customerPackagePayments != null ? List<dynamic>.from(customerPackagePayments!.map((x) => x.toJson())) : [],
     "total_package_payments": totalPackagePayments,
+    // =============================================
+    // WISHLIST WITH PAGINATION
+    // =============================================
     "wishlist": wishlist != null ? List<dynamic>.from(wishlist!.map((x) => x.toJson())) : [],
     "wishlist_count": wishlistCount,
+    "wishlist_pagination": wishlistPagination?.toJson(),
+    // =============================================
+    // AUCTION BIDS WITH PAGINATION
+    // =============================================
     "auction_bids": auctionBids != null ? List<dynamic>.from(auctionBids!.map((x) => x.toJson())) : [],
     "auction_bids_count": auctionBidsCount,
+    "auction_bids_pagination": auctionBidsPagination?.toJson(),
+    // =============================================
+    // DISTINCT AUCTION BIDS WITH PAGINATION
+    // =============================================
     "distinct_auction_bids": distinctAuctionBids != null ? List<dynamic>.from(distinctAuctionBids!.map((x) => x.toJson())) : [],
     "distinct_auction_bids_count": distinctAuctionBidsCount,
+    "distinct_auction_bids_pagination": distinctAuctionBidsPagination?.toJson(),
+    // Affiliate Info
     "affiliate_id": affiliateId,
     "paypal_email": paypalEmail,
     "bank_name": bankName,
@@ -365,7 +405,7 @@ class UserInformation {
 }
 
 // =============================================
-// NOTIFICATION MODEL (FIXED)
+// NOTIFICATION MODEL
 // =============================================
 class Notification {
   int? id;
@@ -393,7 +433,6 @@ class Notification {
     message: json["message"],
     readAt: json["read_at"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
-    // ✅ FIX: isRead = true if read_at is NOT null, false if read_at is null
     isRead: json["read_at"] != null,
   );
 
@@ -527,7 +566,7 @@ class CashHistory {
 }
 
 // =============================================
-// AFFILIATE LOG MODEL (ADDED)
+// AFFILIATE LOG MODEL
 // =============================================
 class AffiliateLog {
   int? id;
@@ -843,7 +882,7 @@ class PaymentDetails {
 }
 
 // =============================================
-// WISHLIST MODEL
+// WISHLIST MODEL WITH PAGINATION
 // =============================================
 class WishlistItem {
   int? id;
@@ -926,7 +965,54 @@ class WishlistItem {
 }
 
 // =============================================
-// AUCTION BID MODEL
+// WISHLIST PAGINATION
+// =============================================
+class WishlistPagination {
+  int currentPage;
+  int perPage;
+  int total;
+  int totalPages;
+  bool hasNext;
+  bool hasPrevious;
+  int nextPage;
+  int previousPage;
+
+  WishlistPagination({
+    this.currentPage = 1,
+    this.perPage = 20,
+    this.total = 0,
+    this.totalPages = 0,
+    this.hasNext = false,
+    this.hasPrevious = false,
+    this.nextPage = 0,
+    this.previousPage = 0,
+  });
+
+  factory WishlistPagination.fromJson(Map<String, dynamic> json) => WishlistPagination(
+    currentPage: json["current_page"] ?? 1,
+    perPage: json["per_page"] ?? 20,
+    total: json["total"] ?? 0,
+    totalPages: json["total_pages"] ?? 0,
+    hasNext: json["has_next"] ?? false,
+    hasPrevious: json["has_previous"] ?? false,
+    nextPage: json["next_page"] ?? 0,
+    previousPage: json["previous_page"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "current_page": currentPage,
+    "per_page": perPage,
+    "total": total,
+    "total_pages": totalPages,
+    "has_next": hasNext,
+    "has_previous": hasPrevious,
+    "next_page": nextPage,
+    "previous_page": previousPage,
+  };
+}
+
+// =============================================
+// AUCTION BID MODEL WITH PAGINATION
 // =============================================
 class AuctionBid {
   int? id;
@@ -1005,7 +1091,54 @@ class AuctionBid {
 }
 
 // =============================================
-// DISTINCT AUCTION BID MODEL
+// AUCTION BIDS PAGINATION
+// =============================================
+class AuctionBidsPagination {
+  int currentPage;
+  int perPage;
+  int total;
+  int totalPages;
+  bool hasNext;
+  bool hasPrevious;
+  int nextPage;
+  int previousPage;
+
+  AuctionBidsPagination({
+    this.currentPage = 1,
+    this.perPage = 20,
+    this.total = 0,
+    this.totalPages = 0,
+    this.hasNext = false,
+    this.hasPrevious = false,
+    this.nextPage = 0,
+    this.previousPage = 0,
+  });
+
+  factory AuctionBidsPagination.fromJson(Map<String, dynamic> json) => AuctionBidsPagination(
+    currentPage: json["current_page"] ?? 1,
+    perPage: json["per_page"] ?? 20,
+    total: json["total"] ?? 0,
+    totalPages: json["total_pages"] ?? 0,
+    hasNext: json["has_next"] ?? false,
+    hasPrevious: json["has_previous"] ?? false,
+    nextPage: json["next_page"] ?? 0,
+    previousPage: json["previous_page"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "current_page": currentPage,
+    "per_page": perPage,
+    "total": total,
+    "total_pages": totalPages,
+    "has_next": hasNext,
+    "has_previous": hasPrevious,
+    "next_page": nextPage,
+    "previous_page": previousPage,
+  };
+}
+
+// =============================================
+// DISTINCT AUCTION BID MODEL WITH PAGINATION
 // =============================================
 class DistinctAuctionBid {
   int? id;
@@ -1076,5 +1209,52 @@ class DistinctAuctionBid {
     "recently_ended": recentlyEnded,
     "created_at": createdAt,
     "updated_at": updatedAt,
+  };
+}
+
+// =============================================
+// DISTINCT AUCTION BIDS PAGINATION
+// =============================================
+class DistinctAuctionBidsPagination {
+  int currentPage;
+  int perPage;
+  int total;
+  int totalPages;
+  bool hasNext;
+  bool hasPrevious;
+  int nextPage;
+  int previousPage;
+
+  DistinctAuctionBidsPagination({
+    this.currentPage = 1,
+    this.perPage = 20,
+    this.total = 0,
+    this.totalPages = 0,
+    this.hasNext = false,
+    this.hasPrevious = false,
+    this.nextPage = 0,
+    this.previousPage = 0,
+  });
+
+  factory DistinctAuctionBidsPagination.fromJson(Map<String, dynamic> json) => DistinctAuctionBidsPagination(
+    currentPage: json["current_page"] ?? 1,
+    perPage: json["per_page"] ?? 20,
+    total: json["total"] ?? 0,
+    totalPages: json["total_pages"] ?? 0,
+    hasNext: json["has_next"] ?? false,
+    hasPrevious: json["has_previous"] ?? false,
+    nextPage: json["next_page"] ?? 0,
+    previousPage: json["previous_page"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "current_page": currentPage,
+    "per_page": perPage,
+    "total": total,
+    "total_pages": totalPages,
+    "has_next": hasNext,
+    "has_previous": hasPrevious,
+    "next_page": nextPage,
+    "previous_page": previousPage,
   };
 }
