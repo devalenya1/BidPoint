@@ -379,7 +379,8 @@ class PollDataResponse {
   int? totalBids;
   String? lastBidderName;
   double? lastBidAmount;
-  bool? isAuctionUpcoming; // ADD THIS LINE
+  bool? isAuctionUpcoming;
+  String? upcomingStatus; // ADD THIS FIELD
   Winner? winner;
   List<Comment>? comments;
   List<Review>? reviews;
@@ -402,7 +403,8 @@ class PollDataResponse {
     this.totalBids,
     this.lastBidderName,
     this.lastBidAmount,
-    this.isAuctionUpcoming, // ADD THIS
+    this.isAuctionUpcoming,
+    this.upcomingStatus, // ADD THIS
     this.winner,
     this.comments,
     this.reviews,
@@ -430,7 +432,8 @@ class PollDataResponse {
       totalBids: data['total_bids'],
       lastBidderName: data['last_bidder_name'],
       lastBidAmount: (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
-      isAuctionUpcoming: data['is_auction_upcoming'] ?? false, // ADD THIS
+      isAuctionUpcoming: data['is_auction_upcoming'] ?? false,
+      upcomingStatus: data['upcoming_status'], // ADD THIS
       winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
       comments: data['comments'] != null 
           ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))
@@ -461,7 +464,8 @@ class PollDataResponse {
     'total_bids': totalBids,
     'last_bidder_name': lastBidderName,
     'last_bid_amount': lastBidAmount,
-    'is_auction_upcoming': isAuctionUpcoming, // ADD THIS
+    'is_auction_upcoming': isAuctionUpcoming,
+    'upcoming_status': upcomingStatus, // ADD THIS
     'winner': winner?.toJson(),
     'comments': comments?.map((x) => x.toJson()).toList(),
     'reviews': reviews?.map((x) => x.toJson()).toList(),
@@ -478,6 +482,7 @@ class PollDataResponse {
   int? get remaining_seconds => remainingSeconds;
   int? get reviews_count => reviewsCount;
   bool? get is_in_wishlist => isInWishlist;
+  String? get upcoming_status => upcomingStatus; // ADD SNAKE_CASE GETTER
   
   // ============ HELPER METHODS ============
   bool get isAuctionEnded => auctionEnded ?? false;
@@ -490,6 +495,9 @@ class PollDataResponse {
   bool get hasComments => (comments?.length ?? 0) > 0;
   bool get hasReviews => (reviews?.length ?? 0) > 0;
   bool get hasBidHistory => (bidHistory?.length ?? 0) > 0;
+  bool get isUpcoming => upcomingStatus == 'Upcoming';
+  bool get isLive => upcomingStatus == 'Live' || upcomingStatus == null;
+  bool get isEnded => upcomingStatus == 'Ended';
 }
 
 // ============================================
