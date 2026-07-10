@@ -1,7 +1,3 @@
-
-
-
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -40,6 +36,7 @@ class _WishlistState extends State<Wishlist> {
   List<WishlistItem> _liveItems = [];
   List<WishlistItem> _endingSoonItems = [];
   List<WishlistItem> _outbidItems = [];
+  List<WishlistItem> _recentlyEndedItems = []; // NEW: For won/lost items
   
   // Timer controllers
   final Map<int, Timer> _timers = {};
@@ -91,6 +88,7 @@ class _WishlistState extends State<Wishlist> {
           _liveItems = [];
           _endingSoonItems = [];
           _outbidItems = [];
+          _recentlyEndedItems = [];
         });
       }
     } catch (e) {
@@ -114,6 +112,7 @@ class _WishlistState extends State<Wishlist> {
     List<WishlistItem> live = [];
     List<WishlistItem> endingSoon = [];
     List<WishlistItem> outbid = [];
+    List<WishlistItem> recentlyEnded = [];
     
     final now = DateTime.now();
     
@@ -122,22 +121,27 @@ class _WishlistState extends State<Wishlist> {
       final isLive = item.isLive ?? false;
       final isEndingSoon = item.endingSoon ?? false;
       final isOutbid = item.outbid ?? false;
+      final isWinning = item.isWinning ?? false;
       final isAuction = item.isAuction ?? false;
       
       // Add to all items
       allItems.add(item);
       
-      // Categorize based on API data
-      if (isAuction && isLive) {
+      // 🔥 NEW LOGIC: Check if auction is not live
+      if (isAuction && !isLive) {
+        // Auction has ended - move to recently ended
+        recentlyEnded.add(item);
+      } else if (isAuction && isLive) {
+        // Live auction
         live.add(item);
-      }
-      
-      if (isAuction && isEndingSoon && isLive) {
-        endingSoon.add(item);
-      }
-      
-      if (isAuction && isOutbid && isLive) {
-        outbid.add(item);
+        
+        if (isEndingSoon) {
+          endingSoon.add(item);
+        }
+        
+        if (isOutbid) {
+          outbid.add(item);
+        }
       }
     }
     
@@ -166,11 +170,18 @@ class _WishlistState extends State<Wishlist> {
       return bDate.compareTo(aDate);
     });
     
+    recentlyEnded.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.now();
+      final bDate = b.createdAt ?? DateTime.now();
+      return bDate.compareTo(aDate);
+    });
+    
     setState(() {
       _wishlistItems = allItems;
       _liveItems = live;
       _endingSoonItems = endingSoon;
       _outbidItems = outbid;
+      _recentlyEndedItems = recentlyEnded;
     });
   }
   
@@ -311,6 +322,7 @@ class _WishlistState extends State<Wishlist> {
             _liveItems.removeWhere((item) => item.productId == productId);
             _endingSoonItems.removeWhere((item) => item.productId == productId);
             _outbidItems.removeWhere((item) => item.productId == productId);
+            _recentlyEndedItems.removeWhere((item) => item.productId == productId);
           });
           
           wishlist_count.$ = _wishlistItems.length;
@@ -577,18 +589,43 @@ class _WishlistState extends State<Wishlist> {
     final bool isWinning = item.isWinning ?? false;
     final bool isAuction = item.isAuction ?? false;
     
+    // 🔥 NEW LOGIC: Determine win/loss status
+    final bool isWon = !isLive && isWinning;
+    final bool isLost = !isLive && !isWinning && isAuction;
+    final bool isRecentlyEnded = !isLive && isAuction;
+    
     // Determine status text and description
     String statusText;
     String descriptionText = '';
     Color statusColor = Colors.black;
+    bool showWinLossIcon = false;
+    String winLossIcon = '';
+    Color winLossColor = Colors.transparent;
     
-    // Determine the primary status for display
-    if (!isAuction) {
+    // Check if this is a recently ended auction (won or lost)
+    if (isRecentlyEnded) {
+      if (isWon) {
+        // 🏆 WON
+        statusText = AppLocalizations.of(context)!.you_won_auction;
+        descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
+        showWinLossIcon = true;
+        winLossIcon = '🏆';
+        winLossColor = Colors.green.shade50;
+      } else if (isLost) {
+        // ❌ LOST
+        statusText = AppLocalizations.of(context)!.auction_ended;
+        descriptionText = AppLocalizations.of(context)!.you_didnt_win;
+        showWinLossIcon = true;
+        winLossIcon = '❌';
+        winLossColor = Colors.red.shade50;
+      } else {
+        // Fallback for other ended cases
+        statusText = AppLocalizations.of(context)!.auction_has_ended;
+        showWinLossIcon = false;
+      }
+    } else if (!isAuction) {
       // Non-auction product
       statusText = AppLocalizations.of(context)!.view_details;
-    } else if (!isLive) {
-      // Auction has ended (not live)
-      statusText = AppLocalizations.of(context)!.auction_has_ended;
     } else if (isOutbid && isLive) {
       // Live and outbid
       statusText = AppLocalizations.of(context)!.you_were_outbid;
@@ -628,6 +665,42 @@ class _WishlistState extends State<Wishlist> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 🔥 LEFT SIDE - WIN/LOSS INDICATOR (Only for ended auctions)
+          if (showWinLossIcon)
+            Container(
+              width: 30.w,
+              height: imageHeight,
+              decoration: BoxDecoration(
+                color: winLossColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      winLossIcon,
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      isWon ? "WON" : "LOST",
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isWon ? Colors.green.shade700 : Colors.red.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          
           // Product Image - Clickable
           GestureDetector(
             onTap: () {
@@ -652,14 +725,14 @@ class _WishlistState extends State<Wishlist> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(12.r),
+                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
                 ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(12.r),
+                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
                 ),
                 child: Stack(
                   children: [
@@ -688,7 +761,7 @@ class _WishlistState extends State<Wishlist> {
                               color: const Color(0xFF94A3B8),
                             ),
                           ),
-                    // "Ending Soon" Badge on the image
+                    // "Ending Soon" Badge on the image (only for live auctions)
                     if (showEndingSoonBadge)
                       Positioned(
                         top: 8.w,
@@ -788,7 +861,7 @@ class _WishlistState extends State<Wishlist> {
                 ),
                 SizedBox(height: 2.h),
                 
-                // 2️⃣ Description Text - Same color as the status text's actual meaning
+                // 2️⃣ Description Text - BLACK color
                 if (descriptionText.isNotEmpty && isAuction)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -799,11 +872,7 @@ class _WishlistState extends State<Wishlist> {
                         style: TextStyle(
                           fontSize: isTablet ? 12.sp : 10.sp,
                           fontWeight: FontWeight.w600,
-                          color: isOutbid 
-                              ? Colors.grey.shade700 
-                              : (isWinning 
-                                  ? Colors.grey.shade700 
-                                  : Colors.grey.shade600),
+                          color: Colors.black,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -881,7 +950,7 @@ class _WishlistState extends State<Wishlist> {
     final bool isAuction = item.isAuction ?? false;
     final bool isOutbid = item.outbid ?? false;
     final bool isWinning = item.isWinning ?? false;
-    final bool isEnded = !isLive && isAuction;
+    final bool isRecentlyEnded = !isLive && isAuction;
     final String productSlug = item.slug ?? '';
     
     String buttonText;
@@ -890,6 +959,14 @@ class _WishlistState extends State<Wishlist> {
     // Determine button text and action based on status
     if (!isAuction) {
       // Non-auction product
+      buttonText = AppLocalizations.of(context)!.view_details;
+      onTap = () {
+        if (productSlug.isNotEmpty) {
+          _navigateToProductDetails(productSlug);
+        }
+      };
+    } else if (isRecentlyEnded) {
+      // WON or LOST → "View Details"
       buttonText = AppLocalizations.of(context)!.view_details;
       onTap = () {
         if (productSlug.isNotEmpty) {
@@ -907,14 +984,6 @@ class _WishlistState extends State<Wishlist> {
     } else if (isWinning && isLive) {
       // WINNING → "View Product"
       buttonText = AppLocalizations.of(context)!.view_product;
-      onTap = () {
-        if (productSlug.isNotEmpty) {
-          _navigateToProductDetails(productSlug);
-        }
-      };
-    } else if (isEnded) {
-      // WON or LOST → "View Details"
-      buttonText = AppLocalizations.of(context)!.view_details;
       onTap = () {
         if (productSlug.isNotEmpty) {
           _navigateToProductDetails(productSlug);
