@@ -1,4 +1,10 @@
 {
+"auction_not_active": "Auction is not active",
+"no_bids_available": "No bids available",
+"starts_soon": "Starts Soon",
+"ended": "Ended",
+"auction_is_not_active": "Auction is not active",
+"no_bids_available_ucf": "No bids available",
   "auction_product_screen_": "",
    "auction_product_ucf": "Auction Products",
   "auction_product_screen_title": "Auction Product",
