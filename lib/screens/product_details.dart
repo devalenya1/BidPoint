@@ -1,4 +1,3 @@
-// product_detail_screen.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -80,9 +79,12 @@ class _ProductDetailsState extends State<ProductDetails>
   // Timer
   Timer? _countdownTimer;
   Timer? _pollingTimer;
+  Timer? _upcomingTimer; // NEW: Timer for upcoming countdown
   Duration _timeLeft = Duration.zero;
+  Duration _timeUntilStart = Duration.zero; // NEW: Time until auction starts
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
+  String _auctionStatus = "live"; // NEW: "upcoming", "live", "ended"
 
   // Bid Data
   double _currentHighestBid = 0;
@@ -121,13 +123,12 @@ class _ProductDetailsState extends State<ProductDetails>
   
   late CarouselController _fullScreenCarouselController;
 
-  // In initState, initialize the controller
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _mainScrollController = ScrollController();
-    _fullScreenCarouselController = CarouselController(); // Add this
+    _fullScreenCarouselController = CarouselController();
     _fetchAllData();
     _startPolling();
     
@@ -144,16 +145,15 @@ class _ProductDetailsState extends State<ProductDetails>
     _reviewController.dispose();
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
+    _upcomingTimer?.cancel();
     _audioPlayer.dispose();
     _commentsScrollController.dispose();
     super.dispose();
   }
 
-
   // ============================================
   // API CALLS
   // ============================================
-
 
   void _scrollToBottom() {
     if (_commentsScrollController.hasClients) {
@@ -170,7 +170,6 @@ class _ProductDetailsState extends State<ProductDetails>
       final response =
           await _productRepository.getProductComments(_product?.id ?? 0);
       if (response.success == true && response.comments != null) {
-        // Reverse comments so latest appears at bottom
         setState(() => _comments = response.comments!.reversed.toList());
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
@@ -247,24 +246,9 @@ class _ProductDetailsState extends State<ProductDetails>
         _minNextBid = _currentHighestBid + 1;
 
         // ============================================
-        // FIX: Handle upcoming auctions properly
+        // DETERMINE AUCTION STATUS USING upcoming_status
         // ============================================
-        // Check if auction is upcoming
-        final bool isUpcoming = _product?.isAuctionUpcoming ?? false;
-        
-        if (isUpcoming) {
-          // Upcoming auction - show "Starting at" countdown
-          // Timer for upcoming is handled in the UI, not here
-          _timeLeft = Duration.zero;
-          // Don't start the ending countdown
-        } else if (_product!.getAuctionEndDateTime() != null) {
-          // Active auction - start ending countdown
-          final endTime = _product!.getAuctionEndDateTime()!;
-          final now = DateTime.now();
-          _timeLeft = endTime.difference(now);
-          if (_timeLeft.isNegative) _timeLeft = Duration.zero;
-          _startCountdown(endTime);
-        }
+        _determineAuctionStatus();
       }
 
       await _fetchComments();
@@ -274,7 +258,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
       setState(() => _isLoading = false);
       
-      // Auto-scroll to bottom after comments load
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
@@ -283,6 +266,118 @@ class _ProductDetailsState extends State<ProductDetails>
       ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
       setState(() => _isLoading = false);
     }
+  }
+
+  // ============================================
+  // DETERMINE AUCTION STATUS
+  // ============================================
+  
+  void _determineAuctionStatus() {
+    if (_product == null) return;
+    
+    // Get the upcoming status from the product
+    // This comes from the API as "upcoming_status" field
+    final String? upcomingStatus = _product?.upcomingStatus;
+    
+    if (upcomingStatus == "Upcoming") {
+      _auctionStatus = "upcoming";
+      _startUpcomingTimer();
+      return;
+    }
+    
+    // Check if auction is ended
+    if (_product?.isAuctionEnded == true) {
+      _auctionStatus = "ended";
+      _timeLeft = Duration.zero;
+      return;
+    }
+    
+    // Default: Live auction
+    _auctionStatus = "live";
+    
+    // Start ending countdown for live auctions
+    if (_product!.getAuctionEndDateTime() != null) {
+      final endTime = _product!.getAuctionEndDateTime()!;
+      final now = DateTime.now();
+      _timeLeft = endTime.difference(now);
+      if (_timeLeft.isNegative) _timeLeft = Duration.zero;
+      _startCountdown(endTime);
+    }
+  }
+
+  // ============================================
+  // UPCOMING TIMER - Countdown to auction start
+  // ============================================
+  
+  void _startUpcomingTimer() {
+    _upcomingTimer?.cancel();
+    
+    DateTime? startDateTime = _product?.getAuctionStartDateTime();
+    if (startDateTime == null) {
+      _timeUntilStart = Duration.zero;
+      return;
+    }
+    
+    _updateUpcomingTimer(startDateTime);
+    
+    _upcomingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      _updateUpcomingTimer(startDateTime);
+    });
+  }
+
+  void _updateUpcomingTimer(DateTime startDateTime) {
+    final now = DateTime.now();
+    final remaining = startDateTime.difference(now);
+    
+    if (remaining.isNegative) {
+      _upcomingTimer?.cancel();
+      setState(() {
+        _timeUntilStart = Duration.zero;
+        _auctionStatus = "live";
+      });
+      // Start the ending countdown now
+      if (_product!.getAuctionEndDateTime() != null) {
+        final endTime = _product!.getAuctionEndDateTime()!;
+        _startCountdown(endTime);
+      }
+      return;
+    }
+    
+    setState(() {
+      _timeUntilStart = remaining;
+    });
+  }
+
+  // ============================================
+  // ENDING COUNTDOWN TIMER
+  // ============================================
+
+  void _startCountdown(DateTime endTime) {
+    _countdownTimer?.cancel();
+
+    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      final now = DateTime.now();
+      final remaining = endTime.difference(now);
+
+      if (remaining.isNegative) {
+        timer.cancel();
+        setState(() => _timeLeft = Duration.zero);
+        return;
+      }
+
+      final totalSeconds = remaining.inSeconds;
+      if (totalSeconds <= _endingSeconds && totalSeconds > 0 && !_isEndingSoon) {
+        setState(() => _isEndingSoon = true);
+        _playTickSound();
+        ToastComponent.showWarning(
+          '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
+        );
+      } else if (totalSeconds > _endingSeconds && _isEndingSoon) {
+        setState(() => _isEndingSoon = false);
+      }
+
+      setState(() => _timeLeft = remaining);
+    });
   }
 
   Future<void> _pollData() async {
@@ -329,29 +424,33 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() {});
 
         // ============================================
-        // FIX: Handle auction status changes in polling
+        // UPDATE AUCTION STATUS FROM POLLING
         // ============================================
-        // Check if auction status changed from upcoming to active
-        if (response.isAuctionUpcoming != null && 
-            _product!.isAuctionUpcoming != response.isAuctionUpcoming) {
-          setState(() {
-            _product!.isAuctionUpcoming = response.isAuctionUpcoming!;
-          });
-          
-          // If no longer upcoming, start the ending timer
-          if (!response.isAuctionUpcoming! && response.auctionEndDate != null) {
-            try {
-              final endTime = DateTime.parse(response.auctionEndDate!);
-              _startCountdown(endTime);
-            } catch (e) {
-              print('Error parsing auction end date: $e');
+        if (response.upcomingStatus != null) {
+          final newStatus = response.upcomingStatus!;
+          if (_auctionStatus != newStatus) {
+            setState(() {
+              _auctionStatus = newStatus;
+            });
+            
+            if (newStatus == "upcoming") {
+              _startUpcomingTimer();
+              _countdownTimer?.cancel();
+            } else if (newStatus == "live" && response.auctionEndDate != null) {
+              _upcomingTimer?.cancel();
+              try {
+                final endTime = DateTime.parse(response.auctionEndDate!);
+                _startCountdown(endTime);
+              } catch (e) {
+                print('Error parsing auction end date: $e');
+              }
             }
           }
         }
 
         // Update auction end date and timer for active auctions
         if (response.auctionEndDate != null && 
-            !(_product?.isAuctionUpcoming ?? false)) {
+            _auctionStatus == "live") {
           try {
             final newEndTime = DateTime.parse(response.auctionEndDate!);
             final now = DateTime.now();
@@ -450,34 +549,6 @@ class _ProductDetailsState extends State<ProductDetails>
     });
   }
 
-  void _startCountdown(DateTime endTime) {
-    _countdownTimer?.cancel();
-
-    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      final now = DateTime.now();
-      final remaining = endTime.difference(now);
-
-      if (remaining.isNegative) {
-        timer.cancel();
-        setState(() => _timeLeft = Duration.zero);
-        return;
-      }
-
-      final totalSeconds = remaining.inSeconds;
-      if (totalSeconds <= _endingSeconds && totalSeconds > 0 && !_isEndingSoon) {
-        setState(() => _isEndingSoon = true);
-        _playTickSound();
-        ToastComponent.showWarning(
-          '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
-        );
-      } else if (totalSeconds > _endingSeconds && _isEndingSoon) {
-        setState(() => _isEndingSoon = false);
-      }
-
-      setState(() => _timeLeft = remaining);
-    });
-  }
-
   Future<void> _likeComment(int commentId) async {
     if (!is_logged_in.$) {
       _showLoginRequired();
@@ -516,6 +587,12 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     if (_isProcessing) return;
+    
+    // Don't allow bidding on upcoming or ended auctions
+    if (_auctionStatus != "live") {
+      ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
+      return;
+    }
 
     final amount = _minNextBidNow;
 
@@ -567,6 +644,12 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     if (_isProcessing) return;
+    
+    // Don't allow bidding on upcoming or ended auctions
+    if (_auctionStatus != "live") {
+      ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
+      return;
+    }
 
     final amount = double.tryParse(_bidController.text);
     if (amount == null) {
@@ -845,7 +928,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // CONTACT SELLER - Redirect to Messenger List on Success
+  // CONTACT SELLER
   // ============================================
 
   Future<void> _contactSeller() async {
@@ -967,6 +1050,40 @@ class _ProductDetailsState extends State<ProductDetails>
     };
   }
 
+  String _formatUpcomingTimeLeft() {
+    if (_timeUntilStart.isNegative) return '00:00:00';
+
+    final days = _timeUntilStart.inDays;
+    final hours = _timeUntilStart.inHours.remainder(24);
+    final minutes = _timeUntilStart.inMinutes.remainder(60);
+    final seconds = _timeUntilStart.inSeconds.remainder(60);
+
+    if (days > 0) {
+      return '${days}d ${hours}h ${minutes}m';
+    } else {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+  }
+
+  Map<String, dynamic> _getUpcomingTimeComponents() {
+    final days = _timeUntilStart.inDays;
+    final hours = _timeUntilStart.inHours.remainder(24);
+    final minutes = _timeUntilStart.inMinutes.remainder(60);
+    final seconds = _timeUntilStart.inSeconds.remainder(60);
+
+    bool showDays = days > 0;
+    bool showSeconds = !showDays;
+
+    return {
+      'days': days.toString().padLeft(2, '0'),
+      'hours': hours.toString().padLeft(2, '0'),
+      'minutes': minutes.toString().padLeft(2, '0'),
+      'seconds': seconds.toString().padLeft(2, '0'),
+      'showDays': showDays,
+      'showSeconds': showSeconds,
+    };
+  }
+
   void _showLoginRequired() {
     ToastComponent.showWarning(AppLocalizations.of(context)!.please_login_to_continue);
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
@@ -992,6 +1109,12 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _showBidInputDialog() {
+    // Don't allow bidding on upcoming or ended auctions
+    if (_auctionStatus != "live") {
+      ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
+      return;
+    }
+    
     _bidController.clear();
 
     showDialog(
@@ -1117,7 +1240,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
   
   double _getResponsiveFontSize(double smallSize, double largeSize) {
-    // If screen width is less than 400, use small size, else use large size
     return _screenWidth < 400 ? smallSize : largeSize;
   }
 
@@ -1130,7 +1252,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MODAL DIALOGS - UPDATED WITH 90% WIDTH AND RESPONSIVE FONTS
+  // MODAL DIALOGS
   // ============================================
 
   void _showProductDetailsModal() {
@@ -1738,11 +1860,10 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // FULL-SCREEN IMAGE VIEWER FROM THUMBNAIL
+  // FULL-SCREEN IMAGE VIEWER
   // ============================================
 
   void _showFullImageFromThumbnail(int selectedIndex) {
-    // Show all images in a carousel starting from the selected index
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1758,7 +1879,6 @@ class _ProductDetailsState extends State<ProductDetails>
               color: Colors.black,
               child: Stack(
                 children: [
-                  // Image Carousel
                   CarouselSlider(
                     carouselController: _fullScreenCarouselController,
                     options: CarouselOptions(
@@ -1791,7 +1911,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       );
                     }).toList(),
                   ),
-                  // Close Button
                   Positioned(
                     top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
                     right: _getResponsiveSize(11, 19),
@@ -1811,7 +1930,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                   ),
-                  // Image Counter
                   Positioned(
                     bottom: _getResponsiveSize(30, 50),
                     left: 0,
@@ -1837,9 +1955,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                     ),
                   ),
-                  // Navigation arrows
                   if (_productImages.length > 1) ...[
-                    // Left arrow
                     Positioned(
                       left: _getResponsiveSize(6, 12),
                       top: 0,
@@ -1873,7 +1989,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                     ),
-                    // Right arrow
                     Positioned(
                       right: _getResponsiveSize(6, 12),
                       top: 0,
@@ -2007,7 +2122,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // TIMER WIDGETS - UPDATED: Larger boxes, with colon separator
+  // TIMER WIDGETS
   // ============================================
 
   Widget _buildTimerUnit(String value, String label, {bool isEndingSoon = false, bool showColon = false}) {
@@ -2020,7 +2135,7 @@ class _ProductDetailsState extends State<ProductDetails>
         margin: EdgeInsets.only(right: _getResponsiveSize(3, 6)),
         padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(5, 9), vertical: _getResponsiveSize(5, 9)),
         decoration: BoxDecoration(
-          color: const Color(0xFFE8F4F8), // Sky blue background
+          color: const Color(0xFFE8F4F8),
           borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
           border: Border.all(
             color: MyTheme.accent_color,
@@ -2052,7 +2167,6 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     ];
     
-    // Show colon after d, h, and m (but only if there is a next unit)
     if (showColon) {
       children.add(
         Padding(
@@ -2075,79 +2189,70 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================
+  // TIMER ROW - UPDATED to handle upcoming
+  // ============================================
+
   Widget _buildTimerRow() {
-    // Check if product is upcoming - using the correct logic
-    final bool isUpcoming = _product?.isAuctionUpcoming ?? false;
-    
-    // For upcoming auctions, get the start date time
-    if (isUpcoming) {
-      DateTime? startDateTime = _product?.getAuctionStartDateTime();
-      if (startDateTime != null) {
-        final now = DateTime.now();
-        final timeUntilStart = startDateTime.difference(now);
-        
-        // If start time is in the future
-        if (!timeUntilStart.isNegative) {
-          return _buildUpcomingTimerRow(startDateTime);
-        }
-      }
-      // Fallback if no date available
-      return _buildTimerRowFallback();
+    if (_auctionStatus == "upcoming") {
+      // Show countdown to auction start
+      return _buildUpcomingTimerRow();
+    } else if (_auctionStatus == "ended") {
+      // Show "Ended" message
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.auction_ended,
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: _getResponsiveFontSize(10, 14),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 2),
+          Text(
+            AppLocalizations.of(context)!.no_bids_available,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: _getResponsiveFontSize(8, 11),
+            ),
+          ),
+        ],
+      );
     } else {
-      // Show ending countdown for active/ended auctions
+      // Live auction - show ending countdown
       return _buildEndingTimerRow();
     }
   }
 
-  // Update _buildUpcomingTimerRow to accept DateTime parameter
-  Widget _buildUpcomingTimerRow(DateTime startDateTime) {
-    final now = DateTime.now();
-    final timeUntilStart = startDateTime.difference(now);
-    
-    if (timeUntilStart.isNegative) {
-      return _buildTimerRowFallback();
-    }
-    
-    final days = timeUntilStart.inDays;
-    final hours = timeUntilStart.inHours.remainder(24);
-    final minutes = timeUntilStart.inMinutes.remainder(60);
-    final seconds = timeUntilStart.inSeconds.remainder(60);
-    
+  Widget _buildUpcomingTimerRow() {
+    final components = _getUpcomingTimeComponents();
+    final days = components['days'] as String;
+    final hours = components['hours'] as String;
+    final minutes = components['minutes'] as String;
+    final seconds = components['seconds'] as String;
+    final showDays = components['showDays'] as bool;
+    final showSeconds = components['showSeconds'] as bool;
+
     List<Widget> timerUnits = [];
-    
-    // Show days if > 0
-    if (days > 0) {
-      timerUnits.add(_buildTimerUnit(
-        days.toString().padLeft(2, '0'), 
-        'd', 
-        showColon: true
-      ));
+
+    if (showDays) {
+      timerUnits.add(_buildTimerUnit(days, 'd', showColon: true));
     }
-    
-    // Always show hours, minutes, seconds
-    timerUnits.add(_buildTimerUnit(
-      hours.toString().padLeft(2, '0'), 
-      'h', 
-      showColon: true
-    ));
-    timerUnits.add(_buildTimerUnit(
-      minutes.toString().padLeft(2, '0'), 
-      'm', 
-      showColon: true
-    ));
-    timerUnits.add(_buildTimerUnit(
-      seconds.toString().padLeft(2, '0'), 
-      's', 
-      showColon: false
-    ));
-    
+    timerUnits.add(_buildTimerUnit(hours, 'h', showColon: true));
+    timerUnits.add(_buildTimerUnit(minutes, 'm', showColon: showSeconds));
+    if (showSeconds) {
+      timerUnits.add(_buildTimerUnit(seconds, 's', showColon: false));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.starts_in,
           style: TextStyle(
-            color: Colors.white70,
+            color: Colors.orange,
             fontSize: _getResponsiveFontSize(8, 11),
             fontWeight: FontWeight.w500,
           ),
@@ -2199,19 +2304,8 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  Widget _buildTimerRowFallback() {
-    return Text(
-      AppLocalizations.of(context)!.starting,
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: _getResponsiveFontSize(12, 16),
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
   // ============================================
-  // Icon Circle with Custom Image - Larger icons
+  // Icon Circle with Custom Image
   // ============================================
 
   Widget _buildIconCircleWithImage({
@@ -2299,7 +2393,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // MOBILE WIDGETS - Larger icons and fonts
+  // MOBILE WIDGETS
   // ============================================
 
   Widget _buildIconCircle({
@@ -2398,10 +2492,8 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-
-
   // ============================================
-  // MOBILE LAYOUT - UPDATED: All requested changes
+  // MOBILE LAYOUT
   // ============================================
 
   Widget _buildMobileLayout() {
@@ -2413,7 +2505,6 @@ class _ProductDetailsState extends State<ProductDetails>
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Main scrollable content
           RefreshIndicator(
             color: MyTheme.accent_color,
             backgroundColor: Colors.white,
@@ -2425,9 +2516,6 @@ class _ProductDetailsState extends State<ProductDetails>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ============================================
-                  // IMAGE CAROUSEL WITH OVERLAY
-                  // ============================================
                   Stack(
                     children: [
                       CarouselSlider(
@@ -2475,7 +2563,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      // TOP RIGHT ICONS - Larger
                       Positioned(
                         top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
                         right: _getResponsiveSize(10, 18),
@@ -2539,7 +2626,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ],
                         ),
                       ),
-                      // LEFT ICON - Back Button - Larger
                       Positioned(
                         top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
                         left: _getResponsiveSize(11, 19),
@@ -2549,9 +2635,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           isLoading: false,
                         ),
                       ),
-                      // ============================================
-                      // COMMENTS SECTION - Fixed input field padding
-                      // ============================================
                       Positioned(
                         bottom: _getResponsiveSize(130, 170),
                         left: _getResponsiveSize(10, 16),
@@ -2567,7 +2650,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Comments List - Increased height
                               Container(
                                 height: _getResponsiveSize(200, 280),
                                 child: _comments.isEmpty
@@ -2680,7 +2762,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                       ),
                               ),
                               SizedBox(height: _getResponsiveSize(4, 6)),
-                              // Comment Input - Fixed with proper padding
                               Row(
                                 children: [
                                   Expanded(
@@ -2704,13 +2785,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                           ),
                                           border: InputBorder.none,
                                           contentPadding: EdgeInsets.symmetric(
-                                            horizontal: _getResponsiveSize(12, 16),  // Proper horizontal padding
-                                            vertical: _getResponsiveSize(6, 10),      // Proper vertical padding
+                                            horizontal: _getResponsiveSize(12, 16),
+                                            vertical: _getResponsiveSize(6, 10),
                                           ),
-                                          isDense: true,  // Makes the input field more compact
+                                          isDense: true,
                                         ),
                                         onSubmitted: (value) => _sendComment(),
-                                        textAlignVertical: TextAlignVertical.center,  // Centers the text vertically
+                                        textAlignVertical: TextAlignVertical.center,
                                       ),
                                     ),
                                   ),
@@ -2746,9 +2827,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      // ============================================
-                      // PRODUCT NAME & DESCRIPTION - With margin bottom
-                      // ============================================
                       Positioned(
                         bottom: _getResponsiveSize(85, 115),
                         left: _getResponsiveSize(10, 16),
@@ -2779,9 +2857,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      // ============================================
-                      // TIMER & CURRENT BID - Shows "Starting at" or "Ending"
-                      // ============================================
                       Positioned(
                         bottom: _getResponsiveSize(22, 27),
                         left: _getResponsiveSize(10, 10),
@@ -2790,7 +2865,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Timer - Shows "Starting at" for upcoming, "Ending" for active
                             Padding(
                               padding: EdgeInsets.only(
                                 left: _getResponsiveSize(1, 3),
@@ -2799,7 +2873,6 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                               child: _buildTimerRow(),
                             ),
-                            // Current Bid / Starting Bid
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: _getResponsivePadding(18, 28), 
@@ -2818,9 +2891,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    _product?.isAuctionUpcoming ?? false
+                                    _auctionStatus == "upcoming"
                                         ? AppLocalizations.of(context)!.starting_bid
-                                        : AppLocalizations.of(context)!.current_bid,
+                                        : (_auctionStatus == "ended"
+                                            ? AppLocalizations.of(context)!.final_bid
+                                            : AppLocalizations.of(context)!.current_bid),
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: _getResponsiveFontSize(7, 10),
@@ -2828,7 +2903,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     ),
                                   ),
                                   Text(
-                                    _formatPrice(_product?.isAuctionUpcoming ?? false 
+                                    _formatPrice(_auctionStatus == "upcoming" 
                                         ? _startingBid 
                                         : _currentHighestBid),
                                     style: TextStyle(
@@ -2846,9 +2921,6 @@ class _ProductDetailsState extends State<ProductDetails>
                     ],
                   ),
                   
-                  // ============================================
-                  // BID INFORMATION SECTION
-                  // ============================================
                   Transform.translate(
                     offset: Offset(0, -15),
                     child: Container(
@@ -2907,9 +2979,6 @@ class _ProductDetailsState extends State<ProductDetails>
                     ),
                   ),
                   
-                  // ============================================
-                  // REVIEWS SECTION - Increased height
-                  // ============================================
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 18)),
                     child: GestureDetector(
@@ -2972,9 +3041,6 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   SizedBox(height: _getResponsiveSize(8, 14)),
                   
-                  // ============================================
-                  // THUMBNAILS - CLICKABLE WITH FULL-SCREEN VIEW
-                  // ============================================
                   Container(
                     height: _getResponsiveSize(60, 80),
                     margin: EdgeInsets.all(_getResponsivePadding(10, 14)),
@@ -2984,7 +3050,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       itemBuilder: (context, index) {
                         return GestureDetector(
                           onTap: () {
-                            // Navigate to the selected image in full-screen view
                             _showFullImageFromThumbnail(index);
                           },
                           child: Container(
@@ -3019,9 +3084,6 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
           ),
-          // ============================================
-          // FIXED BOTTOM BAR
-          // ============================================
           Positioned(
             bottom: 0,
             left: 0,
@@ -3041,16 +3103,23 @@ class _ProductDetailsState extends State<ProductDetails>
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _showBidInputDialog,
+                      onPressed: _auctionStatus == "live" ? _showBidInputDialog : null,
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8F4F8),
+                        backgroundColor: _auctionStatus == "live" ? const Color(0xFFE8F4F8) : Colors.grey.shade100,
                         padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(12, 17)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
                       ),
                       child: Text(
-                        AppLocalizations.of(context)!.custom_ucf,
-                        style: TextStyle(fontSize: _getResponsiveFontSize(11, 16), color: MyTheme.accent_color),
+                        _auctionStatus == "upcoming" 
+                            ? AppLocalizations.of(context)!.starts_soon
+                            : (_auctionStatus == "ended"
+                                ? AppLocalizations.of(context)!.ended
+                                : AppLocalizations.of(context)!.custom_ucf),
+                        style: TextStyle(
+                          fontSize: _getResponsiveFontSize(11, 16), 
+                          color: _auctionStatus == "live" ? MyTheme.accent_color : Colors.grey,
+                        ),
                       ),
                     ),
                   ),
@@ -3058,9 +3127,9 @@ class _ProductDetailsState extends State<ProductDetails>
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: _isProcessing ? null : _placeBidNow,
+                      onPressed: _auctionStatus == "live" && !_isProcessing ? _placeBidNow : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: MyTheme.accent_color,
+                        backgroundColor: _auctionStatus == "live" ? MyTheme.accent_color : Colors.grey,
                         padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(12, 17)),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
@@ -3068,7 +3137,11 @@ class _ProductDetailsState extends State<ProductDetails>
                       child: _isProcessing
                           ? _buildButtonLoader()
                           : Text(
-                              '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}',
+                              _auctionStatus == "upcoming"
+                                  ? AppLocalizations.of(context)!.starts_soon
+                                  : (_auctionStatus == "ended"
+                                      ? AppLocalizations.of(context)!.ended
+                                      : '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}'),
                               style: TextStyle(
                                 fontSize: _getResponsiveFontSize(11, 16),
                                 color: Colors.white,
@@ -3080,9 +3153,6 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
           ),
-          // ============================================
-          // MORE MENU OVERLAY
-          // ============================================
           if (_showMoreMenu)
             Positioned(
               top: MediaQuery.of(context).padding.top + _getResponsiveSize(70, 90),
