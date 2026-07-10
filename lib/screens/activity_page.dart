@@ -679,10 +679,10 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     // 🔥 Determine win/loss status based on API fields
     // If recently_ended == true AND isWinning == true → WON
     // If recently_ended == true AND isWinning == false → LOST
-    final isWonStatus = isEnded && (isWinning || isHighestBidder);
-    final isLostStatus = isEnded && !isWinning && !isHighestBidder;
-    final isWinningStatus = !isEnded && (isWinning || isHighestBidder);
-    final isOutbidStatus = !isEnded && !isWinning && !isHighestBidder && hasBid;
+    final isWonStatus = isEnded && isWinning;
+    final isLostStatus = isEnded && !isWinning;
+    final isWinningStatus = !isEnded && isWinning;
+    final isOutbidStatus = !isEnded && !isWinning;
     
     // Status Text - ALL BLACK
     String statusText;
