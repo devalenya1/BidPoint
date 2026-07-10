@@ -597,7 +597,6 @@ class _WishlistState extends State<Wishlist> {
     // Determine status text and description
     String statusText;
     String descriptionText = '';
-    Color statusColor = Colors.black;
     bool showWinLossIcon = false;
     String winLossIcon = '';
     Color winLossColor = Colors.transparent;
@@ -665,42 +664,6 @@ class _WishlistState extends State<Wishlist> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔥 LEFT SIDE - WIN/LOSS INDICATOR (Only for ended auctions)
-          if (showWinLossIcon)
-            Container(
-              width: 30.w,
-              height: imageHeight,
-              decoration: BoxDecoration(
-                color: winLossColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(12.r),
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      winLossIcon,
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      isWon ? "WON" : "LOST",
-                      style: TextStyle(
-                        fontSize: 8.sp,
-                        fontWeight: FontWeight.w700,
-                        color: isWon ? Colors.green.shade700 : Colors.red.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          
           // Product Image - Clickable
           GestureDetector(
             onTap: () {
@@ -725,14 +688,14 @@ class _WishlistState extends State<Wishlist> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
-                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
                 ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
-                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
                 ),
                 child: Stack(
                   children: [
@@ -881,7 +844,7 @@ class _WishlistState extends State<Wishlist> {
                     ],
                   ),
                 
-                // 4️⃣ Current Bid with price below and point per bid at the side
+                // 4️⃣ Current Bid with price below and point per bid / win-loss icon at the side
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -910,21 +873,57 @@ class _WishlistState extends State<Wishlist> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFB5E7F5),
-                            borderRadius: BorderRadius.circular(14.r),
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context)!.bid_points(pointPerBid),
-                            style: TextStyle(
-                              fontSize: isTablet ? 10.sp : 7.sp,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF0092AC),
+                        // 🔥 NEW: Show win/loss icon OR point per bid
+                        if (showWinLossIcon)
+                          // 🏆 WIN or ❌ LOSS icon
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: isWon ? Colors.green.shade50 : Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(14.r),
+                              border: Border.all(
+                                color: isWon ? Colors.green.shade200 : Colors.red.shade200,
+                                width: 1.w,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  winLossIcon,
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 16.sp : 12.sp,
+                                  ),
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  isWon ? "WON" : "LOST",
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 10.sp : 7.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: isWon ? Colors.green.shade700 : Colors.red.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (isAuction && isLive)
+                          // Point per bid badge (only for live auctions)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB5E7F5),
+                              borderRadius: BorderRadius.circular(14.r),
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context)!.bid_points(pointPerBid),
+                              style: TextStyle(
+                                fontSize: isTablet ? 10.sp : 7.sp,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF0092AC),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ],
