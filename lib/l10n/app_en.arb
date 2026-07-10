@@ -1106,6 +1106,7 @@
   "someone_placed_higher_bid_on": "Someone placed a higher bid on",
   "your_bid_highest_on": "Your bid is currently the highest on",
   "congratulations_you_won": "Congratulations! You won",
+  "your_bid_highest": "Your bid is currently the highest",
   "you_didnt_win": "You didn't win",
   "one_bid_equals": "1 Bid = ",
   "failed_to_load_referral_data": "Failed to load referral data",

@@ -1,3 +1,7 @@
+
+
+
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -592,7 +596,7 @@ class _WishlistState extends State<Wishlist> {
     } else if (isWinning && isLive) {
       // Live and winning
       statusText = AppLocalizations.of(context)!.currently_winning;
-      descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
+      descriptionText = AppLocalizations.of(context)!.your_bid_highest;
     } else {
       // Default
       statusText = AppLocalizations.of(context)!.place_your_bid_now;

@@ -283,10 +283,79 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
+  Future<void> _notifyMe() async {
+    if (_isProcessing) return;
+    
+    if (!is_logged_in.$) {
+      _showLoginDialog();
+      return;
+    }
+    
+    _isProcessing = true;
+    setState(() {});
+    
+    try {
+      final response = await ProductRepository().notifyMeForAuction(widget.id);
+      
+      if (response['success'] == true) {
+        ToastComponent.showSuccess(
+          response['message'] ?? 'You will be notified when this auction starts!',
+        );
+      } else {
+        ToastComponent.showError(
+          response['message'] ?? 'Failed to set notification',
+        );
+      }
+    } catch (e) {
+      ToastComponent.showError('Error setting notification');
+    } finally {
+      _isProcessing = false;
+      setState(() {});
+    }
+  }
+
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Text(
+          'Login Required',
+          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Please login to set notification',
+          style: TextStyle(fontSize: 13.sp),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Login()),
+              );
+            },
+            child: Text(
+              'Login',
+              style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayBid = _getDisplayBid();
-    final showTimer = _timeLeft != "No Timer";
     final isUpcoming = _auctionStatus == "upcoming";
     final isEnded = _auctionStatus == "ended";
     final isActive = _auctionStatus == "active";
@@ -477,38 +546,67 @@ class _ProductCardState extends State<ProductCard> {
                 ),
                 SizedBox(height: 12.h),
                 
-                // View Product Button
+                // View Product Button OR Notify Me Button (for upcoming)
                 GestureDetector(
-                  onTap: _navigateToProduct,
+                  onTap: isUpcoming ? _notifyMe : _navigateToProduct,
                   child: Container(
                     width: double.infinity,
                     height: 35.h,
                     decoration: BoxDecoration(
-                      color: isEnded ? Colors.grey : MyTheme.accent_color,
+                      color: isEnded ? Colors.grey : (isUpcoming ? Colors.orange : MyTheme.accent_color),
                       borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isEnded ? 'Ended' : (isUpcoming ? 'Upcoming' : 'View Product'),
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                      child: isUpcoming
+                          ? (_isProcessing
+                              ? SizedBox(
+                                  height: 14.w,
+                                  width: 14.w,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.w,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.notifications_none,
+                                      size: 12.sp,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      'Notify Me',
+                                      style: TextStyle(
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ))
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isEnded ? 'Ended' : 'View Product',
+                                  style: TextStyle(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (!isEnded) ...[
+                                  SizedBox(width: 4.w),
+                                  Icon(
+                                    Icons.arrow_forward,
+                                    size: 11.sp,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ],
                             ),
-                          ),
-                          if (!isEnded) ...[
-                            SizedBox(width: 4.w),
-                            Icon(
-                              Icons.arrow_forward,
-                              size: 11.sp,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ],
-                      ),
                     ),
                   ),
                 ),
