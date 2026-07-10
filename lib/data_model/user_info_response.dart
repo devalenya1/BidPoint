@@ -1257,4 +1257,109 @@ class DistinctAuctionBidsPagination {
     "next_page": nextPage,
     "previous_page": previousPage,
   };
+
+  // =============================================
+  // WISHLIST PAGINATED RESPONSE WRAPPER
+  // =============================================
+  class WishlistPaginatedResponse {
+    bool success;
+    List<WishlistItem> data;
+    WishlistPagination pagination;
+    int wishlistCount;
+
+    WishlistPaginatedResponse({
+      required this.success,
+      required this.data,
+      required this.pagination,
+      required this.wishlistCount,
+    });
+
+    factory WishlistPaginatedResponse.fromJson(Map<String, dynamic> json) => WishlistPaginatedResponse(
+      success: json["success"] ?? true,
+      data: json["wishlist"] != null 
+          ? List<WishlistItem>.from(json["wishlist"].map((x) => WishlistItem.fromJson(x)))
+          : [],
+      pagination: json["wishlist_pagination"] != null
+          ? WishlistPagination.fromJson(json["wishlist_pagination"])
+          : WishlistPagination(currentPage: 1, perPage: 20, total: 0),
+      wishlistCount: json["wishlist_count"] ?? 0,
+    );
+
+    Map<String, dynamic> toJson() => {
+      "success": success,
+      "wishlist": data.map((x) => x.toJson()).toList(),
+      "wishlist_pagination": pagination.toJson(),
+      "wishlist_count": wishlistCount,
+    };
+  }
+
+  // =============================================
+  // AUCTION BIDS PAGINATED RESPONSE WRAPPER
+  // =============================================
+  class AuctionBidsPaginatedResponse {
+    bool success;
+    List<AuctionBid> data;
+    AuctionBidsPagination pagination;
+    int auctionBidsCount;
+
+    AuctionBidsPaginatedResponse({
+      required this.success,
+      required this.data,
+      required this.pagination,
+      required this.auctionBidsCount,
+    });
+
+    factory AuctionBidsPaginatedResponse.fromJson(Map<String, dynamic> json) => AuctionBidsPaginatedResponse(
+      success: json["success"] ?? true,
+      data: json["auction_bids"] != null 
+          ? List<AuctionBid>.from(json["auction_bids"].map((x) => AuctionBid.fromJson(x)))
+          : [],
+      pagination: json["auction_bids_pagination"] != null
+          ? AuctionBidsPagination.fromJson(json["auction_bids_pagination"])
+          : AuctionBidsPagination(currentPage: 1, perPage: 20, total: 0),
+      auctionBidsCount: json["auction_bids_count"] ?? 0,
+    );
+
+    Map<String, dynamic> toJson() => {
+      "success": success,
+      "auction_bids": data.map((x) => x.toJson()).toList(),
+      "auction_bids_pagination": pagination.toJson(),
+      "auction_bids_count": auctionBidsCount,
+    };
+  }
+
+  // =============================================
+  // DISTINCT AUCTION BIDS PAGINATED RESPONSE WRAPPER
+  // =============================================
+  class DistinctAuctionBidsPaginatedResponse {
+    bool success;
+    List<DistinctAuctionBid> data;
+    DistinctAuctionBidsPagination pagination;
+    int distinctAuctionBidsCount;
+
+    DistinctAuctionBidsPaginatedResponse({
+      required this.success,
+      required this.data,
+      required this.pagination,
+      required this.distinctAuctionBidsCount,
+    });
+
+    factory DistinctAuctionBidsPaginatedResponse.fromJson(Map<String, dynamic> json) => DistinctAuctionBidsPaginatedResponse(
+      success: json["success"] ?? true,
+      data: json["distinct_auction_bids"] != null 
+          ? List<DistinctAuctionBid>.from(json["distinct_auction_bids"].map((x) => DistinctAuctionBid.fromJson(x)))
+          : [],
+      pagination: json["distinct_auction_bids_pagination"] != null
+          ? DistinctAuctionBidsPagination.fromJson(json["distinct_auction_bids_pagination"])
+          : DistinctAuctionBidsPagination(currentPage: 1, perPage: 20, total: 0),
+      distinctAuctionBidsCount: json["distinct_auction_bids_count"] ?? 0,
+    );
+
+    Map<String, dynamic> toJson() => {
+      "success": success,
+      "distinct_auction_bids": data.map((x) => x.toJson()).toList(),
+      "distinct_auction_bids_pagination": pagination.toJson(),
+      "distinct_auction_bids_count": distinctAuctionBidsCount,
+    };
+  }
 }
