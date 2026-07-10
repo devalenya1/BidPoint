@@ -504,7 +504,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 13.w),
-      margin: EdgeInsets.only(bottom: 6.h),
+      margin: EdgeInsets.only(bottom: 6.h), // Reduced from 13.h to 6.h
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -517,8 +517,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 3.w),
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                margin: EdgeInsets.only(right: 3.w), // Reduced from 4.w to 3.w
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h), // Reduced vertical padding
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -620,43 +620,25 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final isWonStatus = isEnded && (isWinning || isHighestBidder);
     final isLostStatus = isEnded && !isWinning && !isHighestBidder;
     
-    // Status Text and Colors
+    // Status Text in BLACK
     String statusText;
-    String statusEmoji;
-    Color statusColor;
     String descriptionText;
-    bool showWinLossIcon = false;
     
     if (isOutbidStatus) {
       statusText = AppLocalizations.of(context)!.you_were_outbid;
-      statusEmoji = "😞";
-      statusColor = Colors.orange.shade700;
       descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-      showWinLossIcon = false;
     } else if (isWinningStatus) {
       statusText = AppLocalizations.of(context)!.currently_winning;
-      statusEmoji = "👑";
-      statusColor = Colors.green.shade700;
       descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
-      showWinLossIcon = false;
     } else if (isWonStatus) {
       statusText = AppLocalizations.of(context)!.you_won_auction;
-      statusEmoji = "🏆";
-      statusColor = Colors.green.shade600;
       descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
-      showWinLossIcon = true;
     } else if (isLostStatus) {
       statusText = AppLocalizations.of(context)!.auction_ended;
-      statusEmoji = "❌";
-      statusColor = Colors.red.shade600;
       descriptionText = AppLocalizations.of(context)!.you_didnt_win;
-      showWinLossIcon = true;
     } else {
       statusText = '';
-      statusEmoji = '';
-      statusColor = Colors.grey;
       descriptionText = '';
-      showWinLossIcon = false;
     }
     
     return Container(
@@ -675,45 +657,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ============================================================
-          // 🏆 LEFT SIDE - WIN/LOSS INDICATOR (Only for Recently Ended)
-          // ============================================================
-          if (showWinLossIcon)
-            Container(
-              width: 30.w,
-              height: 150.h,
-              decoration: BoxDecoration(
-                color: isWonStatus ? Colors.green.shade50 : Colors.red.shade50,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(12.r),
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isWonStatus ? "🏆" : "❌",
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      isWonStatus ? "WON" : "LOST",
-                      style: TextStyle(
-                        fontSize: 8.sp,
-                        fontWeight: FontWeight.w700,
-                        color: isWonStatus ? Colors.green.shade700 : Colors.red.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          
-          // Product Image - Clickable
+          // Product Image - Clickable - NO MARGINS on left, top, bottom
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
@@ -726,14 +670,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
-                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
                 ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
-                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
                 ),
                 child: productImage != null && productImage.isNotEmpty
                     ? Image.network(
@@ -773,49 +717,49 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1️⃣ Status Text with Emoji
-                  Row(
-                    children: [
-                      if (statusEmoji.isNotEmpty)
-                        Text(
-                          statusEmoji,
-                          style: TextStyle(fontSize: 14.sp),
-                        ),
-                      SizedBox(width: 4.w),
-                      Expanded(
-                        child: Text(
-                          statusText, 
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w600,
-                            color: statusColor,
-                          ),
-                        ),
-                      ),
-                    ],
+                  // 1️⃣ Status Text - BLACK color
+                  Text(
+                    statusText, 
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
                   ),
                   SizedBox(height: 10.h),
                   
-                  // 2️⃣ Description Text
+                  // 2️⃣ Description Text - Same color as the status text's actual meaning
+                  // For outbid: use a color that indicates being outbid (e.g., red/orange)
+                  // For winning: use green
+                  // For won: use green
+                  // For lost: use red/grey
                   if (descriptionText.isNotEmpty)
                     Text(
                       descriptionText,
                       style: TextStyle(
-                        fontSize: 10.sp,
+                        fontSize: 10.sp, // Same as product name font size
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: isOutbidStatus 
+                            ? Colors.grey.shade700 
+                            : (isWinningStatus || isWonStatus 
+                                ? Colors.grey.shade700 
+                                : Colors.grey.shade600),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   
-                  // 3️⃣ Product Name
+                  // 3️⃣ Product Name - Same color and font size as description
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 10.sp, // Same as description
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                      color: isOutbidStatus 
+                          ? Colors.grey.shade700 
+                          : (isWinningStatus || isWonStatus 
+                              ? Colors.grey.shade700 
+                              : Colors.grey.shade600),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -869,7 +813,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ),
                         ),
                       ),
-                    ],
+                    ], 
                   ),
                   SizedBox(height: 8.h),
                   

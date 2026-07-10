@@ -66,7 +66,7 @@ class _ProductCardState extends State<ProductCard> {
   void initState() {
     super.initState();
     _determineAuctionStatus();
-    if (_auctionStatus == "active" && widget.auctionEndDate != null) {
+    if (_auctionStatus == "active") {
       _startTimer();
     }
   }
@@ -83,16 +83,60 @@ class _ProductCardState extends State<ProductCard> {
     // ============================================
     // STEP 1: Check if auction is UPCOMING
     // ============================================
-    // This should be checked FIRST before anything else
+    if (widget.auctionEndDate != null) {
+      // Case 1: Server returns string "Upcoming"
+      if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
+        _auctionStatus = "upcoming";
+        _timeLeft = "Upcoming";
+        return;
+      }
+      
+      // Case 2: Server returns string "Ended"
+      if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
+        _auctionStatus = "ended";
+        _timeLeft = "Ended";
+        return;
+      }
+      
+      // Case 3: Server returns timestamp as int
+      if (widget.auctionEndDate is int) {
+        final endDate = widget.auctionEndDate as int;
+        if (endDate <= 0 || endDate <= now) {
+          _auctionStatus = "ended";
+          _timeLeft = "Ended";
+          return;
+        }
+        // It's a valid future timestamp, so it's active
+        _auctionStatus = "active";
+        return;
+      }
+      
+      // Case 4: Server returns timestamp as string
+      if (widget.auctionEndDate is String) {
+        final endDate = int.tryParse(widget.auctionEndDate);
+        if (endDate != null) {
+          if (endDate <= 0 || endDate <= now) {
+            _auctionStatus = "ended";
+            _timeLeft = "Ended";
+            return;
+          }
+          // It's a valid future timestamp, so it's active
+          _auctionStatus = "active";
+          return;
+        }
+      }
+    }
+    
+    // ============================================
+    // STEP 2: If we get here, check if it's upcoming based on start date
+    // ============================================
     if (widget.auctionStartDate != null) {
-      // Case 1: Server returns string "Upcoming" - THIS IS THE MOST IMPORTANT CASE
       if (widget.auctionStartDate is String && widget.auctionStartDate == "Upcoming") {
         _auctionStatus = "upcoming";
         _timeLeft = "Upcoming";
         return;
       }
       
-      // Case 2: Server returns timestamp as int
       if (widget.auctionStartDate is int) {
         final startDate = widget.auctionStartDate as int;
         if (startDate > now) {
@@ -102,7 +146,6 @@ class _ProductCardState extends State<ProductCard> {
         }
       }
       
-      // Case 3: Server returns timestamp as string
       if (widget.auctionStartDate is String) {
         final startDate = int.tryParse(widget.auctionStartDate);
         if (startDate != null && startDate > now) {
@@ -114,44 +157,9 @@ class _ProductCardState extends State<ProductCard> {
     }
     
     // ============================================
-    // STEP 2: Check if auction is ENDED
-    // ============================================
-    // Only check this if NOT upcoming
-    if (widget.auctionEndDate != null) {
-      // Case 1: Server returns string "Ended"
-      if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
-        _auctionStatus = "ended";
-        _timeLeft = "Ended";
-        return;
-      }
-      
-      // Case 2: Server returns timestamp as int
-      if (widget.auctionEndDate is int) {
-        final endDate = widget.auctionEndDate as int;
-        if (endDate <= 0 || endDate <= now) {
-          _auctionStatus = "ended";
-          _timeLeft = "Ended";
-          return;
-        }
-      }
-      
-      // Case 3: Server returns timestamp as string
-      if (widget.auctionEndDate is String) {
-        final endDate = int.tryParse(widget.auctionEndDate);
-        if (endDate != null && (endDate <= 0 || endDate <= now)) {
-          _auctionStatus = "ended";
-          _timeLeft = "Ended";
-          return;
-        }
-      }
-    }
-    
-    // ============================================
-    // STEP 3: If we get here, auction is ACTIVE
+    // STEP 3: Default - auction is ACTIVE
     // ============================================
     _auctionStatus = "active";
-    // Start the countdown timer for active auctions
-    _startTimer();
   }
 
   void _startTimer() {
@@ -184,6 +192,16 @@ class _ProductCardState extends State<ProductCard> {
           setState(() {
             _timeLeft = "Ended";
             _auctionStatus = "ended";
+          });
+        }
+        _timer?.cancel();
+        return;
+      }
+      if (widget.auctionEndDate == "Upcoming") {
+        if (mounted) {
+          setState(() {
+            _timeLeft = "Upcoming";
+            _auctionStatus = "upcoming";
           });
         }
         _timer?.cancel();
