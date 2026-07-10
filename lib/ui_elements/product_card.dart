@@ -571,7 +571,7 @@ class _ProductCardState extends State<ProductCard> {
                     width: double.infinity,
                     height: 35.h,
                     decoration: BoxDecoration(
-                      color: isEnded ? Colors.grey : (isUpcoming ? Colors.orange : MyTheme.accent_color),
+                      color: isEnded ? Colors.grey : (isUpcoming ? MyTheme.accent_color : MyTheme.accent_color),
                       borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Center(

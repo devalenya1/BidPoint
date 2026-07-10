@@ -130,33 +130,20 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       final isHighestBidder = latestBid.highestBidder ?? false;
       final hasBid = (latestBid.amount ?? 0) > 0;
       
-      // Determine status based on API fields
-      String status;
-      
+      // 🔥 NEW LOGIC: If recently_ended == true, it goes to ended tab
       if (isEnded) {
-        // Auction has ended
-        status = 'ended';
+        ended.add(latestBid);
+        allActivities.add(latestBid);
       } else if (isWinning || isHighestBidder) {
         // User is winning (either by isWinning or highestBidder)
-        status = 'winning';
+        winning.add(latestBid);
+        allActivities.add(latestBid);
       } else if (!isWinning && !isHighestBidder && hasBid) {
         // User is NOT winning and has placed a bid → OUTBID
-        status = 'outbid';
-      } else {
-        // No bid placed or other cases
-        status = 'pending';
-      }
-      
-      allActivities.add(latestBid);
-      
-      if (status == 'outbid') {
         outbid.add(latestBid);
-      } else if (status == 'winning') {
-        winning.add(latestBid);
-      } else if (status == 'ended') {
-        ended.add(latestBid);
+        allActivities.add(latestBid);
       }
-      // Pending items don't go to any tab
+      // Pending items (no bid placed) don't go to any tab
     }
     
     // Sort all activities by created_at (newest first)
@@ -504,7 +491,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 13.w),
-      margin: EdgeInsets.only(bottom: 6.h), // Reduced from 13.h to 6.h
+      margin: EdgeInsets.only(bottom: 6.h),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -517,8 +504,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 });
               },
               child: Container(
-                margin: EdgeInsets.only(right: 3.w), // Reduced from 4.w to 3.w
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h), // Reduced vertical padding
+                margin: EdgeInsets.only(right: 3.w),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -614,31 +601,44 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     final currentBid = activity.highestBid ?? 0.0;
     final hasBid = (activity.amount ?? 0) > 0;
     
-    // Determine statuses based on API data
-    final isWinningStatus = !isEnded && (isWinning || isHighestBidder);
-    final isOutbidStatus = !isEnded && !isWinning && !isHighestBidder && hasBid;
+    // 🔥 Determine status based on API fields
+    // When recently_ended == true, it's always in ended tab
     final isWonStatus = isEnded && (isWinning || isHighestBidder);
     final isLostStatus = isEnded && !isWinning && !isHighestBidder;
+    final isWinningStatus = !isEnded && (isWinning || isHighestBidder);
+    final isOutbidStatus = !isEnded && !isWinning && !isHighestBidder && hasBid;
     
-    // Status Text in BLACK
+    // Status Text - ALL BLACK
     String statusText;
     String descriptionText;
+    bool showWinLossIcon = false;
+    String winLossIcon = '';
+    Color winLossColor = Colors.transparent;
     
-    if (isOutbidStatus) {
-      statusText = AppLocalizations.of(context)!.you_were_outbid;
-      descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
-    } else if (isWinningStatus) {
-      statusText = AppLocalizations.of(context)!.currently_winning;
-      descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
-    } else if (isWonStatus) {
+    if (isWonStatus) {
       statusText = AppLocalizations.of(context)!.you_won_auction;
       descriptionText = AppLocalizations.of(context)!.congratulations_you_won;
+      showWinLossIcon = true;
+      winLossIcon = '🏆';
+      winLossColor = Colors.green.shade50;
     } else if (isLostStatus) {
       statusText = AppLocalizations.of(context)!.auction_ended;
       descriptionText = AppLocalizations.of(context)!.you_didnt_win;
+      showWinLossIcon = true;
+      winLossIcon = '❌';
+      winLossColor = Colors.red.shade50;
+    } else if (isOutbidStatus) {
+      statusText = AppLocalizations.of(context)!.you_were_outbid;
+      descriptionText = AppLocalizations.of(context)!.someone_placed_higher_bid_on;
+      showWinLossIcon = false;
+    } else if (isWinningStatus) {
+      statusText = AppLocalizations.of(context)!.currently_winning;
+      descriptionText = AppLocalizations.of(context)!.your_bid_highest_on;
+      showWinLossIcon = false;
     } else {
       statusText = '';
       descriptionText = '';
+      showWinLossIcon = false;
     }
     
     return Container(
@@ -657,7 +657,43 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image - Clickable - NO MARGINS on left, top, bottom
+          // 🔥 LEFT SIDE - WIN/LOSS INDICATOR (Only for ended auctions)
+          if (showWinLossIcon)
+            Container(
+              width: 30.w,
+              height: 150.h,
+              decoration: BoxDecoration(
+                color: winLossColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12.r),
+                  bottomLeft: Radius.circular(12.r),
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      winLossIcon,
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      isWonStatus ? "WON" : "LOST",
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isWonStatus ? Colors.green.shade700 : Colors.red.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          
+          // Product Image - Clickable
           GestureDetector(
             onTap: () {
               if (productSlug.isNotEmpty) {
@@ -670,14 +706,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(12.r),
+                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
                 ),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(12.r),
+                  topLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
+                  bottomLeft: Radius.circular(showWinLossIcon ? 0.r : 12.r),
                 ),
                 child: productImage != null && productImage.isNotEmpty
                     ? Image.network(
@@ -717,7 +753,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1️⃣ Status Text - BLACK color
+                  // 1️⃣ Status Text - BLACK
                   Text(
                     statusText, 
                     style: TextStyle(
@@ -728,38 +764,26 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                   SizedBox(height: 10.h),
                   
-                  // 2️⃣ Description Text - Same color as the status text's actual meaning
-                  // For outbid: use a color that indicates being outbid (e.g., red/orange)
-                  // For winning: use green
-                  // For won: use green
-                  // For lost: use red/grey
+                  // 2️⃣ Description Text - BLACK
                   if (descriptionText.isNotEmpty)
                     Text(
                       descriptionText,
                       style: TextStyle(
-                        fontSize: 10.sp, // Same as product name font size
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w600,
-                        color: isOutbidStatus 
-                            ? Colors.grey.shade700 
-                            : (isWinningStatus || isWonStatus 
-                                ? Colors.grey.shade700 
-                                : Colors.grey.shade600),
+                        color: Colors.black,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   
-                  // 3️⃣ Product Name - Same color and font size as description
+                  // 3️⃣ Product Name - BLACK
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 10.sp, // Same as description
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w600,
-                      color: isOutbidStatus 
-                          ? Colors.grey.shade700 
-                          : (isWinningStatus || isWonStatus 
-                              ? Colors.grey.shade700 
-                              : Colors.grey.shade600),
+                      color: Colors.black,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -813,7 +837,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ),
                         ),
                       ),
-                    ], 
+                    ],
                   ),
                   SizedBox(height: 8.h),
                   
