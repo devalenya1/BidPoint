@@ -50,7 +50,7 @@ class ProductDetailsResponse {
 class DetailedProduct {
   bool? _isAuctionUpcoming; // Private field for upcoming status
   String? _upcomingStatus; // NEW: Store upcoming_status from API
-  bool? myStatus;
+  bool? myStatus; // ADD THIS FIELD
 
   DetailedProduct({
     this.id,
@@ -114,6 +114,7 @@ class DetailedProduct {
     this.bidHistory,
     bool? isAuctionUpcoming,
     String? upcomingStatus, // NEW: Parameter for upcoming_status
+    this.myStatus, // ADD THIS PARAMETER
   })  : _isAuctionUpcoming = isAuctionUpcoming,
         _upcomingStatus = upcomingStatus; // NEW: Initialize private field
 

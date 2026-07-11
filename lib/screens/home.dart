@@ -22,6 +22,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -473,7 +474,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ],
     );
   }
-  
+
   // ============================================================
   // ✅ All Auctions Section with Vertical Grid & Auto-Load (Masonry style)
   // ============================================================
