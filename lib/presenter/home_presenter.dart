@@ -61,14 +61,19 @@ class HomePresenter extends ChangeNotifier {
   int upcomingPage = 1;
   bool showUpcomingLoadingContainer = false;
 
-  // ============================================================
-  // ✅ ADDED: Ended Auctions Products
-  // ============================================================
+  // Ended Auctions Products
   var endedProductList = [];
   bool isEndedInitial = true;
   int? totalEndedData = 0;
   int endedPage = 1;
   bool showEndedLoadingContainer = false;
+
+  // All Auctions Products (using getAllProducts)
+  var allAuctionsList = [];
+  bool isAllAuctionsInitial = true;
+  int? totalAllAuctionsData = 0;
+  int allAuctionsPage = 1;
+  bool showAllAuctionsLoadingContainer = false;
 
   bool isTodayDeal = false;
   bool isFlashDeal = false;
@@ -79,20 +84,13 @@ class HomePresenter extends ChangeNotifier {
   int allProductPage = 1;
   bool showAllLoadingContainer = false;
 
-  
-  // ============================================================
-  // ✅ ADDED: All Auctions Products (using getAllProducts)
-  // ============================================================
-  var allAuctionsList = [];
-  bool isAllAuctionsInitial = true;
-  int? totalAllAuctionsData = 0;
-  int allAuctionsPage = 1;
-  bool showAllAuctionsLoadingContainer = false;
-
   int cartCount = 0;
   
   final ProductRepository _productRepository = ProductRepository();
 
+  // ============================================================
+  // FETCH ALL DATA
+  // ============================================================
   fetchAll() {
     fetchCarouselImages();
     fetchBannerOneImages();
@@ -103,12 +101,15 @@ class HomePresenter extends ChangeNotifier {
     fetchHotAuctionProducts();
     fetchEndingSoonProducts();
     fetchUpcomingProducts();
-    fetchEndedProducts(); // ✅ ADDED
+    fetchEndedProducts();
     fetchAllAuctions();
     fetchTodayDealData();
     fetchFlashDealData();
   }
 
+  // ============================================================
+  // TODAY'S DEAL & FLASH DEAL
+  // ============================================================
   fetchTodayDealData() async {
     var deal = await _productRepository.getTodaysDealProducts();
     print(deal.products!.length);
@@ -120,13 +121,15 @@ class HomePresenter extends ChangeNotifier {
 
   fetchFlashDealData() async {
     var deal = await FlashDealRepository().getFlashDeals();
-
     if (deal.success! && deal.flashDeals!.isNotEmpty) {
       isFlashDeal = true;
       notifyListeners();
     }
   }
 
+  // ============================================================
+  // CAROUSEL & BANNERS
+  // ============================================================
   fetchCarouselImages() async {
     var carouselResponse = await SlidersRepository().getSliders();
     carouselResponse.sliders!.forEach((slider) {
@@ -154,6 +157,9 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ============================================================
+  // FEATURED CATEGORIES
+  // ============================================================
   fetchFeaturedCategories() async {
     var categoryResponse = await CategoryRepository().getFeturedCategories();
     featuredCategoryList.addAll(categoryResponse.categories!);
@@ -161,6 +167,9 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ============================================================
+  // FEATURED PRODUCTS
+  // ============================================================
   fetchFeaturedProducts() async {
     var productResponse = await _productRepository.getFeaturedProducts(
       page: featuredProductPage,
@@ -173,7 +182,9 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Fetch Hot Auction Products
+  // ============================================================
+  // HOT AUCTION PRODUCTS
+  // ============================================================
   fetchHotAuctionProducts() async {
     try {
       var productResponse = await _productRepository.getHotAuctions(
@@ -193,7 +204,9 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-  // Fetch Ending Soon Products
+  // ============================================================
+  // ENDING SOON PRODUCTS
+  // ============================================================
   fetchEndingSoonProducts() async {
     try {
       var productResponse = await _productRepository.getEndingSoonProducts(
@@ -213,7 +226,9 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-  // Fetch Upcoming Products
+  // ============================================================
+  // UPCOMING PRODUCTS
+  // ============================================================
   fetchUpcomingProducts() async {
     try {
       var productResponse = await _productRepository.getUpcomingProducts(
@@ -234,7 +249,7 @@ class HomePresenter extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ ADDED: Fetch Ended Products
+  // ENDED PRODUCTS
   // ============================================================
   fetchEndedProducts() async {
     try {
@@ -255,9 +270,11 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
+  // ============================================================
+  // ALL PRODUCTS (Regular products, not auctions)
+  // ============================================================
   fetchAllProducts() async {
     var productResponse = await _productRepository.getFilteredProducts(page: allProductPage);
-    
     allProductList.addAll(productResponse.products!);
     isAllProductInitial = false;
     totalAllProductData = productResponse.meta!.total;
@@ -266,27 +283,36 @@ class HomePresenter extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ ADDED: Fetch All Auctions (using getAllProducts)
+  // ALL AUCTIONS (Using getAllProducts)
   // ============================================================
   fetchAllAuctions() async {
     try {
       var productResponse = await _productRepository.getAllProducts(
         page: allAuctionsPage,
       );
-      allAuctionsPage++;
+      
+      // Add products to the list
       allAuctionsList.addAll(productResponse.products!);
+      
+      // Update pagination state
+      allAuctionsPage++;
       isAllAuctionsInitial = false;
       totalAllAuctionsData = productResponse.meta?.total ?? 0;
       showAllAuctionsLoadingContainer = false;
+      
       notifyListeners();
     } catch (e) {
       print("Error fetching all auctions: $e");
       isAllAuctionsInitial = false;
       totalAllAuctionsData = 0;
+      showAllAuctionsLoadingContainer = false;
       notifyListeners();
     }
   }
 
+  // ============================================================
+  // RESET METHODS
+  // ============================================================
   reset() {
     carouselImageList.clear();
     bannerOneImageList.clear();
@@ -305,7 +331,7 @@ class HomePresenter extends ChangeNotifier {
     resetEndingSoonProductList();
     resetUpcomingProductList();
     resetEndedProductList();
-    resetAllAuctionsList(); // ✅ ADDED
+    resetAllAuctionsList();
   }
 
   Future<void> onRefresh() async {
@@ -358,9 +384,6 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // ✅ ADDED: Reset Ended Products
-  // ============================================================
   resetEndedProductList() {
     endedProductList.clear();
     isEndedInitial = true;
@@ -370,9 +393,6 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ============================================================
-  // ✅ ADDED: Reset All Auctions
-  // ============================================================
   resetAllAuctionsList() {
     allAuctionsList.clear();
     isAllAuctionsInitial = true;
@@ -382,7 +402,9 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
-
+  // ============================================================
+  // SCROLL LISTENERS
+  // ============================================================
   mainScrollListener() {
     mainScrollController.addListener(() {
       if (mainScrollController.position.pixels ==
@@ -439,16 +461,19 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
-
   // ============================================================
-  // ✅ ADDED: All Auctions Scroll Listener
+  // ALL AUCTIONS SCROLL LISTENER (Auto-load more)
   // ============================================================
   allAuctionsScrollListener() {
     if (allAuctionsScrollController != null) {
       allAuctionsScrollController!.addListener(() {
-        if (allAuctionsScrollController!.position.pixels ==
-            allAuctionsScrollController!.position.maxScrollExtent) {
-          if (allAuctionsList.length < (totalAllAuctionsData ?? 0)) {
+        // Check if we're near the bottom
+        if (allAuctionsScrollController!.position.pixels >=
+            allAuctionsScrollController!.position.maxScrollExtent - 100) {
+          
+          // Check if we should load more
+          if (!showAllAuctionsLoadingContainer &&
+              allAuctionsList.length < (totalAllAuctionsData ?? 0)) {
             allAuctionsPage++;
             showAllAuctionsLoadingContainer = true;
             fetchAllAuctions();
@@ -459,13 +484,8 @@ class HomePresenter extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ ADDED: Ended Products Scroll Listener
+  // INIT SCROLL CONTROLLERS
   // ============================================================
-  endedScrollListener() {
-    // You can add a scroll controller for ended products if needed
-    // For now, it's optional since we only show a few in the home page
-  }
-
   void initScrollControllers() {
     hotAuctionScrollController = ScrollController();
     endingSoonScrollController = ScrollController();
@@ -480,6 +500,9 @@ class HomePresenter extends ChangeNotifier {
     allAuctionsScrollListener();
   }
 
+  // ============================================================
+  // PIRATED ANIMATION
+  // ============================================================
   initPiratedAnimation(vnc) {
     pirated_logo_controller =
         AnimationController(vsync: vnc, duration: Duration(milliseconds: 2000));
@@ -496,11 +519,17 @@ class HomePresenter extends ChangeNotifier {
     pirated_logo_controller.forward();
   }
 
+  // ============================================================
+  // SLIDER METHODS
+  // ============================================================
   incrementCurrentSlider(index) {
     current_slider = index;
     notifyListeners();
   }
 
+  // ============================================================
+  // DISPOSE
+  // ============================================================
   @override
   void dispose() {
     pirated_logo_controller.dispose();

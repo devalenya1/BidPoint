@@ -191,12 +191,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }).toList();
   }
 
-  // ============ GET UNREAD COUNT FOR SPECIFIC TAB ============
-  int _getUnreadCount(List<model.Notification> notifications) {
-    // Count notifications where readAt is null (unread)
-    return notifications.where((n) => n.readAt == null).length;
-  }
-
   // ============ LOAD MORE NOTIFICATIONS (INFINITE SCROLL) ============
   Future<void> _loadMoreNotifications() async {
     if (!_hasMoreNotifications || _isLoadingMore) return;
@@ -383,6 +377,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             }
           },
         ),
+        // ✅ REMOVED: Mark all as read button from AppBar
       ),
       body: RefreshIndicator(
         color: MyTheme.accent_color,
@@ -495,21 +490,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  // ============================================================
-  // ✅ UPDATED: Tabs with UNREAD counts only
-  // ============================================================
   Widget _buildTabs() {
-    // Calculate unread counts for each tab
-    final unreadAll = _getUnreadCount(_allNotifications);
-    final unreadAuctions = _getUnreadCount(_auctionNotifications);
-    final unreadPayments = _getUnreadCount(_paymentNotifications);
-    final unreadSystem = _getUnreadCount(_systemNotifications);
+    // Use API counts from _userInfo instead of local list lengths
+    final allCount = _userInfo?.allNotificationCount ?? 0;
+    final auctionCount = _userInfo?.auctionNotificationCount ?? 0;
+    final paymentCount = _userInfo?.paymentNotificationCount ?? 0;
+    final systemCount = _userInfo?.systemNotificationCount ?? 0;
 
     final tabs = [
-      '${AppLocalizations.of(context)!.all_ucf} ${unreadAll > 0 ? "($unreadAll)" : ""}',
-      '${AppLocalizations.of(context)!.auctions_ucf} ${unreadAuctions > 0 ? "($unreadAuctions)" : ""}',
-      '${AppLocalizations.of(context)!.payments_ucf} ${unreadPayments > 0 ? "($unreadPayments)" : ""}',
-      '${AppLocalizations.of(context)!.system_ucf} ${unreadSystem > 0 ? "($unreadSystem)" : ""}',
+      '${AppLocalizations.of(context)!.all_ucf} ($allCount)',
+      '${AppLocalizations.of(context)!.auctions_ucf} ($auctionCount)',
+      '${AppLocalizations.of(context)!.payments_ucf} ($paymentCount)',
+      '${AppLocalizations.of(context)!.system_ucf} ($systemCount)',
     ];
 
     return Container(
@@ -550,12 +542,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // ✅ UPDATED: Notification Item with "New" Badge based on readAt
+  // ✅ FIXED: Notification Item with "New" Badge based on readAt
   // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     
-    // Check readAt directly - if null, it's unread (NEW)
+    // ✅ FIX: Check readAt directly - if null, it's unread (NEW)
     final bool isUnread = notification.readAt == null;
 
     return Container(
@@ -622,7 +614,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ),
 
-          // "NEW" Badge - Shows when readAt is null (unread)
+          // ============================================================
+          // ✅ "NEW" BADGE - Shows when readAt is null (unread)
+          // ============================================================
           if (isUnread)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),

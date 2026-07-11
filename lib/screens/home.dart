@@ -474,7 +474,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-// ============================================================
+  // ============================================================
   // ✅ UPDATED: All Auctions Section with Vertical Grid & Auto-Load
   // ============================================================
   Widget _buildAllAuctionsSection() {
@@ -490,24 +490,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 AppLocalizations.of(context)!.all_auctions_ucf,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
               ),
-              // GestureDetector(
-              //   onTap: () {
-              //     // Navigate to All Auctions page
-              //     // You can create a dedicated page later
-              //     ToastComponent.showInfo('View all auctions coming soon');
-              //   },
-              //   child: Container(
-              //     padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-              //     decoration: BoxDecoration(
-              //       border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-              //       borderRadius: BorderRadius.circular(8.r),
-              //     ),
-              //     child: Text(
-              //       AppLocalizations.of(context)!.view_all,
-              //       style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         ),
@@ -539,88 +521,82 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // ✅ UPDATED: All Auctions Grid with Auto-Load More (using GridView)
+  // ✅ FIXED: All Auctions Grid with Auto-Load More & Dynamic Height
   // ============================================================
   Widget _buildAllAuctionsGrid() {
     final products = homeData.allAuctionsList;
     if (products.isEmpty) return const SizedBox.shrink();
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        // Check if we've scrolled to the bottom and need to load more
-        if (!homeData.showAllAuctionsLoadingContainer &&
-            homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0) &&
-            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
-          
-          // Load more items
-          homeData.allAuctionsPage++;
-          homeData.showAllAuctionsLoadingContainer = true;
-          homeData.fetchAllAuctions();
-        }
-        return false;
-      },
-      child: Column(
-        children: [
-          // Grid View with 2 columns
-          GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 14.w,
-              mainAxisSpacing: 14.h,
-              childAspectRatio: 0.75, // Adjust this ratio based on your card design
+    // Use a ListView.builder with GridView inside for better scroll detection
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Grid with dynamic height using Wrap or custom layout
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Calculate item width for 2 columns with spacing
+            final double itemWidth = (constraints.maxWidth - 14.w) / 2;
+            
+            return Wrap(
+              spacing: 14.w,
+              runSpacing: 14.h,
+              children: products.map((product) {
+                return SizedBox(
+                  width: itemWidth,
+                  child: _buildAllAuctionCard(product),
+                );
+              }).toList(),
+            );
+          },
+        ),
+        
+        // Loading indicator at bottom (triggers auto-load)
+        if (homeData.showAllAuctionsLoadingContainer)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: MyTheme.accent_color,
+              ),
             ),
-            itemCount: products.length + (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
-            shrinkWrap: true,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            physics: const NeverScrollableScrollPhysics(),
-            itemBuilder: (context, index) {
-              // Show loading indicator at the end
-              if (index == products.length && homeData.showAllAuctionsLoadingContainer) {
-                return _buildLoadingIndicator();
-              }
-              
-              // Show product card
-              final product = products[index];
-              return _buildAllAuctionCard(product);
-            },
-          ),
-          
-          // Show loading at bottom when scrolling
-          if (homeData.showAllAuctionsLoadingContainer)
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: MyTheme.accent_color,
+          )
+        else if (homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0))
+          // Invisible trigger for auto-load more
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h),
+            child: Center(
+              child: Text(
+                'Loading more...',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.grey,
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+        
+        // End of list indicator
+        if (homeData.allAuctionsList.length >= (homeData.totalAllAuctionsData ?? 0) && 
+            homeData.totalAllAuctionsData != null &&
+            homeData.totalAllAuctionsData! > 0)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: Center(
+              child: Text(
+                'No more auctions',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   // ============================================================
-  // ✅ NEW: Loading Indicator Widget
-  // ============================================================
-  Widget _buildLoadingIndicator() {
-    return Container(
-      height: 200.h,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Center(
-        child: CircularProgressIndicator(
-          color: MyTheme.accent_color,
-          strokeWidth: 2.w,
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // ✅ UPDATED: Build individual auction card using ProductCard
+  // ✅ FIXED: Build individual auction card with dynamic sizing
   // ============================================================
   Widget _buildAllAuctionCard(dynamic product) {
     // Determine auction status
@@ -697,6 +673,25 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       currentBid: product.highestBid ?? product.startingBid,
       startingBid: product.startingBid,
       isAuctionActive: isActive,
+    );
+  }
+
+  // ============================================================
+  // ✅ NEW: Loading Indicator Widget
+  // ============================================================
+  Widget _buildLoadingIndicator() {
+    return Container(
+      height: 200.h,
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: MyTheme.accent_color,
+          strokeWidth: 2.w,
+        ),
+      ),
     );
   }
 

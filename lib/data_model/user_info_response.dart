@@ -112,6 +112,14 @@ class UserInformation {
   int? unreadNotificationsCount;
   Pagination? notificationsPagination;
   
+  // =============================================
+  // ✅ ADDED: Notification category counts
+  // =============================================
+  int? allNotificationCount;      // Total unread notifications
+  int? auctionNotificationCount;  // Unread auction notifications
+  int? paymentNotificationCount;  // Unread payment notifications
+  int? systemNotificationCount;   // Unread system notifications
+  
   // Point history with pagination
   List<PointHistory>? pointHistory;
   int? totalPoints;
@@ -182,6 +190,14 @@ class UserInformation {
     this.notifications,
     this.unreadNotificationsCount,
     this.notificationsPagination,
+    // =============================================
+    // ✅ ADDED: Notification category counts
+    // =============================================
+    this.allNotificationCount,
+    this.auctionNotificationCount,
+    this.paymentNotificationCount,
+    this.systemNotificationCount,
+    // =============================================
     this.pointHistory,
     this.totalPoints,
     this.pointsPagination,
@@ -248,6 +264,15 @@ class UserInformation {
     notificationsPagination: json["notifications_pagination"] != null
         ? Pagination.fromJson(json["notifications_pagination"])
         : null,
+    
+    // =============================================
+    // ✅ ADDED: Notification category counts
+    // =============================================
+    allNotificationCount: json["all"],
+    auctionNotificationCount: json["auction"],
+    paymentNotificationCount: json["payment"],
+    systemNotificationCount: json["system"],
+    // =============================================
     
     // Point History
     pointHistory: json["point_history"] != null
@@ -358,6 +383,14 @@ class UserInformation {
     "notifications": notifications != null ? List<dynamic>.from(notifications!.map((x) => x.toJson())) : [],
     "unread_notifications_count": unreadNotificationsCount,
     "notifications_pagination": notificationsPagination?.toJson(),
+    // =============================================
+    // ✅ ADDED: Notification category counts
+    // =============================================
+    "all": allNotificationCount,
+    "auction": auctionNotificationCount,
+    "payment": paymentNotificationCount,
+    "system": systemNotificationCount,
+    // =============================================
     "point_history": pointHistory != null ? List<dynamic>.from(pointHistory!.map((x) => x.toJson())) : [],
     "total_points": totalPoints,
     "points_pagination": pointsPagination?.toJson(),
