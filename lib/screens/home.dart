@@ -15,7 +15,7 @@ import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/ui_elements/hot_auction_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/ending_soon_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/upcoming_card.dart';
-import 'package:active_ecommerce_flutter/ui_elements/product_card.dart'; // ADDED for Ended Auctions
+import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -236,7 +236,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       ),
                       
                       // ============================================================
-                      // ✅ NEW: All Auctions Section (using ProductCard)
+                      // ✅ UPDATED: All Auctions Section with Auto-Load
                       // ============================================================
                       SliverToBoxAdapter(
                         child: _buildAllAuctionsSection(),
@@ -476,7 +476,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // ✅ All Auctions Section with Vertical Grid & Auto-Load
+  // ✅ UPDATED: All Auctions Section with Auto-Load
   // ============================================================
 
   Widget _buildAllAuctionsSection() {
@@ -492,22 +492,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 AppLocalizations.of(context)!.all_auctions_ucf,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
               ),
-              // GestureDetector(
-              //   onTap: () {
-              //     ToastComponent.showInfo('View all auctions coming soon');
-              //   },
-              //   child: Container(
-              //     padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-              //     decoration: BoxDecoration(
-              //       border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-              //       borderRadius: BorderRadius.circular(8.r),
-              //     ),
-              //     child: Text(
-              //       AppLocalizations.of(context)!.view_all,
-              //       style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         ),
@@ -539,48 +523,53 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // ✅ All Auctions Grid with Auto-Load More (Same as Filter page)
+  // ✅ UPDATED: All Auctions Grid with Auto-Load More
+  // This now works like the filter page - scroll to bottom to load more
   // ============================================================
 
   Widget _buildAllAuctionsGrid() {
     if (homeData.allAuctionsList.isEmpty) return const SizedBox.shrink();
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await homeData.onRefresh();
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        // Check if we've scrolled to the bottom
+        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 50) {
+          // Only load more if we're not already loading and there are more products
+          if (!homeData.isAllAuctionsLoading && 
+              homeData.allAuctionsList.length < homeData.totalAllAuctionsData) {
+            homeData.fetchAllAuctions();
+          }
+        }
+        return false;
       },
-      color: MyTheme.accent_color,
-      child: SingleChildScrollView(
-        controller: homeData.allAuctionsScrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            MasonryGridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 12.w,
-              crossAxisSpacing: 12.w,
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              itemCount: homeData.allAuctionsList.length + 
-                  (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
-              itemBuilder: (context, index) {
-                // Show loading indicator at the end
-                if (index == homeData.allAuctionsList.length && 
-                    homeData.showAllAuctionsLoadingContainer) {
-                  return _buildAllAuctionsLoadingContainer();
-                }
-                
-                // Show product card
-                final product = homeData.allAuctionsList[index];
-                return _buildAllAuctionCard(product);
-              },
-            ),
-            
-            // Loading more indicator (like Filter page)
+      child: Column(
+        children: [
+          MasonryGridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 12.w,
+            crossAxisSpacing: 12.w,
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            itemCount: homeData.allAuctionsList.length + 
+                (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
+            itemBuilder: (context, index) {
+              // Show loading indicator at the end
+              if (index == homeData.allAuctionsList.length && 
+                  homeData.showAllAuctionsLoadingContainer) {
+                return _buildAllAuctionsLoadingContainer();
+              }
+              
+              // Show product card
+              final product = homeData.allAuctionsList[index];
+              return _buildAllAuctionCard(product);
+            },
+          ),
+          
+          // Show loading container at the bottom (like Filter page)
+          if (homeData.showAllAuctionsLoadingContainer)
             _buildAllAuctionsLoadingContainer(),
-          ],
-        ),
+        ],
       ),
     );
   }
