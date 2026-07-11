@@ -40,9 +40,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   // ============ CACHED LISTS FOR INFINITE SCROLL ============
   List<model.Notification> _allNotifications = [];
-  List<model.Notification> _auctionNotifications = [];
-  List<model.Notification> _paymentNotifications = [];
-  List<model.Notification> _systemNotifications = [];
+  // ❌ COMMENTED OUT - These are no longer needed for counts
+  // List<model.Notification> _auctionNotifications = [];
+  // List<model.Notification> _paymentNotifications = [];
+  // List<model.Notification> _systemNotifications = [];
 
   // Track if initial load is complete for each tab
   bool _initialLoadComplete = false;
@@ -73,9 +74,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           _currentNotificationPage = 1;
           _hasMoreNotifications = true;
           _allNotifications.clear();
-          _auctionNotifications.clear();
-          _paymentNotifications.clear();
-          _systemNotifications.clear();
+          // ❌ COMMENTED OUT
+          // _auctionNotifications.clear();
+          // _paymentNotifications.clear();
+          // _systemNotifications.clear();
         });
       }
 
@@ -109,12 +111,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (loadMore) {
             // Append to existing lists
             _allNotifications.addAll(newNotifications);
-            _updateFilteredLists();
+            // ❌ COMMENTED OUT - No longer filtering for counts
+            // _updateFilteredLists();
           } else {
             // Replace entire user info and lists
             _userInfo = newUserInfo;
             _allNotifications = newNotifications;
-            _updateFilteredLists();
+            // ❌ COMMENTED OUT - No longer filtering for counts
+            // _updateFilteredLists();
 
             // Update global unread count
             unread_notifications_count.$ = _userInfo?.unreadNotificationsCount ?? 0;
@@ -135,9 +139,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
         if (!loadMore) {
           setState(() {
             _allNotifications = [];
-            _auctionNotifications = [];
-            _paymentNotifications = [];
-            _systemNotifications = [];
+            // ❌ COMMENTED OUT
+            // _auctionNotifications = [];
+            // _paymentNotifications = [];
+            // _systemNotifications = [];
           });
         }
       }
@@ -154,42 +159,40 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  // ============ UPDATE FILTERED LISTS ============
-  void _updateFilteredLists() {
-    // Auction related: outbid, newbid, point_deduction, bid_placed, etc.
-    const auctionTypes = [
-      'outbid',
-      'newbid',
-      'point_deduction',
-      'bid_placed',
-      'auction_win',
-      'auction_lose',
-      'auction_ending'
-    ];
-
-    // Payment related: payment_success, payment_failed, etc.
-    const paymentTypes = [
-      'payment',
-      'payment_success',
-      'payment_failed',
-      'package_purchase',
-      'withdrawal',
-      'withdrawal_success',
-      'withdrawal_failed'
-    ];
-
-    _auctionNotifications = _allNotifications.where((n) {
-      return auctionTypes.contains(n.type);
-    }).toList();
-
-    _paymentNotifications = _allNotifications.where((n) {
-      return paymentTypes.contains(n.type);
-    }).toList();
-
-    _systemNotifications = _allNotifications.where((n) {
-      return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
-    }).toList();
-  }
+  // ❌ COMMENTED OUT - No longer needed
+  // void _updateFilteredLists() {
+  //   const auctionTypes = [
+  //     'outbid',
+  //     'newbid',
+  //     'point_deduction',
+  //     'bid_placed',
+  //     'auction_win',
+  //     'auction_lose',
+  //     'auction_ending'
+  //   ];
+  // 
+  //   const paymentTypes = [
+  //     'payment',
+  //     'payment_success',
+  //     'payment_failed',
+  //     'package_purchase',
+  //     'withdrawal',
+  //     'withdrawal_success',
+  //     'withdrawal_failed'
+  //   ];
+  // 
+  //   _auctionNotifications = _allNotifications.where((n) {
+  //     return auctionTypes.contains(n.type);
+  //   }).toList();
+  // 
+  //   _paymentNotifications = _allNotifications.where((n) {
+  //     return paymentTypes.contains(n.type);
+  //   }).toList();
+  // 
+  //   _systemNotifications = _allNotifications.where((n) {
+  //     return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
+  //   }).toList();
+  // }
 
   // ============ LOAD MORE NOTIFICATIONS (INFINITE SCROLL) ============
   Future<void> _loadMoreNotifications() async {
@@ -337,14 +340,27 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return '${months[date.month - 1]} ${date.day} ${date.year}, $hourFormat:$minute $ampm';
   }
 
+  // ============ GET FILTERED NOTIFICATIONS ============
   List<model.Notification> _getCurrentNotifications() {
+    // ✅ Use type filtering to show correct notifications
+    final auctionTypes = [
+      'outbid', 'newbid', 'point_deduction', 'bid_placed',
+      'auction_win', 'auction_lose', 'auction_ending'
+    ];
+    final paymentTypes = [
+      'payment', 'payment_success', 'payment_failed',
+      'package_purchase', 'withdrawal', 'withdrawal_success', 'withdrawal_failed'
+    ];
+
     switch (_selectedTab) {
       case 1:
-        return _auctionNotifications;
+        return _allNotifications.where((n) => auctionTypes.contains(n.type)).toList();
       case 2:
-        return _paymentNotifications;
+        return _allNotifications.where((n) => paymentTypes.contains(n.type)).toList();
       case 3:
-        return _systemNotifications;
+        return _allNotifications.where((n) {
+          return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
+        }).toList();
       default:
         return _allNotifications;
     }
@@ -377,7 +393,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
             }
           },
         ),
-        // ✅ REMOVED: Mark all as read button from AppBar
       ),
       body: RefreshIndicator(
         color: MyTheme.accent_color,
@@ -490,8 +505,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
+  // ============================================================
+  // ✅ UPDATED: Tabs using API counts from _userInfo ONLY
+  // ============================================================
   Widget _buildTabs() {
-    // Use API counts from _userInfo instead of local list lengths
+    // ✅ ONLY USE API COUNTS - DO NOT COUNT FROM LOCAL LISTS
     final allCount = _userInfo?.allNotificationCount ?? 0;
     final auctionCount = _userInfo?.auctionNotificationCount ?? 0;
     final paymentCount = _userInfo?.paymentNotificationCount ?? 0;
@@ -542,12 +560,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // ✅ FIXED: Notification Item with "New" Badge based on readAt
+  // ✅ Notification Item with "New" Badge based on readAt
   // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     
-    // ✅ FIX: Check readAt directly - if null, it's unread (NEW)
+    // ✅ Check readAt directly - if null, it's unread (NEW)
     final bool isUnread = notification.readAt == null;
 
     return Container(
@@ -614,14 +632,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ),
 
-          // ============================================================
-          // ✅ "NEW" BADGE - Shows when readAt is null (unread)
-          // ============================================================
+          // "NEW" BADGE - Shows when readAt is null (unread)
           if (isUnread)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30), // Red color
+                color: const Color(0xFFFF3B30),
                 borderRadius: BorderRadius.circular(20.r),
               ),
               child: Text(
