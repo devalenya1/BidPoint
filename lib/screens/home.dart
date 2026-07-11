@@ -539,7 +539,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // ✅ UPDATED: All Auctions Grid with Auto-Load More
+  // ✅ UPDATED: All Auctions Grid with Auto-Load More (using GridView)
   // ============================================================
   Widget _buildAllAuctionsGrid() {
     final products = homeData.allAuctionsList;
@@ -561,11 +561,14 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       },
       child: Column(
         children: [
-          // Masonry Grid
-          MasonryGridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: 14.h,
-            crossAxisSpacing: 14.w,
+          // Grid View with 2 columns
+          GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 14.w,
+              mainAxisSpacing: 14.h,
+              childAspectRatio: 0.75, // Adjust this ratio based on your card design
+            ),
             itemCount: products.length + (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
             shrinkWrap: true,
             padding: EdgeInsets.symmetric(horizontal: 16.w),
