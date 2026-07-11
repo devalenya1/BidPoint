@@ -473,283 +473,247 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       ],
     );
   }
-
+  
   // ============================================================
-  // ✅ UPDATED: All Auctions Section with Vertical Grid & Auto-Load
+  // ✅ All Auctions Section with Vertical Grid & Auto-Load (Masonry style)
   // ============================================================
 
-
-Widget _buildAllAuctionsSection(context, HomePresenter homeData) {
-  // if (homeData.isAllProductInitial && homeData.allProductList.length == 0) {
-  if (homeData.isAllProductInitial) {
-    return SingleChildScrollView(
-        child: ShimmerHelper().buildProductGridShimmer(
-            scontroller: homeData.allProductScrollController));
-  } else if (homeData.allProductList.length > 0) {
+  Widget _buildAllAuctionsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // All Auctions Title
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
-          child: Text(
-            AppLocalizations.of(context)!.all_auctions_ucf,
-            style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'All Auctions',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to all auctions page - you can create this later
+                  ToastComponent.showInfo('View all auctions coming soon');
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.view_all,
+                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        // Product Grid
-        MasonryGridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 14,
-          crossAxisSpacing: 14,
-          itemCount: homeData.allProductList.length,
-          shrinkWrap: true,
-          padding: EdgeInsets.only(top: 10.h, bottom: 10.h, left: 18.w, right: 18.w),
-          physics: NeverScrollableScrollPhysics(),
-          itemBuilder: (context, index) {
-            return ProductCard(
-              id: product.id ?? 0,
-              slug: product.slug ?? '',
-              image: product.thumbnailImage,
-              name: product.name,
-              description: product.description,
-              pointPerBid: product.pointPerBid ?? 0,
-              auctionEndDate: displayEndDate,
-              auctionStartDate: isUpcoming ? product.auctionStartDate : null,
-              currentBid: product.highestBid ?? product.startingBid,
-              startingBid: product.startingBid,
-              isAuctionActive: isActive,
-            );
-          },
-        ),
+        SizedBox(height: 8.h),
+        
+        // Show loading shimmer or grid
+        if (homeData.isAllAuctionsInitial && homeData.allAuctionsList.isEmpty)
+          ShimmerHelper().buildProductGridShimmer(
+            scontroller: homeData.allAuctionsScrollController,
+          )
+        else if (homeData.allAuctionsList.isNotEmpty)
+          _buildAllAuctionsGrid()
+        else if (homeData.totalAllAuctionsData == 0)
+          Container(
+            height: 100.h,
+            child: Center(
+              child: Text(
+                'No auctions available',
+                style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
+              ),
+            ),
+          )
+        else
+          Container(), // Should never happen
+          
+        SizedBox(height: 20.h),
       ],
     );
-  } else if (homeData.totalAllProductData == 0) {
-    return Center(
-        child: Text(AppLocalizations.of(context)!.no_product_is_available));
-  } else {
-    return Container(); // should never be happening
   }
-}
 
+  // ============================================================
+  // ✅ All Auctions Grid with Auto-Load More (Masonry style)
+  // ============================================================
 
-  // Widget _buildAllAuctionsSection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Padding(
-  //         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-  //         child: Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: [
-  //             Text(
-  //               AppLocalizations.of(context)!.all_auctions_ucf,
-  //               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //       SizedBox(height: 8.h),
-        
-  //       // Show loading shimmer or grid
-  //       if (homeData.isAllAuctionsInitial && homeData.allAuctionsList.isEmpty)
-  //         ShimmerHelper().buildProductGridShimmer(
-  //           scontroller: homeData.allAuctionsScrollController,
-  //         )
-  //       else if (homeData.allAuctionsList.isNotEmpty)
-  //         _buildAllAuctionsGrid()
-  //       else if (homeData.totalAllAuctionsData == 0)
-  //         Container(
-  //           height: 100.h,
-  //           child: Center(
-  //             child: Text(
-  //               AppLocalizations.of(context)!.no_auctions_available,
-  //               style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
-  //             ),
-  //           ),
-  //         )
-  //       else
-  //         Container(), // Should never happen
+  Widget _buildAllAuctionsGrid() {
+    if (homeData.allAuctionsList.isEmpty) return const SizedBox.shrink();
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        // Detect when user scrolls to bottom for auto-load
+        if (!homeData.showAllAuctionsLoadingContainer &&
+            homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0) &&
+            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
           
-  //       SizedBox(height: 20.h),
-  //     ],
-  //   );
-  // }
+          // Load more items
+          homeData.allAuctionsPage++;
+          homeData.showAllAuctionsLoadingContainer = true;
+          homeData.fetchAllAuctions();
+        }
+        return true;
+      },
+      child: Column(
+        children: [
+          // Masonry Grid - 2 columns
+          MasonryGridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 12.w,
+            crossAxisSpacing: 12.w,
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            itemCount: homeData.allAuctionsList.length + 
+                (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
+            itemBuilder: (context, index) {
+              // Show loading indicator at the end
+              if (index == homeData.allAuctionsList.length && 
+                  homeData.showAllAuctionsLoadingContainer) {
+                return _buildAllAuctionsLoadingIndicator();
+              }
+              
+              // Show product card
+              final product = homeData.allAuctionsList[index];
+              return _buildAllAuctionCard(product);
+            },
+          ),
+          
+          // Loading more indicator (alternative to the one inside grid)
+          if (homeData.showAllAuctionsLoadingContainer)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              child: Center(
+                child: Text(
+                  AppLocalizations.of(context)!.loading_more_products_ucf,
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
-  // // ============================================================
-  // // ✅ FIXED: All Auctions Grid with Auto-Load More & Dynamic Height
-  // // ============================================================
-  // Widget _buildAllAuctionsGrid() {
-  //   final products = homeData.allAuctionsList;
-  //   if (products.isEmpty) return const SizedBox.shrink();
+  // ============================================================
+  // ✅ All Auctions Loading Indicator
+  // ============================================================
 
-  //   // Use a ListView.builder with GridView inside for better scroll detection
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       // Grid with dynamic height using Wrap or custom layout
-  //       LayoutBuilder(
-  //         builder: (context, constraints) {
-  //           // Calculate item width for 2 columns with spacing
-  //           final double itemWidth = (constraints.maxWidth - 14.w) / 2;
-            
-  //           return Wrap(
-  //             spacing: 14.w,
-  //             runSpacing: 14.h,
-  //             children: products.map((product) {
-  //               return SizedBox(
-  //                 width: itemWidth,
-  //                 child: _buildAllAuctionCard(product),
-  //               );
-  //             }).toList(),
-  //           );
-  //         },
-  //       ),
-        
-  //       // Loading indicator at bottom (triggers auto-load)
-  //       if (homeData.showAllAuctionsLoadingContainer)
-  //         Padding(
-  //           padding: EdgeInsets.symmetric(vertical: 16.h),
-  //           child: Center(
-  //             child: CircularProgressIndicator(
-  //               color: MyTheme.accent_color,
-  //             ),
-  //           ),
-  //         )
-  //       else if (homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0))
-  //         // Invisible trigger for auto-load more
-  //         Padding(
-  //           padding: EdgeInsets.symmetric(vertical: 8.h),
-  //           child: Center(
-  //             child: Text(
-  //               'Loading more...',
-  //               style: TextStyle(
-  //                 fontSize: 12.sp,
-  //                 color: Colors.grey,
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-        
-  //       // End of list indicator
-  //       if (homeData.allAuctionsList.length >= (homeData.totalAllAuctionsData ?? 0) && 
-  //           homeData.totalAllAuctionsData != null &&
-  //           homeData.totalAllAuctionsData! > 0)
-  //         Padding(
-  //           padding: EdgeInsets.symmetric(vertical: 16.h),
-  //           child: Center(
-  //             child: Text(
-  //               'No more auctions',
-  //               style: TextStyle(
-  //                 fontSize: 12.sp,
-  //                 color: Colors.grey,
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //     ],
-  //   );
-  // }
+  Widget _buildAllAuctionsLoadingIndicator() {
+    return Container(
+      height: 200.h,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              color: MyTheme.accent_color,
+              strokeWidth: 2.w,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              AppLocalizations.of(context)!.loading_more_products_ucf,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  // // ============================================================
-  // // ✅ FIXED: Build individual auction card with dynamic sizing
-  // // ============================================================
-  // Widget _buildAllAuctionCard(dynamic product) {
-  //   // Determine auction status
-  //   bool isActive = false;
-  //   bool isUpcoming = false;
-  //   bool isEnded = false;
-    
-  //   dynamic displayEndDate = product.auctionEndDate;
-    
-  //   // Check auction status from end date
-  //   if (product.auctionEndDate != null) {
-  //     if (product.auctionEndDate is int) {
-  //       final endDate = product.auctionEndDate as int;
-  //       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  //       if (endDate > now) {
-  //         isActive = true;
-  //       } else {
-  //         isEnded = true;
-  //         displayEndDate = 'Ended';
-  //       }
-  //     } else if (product.auctionEndDate is String) {
-  //       if (product.auctionEndDate == 'Ended') {
-  //         isEnded = true;
-  //         displayEndDate = 'Ended';
-  //       } else if (product.auctionEndDate == 'Upcoming') {
-  //         isUpcoming = true;
-  //         displayEndDate = 'Upcoming';
-  //       } else {
-  //         // Try to parse as timestamp
-  //         final parsed = int.tryParse(product.auctionEndDate);
-  //         if (parsed != null) {
-  //           final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  //           if (parsed > now) {
-  //             isActive = true;
-  //             displayEndDate = parsed;
-  //           } else {
-  //             isEnded = true;
-  //             displayEndDate = 'Ended';
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-    
-  //   // Check if it's upcoming based on start date
-  //   if (!isActive && !isEnded && product.auctionStartDate != null) {
-  //     if (product.auctionStartDate is int) {
-  //       final startDate = product.auctionStartDate as int;
-  //       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  //       if (startDate > now) {
-  //         isUpcoming = true;
-  //         displayEndDate = 'Upcoming';
-  //       }
-  //     } else if (product.auctionStartDate is String && product.auctionStartDate == 'Upcoming') {
-  //       isUpcoming = true;
-  //       displayEndDate = 'Upcoming';
-  //     }
-  //   }
-    
-  //   // If auction is active, use the actual end date for the timer
-  //   if (isActive && displayEndDate is! int) {
-  //     displayEndDate = product.auctionEndDate;
-  //   }
-    
-  //   return ProductCard(
-  //     id: product.id ?? 0,
-  //     slug: product.slug ?? '',
-  //     image: product.thumbnailImage,
-  //     name: product.name,
-  //     description: product.description,
-  //     pointPerBid: product.pointPerBid ?? 0,
-  //     auctionEndDate: displayEndDate,
-  //     auctionStartDate: isUpcoming ? product.auctionStartDate : null,
-  //     currentBid: product.highestBid ?? product.startingBid,
-  //     startingBid: product.startingBid,
-  //     isAuctionActive: isActive,
-  //   );
-  // }
+  // ============================================================
+  // ✅ Build individual auction card using ProductCard
+  // ============================================================
 
-  // // ============================================================
-  // // ✅ NEW: Loading Indicator Widget
-  // // ============================================================
-  // Widget _buildLoadingIndicator() {
-  //   return Container(
-  //     height: 200.h,
-  //     decoration: BoxDecoration(
-  //       color: Colors.grey[100],
-  //       borderRadius: BorderRadius.circular(10.r),
-  //     ),
-  //     child: Center(
-  //       child: CircularProgressIndicator(
-  //         color: MyTheme.accent_color,
-  //         strokeWidth: 2.w,
-  //       ),
-  //     ),
-  //   );
-  // }
+  Widget _buildAllAuctionCard(dynamic product) {
+    // Determine auction status
+    bool isActive = false;
+    bool isUpcoming = false;
+    bool isEnded = false;
+    
+    dynamic displayEndDate = product.auctionEndDate;
+    
+    // Check auction status from end date
+    if (product.auctionEndDate != null) {
+      if (product.auctionEndDate is int) {
+        final endDate = product.auctionEndDate as int;
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        if (endDate > now) {
+          isActive = true;
+        } else {
+          isEnded = true;
+          displayEndDate = 'Ended';
+        }
+      } else if (product.auctionEndDate is String) {
+        if (product.auctionEndDate == 'Ended') {
+          isEnded = true;
+          displayEndDate = 'Ended';
+        } else if (product.auctionEndDate == 'Upcoming') {
+          isUpcoming = true;
+          displayEndDate = 'Upcoming';
+        } else {
+          // Try to parse as timestamp
+          final parsed = int.tryParse(product.auctionEndDate);
+          if (parsed != null) {
+            final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+            if (parsed > now) {
+              isActive = true;
+              displayEndDate = parsed;
+            } else {
+              isEnded = true;
+              displayEndDate = 'Ended';
+            }
+          }
+        }
+      }
+    }
+    
+    // Check if it's upcoming based on start date
+    if (!isActive && !isEnded && product.auctionStartDate != null) {
+      if (product.auctionStartDate is int) {
+        final startDate = product.auctionStartDate as int;
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        if (startDate > now) {
+          isUpcoming = true;
+          displayEndDate = 'Upcoming';
+        }
+      } else if (product.auctionStartDate is String && product.auctionStartDate == 'Upcoming') {
+        isUpcoming = true;
+        displayEndDate = 'Upcoming';
+      }
+    }
+    
+    // If auction is active, use the actual end date for the timer
+    if (isActive && displayEndDate is! int) {
+      displayEndDate = product.auctionEndDate;
+    }
+    
+    return ProductCard(
+      id: product.id ?? 0,
+      slug: product.slug ?? '',
+      image: product.thumbnailImage,
+      name: product.name,
+      description: product.description,
+      pointPerBid: product.pointPerBid ?? 0,
+      auctionEndDate: displayEndDate,
+      auctionStartDate: isUpcoming ? product.auctionStartDate : null,
+      currentBid: product.highestBid ?? product.startingBid,
+      startingBid: product.startingBid,
+      isAuctionActive: isActive,
+    );
+  }
 
   // ============ REUSABLE STATIC HORIZONTAL GRID (NO SCROLL) ============
   Widget _buildStaticHorizontalGrid({
