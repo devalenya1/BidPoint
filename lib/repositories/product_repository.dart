@@ -615,8 +615,8 @@ class ProductRepository {
       };
     }
   }
-
-  // Contact seller
+  
+  // In your ProductRepository
   Future<Map<String, dynamic>> contactSeller(int productId) async {
     String url = "${AppConfig.BASE_URL}/product/contact-store";
     
@@ -638,6 +638,8 @@ class ProductRepository {
         return {
           'success': responseData['success'] ?? true,
           'message': responseData['message'] ?? LocalizedMessages.getMessage('message_sent_to_seller'),
+          'conversation_id': responseData['conversation_id'], // ✅ Return the conversation_id
+          'data': responseData['data'] ?? {}, // ✅ Return additional data if available
           'status': response.statusCode,
         };
       } else {

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:active_ecommerce_flutter/screens/chat.dart';
+import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/btn.dart';
@@ -97,7 +99,7 @@ class _ProductDetailsState extends State<ProductDetails>
   double _pointPerBidCustom = 0;
   int _reviewsCount = 0;
   double _rating = 0;
-
+ 
   // Winner Data
   Winner? _winnerData;
 
@@ -928,7 +930,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // CONTACT SELLER
+  // CONTACT SELLER - DIRECT NAVIGATION TO CHAT
   // ============================================
 
   Future<void> _contactSeller() async {
@@ -950,15 +952,34 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() => _isProcessing = false);
       }
 
+      print('📡 Contact Seller Response: $response');
+
       if (response['success'] == true) {
         ToastComponent.showSuccess(response['message'] ?? AppLocalizations.of(context)!.message_sent_to_seller);
+        
+        // ✅ Get conversation_id from response
+        final conversationId = response['conversation_id'];
+        
+        // ✅ Get additional data for chat header
+        final data = response['data'] ?? {};
+        final sellerName = data['seller_name'] ?? AppLocalizations.of(context)!.seller;
+        final productName = data['product_name'] ?? _product?.name ?? '';
+        final sellerAvatar = data['seller_avatar'] ?? '';
         
         if (mounted) {
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
+              // ✅ Navigate directly to Chat with conversation_id
               Navigator.push(
                 context, 
-                MaterialPageRoute(builder: (context) => MessengerList())
+                MaterialPageRoute(
+                  builder: (context) => Chat(
+                    conversation_id: conversationId,
+                    messenger_name: sellerName,
+                    messenger_title: productName,
+                    messenger_image: sellerAvatar,
+                  )
+                )
               );
             }
           });
@@ -970,7 +991,12 @@ class _ProductDetailsState extends State<ProductDetails>
       if (mounted) {
         setState(() => _isProcessing = false);
       }
+      print('❌ Error contacting seller: $e');
       ToastComponent.showError(AppLocalizations.of(context)!.error_contacting_seller);
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
