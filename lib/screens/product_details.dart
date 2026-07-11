@@ -2531,7 +2531,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // ✅ BLINKING STATUS TEXT - Shows "You are winning" or "You are losing"
+  // ✅ BLINKING STATUS TEXT - Shows "You are winning" or "You are outbid"
   // ============================================================
 
   Widget _buildBlinkingStatusText() {
@@ -2915,7 +2915,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       Positioned(
-                        bottom: _getResponsiveSize(90, 120),
+                        bottom: _getResponsiveSize(87, 117),
                         left: _getResponsiveSize(10, 16),
                         right: _getResponsiveSize(10, 16),
                         child: GestureDetector(

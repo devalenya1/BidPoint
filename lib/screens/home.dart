@@ -476,7 +476,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // ✅ All Auctions Section with Vertical Grid & Auto-Load (Masonry style)
+  // ✅ All Auctions Section with Vertical Grid & Auto-Load
   // ============================================================
 
   Widget _buildAllAuctionsSection() {
@@ -489,26 +489,25 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'All Auctions',
+                AppLocalizations.of(context)!.all_auctions_ucf,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
               ),
-              GestureDetector(
-                onTap: () {
-                  // Navigate to all auctions page - you can create this later
-                  ToastComponent.showInfo('View all auctions coming soon');
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.view_all,
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-                  ),
-                ),
-              ),
+              // GestureDetector(
+              //   onTap: () {
+              //     ToastComponent.showInfo('View all auctions coming soon');
+              //   },
+              //   child: Container(
+              //     padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              //     decoration: BoxDecoration(
+              //       border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+              //       borderRadius: BorderRadius.circular(8.r),
+              //     ),
+              //     child: Text(
+              //       AppLocalizations.of(context)!.view_all,
+              //       style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -526,110 +525,82 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             height: 100.h,
             child: Center(
               child: Text(
-                'No auctions available',
+                AppLocalizations.of(context)!.no_auctions_available,
                 style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
               ),
             ),
           )
         else
-          Container(), // Should never happen
-          
+          Container(),
+            
         SizedBox(height: 20.h),
       ],
     );
   }
 
   // ============================================================
-  // ✅ All Auctions Grid with Auto-Load More (Masonry style)
+  // ✅ All Auctions Grid with Auto-Load More (Same as Filter page)
   // ============================================================
 
   Widget _buildAllAuctionsGrid() {
     if (homeData.allAuctionsList.isEmpty) return const SizedBox.shrink();
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        // Detect when user scrolls to bottom for auto-load
-        if (!homeData.showAllAuctionsLoadingContainer &&
-            homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0) &&
-            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
-          
-          // Load more items
-          homeData.allAuctionsPage++;
-          homeData.showAllAuctionsLoadingContainer = true;
-          homeData.fetchAllAuctions();
-        }
-        return true;
+    return RefreshIndicator(
+      onRefresh: () async {
+        await homeData.onRefresh();
       },
-      child: Column(
-        children: [
-          // Masonry Grid - 2 columns
-          MasonryGridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 12.w,
-            crossAxisSpacing: 12.w,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            itemCount: homeData.allAuctionsList.length + 
-                (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Show loading indicator at the end
-              if (index == homeData.allAuctionsList.length && 
-                  homeData.showAllAuctionsLoadingContainer) {
-                return _buildAllAuctionsLoadingIndicator();
-              }
-              
-              // Show product card
-              final product = homeData.allAuctionsList[index];
-              return _buildAllAuctionCard(product);
-            },
-          ),
-          
-          // Loading more indicator (alternative to the one inside grid)
-          if (homeData.showAllAuctionsLoadingContainer)
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              child: Center(
-                child: Text(
-                  AppLocalizations.of(context)!.loading_more_products_ucf,
-                  style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-                ),
-              ),
+      color: MyTheme.accent_color,
+      child: SingleChildScrollView(
+        controller: homeData.allAuctionsScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            MasonryGridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 12.w,
+              crossAxisSpacing: 12.w,
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              itemCount: homeData.allAuctionsList.length + 
+                  (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
+              itemBuilder: (context, index) {
+                // Show loading indicator at the end
+                if (index == homeData.allAuctionsList.length && 
+                    homeData.showAllAuctionsLoadingContainer) {
+                  return _buildAllAuctionsLoadingIndicator();
+                }
+                
+                // Show product card
+                final product = homeData.allAuctionsList[index];
+                return _buildAllAuctionCard(product);
+              },
             ),
-        ],
+            
+            // Loading more indicator (like Filter page)
+            _buildAllAuctionsLoadingContainer(),
+          ],
+        ),
       ),
     );
   }
 
   // ============================================================
-  // ✅ All Auctions Loading Indicator
+  // ✅ All Auctions Loading Container (Same as Filter page)
   // ============================================================
 
-  Widget _buildAllAuctionsLoadingIndicator() {
+  Widget _buildAllAuctionsLoadingContainer() {
+    if (!homeData.showAllAuctionsLoadingContainer) return const SizedBox.shrink();
+    
     return Container(
-      height: 200.h,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(
-              color: MyTheme.accent_color,
-              strokeWidth: 2.w,
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              AppLocalizations.of(context)!.loading_more_products_ucf,
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
+      height: 36.h,
+      color: Colors.white,
+      alignment: Alignment.center,
+      child: Text(
+        homeData.totalAllAuctionsData == homeData.allAuctionsList.length
+            ? AppLocalizations.of(context)!.no_more_products_ucf
+            : AppLocalizations.of(context)!.loading_more_products_ucf,
+        style: TextStyle(fontSize: 12.sp),
       ),
     );
   }
