@@ -51,6 +51,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // Controllers
   late TabController _tabController;
   late ScrollController _mainScrollController;
+  late AnimationController _blinkController;
   TextEditingController _commentController = TextEditingController();
   TextEditingController _bidController = TextEditingController();
   TextEditingController _reviewController = TextEditingController();
@@ -137,10 +138,18 @@ class _ProductDetailsState extends State<ProductDetails>
     
     _audioPlayer.setReleaseMode(ReleaseMode.release);
     _setupLoginStateListener();
+    
+    // Initialize the blink controller
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    
   }
 
   @override
   void dispose() {
+    _blinkController.dispose();
     _tabController.dispose();
     _mainScrollController.dispose();
     _commentController.dispose();
@@ -210,7 +219,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(Duration(seconds: 3), (timer) async {
+    _pollingTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
       await _pollData();
     });
   }
@@ -2543,12 +2552,11 @@ class _ProductDetailsState extends State<ProductDetails>
         ? AppLocalizations.of(context)!.you_are_winning
         : AppLocalizations.of(context)!.you_are_losing;
     
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 800),
-      builder: (context, value, child) {
-        // Create a blinking effect using opacity
-        final opacity = (value < 0.5) ? 1.0 : 0.3;
+    return AnimatedBuilder(
+      animation: _blinkController,
+      builder: (context, child) {
+        // Map the animation value from 0-1 to opacity 0.3-1.0 for a nicer blink
+        final opacity = 0.3 + (0.7 * _blinkController.value);
         return Opacity(
           opacity: opacity,
           child: Row(
