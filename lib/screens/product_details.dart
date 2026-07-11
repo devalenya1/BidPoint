@@ -58,6 +58,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Data
   bool _myStatus = false;
+  bool _hasBid = false;
   bool _isListening = false;
   bool _isLoading = true;
   DetailedProduct? _product;
@@ -258,6 +259,7 @@ class _ProductDetailsState extends State<ProductDetails>
         // ✅ ADD THIS - Capture myStatus from initial data
         // ============================================
         _myStatus = _product!.myStatus ?? false;
+        _hasBid = _product!.myStatus != null;
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
@@ -412,6 +414,11 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.myStatus != null) {
           setState(() {
             _myStatus = response.myStatus!;
+            _hasBid = true; // User has a bid since myStatus is not null
+          });
+        } else {
+          setState(() {
+            _hasBid = false; // User has no bid
           });
         }
 
@@ -2544,10 +2551,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
 
   Widget _buildBlinkingStatusText() {
-    // Only show for live auctions
-    if (_auctionStatus != "live") return const SizedBox.shrink();
+    // Only show for live auctions AND if user has a bid
+    if (_auctionStatus != "live" || !_hasBid) return const SizedBox.shrink();
     
-    final isWinning = _myStatus ?? false;
+    final isWinning = _myStatus;
     final text = isWinning 
         ? AppLocalizations.of(context)!.you_are_winning
         : AppLocalizations.of(context)!.you_are_losing;
