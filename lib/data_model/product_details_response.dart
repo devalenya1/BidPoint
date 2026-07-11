@@ -50,6 +50,7 @@ class ProductDetailsResponse {
 class DetailedProduct {
   bool? _isAuctionUpcoming; // Private field for upcoming status
   String? _upcomingStatus; // NEW: Store upcoming_status from API
+  bool? myStatus;
 
   DetailedProduct({
     this.id,
@@ -296,6 +297,7 @@ class DetailedProduct {
         colors: json["colors"] != null
             ? List<dynamic>.from(json["colors"].map((x) => x))
             : [],
+        myStatus: json["my_status"] ?? false,
         hasDiscount: json["has_discount"],
         discount: json["discount"],
         strokedPrice: json["stroked_price"],
@@ -386,6 +388,7 @@ class DetailedProduct {
         "current_stock": currentStock,
         "unit": unit,
         "rating": rating,
+        "my_status": myStatus,
         "rating_count": ratingCount,
         "earn_point": earnPoint,
         "description": description,

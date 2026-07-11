@@ -56,6 +56,7 @@ class _ProductDetailsState extends State<ProductDetails>
   TextEditingController _reviewController = TextEditingController();
 
   // Data
+  bool _myStatus = false;
   bool _isListening = false;
   bool _isLoading = true;
   DetailedProduct? _product;
@@ -244,6 +245,11 @@ class _ProductDetailsState extends State<ProductDetails>
         _isInWishlist = false;
         _endingSeconds = _product!.swipeLeft ?? 10;
 
+        // ============================================
+        // ✅ ADD THIS - Capture myStatus from initial data
+        // ============================================
+        _myStatus = _product!.myStatus ?? false;
+
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
 
@@ -392,6 +398,12 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true) {
         if (response.startingBid != null) {
           setState(() { _startingBid = response.startingBid!; });
+        }
+
+        if (response.myStatus != null) {
+          setState(() {
+            _myStatus = response.myStatus!;
+          });
         }
 
         if (response.highestBid != null) {
@@ -2518,6 +2530,55 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================================
+  // ✅ BLINKING STATUS TEXT - Shows "You are winning" or "You are losing"
+  // ============================================================
+
+  Widget _buildBlinkingStatusText() {
+    // Only show for live auctions
+    if (_auctionStatus != "live") return const SizedBox.shrink();
+    
+    final isWinning = _myStatus ?? false;
+    final text = isWinning 
+        ? AppLocalizations.of(context)!.you_are_winning
+        : AppLocalizations.of(context)!.you_are_losing;
+    
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 800),
+      builder: (context, value, child) {
+        // Create a blinking effect using opacity
+        final opacity = (value < 0.5) ? 1.0 : 0.3;
+        return Opacity(
+          opacity: opacity,
+          child: Row(
+            children: [
+              // Small indicator dot
+              Container(
+                width: _getResponsiveSize(6, 8),
+                height: _getResponsiveSize(6, 8),
+                margin: EdgeInsets.only(right: _getResponsiveSize(4, 6)),
+                decoration: BoxDecoration(
+                  color: isWinning ? Colors.green : Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              Text(
+                text,
+                style: TextStyle(
+                  color: isWinning ? Colors.green : Colors.red,
+                  fontSize: _getResponsiveFontSize(9, 13),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // ============================================
   // MOBILE LAYOUT
   // ============================================
@@ -2662,7 +2723,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       Positioned(
-                        bottom: _getResponsiveSize(130, 170),
+                        bottom: _getResponsiveSize(135, 175),
                         left: _getResponsiveSize(10, 16),
                         child: Container(
                           width: _screenWidth * 0.74,
@@ -2854,7 +2915,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       Positioned(
-                        bottom: _getResponsiveSize(85, 115),
+                        bottom: _getResponsiveSize(90, 120),
                         left: _getResponsiveSize(10, 16),
                         right: _getResponsiveSize(10, 16),
                         child: GestureDetector(
@@ -2870,15 +2931,24 @@ class _ProductDetailsState extends State<ProductDetails>
                               SizedBox(height: _getResponsiveSize(2, 4)),
                               Text(
                                   _product?.description
-                                          ?.replaceAll(RegExp(r'<[^>]*>'),
-                                              '') ??
+                                          ?.replaceAll(RegExp(r'<[^>]*>'), '') ??
                                       '',
                                   style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: _getResponsiveFontSize(9, 12)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
-                              SizedBox(height: _getResponsiveSize(2, 4)),
+                              
+                              // ============================================================
+                              // ✅ ADD BLINKING TEXT HERE - "You are winning" or "You are losing"
+                              // ============================================================
+                              if (_auctionStatus == "live" && _myStatus != null)
+                                Padding(
+                                  padding: EdgeInsets.only(top: _getResponsiveSize(2, 4)),
+                                  child: _buildBlinkingStatusText(),
+                                ),
+                              
+                              SizedBox(height: _getResponsiveSize(1, 2)),
                             ],
                           ),
                         ),
