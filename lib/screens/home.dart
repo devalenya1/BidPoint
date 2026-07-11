@@ -568,7 +568,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 // Show loading indicator at the end
                 if (index == homeData.allAuctionsList.length && 
                     homeData.showAllAuctionsLoadingContainer) {
-                  return _buildAllAuctionsLoadingIndicator();
+                  return _buildAllAuctionsLoadingContainer();
                 }
                 
                 // Show product card
