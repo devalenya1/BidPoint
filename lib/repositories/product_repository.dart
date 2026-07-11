@@ -297,6 +297,18 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
+
+  Future<ProductMiniResponse> getAllProducts({int page = 1}) async {
+    String url = "${AppConfig.BASE_URL}/products/all?page=${page}";
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+      },
+    );
+    return productMiniResponseFromJson(response.body);
+  }
+
   Future<ProductMiniResponse> getUpcomingProducts({int page = 1}) async {
     String url = "${AppConfig.BASE_URL}/products/upcoming?page=${page}";
     final response = await ApiRequest.get(

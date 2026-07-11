@@ -17,6 +17,7 @@ class HomePresenter extends ChangeNotifier {
   ScrollController? endingSoonScrollController;
   ScrollController? upcomingScrollController;
   ScrollController? hotAuctionScrollController;
+  ScrollController? allAuctionsScrollController;
   ScrollController mainScrollController = ScrollController();
 
   late AnimationController pirated_logo_controller;
@@ -77,6 +78,17 @@ class HomePresenter extends ChangeNotifier {
   int? totalAllProductData = 0;
   int allProductPage = 1;
   bool showAllLoadingContainer = false;
+
+  
+  // ============================================================
+  // ✅ ADDED: All Auctions Products (using getAllProducts)
+  // ============================================================
+  var allAuctionsList = [];
+  bool isAllAuctionsInitial = true;
+  int? totalAllAuctionsData = 0;
+  int allAuctionsPage = 1;
+  bool showAllAuctionsLoadingContainer = false;
+
   int cartCount = 0;
   
   final ProductRepository _productRepository = ProductRepository();
@@ -92,6 +104,7 @@ class HomePresenter extends ChangeNotifier {
     fetchEndingSoonProducts();
     fetchUpcomingProducts();
     fetchEndedProducts(); // ✅ ADDED
+    fetchAllAuctions();
     fetchTodayDealData();
     fetchFlashDealData();
   }
@@ -252,6 +265,28 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ============================================================
+  // ✅ ADDED: Fetch All Auctions (using getAllProducts)
+  // ============================================================
+  fetchAllAuctions() async {
+    try {
+      var productResponse = await _productRepository.getAllProducts(
+        page: allAuctionsPage,
+      );
+      allAuctionsPage++;
+      allAuctionsList.addAll(productResponse.products!);
+      isAllAuctionsInitial = false;
+      totalAllAuctionsData = productResponse.meta?.total ?? 0;
+      showAllAuctionsLoadingContainer = false;
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching all auctions: $e");
+      isAllAuctionsInitial = false;
+      totalAllAuctionsData = 0;
+      notifyListeners();
+    }
+  }
+
   reset() {
     carouselImageList.clear();
     bannerOneImageList.clear();
@@ -269,7 +304,8 @@ class HomePresenter extends ChangeNotifier {
     resetHotAuctionProductList();
     resetEndingSoonProductList();
     resetUpcomingProductList();
-    resetEndedProductList(); // ✅ ADDED
+    resetEndedProductList();
+    resetAllAuctionsList(); // ✅ ADDED
   }
 
   Future<void> onRefresh() async {
@@ -334,6 +370,19 @@ class HomePresenter extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ============================================================
+  // ✅ ADDED: Reset All Auctions
+  // ============================================================
+  resetAllAuctionsList() {
+    allAuctionsList.clear();
+    isAllAuctionsInitial = true;
+    totalAllAuctionsData = 0;
+    allAuctionsPage = 1;
+    showAllAuctionsLoadingContainer = false;
+    notifyListeners();
+  }
+
+
   mainScrollListener() {
     mainScrollController.addListener(() {
       if (mainScrollController.position.pixels ==
@@ -390,6 +439,25 @@ class HomePresenter extends ChangeNotifier {
     }
   }
 
+
+  // ============================================================
+  // ✅ ADDED: All Auctions Scroll Listener
+  // ============================================================
+  allAuctionsScrollListener() {
+    if (allAuctionsScrollController != null) {
+      allAuctionsScrollController!.addListener(() {
+        if (allAuctionsScrollController!.position.pixels ==
+            allAuctionsScrollController!.position.maxScrollExtent) {
+          if (allAuctionsList.length < (totalAllAuctionsData ?? 0)) {
+            allAuctionsPage++;
+            showAllAuctionsLoadingContainer = true;
+            fetchAllAuctions();
+          }
+        }
+      });
+    }
+  }
+
   // ============================================================
   // ✅ ADDED: Ended Products Scroll Listener
   // ============================================================
@@ -404,10 +472,12 @@ class HomePresenter extends ChangeNotifier {
     upcomingScrollController = ScrollController();
     allProductScrollController = ScrollController();
     featuredCategoryScrollController = ScrollController();
+    allAuctionsScrollController = ScrollController();
     
     hotAuctionScrollListener();
     endingSoonScrollListener();
     upcomingScrollListener();
+    allAuctionsScrollListener();
   }
 
   initPiratedAnimation(vnc) {
@@ -439,6 +509,7 @@ class HomePresenter extends ChangeNotifier {
     upcomingScrollController?.dispose();
     allProductScrollController?.dispose();
     featuredCategoryScrollController?.dispose();
+    allAuctionsScrollController?.dispose();
     notifyListeners();
     super.dispose();
   }
