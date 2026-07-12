@@ -535,41 +535,35 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         // Check if we've scrolled to the bottom
         if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 50) {
           // Only load more if we're not already loading and there are more products
-          if (!homeData.isAllAuctionsLoading && 
-              homeData.allAuctionsList.length < homeData.totalAllAuctionsData) {
+          if (!homeData.showAllAuctionsLoadingContainer && 
+              homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0)) {
+            homeData.allAuctionsPage++;
+            homeData.showAllAuctionsLoadingContainer = true;
             homeData.fetchAllAuctions();
           }
         }
         return false;
       },
-      child: Column(
-        children: [
-          MasonryGridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 12.w,
-            crossAxisSpacing: 12.w,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            itemCount: homeData.allAuctionsList.length + 
-                (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Show loading indicator at the end
-              if (index == homeData.allAuctionsList.length && 
-                  homeData.showAllAuctionsLoadingContainer) {
-                return _buildAllAuctionsLoadingContainer();
-              }
-              
-              // Show product card
-              final product = homeData.allAuctionsList[index];
-              return _buildAllAuctionCard(product);
-            },
-          ),
+      child: MasonryGridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        mainAxisSpacing: 12.w,
+        crossAxisSpacing: 12.w,
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        itemCount: homeData.allAuctionsList.length + 
+            (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
+        itemBuilder: (context, index) {
+          // Show loading indicator at the end when loading more products
+          if (index == homeData.allAuctionsList.length && 
+              homeData.showAllAuctionsLoadingContainer) {
+            return _buildAllAuctionsLoadingContainer();
+          }
           
-          // Show loading container at the bottom (like Filter page)
-          if (homeData.showAllAuctionsLoadingContainer)
-            _buildAllAuctionsLoadingContainer(),
-        ],
+          // Show product card
+          final product = homeData.allAuctionsList[index];
+          return _buildAllAuctionCard(product);
+        },
       ),
     );
   }
