@@ -170,6 +170,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
+    _audioPlayer.stop();
     _audioPlayer.dispose();
     _commentsScrollController.dispose();
     super.dispose();
@@ -384,14 +385,17 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
+    
+    // Stop any existing tick sound
+    _audioPlayer.stop();
 
-    // Set the total seconds for the circle animation
+    // Calculate total seconds remaining
     final totalSeconds = endTime.difference(DateTime.now()).inSeconds;
-    if (totalSeconds > 0 && totalSeconds <= _endingSeconds) {
+    
+    if (totalSeconds > 0) {
+      // Set the animation duration to the total seconds
       _countdownCircleController.duration = Duration(seconds: totalSeconds);
-      _countdownCircleController.forward(from: 0.0);
-    } else if (totalSeconds > 0) {
-      _countdownCircleController.duration = Duration(seconds: totalSeconds);
+      // Start from 0 and go to 1
       _countdownCircleController.forward(from: 0.0);
     }
 
@@ -403,33 +407,35 @@ class _ProductDetailsState extends State<ProductDetails>
         timer.cancel();
         setState(() {
           _timeLeft = Duration.zero;
-          _auctionStatus = "ended";  // ✅ SET STATUS TO ENDED
+          _auctionStatus = "ended";
           _isEndingSoon = false;
         });
         _countdownCircleController.stop();
+        _audioPlayer.stop(); // Stop tick sound when auction ends
         
-        // ✅ TRIGGER POLLING TO GET WINNER DATA
+        // Trigger polling to get winner data
         _pollData();
-        
         return;
       }
 
       final totalSecondsLeft = remaining.inSeconds;
-      if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0 && !_isEndingSoon) {
-        setState(() => _isEndingSoon = true);
-        _playTickSound();
-        ToastComponent.showWarning(
-          '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
-        );
-      } else if (totalSecondsLeft > _endingSeconds && _isEndingSoon) {
-        setState(() => _isEndingSoon = false);
+      
+      // Check if we're in the ending soon window
+      if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0) {
+        if (!_isEndingSoon) {
+          setState(() => _isEndingSoon = true);
+          _playTickSound(); // Start tick sound when entering ending soon
+        }
+      } else {
+        if (_isEndingSoon) {
+          setState(() => _isEndingSoon = false);
+          _audioPlayer.stop(); // Stop tick sound when not ending soon
+        }
       }
 
-      // Update circle animation progress
-      if (totalSecondsLeft > 0 && totalSecondsLeft <= _endingSeconds) {
-        final progress = 1.0 - (totalSecondsLeft / _endingSeconds);
-        _countdownCircleController.value = progress;
-      }
+      // ✅ FIX: The animation controller handles progress automatically
+      // No need to manually set _countdownCircleController.value
+      // The forward() method handles the smooth progression from 0 to 1
 
       setState(() => _timeLeft = remaining);
     });
@@ -1124,8 +1130,19 @@ class _ProductDetailsState extends State<ProductDetails>
   void _playTickSound() async {
     if (!_soundEnabled) return;
     try {
+      // Stop any existing sound first
       await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'));
+      
+      // Play with looping
+      await _audioPlayer.play(
+        AssetSource('sounds/tick_clock.mp3'),
+        mode: PlayerMode.lowLatency,
+      );
+      
+      // Set to loop indefinitely
+      _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      
+      print('✅ Tick sound started (looping)');
     } catch (e) {
       print('Error playing tick sound: $e');
     }
