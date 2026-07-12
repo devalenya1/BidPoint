@@ -1893,8 +1893,8 @@ class _ProductDetailsState extends State<ProductDetails>
     if (is_logged_in.$ && _winnerData?.userId == _userInfo?.id) {
       print('✅ Current user is the winner! Sending notification...');
       // ✅ CALL THE LOCAL METHOD, NOT THE REPOSITORY
-      // _productRepository.sendWinnerNotification(productId, userId, highestBid);
-      sendWinnerNotification(productId, userId, highestBid);
+      _productRepository.sendWinnerNotification(productId, userId, highestBid);
+      // sendWinnerNotification(productId, userId, highestBid);
     } else {
       print('❌ Current user is NOT the winner (or not logged in)');
     }
