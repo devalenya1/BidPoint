@@ -8,6 +8,7 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/presenter/home_presenter.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/category_products.dart';
+import 'package:active_ecommerce_flutter/screens/all_products.dart';
 import 'package:active_ecommerce_flutter/screens/filter.dart';
 import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
@@ -491,6 +492,24 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               Text(
                 AppLocalizations.of(context)!.all_auctions_ucf,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return AllProducts(slug: 'all-auctions');
+                  }));
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.view_all,
+                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
+                  ),
+                ),
               ),
             ],
           ),
