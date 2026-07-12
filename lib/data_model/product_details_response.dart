@@ -51,6 +51,7 @@ class DetailedProduct {
   bool? _isAuctionUpcoming; // Private field for upcoming status
   String? _upcomingStatus; // NEW: Store upcoming_status from API
   bool? myStatus; // ADD THIS FIELD
+  bool? userHasBid;
 
   DetailedProduct({
     this.id,
@@ -115,6 +116,7 @@ class DetailedProduct {
     bool? isAuctionUpcoming,
     String? upcomingStatus, // NEW: Parameter for upcoming_status
     this.myStatus, // ADD THIS PARAMETER
+    this.userHasBid, 
   })  : _isAuctionUpcoming = isAuctionUpcoming,
         _upcomingStatus = upcomingStatus; // NEW: Initialize private field
 
@@ -299,6 +301,7 @@ class DetailedProduct {
             ? List<dynamic>.from(json["colors"].map((x) => x))
             : [],
         myStatus: json["my_status"] ?? false,
+        userHasBid: json['user_has_bid'],
         hasDiscount: json["has_discount"],
         discount: json["discount"],
         strokedPrice: json["stroked_price"],
@@ -390,6 +393,7 @@ class DetailedProduct {
         "unit": unit,
         "rating": rating,
         "my_status": myStatus,
+        'user_has_bid': userHasBid,
         "rating_count": ratingCount,
         "earn_point": earnPoint,
         "description": description,
