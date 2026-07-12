@@ -53,7 +53,7 @@ class _ProductDetailsState extends State<ProductDetails>
   late TabController _tabController;
   late ScrollController _mainScrollController;
   late AnimationController _blinkController;
-  late AnimationController _countdownCircleController;  // ✅ ADD THIS
+  late AnimationController _countdownCircleController;
   TextEditingController _commentController = TextEditingController();
   TextEditingController _bidController = TextEditingController();
   TextEditingController _reviewController = TextEditingController();
@@ -88,12 +88,12 @@ class _ProductDetailsState extends State<ProductDetails>
   // Timer
   Timer? _countdownTimer;
   Timer? _pollingTimer;
-  Timer? _upcomingTimer; // NEW: Timer for upcoming countdown
+  Timer? _upcomingTimer;
   Duration _timeLeft = Duration.zero;
-  Duration _timeUntilStart = Duration.zero; // NEW: Time until auction starts
+  Duration _timeUntilStart = Duration.zero;
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
-  String _auctionStatus = "live"; // NEW: "upcoming", "live", "ended"
+  String _auctionStatus = "live";
 
   // Bid Data
   double _currentHighestBid = 0;
@@ -270,14 +270,14 @@ class _ProductDetailsState extends State<ProductDetails>
         // ============================================
         // ✅ Capture myStatus from initial data
         // ============================================
-        _myStatus = _product!.myStatus;  // Can be null, true, or false
-        _userHasBid = _product!.userHasBid ?? false;     // True if user has any bid
+        _myStatus = _product!.myStatus;
+        _userHasBid = _product!.userHasBid ?? false;
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
 
         // ============================================
-        // DETERMINE AUCTION STATUS USING upcoming_status
+        // DETERMINE AUCTION STATUS
         // ============================================
         _determineAuctionStatus();
       }
@@ -306,8 +306,6 @@ class _ProductDetailsState extends State<ProductDetails>
   void _determineAuctionStatus() {
     if (_product == null) return;
     
-    // Get the upcoming status from the product
-    // This comes from the API as "upcoming_status" field
     final String? upcomingStatus = _product?.upcomingStatus;
     
     if (upcomingStatus == "Upcoming") {
@@ -316,17 +314,14 @@ class _ProductDetailsState extends State<ProductDetails>
       return;
     }
     
-    // Check if auction is ended
     if (_product?.isAuctionEnded == true) {
       _auctionStatus = "ended";
       _timeLeft = Duration.zero;
       return;
     }
     
-    // Default: Live auction
     _auctionStatus = "live";
     
-    // Start ending countdown for live auctions
     if (_product!.getAuctionEndDateTime() != null) {
       final endTime = _product!.getAuctionEndDateTime()!;
       final now = DateTime.now();
@@ -337,7 +332,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // UPCOMING TIMER - Countdown to auction start
+  // UPCOMING TIMER
   // ============================================
   
   void _startUpcomingTimer() {
@@ -366,7 +361,6 @@ class _ProductDetailsState extends State<ProductDetails>
         _timeUntilStart = Duration.zero;
         _auctionStatus = "live";
       });
-      // Start the ending countdown now
       if (_product!.getAuctionEndDateTime() != null) {
         final endTime = _product!.getAuctionEndDateTime()!;
         _startCountdown(endTime);
@@ -385,19 +379,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    
-    // Stop any existing tick sound
     _audioPlayer.stop();
-
-    // Calculate total seconds remaining
-    final totalSeconds = endTime.difference(DateTime.now()).inSeconds;
-    
-    if (totalSeconds > 0) {
-      // Set the animation duration to the total seconds
-      _countdownCircleController.duration = Duration(seconds: totalSeconds);
-      // Start from 0 and go to 1
-      _countdownCircleController.forward(from: 0.0);
-    }
 
     _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -410,32 +392,24 @@ class _ProductDetailsState extends State<ProductDetails>
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
-        _countdownCircleController.stop();
-        _audioPlayer.stop(); // Stop tick sound when auction ends
-        
-        // Trigger polling to get winner data
+        _audioPlayer.stop();
         _pollData();
         return;
       }
 
       final totalSecondsLeft = remaining.inSeconds;
       
-      // Check if we're in the ending soon window
       if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0) {
         if (!_isEndingSoon) {
           setState(() => _isEndingSoon = true);
-          _playTickSound(); // Start tick sound when entering ending soon
+          _playTickSound();
         }
       } else {
         if (_isEndingSoon) {
           setState(() => _isEndingSoon = false);
-          _audioPlayer.stop(); // Stop tick sound when not ending soon
+          _audioPlayer.stop();
         }
       }
-
-      // ✅ FIX: The animation controller handles progress automatically
-      // No need to manually set _countdownCircleController.value
-      // The forward() method handles the smooth progression from 0 to 1
 
       setState(() => _timeLeft = remaining);
     });
@@ -449,20 +423,19 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
-        if (response.startingBid != null) {
-          setState(() { _startingBid = response.startingBid!; });
-        }
-
-        if (response.myStatus != null) {
-          setState(() {
-            _myStatus = response.myStatus!;  // true or false
-            _userHasBid = response.userHasBid ?? true;  // Should be true if myStatus is not null
-          });
-        } else {
-          setState(() {
+        // ✅ CRITICAL FIX: Update user status from polling
+        setState(() {
+          if (response.myStatus != null) {
+            _myStatus = response.myStatus;
+            _userHasBid = true;
+          } else {
             _myStatus = null;
             _userHasBid = response.userHasBid ?? false;
-          });
+          }
+        });
+
+        if (response.startingBid != null) {
+          setState(() { _startingBid = response.startingBid!; });
         }
 
         if (response.highestBid != null) {
@@ -494,7 +467,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
-        setState(() {});
 
         // ============================================
         // UPDATE AUCTION STATUS FROM POLLING
@@ -538,7 +510,7 @@ class _ProductDetailsState extends State<ProductDetails>
         }
 
         // ============================================
-        // CHECK FOR AUCTION ENDED - IMPROVED
+        // CHECK FOR AUCTION ENDED
         // ============================================
         if (response.auctionEnded == true) {
           setState(() {
@@ -549,7 +521,6 @@ class _ProductDetailsState extends State<ProductDetails>
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
           
-          // Show winner modal if winner data exists and not shown yet
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
             _winnerModalShown = true;
@@ -610,11 +581,73 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
+  // ============================================
+  // ✅ FIX: BLINKING STATUS TEXT METHOD
+  // ============================================
+  Widget _buildBlinkingStatusText() {
+    // Debug logging
+    print('🔍 _buildBlinkingStatusText: auctionStatus=$_auctionStatus, userHasBid=$_userHasBid, myStatus=$_myStatus');
+    
+    // Only show if auction is live and user has bid
+    if (_auctionStatus != "live") {
+      print('❌ Auction not live: $_auctionStatus');
+      return const SizedBox.shrink();
+    }
+    
+    if (_userHasBid != true) {
+      print('❌ User has no bid: $_userHasBid');
+      return const SizedBox.shrink();
+    }
+    
+    // Determine winning status
+    bool isWinning = false;
+    
+    if (_myStatus != null) {
+      isWinning = _myStatus!;
+      print('✅ Using myStatus from API: $isWinning');
+    } else {
+      print('⚠️ myStatus is null, trying to determine from bid history');
+      isWinning = _determineWinningStatusFromBids();
+      print('✅ Determined from bid history: $isWinning');
+    }
+    
+    final text = isWinning 
+        ? "🎉 You are winning!"
+        : "😔 You have been outbid";
+    
+    print('✅ Showing status: ${isWinning ? "Winning" : "Losing"}');
+    
+    return AnimatedBuilder(
+      animation: _blinkController,
+      builder: (context, child) {
+        final opacity = 0.3 + (0.7 * _blinkController.value);
+        return Opacity(
+          opacity: opacity,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isWinning ? Colors.green.withOpacity(0.9) : Colors.red.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: _getResponsiveFontSize(10, 14),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // Add this method to determine winning status from bid history
   bool _determineWinningStatusFromBids() {
     if (_bidHistory.isEmpty) return false;
     
-    // Get current user's highest bid
     final myBids = _bidHistory.where((bid) => 
       bid.userId == _userInfo?.id
     ).toList();
@@ -622,8 +655,6 @@ class _ProductDetailsState extends State<ProductDetails>
     if (myBids.isEmpty) return false;
     
     final myHighestBid = myBids.map((b) => b.amount ?? 0).reduce((a, b) => a > b ? a : b);
-    
-    // Get highest bid overall
     final allBids = _bidHistory.map((b) => b.amount ?? 0).toList();
     final highestBid = allBids.isNotEmpty ? allBids.reduce((a, b) => a > b ? a : b) : 0;
     
@@ -693,7 +724,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
     
-    // Don't allow bidding on upcoming or ended auctions
     if (_auctionStatus != "live") {
       ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
       return;
@@ -750,7 +780,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isProcessing) return;
     
-    // Don't allow bidding on upcoming or ended auctions
     if (_auctionStatus != "live") {
       ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
       return;
@@ -904,7 +933,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // WISHLIST STATUS - DEDICATED ENDPOINT
+  // WISHLIST STATUS
   // ============================================
 
   Future<void> _fetchWishlistStatus() async {
@@ -938,7 +967,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // WISHLIST ACTIONS - WITH SOUND
+  // WISHLIST ACTIONS
   // ============================================
 
   Future<void> _toggleWishlist() async {
@@ -1033,7 +1062,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // CONTACT SELLER - DIRECT NAVIGATION TO CHAT
+  // CONTACT SELLER
   // ============================================
 
   Future<void> _contactSeller() async {
@@ -1060,10 +1089,7 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response['success'] == true) {
         ToastComponent.showSuccess(response['message'] ?? AppLocalizations.of(context)!.message_sent_to_seller);
         
-        // ✅ Get conversation_id from response
         final conversationId = response['conversation_id'];
-        
-        // ✅ Get additional data for chat header
         final data = response['data'] ?? {};
         final sellerName = data['seller_name'] ?? AppLocalizations.of(context)!.seller;
         final productName = data['product_name'] ?? _product?.name ?? '';
@@ -1072,7 +1098,6 @@ class _ProductDetailsState extends State<ProductDetails>
         if (mounted) {
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
-              // ✅ Navigate directly to Chat with conversation_id
               Navigator.push(
                 context, 
                 MaterialPageRoute(
@@ -1130,18 +1155,12 @@ class _ProductDetailsState extends State<ProductDetails>
   void _playTickSound() async {
     if (!_soundEnabled) return;
     try {
-      // Stop any existing sound first
       await _audioPlayer.stop();
-      
-      // Play with looping
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
-      
-      // Set to loop indefinitely
       _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      
       print('✅ Tick sound started (looping)');
     } catch (e) {
       print('Error playing tick sound: $e');
@@ -1249,7 +1268,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _showBidInputDialog() {
-    // Don't allow bidding on upcoming or ended auctions
     if (_auctionStatus != "live") {
       ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
       return;
@@ -1879,7 +1897,6 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
@@ -1889,12 +1906,9 @@ class _ProductDetailsState extends State<ProductDetails>
     
     print('🏆 Winner - Product ID: $productId, Winner User ID: $userId, Amount: $highestBid');
     
-    // ✅ CHECK IF CURRENT USER IS THE WINNER
     if (is_logged_in.$ && _winnerData?.userId == _userInfo?.id) {
       print('✅ Current user is the winner! Sending notification...');
-      // ✅ CALL THE LOCAL METHOD, NOT THE REPOSITORY
       _productRepository.sendWinnerNotification(productId, userId, highestBid);
-      // sendWinnerNotification(productId, userId, highestBid);
     } else {
       print('❌ Current user is NOT the winner (or not logged in)');
     }
@@ -1961,7 +1975,6 @@ class _ProductDetailsState extends State<ProductDetails>
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // ✅ Refresh data after closing to update UI
                   _fetchAllData();
                 },
                 style: ElevatedButton.styleFrom(
@@ -1984,7 +1997,6 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     );
   }
-
 
   void _showFullImage(String imageUrl) {
     showDialog(
@@ -2369,15 +2381,13 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // TIMER ROW - UPDATED to handle upcoming
+  // TIMER ROW
   // ============================================
 
   Widget _buildTimerRow() {
     if (_auctionStatus == "upcoming") {
-      // Show countdown to auction start
       return _buildUpcomingTimerRow();
     } else if (_auctionStatus == "ended") {
-      // Show "Ended" message
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2400,7 +2410,6 @@ class _ProductDetailsState extends State<ProductDetails>
         ],
       );
     } else {
-      // Live auction - show ending countdown
       return _buildEndingTimerRow();
     }
   }
@@ -2671,79 +2680,6 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // ============================================================
-  // ✅ UPDATED: BLINKING STATUS TEXT - Uses userHasBid from API
-  // ============================================================
-  Widget _buildBlinkingStatusText() {
-    // DEBUG: Print current values to see what's happening
-    print('🔍 _buildBlinkingStatusText: auctionStatus=$_auctionStatus, userHasBid=$_userHasBid, myStatus=$_myStatus');
-    print('🔍 bidHistory length: ${_bidHistory.length}');
-    
-    // Only show if auction is live
-    if (_auctionStatus != "live") {
-      print('❌ Auction not live: $_auctionStatus');
-      return const SizedBox.shrink();
-    }
-    
-    // Check if user has bid
-    if (_userHasBid != true) {
-      print('❌ User has no bid: $_userHasBid');
-      return const SizedBox.shrink();
-    }
-    
-    // Determine winning status
-    bool isWinning = false;
-    
-    // First try to use myStatus from API
-    if (_myStatus != null) {
-      isWinning = _myStatus!;
-      print('✅ Using myStatus from API: $isWinning');
-    } else {
-      // Fallback: determine from bid history
-      print('⚠️ myStatus is null, trying to determine from bid history');
-      isWinning = _determineWinningStatusFromBids();
-      print('✅ Determined from bid history: $isWinning');
-    }
-    
-    final text = isWinning 
-        ? AppLocalizations.of(context)!.you_are_winning
-        : AppLocalizations.of(context)!.you_are_losing;
-    
-    print('✅ Showing status: ${isWinning ? "Winning" : "Losing"}');
-    
-    return AnimatedBuilder(
-      animation: _blinkController,
-      builder: (context, child) {
-        final opacity = 0.3 + (0.7 * _blinkController.value);
-        return Opacity(
-          opacity: opacity,
-          child: Row(
-            children: [
-              Container(
-                width: _getResponsiveSize(6, 8),
-                height: _getResponsiveSize(6, 8),
-                margin: EdgeInsets.only(right: _getResponsiveSize(4, 6)),
-                decoration: BoxDecoration(
-                  color: isWinning ? Colors.green : Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              Text(
-                text,
-                style: TextStyle(
-                  color: isWinning ? Colors.green : Colors.red,
-                  fontSize: _getResponsiveFontSize(9, 13),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   // ============================================
   // MOBILE LAYOUT
   // ============================================
@@ -2751,7 +2687,6 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildMobileLayout() {
     final screenHeight = MediaQuery.of(context).size.height;
     final imageHeight = screenHeight * 0.75;
-    final isSmallScreen = _screenWidth < 400;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -2815,7 +2750,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      // Inside the Stack, after the image overlay Container, add:
                       Positioned(
                         top: 0,
                         left: 0,
@@ -3114,15 +3048,10 @@ class _ProductDetailsState extends State<ProductDetails>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                               
-                              // ============================================================
-                              // ✅ SHOW BLINKING TEXT ONLY IF:
-                              // 1. Auction is live
-                              // 2. API says userHasBid is true
-                              // 3. myStatus is not null
-                              // ============================================================
+                              // ✅ CRITICAL FIX: Show blinking status text here
                               if (_auctionStatus == "live" && _userHasBid == true)
                                 Padding(
-                                  padding: EdgeInsets.only(top: _getResponsiveSize(2, 4)),
+                                  padding: EdgeInsets.only(top: _getResponsiveSize(4, 8)),
                                   child: _buildBlinkingStatusText(),
                                 ),
                               
@@ -3373,7 +3302,6 @@ class _ProductDetailsState extends State<ProductDetails>
                       offset: Offset(0, -2))
                 ],
               ),
-              // In the bottom action bar (around line 1250-1280)
               child: Row(
                 children: [
                   Expanded(
@@ -3415,7 +3343,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               _auctionStatus == "upcoming"
                                   ? AppLocalizations.of(context)!.starts_soon
                                   : (_auctionStatus == "ended"
-                                      ? AppLocalizations.of(context)!.auction_ended  // ✅ Show "Auction Ended"
+                                      ? AppLocalizations.of(context)!.auction_ended
                                       : '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}'),
                               style: TextStyle(
                                 fontSize: _getResponsiveFontSize(11, 16),
@@ -3487,76 +3415,58 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-
   // ============================================
-  // CIRCULAR COUNTDOWN WIDGET
+  // ✅ FIXED: CIRCULAR COUNTDOWN WIDGET
   // ============================================
 
   Widget _buildCircularCountdown() {
-    if (_auctionStatus != "live") {
+    if (_auctionStatus != "live" || _timeLeft.inSeconds <= 0) {
       return const SizedBox.shrink();
     }
 
-    final totalSeconds = _timeLeft.inSeconds;
-    if (totalSeconds > _endingSeconds || totalSeconds <= 0) {
-      return const SizedBox.shrink();
-    }
+    final totalEndingWindow = _endingSeconds;
+    final remainingInWindow = _timeLeft.inSeconds.clamp(0, totalEndingWindow);
+    final progress = remainingInWindow / totalEndingWindow;
 
     return Center(
       child: Container(
         width: _getResponsiveSize(120, 160),
         height: _getResponsiveSize(120, 160),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
+          color: Colors.black.withOpacity(0.6),
           shape: BoxShape.circle,
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Background circle
-            Container(
+            SizedBox(
               width: _getResponsiveSize(100, 140),
               height: _getResponsiveSize(100, 140),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                shape: BoxShape.circle,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: _getResponsiveSize(8, 12),
+                backgroundColor: Colors.white.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  remainingInWindow <= 5 ? Colors.red : Colors.orange,
+                ),
               ),
             ),
-            // Animated circular progress
-            AnimatedBuilder(
-              animation: _countdownCircleController,
-              builder: (context, child) {
-                return SizedBox(
-                  width: _getResponsiveSize(100, 140),
-                  height: _getResponsiveSize(100, 140),
-                  child: CustomPaint(
-                    painter: CircularTimerPainter(
-                      progress: _countdownCircleController.value,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      progressColor: _isEndingSoon ? Colors.red : Colors.orange,
-                    ),
-                  ),
-                );
-              },
-            ),
-            // Center text
             Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  totalSeconds.toString(),
+                  remainingInWindow.toString(),
                   style: TextStyle(
-                    fontSize: _getResponsiveFontSize(28, 38),
+                    fontSize: _getResponsiveFontSize(32, 42),
                     fontWeight: FontWeight.bold,
-                    color: _isEndingSoon ? Colors.red : Colors.white,
+                    color: remainingInWindow <= 5 ? Colors.red : Colors.white,
                   ),
                 ),
                 Text(
-                  AppLocalizations.of(context)!.ending_in,
+                  "sec left",
                   style: TextStyle(
-                    fontSize: _getResponsiveFontSize(10, 14),
+                    fontSize: _getResponsiveFontSize(10, 13),
                     color: Colors.white70,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -3567,6 +3477,45 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================
+  // SEND WINNER NOTIFICATION TO SERVER
+  // ============================================
+  Future<Map<String, dynamic>> sendWinnerNotification(int productId, int userId, double highestBid) async {
+    String url = "${AppConfig.RAW_BASE_URL}/winner-notification";
+    
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$ ?? 'en',
+        },
+        body: json.encode({
+          'product_id': productId,
+          'user_id': userId,
+          'highest_bid': highestBid,
+        }),
+      );
+      
+      print('📤 Winner notification response: ${response.statusCode}');
+      print('📤 Winner notification body: ${response.body}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to send winner notification: ${response.statusCode}');
+      }
+      
+    } catch (e) {
+      print("❌ Error in sendWinnerNotification: $e");
+      return {
+        'success': false,
+        'message': 'Network error occurred',
+        'status': 500,
+      };
+    }
+  }
 }
 
 // ============================================
@@ -3590,7 +3539,6 @@ class CircularTimerPainter extends CustomPainter {
     final radius = size.width / 2;
     final strokeWidth = size.width * 0.08;
 
-    // Background circle
     final backgroundPaint = Paint()
       ..color = backgroundColor
       ..style = PaintingStyle.stroke
@@ -3598,7 +3546,6 @@ class CircularTimerPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, backgroundPaint);
 
-    // Progress circle
     final progressPaint = Paint()
       ..color = progressColor
       ..style = PaintingStyle.stroke
