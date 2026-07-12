@@ -32,7 +32,7 @@ import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../data_model/auction_models.dart';
-
+import '../data_model/user_info_response.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
 import 'package:active_ecommerce_flutter/helpers/main_helpers.dart';
@@ -1834,7 +1834,7 @@ class _ProductDetailsState extends State<ProductDetails>
     // ✅ Check if the current user is the winner
     if (is_logged_in.$ && _winnerData?.userId == _userInfo?.id) {
       // User is the winner - send notification to server
-      _sendWinnerNotification(productId, userId, highestBid);
+      _productRepository.sendWinnerNotification(productId, userId, highestBid);
     }
 
     showDialog(
@@ -3412,60 +3412,6 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // ============================================
-  // CUSTOM PAINTER FOR CIRCULAR TIMER
-  // ============================================
-
-  class CircularTimerPainter extends CustomPainter {
-    final double progress;
-    final Color backgroundColor;
-    final Color progressColor;
-
-    CircularTimerPainter({
-      required this.progress,
-      required this.backgroundColor,
-      required this.progressColor,
-    });
-
-    @override
-    void paint(Canvas canvas, Size size) {
-      final center = Offset(size.width / 2, size.height / 2);
-      final radius = size.width / 2;
-      final strokeWidth = size.width * 0.08;
-
-      // Background circle
-      final backgroundPaint = Paint()
-        ..color = backgroundColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth;
-
-      canvas.drawCircle(center, radius, backgroundPaint);
-
-      // Progress circle
-      final progressPaint = Paint()
-        ..color = progressColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
-
-      final startAngle = -pi / 2;
-      final sweepAngle = 2 * pi * progress;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        progressPaint,
-      );
-    }
-
-    @override
-    bool shouldRepaint(CircularTimerPainter oldDelegate) {
-      return oldDelegate.progress != progress ||
-          oldDelegate.progressColor != progressColor;
-    }
-  }
 
   // ============================================
   // CIRCULAR COUNTDOWN WIDGET
@@ -3546,4 +3492,59 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+}
+
+// ============================================
+// CUSTOM PAINTER FOR CIRCULAR TIMER
+// ============================================
+
+class CircularTimerPainter extends CustomPainter {
+  final double progress;
+  final Color backgroundColor;
+  final Color progressColor;
+
+  CircularTimerPainter({
+    required this.progress,
+    required this.backgroundColor,
+    required this.progressColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    final strokeWidth = size.width * 0.08;
+
+    // Background circle
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawCircle(center, radius, backgroundPaint);
+
+    // Progress circle
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final startAngle = -pi / 2;
+    final sweepAngle = 2 * pi * progress;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CircularTimerPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.progressColor != progressColor;
+  }
 }

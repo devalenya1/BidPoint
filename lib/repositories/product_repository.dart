@@ -12,6 +12,7 @@ import '../data_model/auction_models.dart';
 import '../helpers/main_helpers.dart';
 import 'package:active_ecommerce_flutter/middlewares/banned_user.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 // Helper class to handle localization without context
 class LocalizedMessages {
@@ -683,7 +684,7 @@ class ProductRepository {
   // ============================================
   // SEND WINNER NOTIFICATION TO SERVER
   // ============================================
-  Future<void> _sendWinnerNotification(int productId, int userId, double highestBid) async {
+  Future<void> sendWinnerNotification(int productId, int userId, double highestBid) async {
     try {
       final url = '${AppConfig.RAW_BASE_URL}/winner-notification';
       
