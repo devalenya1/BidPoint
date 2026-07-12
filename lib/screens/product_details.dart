@@ -401,8 +401,16 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative) {
         timer.cancel();
-        setState(() => _timeLeft = Duration.zero);
+        setState(() {
+          _timeLeft = Duration.zero;
+          _auctionStatus = "ended";  // ✅ SET STATUS TO ENDED
+          _isEndingSoon = false;
+        });
         _countdownCircleController.stop();
+        
+        // ✅ TRIGGER POLLING TO GET WINNER DATA
+        _pollData();
+        
         return;
       }
 
@@ -523,14 +531,26 @@ class _ProductDetailsState extends State<ProductDetails>
           }
         }
 
-        if (response.auctionEnded == true &&
-            response.winner != null &&
-            !_winnerModalShown) {
-          _winnerData = response.winner;
-          _winnerModalShown = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showWinnerModalDialog();
+        // ============================================
+        // CHECK FOR AUCTION ENDED - IMPROVED
+        // ============================================
+        if (response.auctionEnded == true) {
+          setState(() {
+            _auctionStatus = "ended";
+            _timeLeft = Duration.zero;
+            _isEndingSoon = false;
           });
+          _countdownTimer?.cancel();
+          _countdownCircleController.stop();
+          
+          // Show winner modal if winner data exists and not shown yet
+          if (response.winner != null && !_winnerModalShown) {
+            _winnerData = response.winner;
+            _winnerModalShown = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showWinnerModalDialog();
+            });
+          }
         }
 
         if (response.isEndingSoon == true &&
@@ -582,6 +602,26 @@ class _ProductDetailsState extends State<ProductDetails>
     } catch (e) {
       print('Polling error: $e');
     }
+  }
+
+  // Add this method to determine winning status from bid history
+  bool _determineWinningStatusFromBids() {
+    if (_bidHistory.isEmpty) return false;
+    
+    // Get current user's highest bid
+    final myBids = _bidHistory.where((bid) => 
+      bid.userId == _userInfo?.id
+    ).toList();
+    
+    if (myBids.isEmpty) return false;
+    
+    final myHighestBid = myBids.map((b) => b.amount ?? 0).reduce((a, b) => a > b ? a : b);
+    
+    // Get highest bid overall
+    final allBids = _bidHistory.map((b) => b.amount ?? 0).toList();
+    final highestBid = allBids.isNotEmpty ? allBids.reduce((a, b) => a > b ? a : b) : 0;
+    
+    return myHighestBid >= highestBid && highestBid > 0;
   }
 
   void _checkAndRefreshWishlist() {
@@ -1822,6 +1862,7 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
@@ -1831,10 +1872,14 @@ class _ProductDetailsState extends State<ProductDetails>
     
     print('🏆 Winner - Product ID: $productId, Winner User ID: $userId, Amount: $highestBid');
     
-    // ✅ Check if the current user is the winner
+    // ✅ CHECK IF CURRENT USER IS THE WINNER
     if (is_logged_in.$ && _winnerData?.userId == _userInfo?.id) {
-      // User is the winner - send notification to server
-      _productRepository.sendWinnerNotification(productId, userId, highestBid);
+      print('✅ Current user is the winner! Sending notification...');
+      // ✅ CALL THE LOCAL METHOD, NOT THE REPOSITORY
+      // _productRepository.sendWinnerNotification(productId, userId, highestBid);
+      sendWinnerNotification(productId, userId, highestBid);
+    } else {
+      print('❌ Current user is NOT the winner (or not logged in)');
     }
 
     showDialog(
@@ -1897,7 +1942,11 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
               SizedBox(height: _getResponsiveSize(12, 16)),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  // ✅ Refresh data after closing to update UI
+                  _fetchAllData();
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
@@ -1918,6 +1967,7 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     );
   }
+
 
   void _showFullImage(String imageUrl) {
     showDialog(
@@ -2610,27 +2660,34 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildBlinkingStatusText() {
     // DEBUG: Print current values to see what's happening
     print('🔍 _buildBlinkingStatusText: auctionStatus=$_auctionStatus, userHasBid=$_userHasBid, myStatus=$_myStatus');
+    print('🔍 bidHistory length: ${_bidHistory.length}');
     
-    // Only show if:
-    // 1. Auction is live
-    // 2. API says user has a bid (userHasBid == true) 
-    // 3. myStatus is not null (we have winning/losing status)
+    // Only show if auction is live
     if (_auctionStatus != "live") {
       print('❌ Auction not live: $_auctionStatus');
       return const SizedBox.shrink();
     }
     
+    // Check if user has bid
     if (_userHasBid != true) {
       print('❌ User has no bid: $_userHasBid');
       return const SizedBox.shrink();
     }
     
-    if (_myStatus == null) {
-      print('❌ myStatus is null');
-      return const SizedBox.shrink();
+    // Determine winning status
+    bool isWinning = false;
+    
+    // First try to use myStatus from API
+    if (_myStatus != null) {
+      isWinning = _myStatus!;
+      print('✅ Using myStatus from API: $isWinning');
+    } else {
+      // Fallback: determine from bid history
+      print('⚠️ myStatus is null, trying to determine from bid history');
+      isWinning = _determineWinningStatusFromBids();
+      print('✅ Determined from bid history: $isWinning');
     }
     
-    final isWinning = _myStatus!; // true = winning, false = losing
     final text = isWinning 
         ? AppLocalizations.of(context)!.you_are_winning
         : AppLocalizations.of(context)!.you_are_losing;
@@ -3046,7 +3103,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               // 2. API says userHasBid is true
                               // 3. myStatus is not null
                               // ============================================================
-                              if (_auctionStatus == "live" && _userHasBid == true && _myStatus != null)
+                              if (_auctionStatus == "live" && _userHasBid == true)
                                 Padding(
                                   padding: EdgeInsets.only(top: _getResponsiveSize(2, 4)),
                                   child: _buildBlinkingStatusText(),
@@ -3299,6 +3356,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       offset: Offset(0, -2))
                 ],
               ),
+              // In the bottom action bar (around line 1250-1280)
               child: Row(
                 children: [
                   Expanded(
@@ -3340,7 +3398,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               _auctionStatus == "upcoming"
                                   ? AppLocalizations.of(context)!.starts_soon
                                   : (_auctionStatus == "ended"
-                                      ? AppLocalizations.of(context)!.ended
+                                      ? AppLocalizations.of(context)!.auction_ended  // ✅ Show "Auction Ended"
                                       : '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}'),
                               style: TextStyle(
                                 fontSize: _getResponsiveFontSize(11, 16),

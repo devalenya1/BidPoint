@@ -684,15 +684,16 @@ class ProductRepository {
   // ============================================
   // SEND WINNER NOTIFICATION TO SERVER
   // ============================================
-  Future<void> sendWinnerNotification(int productId, int userId, double highestBid) async {
+  Future<Map<String, dynamic>> sendWinnerNotification(int productId, int userId, double highestBid) async {
+    String url = "${AppConfig.BASE_URL}/winner-notification";
+    
     try {
-      final url = '${AppConfig.RAW_BASE_URL}/winner-notification';
-      
-      final response = await http.post(
-        Uri.parse(url),
+      final response = await ApiRequest.post(
+        url: url,
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
         },
         body: json.encode({
           'product_id': productId,
@@ -701,14 +702,19 @@ class ProductRepository {
         }),
       );
       
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print('✅ Winner notification sent: $data');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
       } else {
-        print('❌ Failed to send winner notification: ${response.statusCode}');
+        throw Exception('Failed to send winner notification: ${response.statusCode}');
       }
+      
     } catch (e) {
-      print('❌ Error sending winner notification: $e');
+      print("Error in sendWinnerNotification: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error'),
+        'status': 500,
+      };
     }
   }
 
