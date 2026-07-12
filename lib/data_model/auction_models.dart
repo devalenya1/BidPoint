@@ -438,8 +438,8 @@ class PollDataResponse {
       lastBidAmount: (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
       isAuctionUpcoming: data['is_auction_upcoming'] ?? false,
       upcomingStatus: data['upcoming_status'],
-      userHasBid: json['user_has_bid'],
-      myStatus: data['my_status'] ?? false, // ADD THIS - default to false if null
+      userHasBid: json['user_has_bid'] ?? false,
+      myStatus: data['my_status'], // ADD THIS - default to false if null
       winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
       comments: data['comments'] != null 
           ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))

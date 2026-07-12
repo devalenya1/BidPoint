@@ -719,12 +719,23 @@ class _ProfileState extends State<Profile> {
             ),
             child: Column(
               children: [
+                // _buildMenuItem(
+                //   icon: Icons.favorite_border,
+                //   label: AppLocalizations.of(context)!.all_favorite,
+                //   onTap: () {
+                //     if (is_logged_in.$) {
+                //       Navigator.push(context, MaterialPageRoute(builder: (context) => Wishlist()));
+                //     } else {
+                //       _showLoginWarning();
+                //     }
+                //   },
+                // ),
                 _buildMenuItem(
-                  icon: Icons.favorite_border,
-                  label: AppLocalizations.of(context)!.all_favorite,
+                  icon: Icons.person_outline,
+                  label: AppLocalizations.of(context)!.update_profile,
                   onTap: () {
                     if (is_logged_in.$) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => Wishlist()));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileEdit()));
                     } else {
                       _showLoginWarning();
                     }
@@ -769,17 +780,17 @@ class _ProfileState extends State<Profile> {
             ),
             child: Column(
               children: [
-                _buildMenuItem(
-                  icon: Icons.person_outline,
-                  label: AppLocalizations.of(context)!.update_profile,
-                  onTap: () {
-                    if (is_logged_in.$) {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileEdit()));
-                    } else {
-                      _showLoginWarning();
-                    }
-                  },
-                ),
+                // _buildMenuItem(
+                //   icon: Icons.person_outline,
+                //   label: AppLocalizations.of(context)!.update_profile,
+                //   onTap: () {
+                //     if (is_logged_in.$) {
+                //       Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileEdit()));
+                //     } else {
+                //       _showLoginWarning();
+                //     }
+                //   },
+                // ),
                 Divider(height: 0, color: const Color(0xFFEEF2F8)),
                 _buildMenuItem(
                   icon: Icons.notifications_none,

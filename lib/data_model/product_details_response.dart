@@ -300,8 +300,8 @@ class DetailedProduct {
         colors: json["colors"] != null
             ? List<dynamic>.from(json["colors"].map((x) => x))
             : [],
-        myStatus: json["my_status"] ?? false,
-        userHasBid: json['user_has_bid'],
+        myStatus: json["my_status"],
+        userHasBid: json['user_has_bid'] ?? false,
         hasDiscount: json["has_discount"],
         discount: json["discount"],
         strokedPrice: json["stroked_price"],

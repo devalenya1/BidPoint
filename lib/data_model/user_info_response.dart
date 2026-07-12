@@ -1080,6 +1080,11 @@ class AuctionBid {
   bool? isWinning;
   bool? highestBidder;
   bool? recentlyEnded;
+  // =============================================
+  // ✅ NEW FIELDS
+  // =============================================
+  int? activityStatus;
+  String? payLink;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -1098,6 +1103,11 @@ class AuctionBid {
     this.isWinning,
     this.highestBidder,
     this.recentlyEnded,
+    // =============================================
+    // ✅ NEW FIELDS
+    // =============================================
+    this.activityStatus,
+    this.payLink,
     this.createdAt,
     this.updatedAt,
   });
@@ -1117,6 +1127,11 @@ class AuctionBid {
     isWinning: json["is_winning"] ?? false,
     highestBidder: json["highest_biddder"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
+    // =============================================
+    // ✅ NEW FIELDS
+    // =============================================
+    activityStatus: json["activity_status"],
+    payLink: json["pay_link"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -1136,6 +1151,11 @@ class AuctionBid {
     "is_winning": isWinning,
     "highest_biddder": highestBidder,
     "recently_ended": recentlyEnded,
+    // =============================================
+    // ✅ NEW FIELDS
+    // =============================================
+    "activity_status": activityStatus,
+    "pay_link": payLink,
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };
@@ -1205,6 +1225,11 @@ class DistinctAuctionBid {
   bool? isWinning;
   bool? highestBidder;
   bool? recentlyEnded;
+  // =============================================
+  // ✅ NEW FIELDS
+  // =============================================
+  int? activityStatus;
+  String? payLink;
   String? createdAt;
   String? updatedAt;
 
@@ -1222,6 +1247,11 @@ class DistinctAuctionBid {
     this.isWinning,
     this.highestBidder,
     this.recentlyEnded,
+    // =============================================
+    // ✅ NEW FIELDS
+    // =============================================
+    this.activityStatus,
+    this.payLink,
     this.createdAt,
     this.updatedAt,
   });
@@ -1240,6 +1270,11 @@ class DistinctAuctionBid {
     isWinning: json["is_winning"] ?? false,
     highestBidder: json["highest_bidder"] ?? false,
     recentlyEnded: json["recently_ended"] ?? false,
+    // =============================================
+    // ✅ NEW FIELDS
+    // =============================================
+    activityStatus: json["activity_status"],
+    payLink: json["pay_link"],
     createdAt: json["created_at"],
     updatedAt: json["updated_at"],
   );
@@ -1258,6 +1293,11 @@ class DistinctAuctionBid {
     "is_winning": isWinning,
     "highest_bidder": highestBidder,
     "recently_ended": recentlyEnded,
+    // =============================================
+    // ✅ NEW FIELDS
+    // =============================================
+    "activity_status": activityStatus,
+    "pay_link": payLink,
     "created_at": createdAt,
     "updated_at": updatedAt,
   };

@@ -2552,11 +2552,25 @@ class _ProductDetailsState extends State<ProductDetails>
   // ✅ UPDATED: BLINKING STATUS TEXT - Uses userHasBid from API
   // ============================================================
   Widget _buildBlinkingStatusText() {
+    // DEBUG: Print current values to see what's happening
+    print('🔍 _buildBlinkingStatusText: auctionStatus=$_auctionStatus, userHasBid=$_userHasBid, myStatus=$_myStatus');
+    
     // Only show if:
     // 1. Auction is live
-    // 2. API says user has a bid (userHasBid == true)
+    // 2. API says user has a bid (userHasBid == true) 
     // 3. myStatus is not null (we have winning/losing status)
-    if (_auctionStatus != "live" || !_userHasBid || _myStatus == null) {
+    if (_auctionStatus != "live") {
+      print('❌ Auction not live: $_auctionStatus');
+      return const SizedBox.shrink();
+    }
+    
+    if (_userHasBid != true) {
+      print('❌ User has no bid: $_userHasBid');
+      return const SizedBox.shrink();
+    }
+    
+    if (_myStatus == null) {
+      print('❌ myStatus is null');
       return const SizedBox.shrink();
     }
     
@@ -2564,6 +2578,8 @@ class _ProductDetailsState extends State<ProductDetails>
     final text = isWinning 
         ? AppLocalizations.of(context)!.you_are_winning
         : AppLocalizations.of(context)!.you_are_losing;
+    
+    print('✅ Showing status: ${isWinning ? "Winning" : "Losing"}');
     
     return AnimatedBuilder(
       animation: _blinkController,
@@ -2964,7 +2980,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               // 2. API says userHasBid is true
                               // 3. myStatus is not null
                               // ============================================================
-                              if (_auctionStatus == "live" && _userHasBid && _myStatus != null)
+                              if (_auctionStatus == "live" && _userHasBid == true && _myStatus != null)
                                 Padding(
                                   padding: EdgeInsets.only(top: _getResponsiveSize(2, 4)),
                                   child: _buildBlinkingStatusText(),
