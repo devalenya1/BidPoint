@@ -134,10 +134,8 @@ class ProductRepository {
   }
 
   Future<ProductMiniResponse> getAuctionProducts(
-      {String? id = "", name = "", page = 1}) async {
-    String url = ("${AppConfig.BASE_URL}/products/all/list" +
-        id.toString() +
-        "?page=${page}&name=${name}");
+      {int page = 1}) async {
+    String url = ("${AppConfig.BASE_URL}/products/all/list?page=${page}&name=${name}");
     final response = await ApiRequest.get(url: url, headers: {
       "App-Language": app_language.$!,
     });
