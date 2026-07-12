@@ -11,6 +11,7 @@ import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 import 'dart:async';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:active_ecommerce_flutter/app_config.dart';
 
 // Import the data model
 import '../data_model/user_info_response.dart';
@@ -1118,8 +1119,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     VoidCallback? buttonAction;
     
     if (type == 'purchase') {
-      // Purchase tab - only won auctions
+      // ============================================================
+      // ✅ PURCHASE TAB - Same design as WON status in bid tab
+      // ============================================================
       final status = activity.activityStatus ?? 0;
+      
+      // Always show the win icon since these are won auctions
+      showWinLossIcon = true;
+      winLossIcon = '🏆';
+      
       if (status == 0) {
         statusText = AppLocalizations.of(context)!.in_progress_ucf;
         descriptionText = AppLocalizations.of(context)!.awaiting_payment;
@@ -1278,7 +1286,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   ),
                   SizedBox(height: 2.h),
                   
-                  // Current Bid
+                  // Current Bid with Win/Loss Icon
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -1287,11 +1295,7 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              type == 'purchase' 
-                                  ? AppLocalizations.of(context)!.final_bid
-                                  : (isEnded 
-                                      ? AppLocalizations.of(context)!.final_bid
-                                      : AppLocalizations.of(context)!.current_bid),
+                              AppLocalizations.of(context)!.final_bid,
                               style: TextStyle(
                                 fontSize: 8.sp,
                                 fontWeight: FontWeight.w400,
@@ -1311,14 +1315,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                           ],
                         ),
                       ),
+                      // ✅ Always show WIN icon for purchase tab
                       if (showWinLossIcon)
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                           decoration: BoxDecoration(
-                            color: isWonStatus ? Colors.green.shade50 : Colors.red.shade50,
+                            color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(14.r),
                             border: Border.all(
-                              color: isWonStatus ? Colors.green.shade200 : Colors.red.shade200,
+                              color: Colors.green.shade200,
                               width: 1.w,
                             ),
                           ),
@@ -1333,11 +1338,11 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                               ),
                               SizedBox(width: 4.w),
                               Text(
-                                isWonStatus ? "WON" : "LOST",
+                                "WON",
                                 style: TextStyle(
                                   fontSize: 7.sp,
                                   fontWeight: FontWeight.w700,
-                                  color: isWonStatus ? Colors.green.shade700 : Colors.red.shade700,
+                                  color: Colors.green.shade700,
                                 ),
                               ),
                             ],
