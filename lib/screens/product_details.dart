@@ -57,7 +57,7 @@ class _ProductDetailsState extends State<ProductDetails>
   TextEditingController _reviewController = TextEditingController();
 
   // Data
-  bool _myStatus;
+  bool? _myStatus;
   bool _hasBid = false;
   bool _isListening = false;
   bool _isLoading = true;
@@ -256,10 +256,10 @@ class _ProductDetailsState extends State<ProductDetails>
         _endingSeconds = _product!.swipeLeft ?? 10;
 
         // ============================================
-        // ✅ ADD THIS - Capture myStatus from initial data
+        // ✅ Capture myStatus from initial data
         // ============================================
-        _myStatus = _product!.myStatus;
-        _hasBid = _myStatus != null;
+        _myStatus = _product!.myStatus;  // Can be null, true, or false
+        _hasBid = _myStatus != null;     // True if user has any bid
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
@@ -413,13 +413,13 @@ class _ProductDetailsState extends State<ProductDetails>
 
         if (response.myStatus != null) {
           setState(() {
-            _myStatus = response.myStatus!;
-            _hasBid = true; // User has a bid since myStatus is not null
+            _myStatus = response.myStatus!;  // true or false
+            _hasBid = true;
           });
         } else {
           setState(() {
-            _myStatus = null;
-            _hasBid = false; // User has no bid
+            _myStatus = null;  // User has no bid
+            _hasBid = false;
           });
         }
 
@@ -2548,48 +2548,48 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // ✅ BLINKING STATUS TEXT - Shows "You are winning" or "You are outbid"
+  // ✅ BLINKING STATUS TEXT - Shows "You are winning" or "You are losing"
   // ============================================================
   Widget _buildBlinkingStatusText() {
-      // Only show for live auctions AND if user has a bid (myStatus is not null)
-      if (_auctionStatus != "live" || _myStatus == null) return const SizedBox.shrink();
-      
-      final isWinning = _myStatus!; // true = winning, false = losing
-      final text = isWinning 
-          ? AppLocalizations.of(context)!.you_are_winning
-          : AppLocalizations.of(context)!.you_are_losing;
-      
-      return AnimatedBuilder(
-          animation: _blinkController,
-          builder: (context, child) {
-              final opacity = 0.3 + (0.7 * _blinkController.value);
-              return Opacity(
-                  opacity: opacity,
-                  child: Row(
-                      children: [
-                          Container(
-                              width: _getResponsiveSize(6, 8),
-                              height: _getResponsiveSize(6, 8),
-                              margin: EdgeInsets.only(right: _getResponsiveSize(4, 6)),
-                              decoration: BoxDecoration(
-                                  color: isWinning ? Colors.green : Colors.red,
-                                  shape: BoxShape.circle,
-                              ),
-                          ),
-                          Text(
-                              text,
-                              style: TextStyle(
-                                  color: isWinning ? Colors.green : Colors.red,
-                                  fontSize: _getResponsiveFontSize(9, 13),
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                              ),
-                          ),
-                      ],
-                  ),
-              );
-          },
-      );
+    // Only show for live auctions AND if user has a bid (myStatus is not null)
+    if (_auctionStatus != "live" || _myStatus == null) return const SizedBox.shrink();
+    
+    final isWinning = _myStatus!; // true = winning, false = losing
+    final text = isWinning 
+        ? AppLocalizations.of(context)!.you_are_winning
+        : AppLocalizations.of(context)!.you_are_losing;
+    
+    return AnimatedBuilder(
+      animation: _blinkController,
+      builder: (context, child) {
+        final opacity = 0.3 + (0.7 * _blinkController.value);
+        return Opacity(
+          opacity: opacity,
+          child: Row(
+            children: [
+              Container(
+                width: _getResponsiveSize(6, 8),
+                height: _getResponsiveSize(6, 8),
+                margin: EdgeInsets.only(right: _getResponsiveSize(4, 6)),
+                decoration: BoxDecoration(
+                  color: isWinning ? Colors.green : Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              Text(
+                text,
+                style: TextStyle(
+                  color: isWinning ? Colors.green : Colors.red,
+                  fontSize: _getResponsiveFontSize(9, 13),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // ============================================

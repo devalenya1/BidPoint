@@ -1,10 +1,10 @@
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/device_info.dart';
 import 'package:active_ecommerce_flutter/custom/useful_elements.dart';
-import 'package:active_ecommerce_flutter/data_model/category_response.dart';
+// import 'package:active_ecommerce_flutter/data_model/category_response.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/repositories/category_repository.dart';
+// import 'package:active_ecommerce_flutter/repositories/category_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,15 +14,15 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 
-class CategoryProducts extends StatefulWidget {
-  CategoryProducts({Key? key, this.slug}) : super(key: key);
+class AllProducts extends StatefulWidget {
+  AllProducts({Key? key, this.slug}) : super(key: key);
   final String? slug; // Made nullable - not used for filtering
 
   @override
-  _CategoryProductsState createState() => _CategoryProductsState();
+  _AllProductsState createState() => _AllProductsState();
 }
 
-class _CategoryProductsState extends State<CategoryProducts> {
+class _AllProductsState extends State<AllProducts> {
   ScrollController _scrollController = ScrollController();
   ScrollController _xcrollController = ScrollController();
   TextEditingController _searchController = TextEditingController();
@@ -60,7 +60,7 @@ class _CategoryProductsState extends State<CategoryProducts> {
   }
 
   fetchData() async {
-    // ✅ Get ALL auctions - no category filtering
+    // ✅ Get ALL auctions
     var productResponse = await ProductRepository().getAllProducts(
         page: _page, name: _searchKey);
     _productList.addAll(productResponse.products!);
