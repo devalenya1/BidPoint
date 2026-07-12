@@ -2551,10 +2551,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
 
   Widget _buildBlinkingStatusText() {
-    // Only show for live auctions AND if user has a bid
-    if (_auctionStatus != "live" || !_hasBid) return const SizedBox.shrink();
+    // Only show for live auctions AND if user has a bid (myStatus is not null)
+    if (_auctionStatus != "live" || _myStatus == null) return const SizedBox.shrink();
     
-    final isWinning = _myStatus;
+    final isWinning = _myStatus!; // Now safe to use ! since we checked for null
     final text = isWinning 
         ? AppLocalizations.of(context)!.you_are_winning
         : AppLocalizations.of(context)!.you_are_losing;
@@ -2562,13 +2562,11 @@ class _ProductDetailsState extends State<ProductDetails>
     return AnimatedBuilder(
       animation: _blinkController,
       builder: (context, child) {
-        // Map the animation value from 0-1 to opacity 0.3-1.0 for a nicer blink
         final opacity = 0.3 + (0.7 * _blinkController.value);
         return Opacity(
           opacity: opacity,
           child: Row(
             children: [
-              // Small indicator dot
               Container(
                 width: _getResponsiveSize(6, 8),
                 height: _getResponsiveSize(6, 8),
