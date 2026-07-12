@@ -275,8 +275,15 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     List<AuctionBid> completed = [];
     
     for (var bid in allBids) {
-      // Only show won auctions (isWinning == true)
-      if (bid.isWinning == true) {
+      // ✅ Only show ended auctions where the user is the winner
+      // An auction is available for purchase when:
+      // 1. recentlyEnded == true (auction has ended)
+      // 2. isWinning == true (user is the winner)
+      final isEnded = bid.recentlyEnded ?? false;
+      final isWinner = bid.isWinning ?? false;
+      
+      // Only include ended auctions where the user won
+      if (isEnded && isWinner) {
         final status = bid.activityStatus ?? 0;
         if (status == 0) {
           inProgress.add(bid);
