@@ -224,6 +224,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         child: _buildEndingSoonSection(),
                       ),
 
+                      // ============================================================
+                      // ✅ UPDATED: All Auctions Section with Auto-Load
+                      // ============================================================
+                      SliverToBoxAdapter(
+                        child: _buildAllAuctionsSection(),
+                      ),
+                      
                       // Upcoming Section
                       SliverToBoxAdapter(
                         child: _buildUpcomingSection(),
@@ -236,12 +243,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         child: _buildEndedAuctionsSection(),
                       ),
                       
-                      // ============================================================
-                      // ✅ UPDATED: All Auctions Section with Auto-Load
-                      // ============================================================
-                      SliverToBoxAdapter(
-                        child: _buildAllAuctionsSection(),
-                      ),
 
                       SliverToBoxAdapter(child: SizedBox(height: 30.h)),
                     ],
