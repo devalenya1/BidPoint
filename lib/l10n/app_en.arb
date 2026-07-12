@@ -1173,6 +1173,7 @@
   "purchases_ucf": "Purchases",
   "favorites_ucf": "Favorites",
   "in_progress_ucf": "In Progress",
+  "ending_in": "Ending In",
   "pay_for": "Pay for",
   "pay_receive": "PAY & RECEIVE",
   "payment_link_not_available": "Payment link is not available",

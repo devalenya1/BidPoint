@@ -679,4 +679,36 @@ class ProductRepository {
       };
     }
   }
+
+  // ============================================
+  // SEND WINNER NOTIFICATION TO SERVER
+  // ============================================
+  Future<void> _sendWinnerNotification(int productId, int userId, double highestBid) async {
+    try {
+      final url = '${AppConfig.RAW_BASE_URL}/winner-notification';
+      
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'product_id': productId,
+          'user_id': userId,
+          'highest_bid': highestBid,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Winner notification sent: $data');
+      } else {
+        print('❌ Failed to send winner notification: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error sending winner notification: $e');
+    }
+  }
+
 }

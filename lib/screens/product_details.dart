@@ -36,6 +36,7 @@ import '../data_model/auction_models.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
 import 'package:active_ecommerce_flutter/helpers/main_helpers.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 
 class ProductDetails extends StatefulWidget {
   String slug;
@@ -48,10 +49,11 @@ class ProductDetails extends StatefulWidget {
 
 class _ProductDetailsState extends State<ProductDetails>
     with TickerProviderStateMixin, SingleTickerProviderStateMixin {
-  // Controllers
+
   late TabController _tabController;
   late ScrollController _mainScrollController;
   late AnimationController _blinkController;
+  late AnimationController _countdownCircleController;  // ✅ ADD THIS
   TextEditingController _commentController = TextEditingController();
   TextEditingController _bidController = TextEditingController();
   TextEditingController _reviewController = TextEditingController();
@@ -63,6 +65,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isListening = false;
   bool _isLoading = true;
   DetailedProduct? _product;
+  UserInformation? _userInfo;
   List<String> _productImages = [];
   List<Comment> _comments = [];
   List<Review> _reviews = [];
@@ -113,6 +116,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Repository
   final ProductRepository _productRepository = ProductRepository();
+  final ProfileRepository _profileRepository = ProfileRepository();
 
   // Refresh indicator key
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
@@ -135,18 +139,24 @@ class _ProductDetailsState extends State<ProductDetails>
     _tabController = TabController(length: 2, vsync: this);
     _mainScrollController = ScrollController();
     _fullScreenCarouselController = CarouselController();
+    
+    // Initialize the countdown circle animation controller
+    _countdownCircleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    );
+    
     _fetchAllData();
     _startPolling();
+    _fetchUserInfo(); 
     
     _audioPlayer.setReleaseMode(ReleaseMode.release);
     _setupLoginStateListener();
     
-    // Initialize the blink controller
     _blinkController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
-    
   }
 
   @override
@@ -375,6 +385,16 @@ class _ProductDetailsState extends State<ProductDetails>
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
 
+    // Set the total seconds for the circle animation
+    final totalSeconds = endTime.difference(DateTime.now()).inSeconds;
+    if (totalSeconds > 0 && totalSeconds <= _endingSeconds) {
+      _countdownCircleController.duration = Duration(seconds: totalSeconds);
+      _countdownCircleController.forward(from: 0.0);
+    } else if (totalSeconds > 0) {
+      _countdownCircleController.duration = Duration(seconds: totalSeconds);
+      _countdownCircleController.forward(from: 0.0);
+    }
+
     _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       final remaining = endTime.difference(now);
@@ -382,18 +402,25 @@ class _ProductDetailsState extends State<ProductDetails>
       if (remaining.isNegative) {
         timer.cancel();
         setState(() => _timeLeft = Duration.zero);
+        _countdownCircleController.stop();
         return;
       }
 
-      final totalSeconds = remaining.inSeconds;
-      if (totalSeconds <= _endingSeconds && totalSeconds > 0 && !_isEndingSoon) {
+      final totalSecondsLeft = remaining.inSeconds;
+      if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0 && !_isEndingSoon) {
         setState(() => _isEndingSoon = true);
         _playTickSound();
         ToastComponent.showWarning(
           '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
         );
-      } else if (totalSeconds > _endingSeconds && _isEndingSoon) {
+      } else if (totalSecondsLeft > _endingSeconds && _isEndingSoon) {
         setState(() => _isEndingSoon = false);
+      }
+
+      // Update circle animation progress
+      if (totalSecondsLeft > 0 && totalSecondsLeft <= _endingSeconds) {
+        final progress = 1.0 - (totalSecondsLeft / _endingSeconds);
+        _countdownCircleController.value = progress;
       }
 
       setState(() => _timeLeft = remaining);
@@ -1798,6 +1825,18 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
+    final productId = _product?.id ?? 0;
+    final userId = _winnerData?.userId ?? 0;
+    final highestBid = _winnerData?.amount ?? 0.0;
+    
+    print('🏆 Winner - Product ID: $productId, Winner User ID: $userId, Amount: $highestBid');
+    
+    // ✅ Check if the current user is the winner
+    if (is_logged_in.$ && _winnerData?.userId == _userInfo?.id) {
+      // User is the winner - send notification to server
+      _sendWinnerNotification(productId, userId, highestBid);
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -2086,6 +2125,23 @@ class _ProductDetailsState extends State<ProductDetails>
         },
       ),
     );
+  }
+
+  // ============================================
+  // GET USER INFO FOR WINNER CHECK
+  // ============================================
+  Future<void> _fetchUserInfo() async {
+    if (!is_logged_in.$) return;
+    try {
+      final response = await _profileRepository.getUserInfoResponse();
+      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+        setState(() {
+          _userInfo = response.data![0];
+        });
+      }
+    } catch (e) {
+      print('Error fetching user info: $e');
+    }
   }
 
   // ============================================
@@ -2683,6 +2739,16 @@ class _ProductDetailsState extends State<ProductDetails>
                               Colors.black.withOpacity(0.95),
                             ],
                           ),
+                        ),
+                      ),
+                      // Inside the Stack, after the image overlay Container, add:
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _buildCircularCountdown(),
                         ),
                       ),
                       Positioned(
@@ -3345,4 +3411,139 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
     );
   }
+
+  // ============================================
+  // CUSTOM PAINTER FOR CIRCULAR TIMER
+  // ============================================
+
+  class CircularTimerPainter extends CustomPainter {
+    final double progress;
+    final Color backgroundColor;
+    final Color progressColor;
+
+    CircularTimerPainter({
+      required this.progress,
+      required this.backgroundColor,
+      required this.progressColor,
+    });
+
+    @override
+    void paint(Canvas canvas, Size size) {
+      final center = Offset(size.width / 2, size.height / 2);
+      final radius = size.width / 2;
+      final strokeWidth = size.width * 0.08;
+
+      // Background circle
+      final backgroundPaint = Paint()
+        ..color = backgroundColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+
+      canvas.drawCircle(center, radius, backgroundPaint);
+
+      // Progress circle
+      final progressPaint = Paint()
+        ..color = progressColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      final startAngle = -pi / 2;
+      final sweepAngle = 2 * pi * progress;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        false,
+        progressPaint,
+      );
+    }
+
+    @override
+    bool shouldRepaint(CircularTimerPainter oldDelegate) {
+      return oldDelegate.progress != progress ||
+          oldDelegate.progressColor != progressColor;
+    }
+  }
+
+  // ============================================
+  // CIRCULAR COUNTDOWN WIDGET
+  // ============================================
+
+  Widget _buildCircularCountdown() {
+    if (_auctionStatus != "live") {
+      return const SizedBox.shrink();
+    }
+
+    final totalSeconds = _timeLeft.inSeconds;
+    if (totalSeconds > _endingSeconds || totalSeconds <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Center(
+      child: Container(
+        width: _getResponsiveSize(120, 160),
+        height: _getResponsiveSize(120, 160),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background circle
+            Container(
+              width: _getResponsiveSize(100, 140),
+              height: _getResponsiveSize(100, 140),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+            ),
+            // Animated circular progress
+            AnimatedBuilder(
+              animation: _countdownCircleController,
+              builder: (context, child) {
+                return SizedBox(
+                  width: _getResponsiveSize(100, 140),
+                  height: _getResponsiveSize(100, 140),
+                  child: CustomPaint(
+                    painter: CircularTimerPainter(
+                      progress: _countdownCircleController.value,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      progressColor: _isEndingSoon ? Colors.red : Colors.orange,
+                    ),
+                  ),
+                );
+              },
+            ),
+            // Center text
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  totalSeconds.toString(),
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(28, 38),
+                    fontWeight: FontWeight.bold,
+                    color: _isEndingSoon ? Colors.red : Colors.white,
+                  ),
+                ),
+                Text(
+                  AppLocalizations.of(context)!.ending_in,
+                  style: TextStyle(
+                    fontSize: _getResponsiveFontSize(10, 14),
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
