@@ -62,7 +62,7 @@ class _AllProductsState extends State<AllProducts> {
   fetchData() async {
     // ✅ Get ALL auctions
     var productResponse = await ProductRepository().getAuctionProducts(
-        page: _page, name: _searchKey);
+        page: _page);
     _productList.addAll(productResponse.products!);
     _isInitial = false;
     _totalData = productResponse.meta!.total;

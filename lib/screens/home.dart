@@ -223,6 +223,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverToBoxAdapter(
                         child: _buildEndingSoonSection(),
                       ),
+                      
+                      // Upcoming Section
+                      SliverToBoxAdapter(
+                        child: _buildUpcomingSection(),
+                      ),
 
                       // ============================================================
                       // ✅ UPDATED: All Auctions Section with Auto-Load
@@ -231,11 +236,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         child: _buildAllAuctionsSection(),
                       ),
                       
-                      // Upcoming Section
-                      SliverToBoxAdapter(
-                        child: _buildUpcomingSection(),
-                      ),
-
                       // ============================================================
                       // NEW: Ended Auctions Section (using ProductCard)
                       // ============================================================
