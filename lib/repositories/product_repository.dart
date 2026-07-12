@@ -133,16 +133,16 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
-  // Future<ProductMiniResponse> getAllProducts(
-  //     {String? id = "", name = "", page = 1}) async {
-  //   String url = ("${AppConfig.BASE_URL}/products/all/" +
-  //       id.toString() +
-  //       "?page=${page}&name=${name}");
-  //   final response = await ApiRequest.get(url: url, headers: {
-  //     "App-Language": app_language.$!,
-  //   });
-  //   return productMiniResponseFromJson(response.body);
-  // }
+  Future<ProductMiniResponse> getAuctionProducts(
+      {String? id = "", name = "", page = 1}) async {
+    String url = ("${AppConfig.BASE_URL}/products/all/list" +
+        id.toString() +
+        "?page=${page}&name=${name}");
+    final response = await ApiRequest.get(url: url, headers: {
+      "App-Language": app_language.$!,
+    });
+    return productMiniResponseFromJson(response.body);
+  }
 
   Future<ProductMiniResponse> getShopProducts(
       {int? id = 0, name = "", page = 1}) async {
