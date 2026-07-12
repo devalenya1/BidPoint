@@ -58,6 +58,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Data
   bool? _myStatus;
+  bool _userHasBid = false;
   bool _hasBid = false;
   bool _isListening = false;
   bool _isLoading = true;
@@ -259,7 +260,7 @@ class _ProductDetailsState extends State<ProductDetails>
         // ✅ Capture myStatus from initial data
         // ============================================
         _myStatus = _product!.myStatus;  // Can be null, true, or false
-        _hasBid = _myStatus != null;     // True if user has any bid
+        _userHasBid = _product!.userHasBid ?? false;     // True if user has any bid
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
@@ -414,12 +415,12 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.myStatus != null) {
           setState(() {
             _myStatus = response.myStatus!;  // true or false
-            _hasBid = true;
+            _userHasBid = response.userHasBid ?? true;  // Should be true if myStatus is not null
           });
         } else {
           setState(() {
-            _myStatus = null;  // User has no bid
-            _hasBid = false;
+            _myStatus = null;
+            _userHasBid = response.userHasBid ?? false;
           });
         }
 
@@ -2548,11 +2549,16 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // ✅ BLINKING STATUS TEXT - Shows "You are winning" or "You are losing"
+  // ✅ UPDATED: BLINKING STATUS TEXT - Uses userHasBid from API
   // ============================================================
   Widget _buildBlinkingStatusText() {
-    // Only show for live auctions AND if user has a bid (myStatus is not null)
-    if (_auctionStatus != "live" || _myStatus == null) return const SizedBox.shrink();
+    // Only show if:
+    // 1. Auction is live
+    // 2. API says user has a bid (userHasBid == true)
+    // 3. myStatus is not null (we have winning/losing status)
+    if (_auctionStatus != "live" || !_userHasBid || _myStatus == null) {
+      return const SizedBox.shrink();
+    }
     
     final isWinning = _myStatus!; // true = winning, false = losing
     final text = isWinning 
@@ -2953,9 +2959,12 @@ class _ProductDetailsState extends State<ProductDetails>
                                   overflow: TextOverflow.ellipsis),
                               
                               // ============================================================
-                              // ✅ ADD BLINKING TEXT HERE - "You are winning" or "You are losing"
+                              // ✅ SHOW BLINKING TEXT ONLY IF:
+                              // 1. Auction is live
+                              // 2. API says userHasBid is true
+                              // 3. myStatus is not null
                               // ============================================================
-                              if (_auctionStatus == "live" && _myStatus != null)
+                              if (_auctionStatus == "live" && _userHasBid && _myStatus != null)
                                 Padding(
                                   padding: EdgeInsets.only(top: _getResponsiveSize(2, 4)),
                                   child: _buildBlinkingStatusText(),

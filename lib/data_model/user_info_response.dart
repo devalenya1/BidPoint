@@ -168,6 +168,11 @@ class UserInformation {
   double? affiliateBalance;
   int? affiliateStatus;
 
+  // =============================================
+  // ✅ NEW: User has bid on product
+  // =============================================
+  bool? userHasBid;  // true if user has placed any bid on this product
+
   UserInformation({
     this.id,
     this.name,
@@ -231,6 +236,10 @@ class UserInformation {
     this.ifscCode,
     this.affiliateBalance,
     this.affiliateStatus,
+    // =============================================
+    // ✅ NEW: User has bid on product
+    // =============================================
+    this.userHasBid,
   });
 
   factory UserInformation.fromJson(Map<String, dynamic> json) => UserInformation(
@@ -359,6 +368,11 @@ class UserInformation {
     ifscCode: json["ifsc_code"],
     affiliateBalance: json["affiliate_balance"]?.toDouble(),
     affiliateStatus: json["affiliate_status"],
+    
+    // =============================================
+    // ✅ NEW: User has bid on product
+    // =============================================
+    userHasBid: json["user_has_bid"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -434,6 +448,10 @@ class UserInformation {
     "account_number": accountNumber,
     "affiliate_balance": affiliateBalance,
     "affiliate_status": affiliateStatus,
+    // =============================================
+    // ✅ NEW: User has bid on product
+    // =============================================
+    "user_has_bid": userHasBid,
   };
 }
 
