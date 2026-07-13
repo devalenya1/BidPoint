@@ -431,9 +431,9 @@ void _scrollToBottom() {
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          _playTickSound();
+          _playTickSound();  // ✅ Tick sound starts when popup appears
         } else {
-          _stopTickSound();
+          _stopTickSound();  // ✅ Tick sound stops when popup disappears
         }
       }
 
@@ -469,7 +469,7 @@ void _scrollToBottom() {
           setState(() { _currentHighestBid = response.highestBid!; });
           
           if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
-            _playBidSound();
+            // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
             ToastComponent.showInfo(
               '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
             );
@@ -753,7 +753,7 @@ void _scrollToBottom() {
       }
 
       if (response.success == true) {
-        _playBidSound();
+        // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
         if (response.timeExtended == true) {
           ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
           if (response.newEndDate != null) {
@@ -817,7 +817,7 @@ void _scrollToBottom() {
       }
 
       if (response.success == true) {
-        _playBidSound();
+        // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
         _bidController.clear();
         if (response.timeExtended == true) {
           ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
@@ -867,7 +867,7 @@ void _scrollToBottom() {
       }
 
       if (response.success == true) {
-        _playCommentSound();
+        // _playCommentSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
         _commentController.clear();
         await _fetchComments();
         ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
@@ -1010,10 +1010,10 @@ void _scrollToBottom() {
 
       if (response.success == true) {
         if (wasInWishlist) {
-          _playCommentSound();
+          // _playCommentSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
           ToastComponent.showSuccess(AppLocalizations.of(context)!.removed_from_wishlist);
         } else {
-          _playBidSound();
+          // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
           ToastComponent.showSuccess(AppLocalizations.of(context)!.added_to_wishlist);
         }
         
@@ -1138,12 +1138,13 @@ void _scrollToBottom() {
   }
 
   // ============================================
-  // SOUND EFFECTS - FINAL FIXED VERSION
+  // SOUND EFFECTS - Tick sound tied to popup visibility
   // ============================================
 
+  /*
+  // 🚫 COMMENTED OUT - BID SOUND (SILENT FOR NOW)
   void _playBidSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;   // ← Block during tick
-
+    if (!_soundEnabled || _isTickSoundPlaying) return;
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
@@ -1151,10 +1152,12 @@ void _scrollToBottom() {
       print('Bid sound error: $e');
     }
   }
+  */
 
+  /*
+  // 🚫 COMMENTED OUT - COMMENT SOUND (SILENT FOR NOW)
   void _playCommentSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;   // ← Block during tick
-
+    if (!_soundEnabled || _isTickSoundPlaying) return;
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
@@ -1162,13 +1165,21 @@ void _scrollToBottom() {
       print('Comment sound error: $e');
     }
   }
+  */
 
+  // ✅ Tick sound - ONLY plays when popup is visible (_isEndingSoon == true)
   void _playTickSound() async {
     if (!_soundEnabled || _isTickSoundPlaying) return;
 
+    // ✅ Only play if popup is visible
+    if (!_isEndingSoon) {
+      print('⏭️ Popup not visible, skipping tick sound');
+      return;
+    }
+
     try {
       _isTickSoundPlaying = true;
-      print('✅ Tick sound STARTED (looping)');
+      print('✅ Tick sound STARTED (popup is visible)');
 
       await _audioPlayer.stop();
       await _audioPlayer.play(
@@ -1182,10 +1193,11 @@ void _scrollToBottom() {
     }
   }
 
+  // ✅ Stop tick sound - called when popup disappears
   void _stopTickSound() async {
     if (!_isTickSoundPlaying) return;
 
-    print('⏹️ Tick sound STOPPED');
+    print('⏹️ Tick sound STOPPED (popup disappeared)');
     _isTickSoundPlaying = false;
     try {
       await _audioPlayer.stop();
