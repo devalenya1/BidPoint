@@ -8,13 +8,25 @@ class ToastComponent {
   static final AudioPlayer _audioPlayer = AudioPlayer();
   
   // Play sound based on toast type
+  // static Future<void> _playSound(String soundFile) async {
+  //   try {
+  //     await _audioPlayer.stop();
+  //     await _audioPlayer.play(AssetSource('sounds/$soundFile'));
+  //   } catch (e) {
+  //     // Silent fail - don't crash if sound can't play
+  //     print('Error playing toast sound: $e');
+  //   }
+  // }
   static Future<void> _playSound(String soundFile) async {
     try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/$soundFile'));
+      // Do NOT stop the main player if tick is playing
+      // Use a separate player for toasts
+      final toastPlayer = AudioPlayer();
+      await toastPlayer.play(AssetSource('sounds/$soundFile'));
+      await Future.delayed(const Duration(milliseconds: 800));
+      await toastPlayer.dispose();
     } catch (e) {
-      // Silent fail - don't crash if sound can't play
-      print('Error playing toast sound: $e');
+      print('Toast sound error: $e');
     }
   }
 

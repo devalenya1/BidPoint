@@ -1326,8 +1326,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
                   child: Center(
                     child: Image.asset('assets/affiliate.png', 
-                    height: 24.w, 
-                    width: 24.w, 
+                    height: 26.w, 
+                    width: 26.w, 
                     // color: Colors.white,
                     ),
                   ),

@@ -68,6 +68,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isBidSoundPlaying = false;
   bool _userInteractedWithComments = false;
   bool _initialScrollDone = false; 
+  bool _isAtBottom = true;
   DetailedProduct? _product;
   UserInformation? _userInfo;
   List<String> _productImages = [];
@@ -154,11 +155,26 @@ class _ProductDetailsState extends State<ProductDetails>
       duration: const Duration(seconds: 10),
     );
 
-    // Add scroll listener for comments
+    // Replace the existing scroll listener in initState with this:
     _commentsScrollController.addListener(() {
-      if (_commentsScrollController.position.pixels < 
-          _commentsScrollController.position.maxScrollExtent - 10) {
+      final maxScroll = _commentsScrollController.position.maxScrollExtent;
+      final currentScroll = _commentsScrollController.position.pixels;
+      
+      // Check if user is at or near the bottom (within 10 pixels)
+      final isAtBottom = currentScroll >= maxScroll - 10;
+      
+      if (isAtBottom != _isAtBottom) {
+        setState(() {
+          _isAtBottom = isAtBottom;
+        });
+      }
+      
+      // If user scrolls away from bottom, mark as interacted
+      if (!isAtBottom) {
         _userInteractedWithComments = true;
+      } else {
+        // If user scrolls back to bottom, allow auto-scroll again
+        _userInteractedWithComments = false;
       }
     });
     
@@ -200,9 +216,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _scrollToBottom() {
-    if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+    // Only auto-scroll if user is at the bottom
+    if (_commentsScrollController.hasClients && _isAtBottom) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+        if (_commentsScrollController.hasClients && _isAtBottom) {
           _commentsScrollController.animateTo(
             _commentsScrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 300),
@@ -214,17 +231,21 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _forceScrollToBottomWithDelay() {
-    _userInteractedWithComments = false;
-    
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted && _commentsScrollController.hasClients) {
-        _commentsScrollController.animateTo(
-          _commentsScrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    // This is for forced scrolls (like countdown popup)
+    // We only want to force scroll if user hasn't explicitly scrolled away
+    if (!_userInteractedWithComments) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (mounted && _commentsScrollController.hasClients) {
+          _commentsScrollController.animateTo(
+            _commentsScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+          );
+          // After forced scroll, mark as at bottom
+          _isAtBottom = true;
+        }
+      });
+    }
   }
 
   Future<void> _fetchComments() async {
@@ -578,7 +599,11 @@ class _ProductDetailsState extends State<ProductDetails>
         }
 
         if (response.comments != null && response.comments!.isNotEmpty) {
-          setState(() => _comments = response.comments!.reversed.toList());
+          setState(() {
+            _comments = response.comments!.reversed.toList();
+            _isAtBottom = true; // Reset to true since we're loading fresh comments
+            _userInteractedWithComments = false; // Allow auto-scroll
+          });
           
           if (!_userInteractedWithComments) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -864,14 +889,16 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (response.success == true) {
-        // SOUND REMOVED
         _commentController.clear();
         await _fetchComments();
         ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
         
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
+        // Only scroll if user is at bottom
+        if (_isAtBottom) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        }
       } else {
         ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_adding_comment);
       }
