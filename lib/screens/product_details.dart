@@ -406,41 +406,41 @@ void _scrollToBottom() {
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    
-    // ✅ Always stop tick sound when starting a new countdown
     _stopTickSound();
 
-    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       final remaining = endTime.difference(now);
 
       if (remaining.isNegative) {
         timer.cancel();
+        _stopTickSound();
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
-        _stopTickSound();  // ✅ Stop sound when timer ends
         _pollData();
         return;
       }
 
-      final totalSecondsLeft = remaining.inSeconds;
-      
-      if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0) {
-        if (!_isEndingSoon) {
-          setState(() => _isEndingSoon = true);
-          _playTickSound();  // Start tick sound when warning begins
-        }
-      } else {
-        if (_isEndingSoon) {
-          setState(() => _isEndingSoon = false);
-          _stopTickSound();  // ✅ Stop sound when warning ends
+      final secondsLeft = remaining.inSeconds;
+      final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
+
+      // Only change state if it actually changed
+      if (shouldBeEndingSoon != _isEndingSoon) {
+        setState(() {
+          _isEndingSoon = shouldBeEndingSoon;
+        });
+
+        if (shouldBeEndingSoon) {
+          _playTickSound();
+        } else {
+          _stopTickSound();
         }
       }
 
-      setState(() => _timeLeft = remaining);
+      setState(() => _timeLeft = remaining);   // Keep this for UI
     });
   }
 
@@ -559,23 +559,23 @@ void _scrollToBottom() {
           }
         }
 
-        if (response.isEndingSoon == true &&
-            response.remainingSeconds != null) {
-          if (!_isEndingSoon &&
-              response.remainingSeconds! <= _endingSeconds &&
-              response.remainingSeconds! > 0) {
-            setState(() => _isEndingSoon = true);
-            _playTickSound();  // ✅ Start tick sound only once
-            ToastComponent.showWarning(
-              '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
-            );
-          }
-        } else {
-          if (_isEndingSoon) {
-            setState(() => _isEndingSoon = false);
-            _stopTickSound();  // ✅ Stop sound when warning ends
-          }
-        }
+        // if (response.isEndingSoon == true &&
+        //     response.remainingSeconds != null) {
+        //   if (!_isEndingSoon &&
+        //       response.remainingSeconds! <= _endingSeconds &&
+        //       response.remainingSeconds! > 0) {
+        //     setState(() => _isEndingSoon = true);
+        //     _playTickSound();  // ✅ Start tick sound only once
+        //     ToastComponent.showWarning(
+        //       '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
+        //     );
+        //   }
+        // } else {
+        //   if (_isEndingSoon) {
+        //     setState(() => _isEndingSoon = false);
+        //     _stopTickSound();  // ✅ Stop sound when warning ends
+        //   }
+        // }
 
         if (response.rating != null) {
           setState(() { _rating = response.rating!; });
@@ -1158,39 +1158,43 @@ void _scrollToBottom() {
   }
 
   // ============================================
-  // SOUND EFFECTS
+  // SOUND EFFECTS - FIXED VERSION
   // ============================================
 
   void _playBidSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || _isBidSoundPlaying) return;  // ✅ Added bid sound flag
-    
+    if (!_soundEnabled || _isTickSoundPlaying || _isBidSoundPlaying) return;
+
     _isBidSoundPlaying = true;
     try {
-      await _audioPlayer.stop();
+      // Do NOT stop the player if tick is playing — just play on top (or skip)
+      if (!_isTickSoundPlaying) {
+        await _audioPlayer.stop();
+      }
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
       
-      // Wait for sound to finish before allowing next
       await Future.delayed(const Duration(milliseconds: 800));
-      _isBidSoundPlaying = false;
     } catch (e) {
       print('Error playing bid sound: $e');
+    } finally {
       _isBidSoundPlaying = false;
     }
   }
 
   void _playCommentSound() async {
     if (!_soundEnabled || _isTickSoundPlaying || _isCommentSoundPlaying) return;
-    
+
     _isCommentSoundPlaying = true;
     try {
-      await _audioPlayer.stop();
+      // Do NOT stop the player if tick is playing
+      if (!_isTickSoundPlaying) {
+        await _audioPlayer.stop();
+      }
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
       
-      // Wait for sound to finish before allowing next
       await Future.delayed(const Duration(milliseconds: 800));
-      _isCommentSoundPlaying = false;
     } catch (e) {
       print('Error playing comment sound: $e');
+    } finally {
       _isCommentSoundPlaying = false;
     }
   }
@@ -1200,18 +1204,13 @@ void _scrollToBottom() {
 
     try {
       _isTickSoundPlaying = true;
-      print('✅ Tick sound started (looping)');
-      
-      // Stop any existing sound first
-      await _audioPlayer.stop();
-      
-      // Play the tick sound
+      print('✅ Starting tick sound (loop)');
+
+      await _audioPlayer.stop();           // Safe to stop here
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
-      
-      // Set to loop
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
       print('Error playing tick sound: $e');
@@ -1219,12 +1218,15 @@ void _scrollToBottom() {
     }
   }
 
-  // ✅ New method to stop tick sound
   void _stopTickSound() async {
-    if (_isTickSoundPlaying) {
-      print('⏹️ Stopping tick sound');
-      _isTickSoundPlaying = false;
+    if (!_isTickSoundPlaying) return;
+
+    print('⏹️ Stopping tick sound');
+    _isTickSoundPlaying = false;
+    try {
       await _audioPlayer.stop();
+    } catch (e) {
+      print('Error stopping tick: $e');
     }
   }
 
@@ -2819,23 +2821,32 @@ void _scrollToBottom() {
                         ),
                       ),
                       // ✅ FIX 1: Circular countdown only shows when _isEndingSoon is true
+                      // if (_isEndingSoon)
+                      //   Positioned(
+                      //     top: 0,
+                      //     left: 0,
+                      //     right: 0,
+                      //     bottom: 0,
+                      //     child: IgnorePointer(  // ✅ Allows touch events to pass through
+                      //       ignoring: true,
+                      //       child: Center(
+                      //         child: Container(
+                      //           width: double.infinity,
+                      //           height: double.infinity,
+                      //           color: Colors.transparent,
+                      //           child: Center(
+                      //             child: _buildCircularCountdown(),
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
                       if (_isEndingSoon)
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: IgnorePointer(  // ✅ Allows touch events to pass through
-                            ignoring: true,
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: true,           // Prevents any touch interference
                             child: Center(
-                              child: Container(
-                                width: double.infinity,
-                                height: double.infinity,
-                                color: Colors.transparent,
-                                child: Center(
-                                  child: _buildCircularCountdown(),
-                                ),
-                              ),
+                              child: _buildCircularCountdown(),
                             ),
                           ),
                         ),
@@ -2940,7 +2951,7 @@ void _scrollToBottom() {
                                       )
                                     : ListView.builder(
                                         controller: _commentsScrollController,
-                                        physics: const AlwaysScrollableScrollPhysics(),
+                                        physics: const ClampingScrollPhysics(),
                                         itemCount: _comments.length,
                                         itemBuilder: (context, index) {
                                           final comment = _comments[index];
@@ -3509,51 +3520,50 @@ void _scrollToBottom() {
     final remainingInWindow = _timeLeft.inSeconds.clamp(0, totalEndingWindow);
     final progress = remainingInWindow / totalEndingWindow;
 
-    return Center(
-      child: Container(
-        width: _getResponsiveSize(120, 160),
-        height: _getResponsiveSize(120, 160),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
-          shape: BoxShape.circle,
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: _getResponsiveSize(100, 140),
-              height: _getResponsiveSize(100, 140),
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: _getResponsiveSize(8, 12),
-                backgroundColor: Colors.white.withOpacity(0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  remainingInWindow <= 5 ? Colors.red : Colors.orange,
-                ),
+    return Container(
+      width: _getResponsiveSize(140, 180),
+      height: _getResponsiveSize(140, 180),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.65),
+        shape: BoxShape.circle,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: _getResponsiveSize(110, 150),
+            height: _getResponsiveSize(110, 150),
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: _getResponsiveSize(10, 14),
+              backgroundColor: Colors.white.withOpacity(0.25),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                remainingInWindow <= 5 ? Colors.redAccent : Colors.orangeAccent,
               ),
             ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  remainingInWindow.toString(),
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(32, 42),
-                    fontWeight: FontWeight.bold,
-                    color: remainingInWindow <= 5 ? Colors.red : Colors.white,
-                  ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                remainingInWindow.toString(),
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(34, 46),
+                  fontWeight: FontWeight.bold,
+                  color: remainingInWindow <= 5 ? Colors.red : Colors.white,
                 ),
-                Text(
-                  "sec left",
-                  style: TextStyle(
-                    fontSize: _getResponsiveFontSize(10, 13),
-                    color: Colors.white70,
-                  ),
+              ),
+              Text(
+                "Ending In",
+                style: TextStyle(
+                  fontSize: _getResponsiveFontSize(11, 14),
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
