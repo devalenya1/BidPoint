@@ -204,7 +204,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    _stopTickSound();
+    // _stopTickSound();
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _commentsScrollController.dispose();
@@ -596,7 +596,7 @@ class _ProductDetailsState extends State<ProductDetails>
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
-          _stopTickSound(); // Force stop when auction ends
+          // _stopTickSound(); // Force stop when auction ends
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -1968,7 +1968,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    _stopTickSound(); // Force stop tick sound when winner modal shows
+    // _stopTickSound(); // Force stop tick sound when winner modal shows
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
