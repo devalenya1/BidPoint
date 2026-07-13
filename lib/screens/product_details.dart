@@ -138,6 +138,9 @@ class _ProductDetailsState extends State<ProductDetails>
   
   late CarouselController _fullScreenCarouselController;
 
+  // ✅ Track if we've already triggered auto-scroll for current counter state
+  bool _counterScrollTriggered = false;
+
   @override
   void initState() {
     super.initState();
@@ -215,6 +218,22 @@ void _scrollToBottom() {
       }
     });
   }
+}
+
+// ✅ New method: Force scroll to bottom with 1-second delay (respects user interaction)
+void _forceScrollToBottomWithDelay() {
+  // Reset the interaction flag so scroll can happen
+  _userInteractedWithComments = false;
+  
+  Future.delayed(const Duration(milliseconds: 1000), () {
+    if (mounted && _commentsScrollController.hasClients) {
+      _commentsScrollController.animateTo(
+        _commentsScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    }
+  });
 }
 
   Future<void> _fetchComments() async {
@@ -407,6 +426,9 @@ void _scrollToBottom() {
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     _stopTickSound();
+    
+    // Reset the scroll trigger flag
+    _counterScrollTriggered = false;
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -420,6 +442,11 @@ void _scrollToBottom() {
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
+        
+        // ✅ When counter ends, wait 1 second and auto-scroll to latest
+        _counterScrollTriggered = false;
+        _forceScrollToBottomWithDelay();
+        
         _pollData();
         return;
       }
@@ -428,12 +455,24 @@ void _scrollToBottom() {
       final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
 
       if (shouldBeEndingSoon != _isEndingSoon) {
-        setState(() => _isEndingSoon = shouldBeEndingSoon);
+        setState(() {
+          _isEndingSoon = shouldBeEndingSoon;
+          // Reset trigger when state changes
+          _counterScrollTriggered = false;
+        });
 
         if (shouldBeEndingSoon) {
-          _playTickSound();  // ✅ Tick sound starts when popup appears
+          // ✅ When counter starts (popup appears), wait 1 second and auto-scroll
+          _playTickSound();
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && _isEndingSoon) {
+              _forceScrollToBottomWithDelay();
+            }
+          });
         } else {
-          _stopTickSound();  // ✅ Tick sound stops when popup disappears
+          _stopTickSound();
+          // ✅ When counter ends (popup disappears), wait 1 second and auto-scroll
+          _forceScrollToBottomWithDelay();
         }
       }
 
@@ -1169,11 +1208,17 @@ void _scrollToBottom() {
 
   // ✅ Tick sound - ONLY plays when popup is visible (_isEndingSoon == true)
   void _playTickSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;
+    if (!_soundEnabled) return;
 
     // ✅ Only play if popup is visible
     if (!_isEndingSoon) {
       print('⏭️ Popup not visible, skipping tick sound');
+      return;
+    }
+
+    // If sound is already playing, don't restart it
+    if (_isTickSoundPlaying) {
+      print('⏭️ Tick sound already playing');
       return;
     }
 
