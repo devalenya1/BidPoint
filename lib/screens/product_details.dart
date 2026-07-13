@@ -112,6 +112,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Sound
   bool _soundEnabled = true;
+  bool _isTickSoundPlaying = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Repository
@@ -170,6 +171,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
+    _stopTickSound();  // ✅ Stop tick sound on dispose
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _commentsScrollController.dispose();
@@ -380,11 +382,8 @@ class _ProductDetailsState extends State<ProductDetails>
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     
-    // Only stop audio if it's not the tick sound that should be playing
-    // Or if we're not in the warning window
-    if (!_isEndingSoon) {
-      _audioPlayer.stop();
-    }
+    // ✅ Always stop tick sound when starting a new countdown
+    _stopTickSound();
 
     _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -397,7 +396,7 @@ class _ProductDetailsState extends State<ProductDetails>
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
-        _audioPlayer.stop();
+        _stopTickSound();  // ✅ Stop sound when timer ends
         _pollData();
         return;
       }
@@ -407,12 +406,12 @@ class _ProductDetailsState extends State<ProductDetails>
       if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0) {
         if (!_isEndingSoon) {
           setState(() => _isEndingSoon = true);
-          _playTickSound(); // This will only start if not already playing
+          _playTickSound();  // Start tick sound when warning begins
         }
       } else {
         if (_isEndingSoon) {
           setState(() => _isEndingSoon = false);
-          _audioPlayer.stop();
+          _stopTickSound();  // ✅ Stop sound when warning ends
         }
       }
 
@@ -541,7 +540,7 @@ class _ProductDetailsState extends State<ProductDetails>
               response.remainingSeconds! <= _endingSeconds &&
               response.remainingSeconds! > 0) {
             setState(() => _isEndingSoon = true);
-            _playTickSound(); // This will only start if not already playing
+            _playTickSound();  // ✅ Start tick sound only once
             ToastComponent.showWarning(
               '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
             );
@@ -549,7 +548,7 @@ class _ProductDetailsState extends State<ProductDetails>
         } else {
           if (_isEndingSoon) {
             setState(() => _isEndingSoon = false);
-            _audioPlayer.stop();
+            _stopTickSound();  // ✅ Stop sound when warning ends
           }
         }
 
@@ -1133,7 +1132,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _playBidSound() async {
-    if (!_soundEnabled) return;
+    if (!_soundEnabled || _isTickSoundPlaying) return;  // ✅ Skip if tick sound is playing
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
@@ -1143,7 +1142,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _playCommentSound() async {
-    if (!_soundEnabled) return;
+    if (!_soundEnabled || _isTickSoundPlaying) return;  // ✅ Skip if tick sound is playing
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
@@ -1152,26 +1151,38 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // ✅ FIXED: Tick sound - only starts once when warning begins, stops when warning ends
+  // ✅ FIXED: Tick sound - only starts when warning begins, stops when warning ends
   void _playTickSound() async {
     if (!_soundEnabled) return;
     
-    // Check if sound is already playing to avoid restarting it
-    if (_audioPlayer.state == PlayerState.playing) {
+    // If sound is already playing, don't restart it
+    if (_isTickSoundPlaying) {
       print('⏭️ Tick sound already playing, skipping...');
       return;
     }
     
     try {
-      // Don't stop here - let it play naturally
+      _isTickSoundPlaying = true;  // ✅ Mark as playing
+      print('✅ Tick sound started (looping)');
+      
+      await _audioPlayer.stop();  // Stop any other sound
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
       _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      print('✅ Tick sound started (looping)');
     } catch (e) {
       print('Error playing tick sound: $e');
+      _isTickSoundPlaying = false;  // Reset on error
+    }
+  }
+
+  // ✅ New method to stop tick sound
+  void _stopTickSound() async {
+    if (_isTickSoundPlaying) {
+      print('⏹️ Stopping tick sound');
+      _isTickSoundPlaying = false;
+      await _audioPlayer.stop();
     }
   }
 
@@ -1907,6 +1918,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
+
+    _stopTickSound();  // ✅ Stop tick sound when winner modal shows
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
