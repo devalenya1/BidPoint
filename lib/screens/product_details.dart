@@ -65,6 +65,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isListening = false;
   bool _isLoading = true;
   bool _isCommentSoundPlaying = false;
+  bool _isBidSoundPlaying = false;
   bool _userInteractedWithComments = false;
   bool _initialScrollDone = false; 
   DetailedProduct? _product;
@@ -1161,12 +1162,19 @@ void _scrollToBottom() {
   // ============================================
 
   void _playBidSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;  // Skip if tick sound is playing
+    if (!_soundEnabled || _isTickSoundPlaying || _isBidSoundPlaying) return;  // ✅ Added bid sound flag
+    
+    _isBidSoundPlaying = true;
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
+      
+      // Wait for sound to finish before allowing next
+      await Future.delayed(const Duration(milliseconds: 800));
+      _isBidSoundPlaying = false;
     } catch (e) {
       print('Error playing bid sound: $e');
+      _isBidSoundPlaying = false;
     }
   }
 
