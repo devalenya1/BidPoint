@@ -379,7 +379,12 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _audioPlayer.stop();
+    
+    // Only stop audio if it's not the tick sound that should be playing
+    // Or if we're not in the warning window
+    if (!_isEndingSoon) {
+      _audioPlayer.stop();
+    }
 
     _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -402,7 +407,7 @@ class _ProductDetailsState extends State<ProductDetails>
       if (totalSecondsLeft <= _endingSeconds && totalSecondsLeft > 0) {
         if (!_isEndingSoon) {
           setState(() => _isEndingSoon = true);
-          _playTickSound();
+          _playTickSound(); // This will only start if not already playing
         }
       } else {
         if (_isEndingSoon) {
@@ -536,13 +541,16 @@ class _ProductDetailsState extends State<ProductDetails>
               response.remainingSeconds! <= _endingSeconds &&
               response.remainingSeconds! > 0) {
             setState(() => _isEndingSoon = true);
-            _playTickSound();
+            _playTickSound(); // This will only start if not already playing
             ToastComponent.showWarning(
               '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
             );
           }
         } else {
-          if (_isEndingSoon) setState(() => _isEndingSoon = false);
+          if (_isEndingSoon) {
+            setState(() => _isEndingSoon = false);
+            _audioPlayer.stop();
+          }
         }
 
         if (response.rating != null) {
@@ -582,7 +590,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // ✅ FIX: BLINKING STATUS TEXT METHOD
+  // ✅ FIX 2: BLINKING STATUS TEXT - Plain text without container
   // ============================================
   Widget _buildBlinkingStatusText() {
     // Debug logging
@@ -623,20 +631,12 @@ class _ProductDetailsState extends State<ProductDetails>
         final opacity = 0.3 + (0.7 * _blinkController.value);
         return Opacity(
           opacity: opacity,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isWinning ? Colors.green.withOpacity(0.9) : Colors.red.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: _getResponsiveFontSize(10, 14),
-              ),
-              textAlign: TextAlign.center,
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isWinning ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+              fontSize: _getResponsiveFontSize(10, 14),
             ),
           ),
         );
@@ -1152,10 +1152,18 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
+  // ✅ FIXED: Tick sound - only starts once when warning begins, stops when warning ends
   void _playTickSound() async {
     if (!_soundEnabled) return;
+    
+    // Check if sound is already playing to avoid restarting it
+    if (_audioPlayer.state == PlayerState.playing) {
+      print('⏭️ Tick sound already playing, skipping...');
+      return;
+    }
+    
     try {
-      await _audioPlayer.stop();
+      // Don't stop here - let it play naturally
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
@@ -2750,15 +2758,17 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: _buildCircularCountdown(),
+                      // ✅ FIX 1: Circular countdown only shows when _isEndingSoon is true
+                      if (_isEndingSoon)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: _buildCircularCountdown(),
+                          ),
                         ),
-                      ),
                       Positioned(
                         top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
                         right: _getResponsiveSize(10, 18),
@@ -3048,7 +3058,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                               
-                              // ✅ CRITICAL FIX: Show blinking status text here
+                              // ✅ FIX 2: Plain blinking text without container
                               if (_auctionStatus == "live" && _userHasBid == true)
                                 Padding(
                                   padding: EdgeInsets.only(top: _getResponsiveSize(4, 8)),
@@ -3416,11 +3426,12 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // ✅ FIXED: CIRCULAR COUNTDOWN WIDGET
+  // ✅ FIX 1: CIRCULAR COUNTDOWN - Only shows when _isEndingSoon is true
   // ============================================
 
   Widget _buildCircularCountdown() {
-    if (_auctionStatus != "live" || _timeLeft.inSeconds <= 0) {
+    // Only show when warning is active
+    if (_auctionStatus != "live" || !_isEndingSoon || _timeLeft.inSeconds <= 0) {
       return const SizedBox.shrink();
     }
 
