@@ -431,26 +431,20 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopTickSound(); // Always stop first
-    
-    // Reset the scroll trigger flag
-    _counterScrollTriggered = false;
+    _stopTickSound(); // Always clean first
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
       final remaining = endTime.difference(now);
 
-      if (remaining.isNegative) {
+      if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
-        _stopTickSound(); // Force stop
+        _stopTickSound();                    // ← Force stop here
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
-        
-        _counterScrollTriggered = false;
-        _forceScrollToBottomWithDelay();
         _pollData();
         return;
       }
@@ -459,23 +453,12 @@ class _ProductDetailsState extends State<ProductDetails>
       final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
 
       if (shouldBeEndingSoon != _isEndingSoon) {
-        setState(() {
-          _isEndingSoon = shouldBeEndingSoon;
-          // Reset trigger when state changes
-          _counterScrollTriggered = false;
-        });
+        setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          // ✅ ONLY place tick sound starts
-          _playTickSound();
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted && _isEndingSoon) {
-              _forceScrollToBottomWithDelay();
-            }
-          });
+          _playTickSound();                  // ← Only start point
         } else {
           _stopTickSound();
-          _forceScrollToBottomWithDelay();
         }
       }
 
@@ -1162,15 +1145,11 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND EFFECTS - ONLY TICK SOUND
+  // SOUND EFFECTS - ONLY TICK SOUND (FINAL)
   // ============================================
 
-  // ✅ Only tick sound - no bid or comment sounds
   void _playTickSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;
-
-    // Extra guard: only play if ending soon is active
-    if (!_isEndingSoon) return;
+    if (!_soundEnabled || _isTickSoundPlaying || !_isEndingSoon) return;
 
     try {
       _isTickSoundPlaying = true;
