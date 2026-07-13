@@ -1205,16 +1205,13 @@ void _scrollToBottom() {
       // Stop any existing sound first
       await _audioPlayer.stop();
       
-      // Try to play with a different approach
-      final result = await _audioPlayer.play(
+      // Play the tick sound
+      await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
       
-      if (result == null) {
-        throw Exception('Failed to play tick sound');
-      }
-      
+      // Set to loop
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
       print('Error playing tick sound: $e');
