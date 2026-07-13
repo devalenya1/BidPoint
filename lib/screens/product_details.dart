@@ -117,7 +117,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Sound
   bool _soundEnabled = true;
-  bool _isTickSoundPlaying = false;
+  // bool _isTickSoundPlaying = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Repository
@@ -429,9 +429,45 @@ class _ProductDetailsState extends State<ProductDetails>
   // ENDING COUNTDOWN TIMER - UPDATED
   // ============================================
 
+  // void _startCountdown(DateTime endTime) {
+  //   _countdownTimer?.cancel();
+  //   _stopTickSound(); // Always clean first
+
+  //   _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  //     final now = DateTime.now();
+  //     final remaining = endTime.difference(now);
+
+  //     if (remaining.isNegative || remaining.inSeconds <= 0) {
+  //       timer.cancel();
+  //       _stopTickSound();                    // ← Force stop here
+  //       setState(() {
+  //         _timeLeft = Duration.zero;
+  //         _auctionStatus = "ended";
+  //         _isEndingSoon = false;
+  //       });
+  //       _pollData();
+  //       return;
+  //     }
+
+  //     final secondsLeft = remaining.inSeconds;
+  //     final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
+
+  //     if (shouldBeEndingSoon != _isEndingSoon) {
+  //       setState(() => _isEndingSoon = shouldBeEndingSoon);
+
+  //       if (shouldBeEndingSoon) {
+  //         _playTickSound();                  // ← Only start point
+  //       } else {
+  //         _stopTickSound();
+  //       }
+  //     }
+
+  //     setState(() => _timeLeft = remaining);
+  //   });
+  // }
+
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopTickSound(); // Always clean first
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -439,7 +475,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
-        _stopTickSound();                    // ← Force stop here
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
@@ -456,9 +491,7 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          _playTickSound();                  // ← Only start point
-        } else {
-          _stopTickSound();
+          _playEndingSoonBell();        // ← Only place bell plays (once)
         }
       }
 
@@ -1144,38 +1177,61 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
+  // // ============================================
+  // // SOUND EFFECTS - ONLY TICK SOUND (FINAL)
+  // // ============================================
+
+  // void _playTickSound() async {
+  //   if (!_soundEnabled || _isTickSoundPlaying || !_isEndingSoon) return;
+
+  //   try {
+  //     _isTickSoundPlaying = true;
+  //     print('✅ Tick sound STARTED');
+
+  //     await _audioPlayer.stop();
+  //     await _audioPlayer.play(
+  //       AssetSource('sounds/tick_clock.mp3'),
+  //       mode: PlayerMode.lowLatency,
+  //     );
+  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+  //   } catch (e) {
+  //     print('Tick sound error: $e');
+  //     _isTickSoundPlaying = false;
+  //   }
+  // }
+
+  // void _stopTickSound() async {
+  //   if (!_isTickSoundPlaying) return;
+
+  //   print('⏹️ Tick sound STOPPED');
+  //   _isTickSoundPlaying = false;
+  //   try {
+  //     await _audioPlayer.stop();
+  //   } catch (e) {
+  //     print('Stop tick error: $e');
+  //   }
+  // }
+
   // ============================================
-  // SOUND EFFECTS - ONLY TICK SOUND (FINAL)
+  // SOUND EFFECTS - SINGLE BELL SOUND (FINAL)
   // ============================================
 
-  void _playTickSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || !_isEndingSoon) return;
+  void _playEndingSoonBell() async {
+    if (!_soundEnabled) return;
 
+    // Play only once when popup appears
     try {
-      _isTickSoundPlaying = true;
-      print('✅ Tick sound STARTED');
+      print('🛎️ Playing bell sound (once)');
 
       await _audioPlayer.stop();
       await _audioPlayer.play(
-        AssetSource('sounds/tick_clock.mp3'),
+        AssetSource('sounds/bell.mp3'),
         mode: PlayerMode.lowLatency,
       );
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      // No loop - let it play to the end naturally
+      await _audioPlayer.setReleaseMode(ReleaseMode.release);
     } catch (e) {
-      print('Tick sound error: $e');
-      _isTickSoundPlaying = false;
-    }
-  }
-
-  void _stopTickSound() async {
-    if (!_isTickSoundPlaying) return;
-
-    print('⏹️ Tick sound STOPPED');
-    _isTickSoundPlaying = false;
-    try {
-      await _audioPlayer.stop();
-    } catch (e) {
-      print('Stop tick error: $e');
+      print('Bell sound error: $e');
     }
   }
 
