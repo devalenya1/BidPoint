@@ -64,6 +64,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _hasBid = false;
   bool _isListening = false;
   bool _isLoading = true;
+  bool _isCommentSoundPlaying = false;
   bool _userInteractedWithComments = false;
   bool _initialScrollDone = false; 
   DetailedProduct? _product;
@@ -157,6 +158,14 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     });
     
+    // Listen for when sound stops to restart if needed
+    _audioPlayer.onPlayerComplete.listen((event) {
+      if (_isTickSoundPlaying && _isEndingSoon) {
+        print('🔄 Tick sound stopped, restarting...');
+        _playTickSound();
+      }
+    });
+
     _fetchAllData();
     _startPolling();
     _fetchUserInfo(); 
@@ -192,15 +201,20 @@ class _ProductDetailsState extends State<ProductDetails>
   // API CALLS
   // ============================================
 
-  void _scrollToBottom() {
-    if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
-      _commentsScrollController.animateTo(
-        _commentsScrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+void _scrollToBottom() {
+  if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+    // Small delay to let layout settle after timer rebuilds
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+        _commentsScrollController.animateTo(
+          _commentsScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
+}
 
   Future<void> _fetchComments() async {
     try {
@@ -1157,35 +1171,43 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _playCommentSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;  // Skip if tick sound is playing
+    if (!_soundEnabled || _isTickSoundPlaying || _isCommentSoundPlaying) return;
+    
+    _isCommentSoundPlaying = true;
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
+      
+      // Wait for sound to finish before allowing next
+      await Future.delayed(const Duration(milliseconds: 800));
+      _isCommentSoundPlaying = false;
     } catch (e) {
       print('Error playing comment sound: $e');
+      _isCommentSoundPlaying = false;
     }
   }
 
-  // ✅ FIXED: Tick sound - only starts when warning begins, stops when warning ends
   void _playTickSound() async {
-    if (!_soundEnabled) return;
-    
-    // If sound is already playing, don't restart it
-    if (_isTickSoundPlaying) {
-      print('⏭️ Tick sound already playing, skipping...');
-      return;
-    }
-    
+    if (!_soundEnabled || _isTickSoundPlaying) return;
+
     try {
       _isTickSoundPlaying = true;
       print('✅ Tick sound started (looping)');
       
+      // Stop any existing sound first
       await _audioPlayer.stop();
-      await _audioPlayer.play(
+      
+      // Try to play with a different approach
+      final result = await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
-      _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      
+      if (result == null) {
+        throw Exception('Failed to play tick sound');
+      }
+      
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
       print('Error playing tick sound: $e');
       _isTickSoundPlaying = false;
@@ -2798,13 +2820,16 @@ class _ProductDetailsState extends State<ProductDetails>
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          child: Center(
-                            child: Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              color: Colors.transparent,
-                              child: Center(
-                                child: _buildCircularCountdown(),
+                          child: IgnorePointer(  // ✅ Allows touch events to pass through
+                            ignoring: true,
+                            child: Center(
+                              child: Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.transparent,
+                                child: Center(
+                                  child: _buildCircularCountdown(),
+                                ),
                               ),
                             ),
                           ),
