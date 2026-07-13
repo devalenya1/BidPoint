@@ -414,7 +414,7 @@ void _scrollToBottom() {
 
       if (remaining.isNegative) {
         timer.cancel();
-        _stopTickSound();
+        _stopTickSound();                    // ← Force stop
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
@@ -427,11 +427,8 @@ void _scrollToBottom() {
       final secondsLeft = remaining.inSeconds;
       final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
 
-      // Only change state if it actually changed
       if (shouldBeEndingSoon != _isEndingSoon) {
-        setState(() {
-          _isEndingSoon = shouldBeEndingSoon;
-        });
+        setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
           _playTickSound();
@@ -440,7 +437,7 @@ void _scrollToBottom() {
         }
       }
 
-      setState(() => _timeLeft = remaining);   // Keep this for UI
+      setState(() => _timeLeft = remaining);
     });
   }
 
@@ -549,6 +546,7 @@ void _scrollToBottom() {
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
+          _stopTickSound(); // ✅ Stop tick sound when auction ends
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -558,24 +556,6 @@ void _scrollToBottom() {
             });
           }
         }
-
-        // if (response.isEndingSoon == true &&
-        //     response.remainingSeconds != null) {
-        //   if (!_isEndingSoon &&
-        //       response.remainingSeconds! <= _endingSeconds &&
-        //       response.remainingSeconds! > 0) {
-        //     setState(() => _isEndingSoon = true);
-        //     _playTickSound();  // ✅ Start tick sound only once
-        //     ToastComponent.showWarning(
-        //       '⚠️ ${AppLocalizations.of(context)!.auction_ending_in} $_endingSeconds ${AppLocalizations.of(context)!.seconds}! ⚠️'
-        //     );
-        //   }
-        // } else {
-        //   if (_isEndingSoon) {
-        //     setState(() => _isEndingSoon = false);
-        //     _stopTickSound();  // ✅ Stop sound when warning ends
-        //   }
-        // }
 
         if (response.rating != null) {
           setState(() { _rating = response.rating!; });
@@ -1158,44 +1138,28 @@ void _scrollToBottom() {
   }
 
   // ============================================
-  // SOUND EFFECTS - FIXED VERSION
+  // SOUND EFFECTS - FINAL FIXED VERSION
   // ============================================
 
   void _playBidSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || _isBidSoundPlaying) return;
+    if (!_soundEnabled || _isTickSoundPlaying) return;   // ← Block during tick
 
-    _isBidSoundPlaying = true;
     try {
-      // Do NOT stop the player if tick is playing — just play on top (or skip)
-      if (!_isTickSoundPlaying) {
-        await _audioPlayer.stop();
-      }
+      await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
-      
-      await Future.delayed(const Duration(milliseconds: 800));
     } catch (e) {
-      print('Error playing bid sound: $e');
-    } finally {
-      _isBidSoundPlaying = false;
+      print('Bid sound error: $e');
     }
   }
 
   void _playCommentSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || _isCommentSoundPlaying) return;
+    if (!_soundEnabled || _isTickSoundPlaying) return;   // ← Block during tick
 
-    _isCommentSoundPlaying = true;
     try {
-      // Do NOT stop the player if tick is playing
-      if (!_isTickSoundPlaying) {
-        await _audioPlayer.stop();
-      }
+      await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
-      
-      await Future.delayed(const Duration(milliseconds: 800));
     } catch (e) {
-      print('Error playing comment sound: $e');
-    } finally {
-      _isCommentSoundPlaying = false;
+      print('Comment sound error: $e');
     }
   }
 
@@ -1204,16 +1168,16 @@ void _scrollToBottom() {
 
     try {
       _isTickSoundPlaying = true;
-      print('✅ Starting tick sound (loop)');
+      print('✅ Tick sound STARTED (looping)');
 
-      await _audioPlayer.stop();           // Safe to stop here
+      await _audioPlayer.stop();
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
-      print('Error playing tick sound: $e');
+      print('Tick sound error: $e');
       _isTickSoundPlaying = false;
     }
   }
@@ -1221,12 +1185,12 @@ void _scrollToBottom() {
   void _stopTickSound() async {
     if (!_isTickSoundPlaying) return;
 
-    print('⏹️ Stopping tick sound');
+    print('⏹️ Tick sound STOPPED');
     _isTickSoundPlaying = false;
     try {
       await _audioPlayer.stop();
     } catch (e) {
-      print('Error stopping tick: $e');
+      print('Stop tick error: $e');
     }
   }
 
@@ -2820,31 +2784,11 @@ void _scrollToBottom() {
                           ),
                         ),
                       ),
-                      // ✅ FIX 1: Circular countdown only shows when _isEndingSoon is true
-                      // if (_isEndingSoon)
-                      //   Positioned(
-                      //     top: 0,
-                      //     left: 0,
-                      //     right: 0,
-                      //     bottom: 0,
-                      //     child: IgnorePointer(  // ✅ Allows touch events to pass through
-                      //       ignoring: true,
-                      //       child: Center(
-                      //         child: Container(
-                      //           width: double.infinity,
-                      //           height: double.infinity,
-                      //           color: Colors.transparent,
-                      //           child: Center(
-                      //             child: _buildCircularCountdown(),
-                      //           ),
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ),
+                      // ✅ FIX: Circular countdown with IgnorePointer
                       if (_isEndingSoon)
                         Positioned.fill(
                           child: IgnorePointer(
-                            ignoring: true,           // Prevents any touch interference
+                            ignoring: true,
                             child: Center(
                               child: _buildCircularCountdown(),
                             ),
@@ -3507,38 +3451,36 @@ void _scrollToBottom() {
   }
 
   // ============================================
-  // ✅ FIX 1: CIRCULAR COUNTDOWN - Only shows when _isEndingSoon is true
+  // ✅ FIX: CIRCULAR COUNTDOWN - Improved overlay
   // ============================================
 
   Widget _buildCircularCountdown() {
-    // Only show when warning is active
-    if (_auctionStatus != "live" || !_isEndingSoon || _timeLeft.inSeconds <= 0) {
+    if (!_isEndingSoon || _timeLeft.inSeconds <= 0) {
       return const SizedBox.shrink();
     }
 
-    final totalEndingWindow = _endingSeconds;
-    final remainingInWindow = _timeLeft.inSeconds.clamp(0, totalEndingWindow);
-    final progress = remainingInWindow / totalEndingWindow;
+    final remaining = _timeLeft.inSeconds.clamp(0, _endingSeconds);
+    final progress = remaining / _endingSeconds;
 
     return Container(
-      width: _getResponsiveSize(140, 180),
-      height: _getResponsiveSize(140, 180),
+      width: _getResponsiveSize(160, 200),
+      height: _getResponsiveSize(160, 200),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withOpacity(0.7),
         shape: BoxShape.circle,
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
           SizedBox(
-            width: _getResponsiveSize(110, 150),
-            height: _getResponsiveSize(110, 150),
+            width: _getResponsiveSize(120, 160),
+            height: _getResponsiveSize(120, 160),
             child: CircularProgressIndicator(
               value: progress,
-              strokeWidth: _getResponsiveSize(10, 14),
-              backgroundColor: Colors.white.withOpacity(0.25),
+              strokeWidth: 12,
+              backgroundColor: Colors.white24,
               valueColor: AlwaysStoppedAnimation<Color>(
-                remainingInWindow <= 5 ? Colors.redAccent : Colors.orangeAccent,
+                remaining <= 5 ? Colors.red : Colors.orange,
               ),
             ),
           ),
@@ -3546,19 +3488,18 @@ void _scrollToBottom() {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                remainingInWindow.toString(),
+                remaining.toString(),
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(34, 46),
+                  fontSize: _getResponsiveFontSize(38, 50),
                   fontWeight: FontWeight.bold,
-                  color: remainingInWindow <= 5 ? Colors.red : Colors.white,
+                  color: Colors.white,
                 ),
               ),
               Text(
-                "Ending In",
+                "sec left",
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(11, 14),
+                  fontSize: _getResponsiveFontSize(12, 15),
                   color: Colors.white70,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
