@@ -64,6 +64,8 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _hasBid = false;
   bool _isListening = false;
   bool _isLoading = true;
+  bool _userInteractedWithComments = false;
+  bool _initialScrollDone = false; 
   DetailedProduct? _product;
   UserInformation? _userInfo;
   List<String> _productImages = [];
@@ -146,6 +148,14 @@ class _ProductDetailsState extends State<ProductDetails>
       vsync: this,
       duration: const Duration(seconds: 10),
     );
+
+    // Add scroll listener for comments
+    _commentsScrollController.addListener(() {
+      if (_commentsScrollController.position.pixels < 
+          _commentsScrollController.position.maxScrollExtent - 10) {
+        _userInteractedWithComments = true;
+      }
+    });
     
     _fetchAllData();
     _startPolling();
@@ -183,7 +193,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _scrollToBottom() {
-    if (_commentsScrollController.hasClients) {
+    if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
       _commentsScrollController.animateTo(
         _commentsScrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
@@ -559,11 +569,16 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() { _reviewsCount = response.reviewsCount!; });
         }
 
+        // In _fetchComments() and _pollData() when comments update:
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() => _comments = response.comments!.reversed.toList());
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
+          
+          // Only scroll to bottom if user hasn't interacted
+          if (!_userInteractedWithComments) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollToBottom();
+            });
+          }
         }
 
         if (response.reviews != null && response.reviews!.isNotEmpty) {
@@ -1132,7 +1147,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _playBidSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;  // ✅ Skip if tick sound is playing
+    if (!_soundEnabled || _isTickSoundPlaying) return;  // Skip if tick sound is playing
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
@@ -1142,7 +1157,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _playCommentSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;  // ✅ Skip if tick sound is playing
+    if (!_soundEnabled || _isTickSoundPlaying) return;  // Skip if tick sound is playing
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
@@ -1162,10 +1177,10 @@ class _ProductDetailsState extends State<ProductDetails>
     }
     
     try {
-      _isTickSoundPlaying = true;  // ✅ Mark as playing
+      _isTickSoundPlaying = true;
       print('✅ Tick sound started (looping)');
       
-      await _audioPlayer.stop();  // Stop any other sound
+      await _audioPlayer.stop();
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
@@ -1173,7 +1188,7 @@ class _ProductDetailsState extends State<ProductDetails>
       _audioPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
       print('Error playing tick sound: $e');
-      _isTickSoundPlaying = false;  // Reset on error
+      _isTickSoundPlaying = false;
     }
   }
 
@@ -1996,7 +2011,12 @@ class _ProductDetailsState extends State<ProductDetails>
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _fetchAllData();
+                  // ✅ Don't reload the page - just update state
+                  setState(() {
+                    _winnerModalShown = true;
+                  });
+                  // Optional: Refresh just the auction status without full reload
+                  _pollData();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -2779,7 +2799,14 @@ class _ProductDetailsState extends State<ProductDetails>
                           right: 0,
                           bottom: 0,
                           child: Center(
-                            child: _buildCircularCountdown(),
+                            child: Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              color: Colors.transparent,
+                              child: Center(
+                                child: _buildCircularCountdown(),
+                              ),
+                            ),
                           ),
                         ),
                       Positioned(
