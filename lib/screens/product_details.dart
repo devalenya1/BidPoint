@@ -138,7 +138,7 @@ class _ProductDetailsState extends State<ProductDetails>
   
   late CarouselController _fullScreenCarouselController;
 
-  // ✅ Track if we've already triggered auto-scroll for current counter state
+  // Track if we've already triggered auto-scroll for current counter state
   bool _counterScrollTriggered = false;
 
   @override
@@ -162,14 +162,8 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     });
     
-    // Listen for when sound stops to restart if needed
-    _audioPlayer.onPlayerComplete.listen((event) {
-      if (_isTickSoundPlaying && _isEndingSoon) {
-        print('🔄 Tick sound stopped, restarting...');
-        _playTickSound();
-      }
-    });
-
+    // Remove the onPlayerComplete listener - we handle sound differently now
+    
     _fetchAllData();
     _startPolling();
     _fetchUserInfo(); 
@@ -194,7 +188,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    _stopTickSound();  // ✅ Stop tick sound on dispose
+    _stopTickSound();
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _commentsScrollController.dispose();
@@ -205,36 +199,33 @@ class _ProductDetailsState extends State<ProductDetails>
   // API CALLS
   // ============================================
 
-void _scrollToBottom() {
-  if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
-    // Small delay to let layout settle after timer rebuilds
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+  void _scrollToBottom() {
+    if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_commentsScrollController.hasClients && !_userInteractedWithComments) {
+          _commentsScrollController.animateTo(
+            _commentsScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  void _forceScrollToBottomWithDelay() {
+    _userInteractedWithComments = false;
+    
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted && _commentsScrollController.hasClients) {
         _commentsScrollController.animateTo(
           _commentsScrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 400),
           curve: Curves.easeOut,
         );
       }
     });
   }
-}
-
-// ✅ New method: Force scroll to bottom with 1-second delay (respects user interaction)
-void _forceScrollToBottomWithDelay() {
-  // Reset the interaction flag so scroll can happen
-  _userInteractedWithComments = false;
-  
-  Future.delayed(const Duration(milliseconds: 1000), () {
-    if (mounted && _commentsScrollController.hasClients) {
-      _commentsScrollController.animateTo(
-        _commentsScrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOut,
-      );
-    }
-  });
-}
 
   Future<void> _fetchComments() async {
     try {
@@ -313,18 +304,12 @@ void _forceScrollToBottomWithDelay() {
         _isInWishlist = false;
         _endingSeconds = _product!.swipeLeft ?? 10;
 
-        // ============================================
-        // ✅ Capture myStatus from initial data
-        // ============================================
         _myStatus = _product!.myStatus;
         _userHasBid = _product!.userHasBid ?? false;
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
 
-        // ============================================
-        // DETERMINE AUCTION STATUS
-        // ============================================
         _determineAuctionStatus();
       }
 
@@ -420,12 +405,12 @@ void _forceScrollToBottomWithDelay() {
   }
 
   // ============================================
-  // ENDING COUNTDOWN TIMER
+  // ENDING COUNTDOWN TIMER - UPDATED
   // ============================================
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopTickSound();
+    _stopTickSound(); // Always stop first
     
     // Reset the scroll trigger flag
     _counterScrollTriggered = false;
@@ -436,17 +421,15 @@ void _forceScrollToBottomWithDelay() {
 
       if (remaining.isNegative) {
         timer.cancel();
-        _stopTickSound();                    // ← Force stop
+        _stopTickSound(); // Force stop
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
         
-        // ✅ When counter ends, wait 1 second and auto-scroll to latest
         _counterScrollTriggered = false;
         _forceScrollToBottomWithDelay();
-        
         _pollData();
         return;
       }
@@ -462,7 +445,7 @@ void _forceScrollToBottomWithDelay() {
         });
 
         if (shouldBeEndingSoon) {
-          // ✅ When counter starts (popup appears), wait 1 second and auto-scroll
+          // ✅ ONLY place tick sound starts
           _playTickSound();
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && _isEndingSoon) {
@@ -471,7 +454,6 @@ void _forceScrollToBottomWithDelay() {
           });
         } else {
           _stopTickSound();
-          // ✅ When counter ends (popup disappears), wait 1 second and auto-scroll
           _forceScrollToBottomWithDelay();
         }
       }
@@ -488,7 +470,6 @@ void _forceScrollToBottomWithDelay() {
           await _productRepository.pollProductData(_product!.id ?? 0);
 
       if (response.success == true) {
-        // ✅ CRITICAL FIX: Update user status from polling
         setState(() {
           if (response.myStatus != null) {
             _myStatus = response.myStatus;
@@ -508,7 +489,7 @@ void _forceScrollToBottomWithDelay() {
           setState(() { _currentHighestBid = response.highestBid!; });
           
           if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
-            // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
+            // SOUND REMOVED
             ToastComponent.showInfo(
               '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
             );
@@ -533,9 +514,6 @@ void _forceScrollToBottomWithDelay() {
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
 
-        // ============================================
-        // UPDATE AUCTION STATUS FROM POLLING
-        // ============================================
         if (response.upcomingStatus != null) {
           final newStatus = response.upcomingStatus!;
           if (_auctionStatus != newStatus) {
@@ -558,7 +536,6 @@ void _forceScrollToBottomWithDelay() {
           }
         }
 
-        // Update auction end date and timer for active auctions
         if (response.auctionEndDate != null && 
             _auctionStatus == "live") {
           try {
@@ -574,9 +551,6 @@ void _forceScrollToBottomWithDelay() {
           }
         }
 
-        // ============================================
-        // CHECK FOR AUCTION ENDED
-        // ============================================
         if (response.auctionEnded == true) {
           setState(() {
             _auctionStatus = "ended";
@@ -585,7 +559,7 @@ void _forceScrollToBottomWithDelay() {
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
-          _stopTickSound(); // ✅ Stop tick sound when auction ends
+          _stopTickSound(); // Force stop when auction ends
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -603,11 +577,9 @@ void _forceScrollToBottomWithDelay() {
           setState(() { _reviewsCount = response.reviewsCount!; });
         }
 
-        // In _fetchComments() and _pollData() when comments update:
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() => _comments = response.comments!.reversed.toList());
           
-          // Only scroll to bottom if user hasn't interacted
           if (!_userInteractedWithComments) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _scrollToBottom();
@@ -638,40 +610,29 @@ void _forceScrollToBottomWithDelay() {
   }
 
   // ============================================
-  // ✅ FIX 2: BLINKING STATUS TEXT - Plain text without container
+  // BLINKING STATUS TEXT
   // ============================================
+  
   Widget _buildBlinkingStatusText() {
-    // Debug logging
-    print('🔍 _buildBlinkingStatusText: auctionStatus=$_auctionStatus, userHasBid=$_userHasBid, myStatus=$_myStatus');
-    
-    // Only show if auction is live and user has bid
     if (_auctionStatus != "live") {
-      print('❌ Auction not live: $_auctionStatus');
       return const SizedBox.shrink();
     }
     
     if (_userHasBid != true) {
-      print('❌ User has no bid: $_userHasBid');
       return const SizedBox.shrink();
     }
     
-    // Determine winning status
     bool isWinning = false;
     
     if (_myStatus != null) {
       isWinning = _myStatus!;
-      print('✅ Using myStatus from API: $isWinning');
     } else {
-      print('⚠️ myStatus is null, trying to determine from bid history');
       isWinning = _determineWinningStatusFromBids();
-      print('✅ Determined from bid history: $isWinning');
     }
     
     final text = isWinning 
         ? "🎉 You are winning!"
         : "😔 You have been outbid";
-    
-    print('✅ Showing status: ${isWinning ? "Winning" : "Losing"}');
     
     return AnimatedBuilder(
       animation: _blinkController,
@@ -692,7 +653,6 @@ void _forceScrollToBottomWithDelay() {
     );
   }
 
-  // Add this method to determine winning status from bid history
   bool _determineWinningStatusFromBids() {
     if (_bidHistory.isEmpty) return false;
     
@@ -713,8 +673,6 @@ void _forceScrollToBottomWithDelay() {
     if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
       print('✅ Checking wishlist status on page focus...');
       _fetchWishlistStatus();
-    } else {
-      print('⏭️ Skipping wishlist refresh: product=${_product != null}, loggedIn=${is_logged_in.$}, loading=$_isLoading, processing=$_isProcessing');
     }
   }
 
@@ -792,7 +750,7 @@ void _forceScrollToBottomWithDelay() {
       }
 
       if (response.success == true) {
-        // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
+        // SOUND REMOVED
         if (response.timeExtended == true) {
           ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
           if (response.newEndDate != null) {
@@ -856,7 +814,7 @@ void _forceScrollToBottomWithDelay() {
       }
 
       if (response.success == true) {
-        // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
+        // SOUND REMOVED
         _bidController.clear();
         if (response.timeExtended == true) {
           ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
@@ -906,7 +864,7 @@ void _forceScrollToBottomWithDelay() {
       }
 
       if (response.success == true) {
-        // _playCommentSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
+        // SOUND REMOVED
         _commentController.clear();
         await _fetchComments();
         ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
@@ -1049,10 +1007,10 @@ void _forceScrollToBottomWithDelay() {
 
       if (response.success == true) {
         if (wasInWishlist) {
-          // _playCommentSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
+          // SOUND REMOVED
           ToastComponent.showSuccess(AppLocalizations.of(context)!.removed_from_wishlist);
         } else {
-          // _playBidSound();  // 🚫 COMMENTED OUT - SILENT FOR NOW
+          // SOUND REMOVED
           ToastComponent.showSuccess(AppLocalizations.of(context)!.added_to_wishlist);
         }
         
@@ -1177,54 +1135,19 @@ void _forceScrollToBottomWithDelay() {
   }
 
   // ============================================
-  // SOUND EFFECTS - Tick sound tied to popup visibility
+  // SOUND EFFECTS - ONLY TICK SOUND
   // ============================================
 
-  /*
-  // 🚫 COMMENTED OUT - BID SOUND (SILENT FOR NOW)
-  void _playBidSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;
-    try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/bid_notification.wav'));
-    } catch (e) {
-      print('Bid sound error: $e');
-    }
-  }
-  */
-
-  /*
-  // 🚫 COMMENTED OUT - COMMENT SOUND (SILENT FOR NOW)
-  void _playCommentSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying) return;
-    try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/comment_sound.wav'));
-    } catch (e) {
-      print('Comment sound error: $e');
-    }
-  }
-  */
-
-  // ✅ Tick sound - ONLY plays when popup is visible (_isEndingSoon == true)
+  // ✅ Only tick sound - no bid or comment sounds
   void _playTickSound() async {
-    if (!_soundEnabled) return;
+    if (!_soundEnabled || _isTickSoundPlaying) return;
 
-    // ✅ Only play if popup is visible
-    if (!_isEndingSoon) {
-      print('⏭️ Popup not visible, skipping tick sound');
-      return;
-    }
-
-    // If sound is already playing, don't restart it
-    if (_isTickSoundPlaying) {
-      print('⏭️ Tick sound already playing');
-      return;
-    }
+    // Extra guard: only play if ending soon is active
+    if (!_isEndingSoon) return;
 
     try {
       _isTickSoundPlaying = true;
-      print('✅ Tick sound STARTED (popup is visible)');
+      print('✅ Tick sound STARTED');
 
       await _audioPlayer.stop();
       await _audioPlayer.play(
@@ -1238,11 +1161,10 @@ void _forceScrollToBottomWithDelay() {
     }
   }
 
-  // ✅ Stop tick sound - called when popup disappears
   void _stopTickSound() async {
     if (!_isTickSoundPlaying) return;
 
-    print('⏹️ Tick sound STOPPED (popup disappeared)');
+    print('⏹️ Tick sound STOPPED');
     _isTickSoundPlaying = false;
     try {
       await _audioPlayer.stop();
@@ -1984,7 +1906,7 @@ void _forceScrollToBottomWithDelay() {
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    _stopTickSound();  // ✅ Stop tick sound when winner modal shows
+    _stopTickSound(); // Force stop tick sound when winner modal shows
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
@@ -2061,11 +1983,9 @@ void _forceScrollToBottomWithDelay() {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // ✅ Don't reload the page - just update state
                   setState(() {
                     _winnerModalShown = true;
                   });
-                  // Optional: Refresh just the auction status without full reload
                   _pollData();
                 },
                 style: ElevatedButton.styleFrom(
@@ -2841,7 +2761,6 @@ void _forceScrollToBottomWithDelay() {
                           ),
                         ),
                       ),
-                      // ✅ FIX: Circular countdown with IgnorePointer
                       if (_isEndingSoon)
                         Positioned.fill(
                           child: IgnorePointer(
@@ -3140,7 +3059,6 @@ void _forceScrollToBottomWithDelay() {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                               
-                              // ✅ FIX 2: Plain blinking text without container
                               if (_auctionStatus == "live" && _userHasBid == true)
                                 Padding(
                                   padding: EdgeInsets.only(top: _getResponsiveSize(4, 8)),
@@ -3508,7 +3426,7 @@ void _forceScrollToBottomWithDelay() {
   }
 
   // ============================================
-  // ✅ FIX: CIRCULAR COUNTDOWN - Improved overlay
+  // CIRCULAR COUNTDOWN
   // ============================================
 
   Widget _buildCircularCountdown() {
