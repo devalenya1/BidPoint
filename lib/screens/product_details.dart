@@ -100,7 +100,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
   String _auctionStatus = "live";
-
+  bool _tickSoundPlayedThisSession = false;
   // Bid Data
   double _currentHighestBid = 0;
   double _minNextBidNow = 0;
@@ -163,28 +163,29 @@ class _ProductDetailsState extends State<ProductDetails>
       _audioPlayer.stop();
     });
 
-    _commentsScrollController.addListener(() {
-      final maxScroll = _commentsScrollController.position.maxScrollExtent;
-      final currentScroll = _commentsScrollController.position.pixels;
+    _commentsScrollController.addListener(_onCommentsScroll);
+    // _commentsScrollController.addListener(() {
+    //   final maxScroll = _commentsScrollController.position.maxScrollExtent;
+    //   final currentScroll = _commentsScrollController.position.pixels;
       
-      // Check if user is at or near the bottom (within 10 pixels)
-      final isAtBottom = currentScroll >= maxScroll - 10;
+    //   // Check if user is at or near the bottom (within 10 pixels)
+    //   final isAtBottom = currentScroll >= maxScroll - 10;
       
-      if (isAtBottom != _isAtBottom) {
-        setState(() {
-          _isAtBottom = isAtBottom;
-        });
-      }
+    //   if (isAtBottom != _isAtBottom) {
+    //     setState(() {
+    //       _isAtBottom = isAtBottom;
+    //     });
+    //   }
       
-      // If user scrolls away from bottom, mark as interacted
-      // Only set to true if they are significantly away from bottom
-      if (!isAtBottom && currentScroll < maxScroll - 50) {
-        _userInteractedWithComments = true;
-      } else if (isAtBottom) {
-        // If user scrolls back to bottom, allow auto-scroll again
-        _userInteractedWithComments = false;
-      }
-    });
+    //   // If user scrolls away from bottom, mark as interacted
+    //   // Only set to true if they are significantly away from bottom
+    //   if (!isAtBottom && currentScroll < maxScroll - 50) {
+    //     _userInteractedWithComments = true;
+    //   } else if (isAtBottom) {
+    //     // If user scrolls back to bottom, allow auto-scroll again
+    //     _userInteractedWithComments = false;
+    //   }
+    // });
     
     // ❌ DELETE the duplicate listener that starts at line 242
     
@@ -224,18 +225,36 @@ class _ProductDetailsState extends State<ProductDetails>
   // API CALLS
   // ============================================
 
+  void _onCommentsScroll() {
+    if (!_commentsScrollController.hasClients) return;
+
+    final maxScroll = _commentsScrollController.position.maxScrollExtent;
+    final currentScroll = _commentsScrollController.position.pixels;
+
+    final isAtBottom = currentScroll >= maxScroll - 30;
+
+    if (isAtBottom != _isAtBottom) {
+      setState(() => _isAtBottom = isAtBottom);
+    }
+
+    // Only mark as interacted if user scrolled UP significantly
+    if (!isAtBottom && currentScroll < maxScroll - 80) {
+      _userInteractedWithComments = true;
+    } else if (isAtBottom) {
+      _userInteractedWithComments = false;
+    }
+  }
+
+  // Improved scroll to bottom - only when appropriate
   void _scrollToBottom() {
-    // Only auto-scroll if user is at the bottom AND hasn't manually scrolled away
-    if (_commentsScrollController.hasClients && _isAtBottom && !_userInteractedWithComments) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_commentsScrollController.hasClients && _isAtBottom && !_userInteractedWithComments) {
-          _commentsScrollController.animateTo(
-            _commentsScrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+    if (_commentsScrollController.hasClients && 
+        _isAtBottom && 
+        !_userInteractedWithComments) {
+      _commentsScrollController.animateTo(
+        _commentsScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -425,7 +444,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopTickSound(); // Always clean first
+    _stopTickSound(); // Clean start
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -433,15 +452,12 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
-        _stopTickSound(); // ← Force stop here
+        _stopTickSound();
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
-        
-        // Remove the circular countdown overlay
-        _countdownCircleController.stop();
         _pollData();
         return;
       }
@@ -449,15 +465,13 @@ class _ProductDetailsState extends State<ProductDetails>
       final secondsLeft = remaining.inSeconds;
       final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
 
+      // Trigger sound and UI change only once
       if (shouldBeEndingSoon != _isEndingSoon) {
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          _playTickSound(); // ← Only start point
-          // Animate the countdown circle
-          _countdownCircleController.repeat(
-            period: const Duration(seconds: 1),
-          );
+          _playTickSound();
+          _countdownCircleController.repeat(period: const Duration(seconds: 1));
         } else {
           _stopTickSound();
           _countdownCircleController.stop();
@@ -1150,31 +1164,26 @@ class _ProductDetailsState extends State<ProductDetails>
   // // SOUND EFFECTS - ONLY TICK SOUND (FINAL)
   // // ============================================
 
+  bool _tickSoundPlayedThisSession = false;
+
   void _playTickSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || !_isEndingSoon) return;
+    if (!_soundEnabled || _isTickSoundPlaying || _tickSoundPlayedThisSession) return;
 
     try {
       _isTickSoundPlaying = true;
-      // Tell ToastComponent to mute sounds
-      ToastComponent.tickSoundPlaying = true;
-      print('✅ Tick sound STARTED (looping)');
+      _tickSoundPlayedThisSession = true; // Prevent multiple plays in one ending phase
 
-      // Stop any existing playback first
+      print('🛎️ Tick sound STARTED');
+
       await _audioPlayer.stop();
-      
-      // Play with loop mode
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      
-      // Verify it's playing
-      print('🔊 Tick sound playing: ${await _audioPlayer.getCurrentPosition()}');
     } catch (e) {
       print('Tick sound error: $e');
       _isTickSoundPlaying = false;
-      ToastComponent.tickSoundPlaying = false;
     }
   }
 
@@ -1183,8 +1192,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     print('⏹️ Tick sound STOPPED');
     _isTickSoundPlaying = false;
-    // Re-enable toast sounds
-    ToastComponent.tickSoundPlaying = false;
+    _tickSoundPlayedThisSession = false; // Reset for next time
+
     try {
       await _audioPlayer.stop();
       await _audioPlayer.setReleaseMode(ReleaseMode.release);
