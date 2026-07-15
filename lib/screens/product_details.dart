@@ -101,6 +101,7 @@ class _ProductDetailsState extends State<ProductDetails>
   int _endingSeconds = 10;
   String _auctionStatus = "live";
   bool _tickSoundPlayedThisSession = false;
+  
   // Bid Data
   double _currentHighestBid = 0;
   double _minNextBidNow = 0;
@@ -118,7 +119,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Sound
   bool _soundEnabled = true;
-  // bool _isTickSoundPlaying = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Repository
@@ -164,30 +164,6 @@ class _ProductDetailsState extends State<ProductDetails>
     });
 
     _commentsScrollController.addListener(_onCommentsScroll);
-    // _commentsScrollController.addListener(() {
-    //   final maxScroll = _commentsScrollController.position.maxScrollExtent;
-    //   final currentScroll = _commentsScrollController.position.pixels;
-      
-    //   // Check if user is at or near the bottom (within 10 pixels)
-    //   final isAtBottom = currentScroll >= maxScroll - 10;
-      
-    //   if (isAtBottom != _isAtBottom) {
-    //     setState(() {
-    //       _isAtBottom = isAtBottom;
-    //     });
-    //   }
-      
-    //   // If user scrolls away from bottom, mark as interacted
-    //   // Only set to true if they are significantly away from bottom
-    //   if (!isAtBottom && currentScroll < maxScroll - 50) {
-    //     _userInteractedWithComments = true;
-    //   } else if (isAtBottom) {
-    //     // If user scrolls back to bottom, allow auto-scroll again
-    //     _userInteractedWithComments = false;
-    //   }
-    // });
-    
-    // ❌ DELETE the duplicate listener that starts at line 242
     
     _fetchAllData();
     _startPolling();
@@ -258,14 +234,17 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-
-
   Future<void> _fetchComments() async {
     try {
       final response =
           await _productRepository.getProductComments(_product?.id ?? 0);
       if (response.success == true && response.comments != null) {
-        setState(() => _comments = response.comments!.reversed.toList());
+        setState(() {
+          _comments = response.comments!.reversed.toList();
+          // Reset for manual fetch
+          _isAtBottom = true;
+          _userInteractedWithComments = false;
+        });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
@@ -441,7 +420,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ENDING COUNTDOWN TIMER - UPDATED
   // ============================================
 
-
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     _stopTickSound(); // Clean start
@@ -599,11 +577,12 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() {
             _comments = response.comments!.reversed.toList();
-            _isAtBottom = true; // Reset to true since we're loading fresh comments
-            _userInteractedWithComments = false; // Allow auto-scroll
+            // Don't reset _isAtBottom and _userInteractedWithComments here
+            // Let the scroll listener handle these values
           });
           
-          if (!_userInteractedWithComments) {
+          // Only scroll if user is at bottom AND hasn't interacted
+          if (_isAtBottom && !_userInteractedWithComments) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _scrollToBottom();
             });
@@ -1189,7 +1168,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     print('⏹️ Tick sound STOPPED');
     _isTickSoundPlaying = false;
-    _tickSoundPlayedThisSession = false; // Reset for next ending-soon phase
+    _tickSoundPlayedThisSession = false;
 
     try {
       await _audioPlayer.stop();
@@ -1198,8 +1177,6 @@ class _ProductDetailsState extends State<ProductDetails>
       print('Stop tick error: $e');
     }
   }
-
-  
 
   // ============================================
   // UI HELPERS
@@ -1934,7 +1911,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    _stopTickSound(); // Force stop tick sound when winner modal shows
+    _stopTickSound();
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
@@ -2263,8 +2240,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // HELPER METHODS
-  // ============================================
+  // HELPER METHODS  // ============================================
 
   String _formatTime(String? dateTime) {
     if (dateTime == null) return '';
@@ -2789,15 +2765,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      // if (_isEndingSoon)
-                      //   Positioned.fill(
-                      //     child: IgnorePointer(
-                      //       ignoring: true,
-                      //       child: Center(
-                      //         child: _buildCircularCountdown(),
-                      //       ),
-                      //     ),
-                      //   ),
                       _buildCircularCountdown(),
                       Positioned(
                         top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
@@ -3468,14 +3435,13 @@ class _ProductDetailsState extends State<ProductDetails>
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 400;
 
-    // This creates a floating overlay like the more menu
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
       child: IgnorePointer(
-        ignoring: true, // Allow clicks to pass through to underlying content
+        ignoring: true,
         child: Center(
           child: Container(
             width: isSmallScreen ? 160 : 200,
@@ -3494,7 +3460,6 @@ class _ProductDetailsState extends State<ProductDetails>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Circular progress indicator
                 SizedBox(
                   width: isSmallScreen ? 120 : 160,
                   height: isSmallScreen ? 120 : 160,
@@ -3507,7 +3472,6 @@ class _ProductDetailsState extends State<ProductDetails>
                     ),
                   ),
                 ),
-                // Center text
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
