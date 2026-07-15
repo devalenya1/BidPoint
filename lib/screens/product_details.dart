@@ -465,7 +465,6 @@ class _ProductDetailsState extends State<ProductDetails>
       final secondsLeft = remaining.inSeconds;
       final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
 
-      // Trigger sound and UI change only once
       if (shouldBeEndingSoon != _isEndingSoon) {
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
@@ -1160,18 +1159,16 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // // ============================================
-  // // SOUND EFFECTS - ONLY TICK SOUND (FINAL)
-  // // ============================================
-
-  bool _tickSoundPlayedThisSession = false;
+  // ============================================
+  // SOUND - TICK SOUND ONLY (FIXED)
+  // ============================================
 
   void _playTickSound() async {
     if (!_soundEnabled || _isTickSoundPlaying || _tickSoundPlayedThisSession) return;
 
     try {
       _isTickSoundPlaying = true;
-      _tickSoundPlayedThisSession = true; // Prevent multiple plays in one ending phase
+      _tickSoundPlayedThisSession = true;
 
       print('🛎️ Tick sound STARTED');
 
@@ -1192,7 +1189,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     print('⏹️ Tick sound STOPPED');
     _isTickSoundPlaying = false;
-    _tickSoundPlayedThisSession = false; // Reset for next time
+    _tickSoundPlayedThisSession = false; // Reset for next ending-soon phase
 
     try {
       await _audioPlayer.stop();
@@ -1202,29 +1199,7 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-
-  // // ============================================
-  // // SOUND EFFECTS - SINGLE BELL SOUND (FINAL)
-  // // ============================================
-
-  // void _playEndingSoonBell() async {
-  //   if (!_soundEnabled) return;
-
-  //   // Play only once when popup appears
-  //   try {
-  //     print('🛎️ Playing bell sound (once)');
-
-  //     await _audioPlayer.stop();
-  //     await _audioPlayer.play(
-  //       AssetSource('sounds/bell.mp3'),
-  //       mode: PlayerMode.lowLatency,
-  //     );
-  //     // No loop - let it play to the end naturally
-  //     await _audioPlayer.setReleaseMode(ReleaseMode.release);
-  //   } catch (e) {
-  //     print('Bell sound error: $e');
-  //   }
-  // }
+  
 
   // ============================================
   // UI HELPERS
