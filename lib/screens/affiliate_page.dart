@@ -173,12 +173,13 @@ class _AffiliatePageState extends State<AffiliatePage> {
         foregroundColor: Colors.black,
         toolbarHeight: 60.h,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, size: 24.sp),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              context.go("/");
+              // If nothing to pop, go to home and clear the stack
+              Navigator.pushReplacementNamed(context, '/');
             }
           },
         ),

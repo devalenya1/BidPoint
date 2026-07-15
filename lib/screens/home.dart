@@ -1220,7 +1220,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           'assets/notification.png',
                           height: 22.w,
                           width: 22.w,
-                          color: MyTheme.dark_grey,
+                          // color: MyTheme.dark_grey,
                         ),
                       ),
                       // ==========================================================
