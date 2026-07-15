@@ -66,6 +66,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isLoading = true;
   bool _isCommentSoundPlaying = false;
   bool _isBidSoundPlaying = false;
+  bool _isTickSoundPlaying = false;
   bool _userInteractedWithComments = false;
   bool _initialScrollDone = false; 
   bool _isAtBottom = true;
@@ -204,7 +205,8 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    // _stopTickSound();
+    _stopTickSound();
+    ToastComponent.tickSoundPlaying = false;
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _commentsScrollController.dispose();
@@ -231,8 +233,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _forceScrollToBottomWithDelay() {
-    // This is for forced scrolls (like countdown popup)
-    // We only want to force scroll if user hasn't explicitly scrolled away
+    // Only force scroll if user hasn't interacted (scrolled away)
     if (!_userInteractedWithComments) {
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted && _commentsScrollController.hasClients) {
@@ -429,45 +430,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ENDING COUNTDOWN TIMER - UPDATED
   // ============================================
 
-  // void _startCountdown(DateTime endTime) {
-  //   _countdownTimer?.cancel();
-  //   _stopTickSound(); // Always clean first
-
-  //   _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-  //     final now = DateTime.now();
-  //     final remaining = endTime.difference(now);
-
-  //     if (remaining.isNegative || remaining.inSeconds <= 0) {
-  //       timer.cancel();
-  //       _stopTickSound();                    // ← Force stop here
-  //       setState(() {
-  //         _timeLeft = Duration.zero;
-  //         _auctionStatus = "ended";
-  //         _isEndingSoon = false;
-  //       });
-  //       _pollData();
-  //       return;
-  //     }
-
-  //     final secondsLeft = remaining.inSeconds;
-  //     final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
-
-  //     if (shouldBeEndingSoon != _isEndingSoon) {
-  //       setState(() => _isEndingSoon = shouldBeEndingSoon);
-
-  //       if (shouldBeEndingSoon) {
-  //         _playTickSound();                  // ← Only start point
-  //       } else {
-  //         _stopTickSound();
-  //       }
-  //     }
-
-  //     setState(() => _timeLeft = remaining);
-  //   });
-  // }
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
+    _stopTickSound(); // Always clean first
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -475,11 +441,15 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
+        _stopTickSound(); // ← Force stop here
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
         });
+        
+        // Remove the circular countdown overlay
+        _countdownCircleController.stop();
         _pollData();
         return;
       }
@@ -491,7 +461,14 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          _playEndingSoonBell();        // ← Only place bell plays (once)
+          _playTickSound(); // ← Only start point
+          // Animate the countdown circle
+          _countdownCircleController.repeat(
+            period: const Duration(seconds: 1),
+          );
+        } else {
+          _stopTickSound();
+          _countdownCircleController.stop();
         }
       }
 
@@ -596,7 +573,7 @@ class _ProductDetailsState extends State<ProductDetails>
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
-          // _stopTickSound(); // Force stop when auction ends
+          _stopTickSound(); // Force stop when auction ends
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -1181,59 +1158,65 @@ class _ProductDetailsState extends State<ProductDetails>
   // // SOUND EFFECTS - ONLY TICK SOUND (FINAL)
   // // ============================================
 
-  // void _playTickSound() async {
-  //   if (!_soundEnabled || _isTickSoundPlaying || !_isEndingSoon) return;
+  void _playTickSound() async {
+    if (!_soundEnabled || _isTickSoundPlaying || !_isEndingSoon) return;
 
-  //   try {
-  //     _isTickSoundPlaying = true;
-  //     print('✅ Tick sound STARTED');
-
-  //     await _audioPlayer.stop();
-  //     await _audioPlayer.play(
-  //       AssetSource('sounds/tick_clock.mp3'),
-  //       mode: PlayerMode.lowLatency,
-  //     );
-  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-  //   } catch (e) {
-  //     print('Tick sound error: $e');
-  //     _isTickSoundPlaying = false;
-  //   }
-  // }
-
-  // void _stopTickSound() async {
-  //   if (!_isTickSoundPlaying) return;
-
-  //   print('⏹️ Tick sound STOPPED');
-  //   _isTickSoundPlaying = false;
-  //   try {
-  //     await _audioPlayer.stop();
-  //   } catch (e) {
-  //     print('Stop tick error: $e');
-  //   }
-  // }
-
-  // ============================================
-  // SOUND EFFECTS - SINGLE BELL SOUND (FINAL)
-  // ============================================
-
-  void _playEndingSoonBell() async {
-    if (!_soundEnabled) return;
-
-    // Play only once when popup appears
     try {
-      print('🛎️ Playing bell sound (once)');
+      _isTickSoundPlaying = true;
+      // Tell ToastComponent to mute sounds
+      ToastComponent.tickSoundPlaying = true;
+      print('✅ Tick sound STARTED (looping)');
 
       await _audioPlayer.stop();
       await _audioPlayer.play(
-        AssetSource('sounds/bell.mp3'),
+        AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
-      // No loop - let it play to the end naturally
-      await _audioPlayer.setReleaseMode(ReleaseMode.release);
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
-      print('Bell sound error: $e');
+      print('Tick sound error: $e');
+      _isTickSoundPlaying = false;
+      ToastComponent.tickSoundPlaying = false;
     }
   }
+
+  void _stopTickSound() async {
+    if (!_isTickSoundPlaying) return;
+
+    print('⏹️ Tick sound STOPPED');
+    _isTickSoundPlaying = false;
+    // Re-enable toast sounds
+    ToastComponent.tickSoundPlaying = false;
+    try {
+      await _audioPlayer.stop();
+    } catch (e) {
+      print('Stop tick error: $e');
+    }
+  }
+
+
+  // // ============================================
+  // // SOUND EFFECTS - SINGLE BELL SOUND (FINAL)
+  // // ============================================
+
+  // void _playEndingSoonBell() async {
+  //   if (!_soundEnabled) return;
+
+  //   // Play only once when popup appears
+  //   try {
+  //     print('🛎️ Playing bell sound (once)');
+
+  //     await _audioPlayer.stop();
+  //     await _audioPlayer.play(
+  //       AssetSource('sounds/bell.mp3'),
+  //       mode: PlayerMode.lowLatency,
+  //     );
+  //     // No loop - let it play to the end naturally
+  //     await _audioPlayer.setReleaseMode(ReleaseMode.release);
+  //   } catch (e) {
+  //     print('Bell sound error: $e');
+  //   }
+  // }
 
   // ============================================
   // UI HELPERS
@@ -1968,7 +1951,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    // _stopTickSound(); // Force stop tick sound when winner modal shows
+    _stopTickSound(); // Force stop tick sound when winner modal shows
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
@@ -2823,15 +2806,16 @@ class _ProductDetailsState extends State<ProductDetails>
                           ),
                         ),
                       ),
-                      if (_isEndingSoon)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            ignoring: true,
-                            child: Center(
-                              child: _buildCircularCountdown(),
-                            ),
-                          ),
-                        ),
+                      // if (_isEndingSoon)
+                      //   Positioned.fill(
+                      //     child: IgnorePointer(
+                      //       ignoring: true,
+                      //       child: Center(
+                      //         child: _buildCircularCountdown(),
+                      //       ),
+                      //     ),
+                      //   ),
+                      _buildCircularCountdown(),
                       Positioned(
                         top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
                         right: _getResponsiveSize(10, 18),
@@ -3498,50 +3482,73 @@ class _ProductDetailsState extends State<ProductDetails>
 
     final remaining = _timeLeft.inSeconds.clamp(0, _endingSeconds);
     final progress = remaining / _endingSeconds;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
 
-    return Container(
-      width: _getResponsiveSize(160, 200),
-      height: _getResponsiveSize(160, 200),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
-        shape: BoxShape.circle,
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: _getResponsiveSize(120, 160),
-            height: _getResponsiveSize(120, 160),
-            child: CircularProgressIndicator(
-              value: progress,
-              strokeWidth: 12,
-              backgroundColor: Colors.white24,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                remaining <= 5 ? Colors.red : Colors.orange,
-              ),
+    // This creates a floating overlay like the more menu
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: IgnorePointer(
+        ignoring: true, // Allow clicks to pass through to underlying content
+        child: Center(
+          child: Container(
+            width: isSmallScreen ? 160 : 200,
+            height: isSmallScreen ? 160 : 200,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.75),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Circular progress indicator
+                SizedBox(
+                  width: isSmallScreen ? 120 : 160,
+                  height: isSmallScreen ? 120 : 160,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 12,
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      remaining <= 5 ? Colors.red : Colors.orange,
+                    ),
+                  ),
+                ),
+                // Center text
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      remaining.toString(),
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 34 : 50,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      "sec left",
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 10 : 15,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                remaining.toString(),
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(38, 50),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                "sec left",
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(12, 15),
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

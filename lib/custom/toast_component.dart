@@ -7,19 +7,17 @@ import 'package:audioplayers/audioplayers.dart';
 class ToastComponent {
   static final AudioPlayer _audioPlayer = AudioPlayer();
   
-  // Play sound based on toast type
-  // static Future<void> _playSound(String soundFile) async {
-  //   try {
-  //     await _audioPlayer.stop();
-  //     await _audioPlayer.play(AssetSource('sounds/$soundFile'));
-  //   } catch (e) {
-  //     // Silent fail - don't crash if sound can't play
-  //     print('Error playing toast sound: $e');
-  //   }
-  // }
+  static bool tickSoundPlaying = false;
+
   static Future<void> _playSound(String soundFile) async {
     try {
-      // Do NOT stop the main player if tick is playing
+
+      // DON'T play sound if tick sound is playing
+      if (tickSoundPlaying) {
+        print('🔇 Toast sound muted - tick sound is playing');
+        return;
+      }
+      
       // Use a separate player for toasts
       final toastPlayer = AudioPlayer();
       await toastPlayer.play(AssetSource('sounds/$soundFile'));
