@@ -156,6 +156,13 @@ class _ProductDetailsState extends State<ProductDetails>
       duration: const Duration(seconds: 10),
     );
 
+    // Preload the tick sound
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
+    _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 0); // Preload silently
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _audioPlayer.stop();
+    });
+
     // Replace the existing scroll listener in initState with this:
     _commentsScrollController.addListener(() {
       final maxScroll = _commentsScrollController.position.maxScrollExtent;
@@ -218,10 +225,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _scrollToBottom() {
-    // Only auto-scroll if user is at the bottom
-    if (_commentsScrollController.hasClients && _isAtBottom) {
+    // Only auto-scroll if user is at the bottom AND hasn't manually scrolled away
+    if (_commentsScrollController.hasClients && _isAtBottom && !_userInteractedWithComments) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        if (_commentsScrollController.hasClients && _isAtBottom) {
+        if (_commentsScrollController.hasClients && _isAtBottom && !_userInteractedWithComments) {
           _commentsScrollController.animateTo(
             _commentsScrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 300),
@@ -232,22 +239,28 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  void _forceScrollToBottomWithDelay() {
-    // Only force scroll if user hasn't interacted (scrolled away)
-    if (!_userInteractedWithComments) {
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        if (mounted && _commentsScrollController.hasClients) {
-          _commentsScrollController.animateTo(
-            _commentsScrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOut,
-          );
-          // After forced scroll, mark as at bottom
-          _isAtBottom = true;
-        }
+  _commentsScrollController.addListener(() {
+    final maxScroll = _commentsScrollController.position.maxScrollExtent;
+    final currentScroll = _commentsScrollController.position.pixels;
+    
+    // Check if user is at or near the bottom (within 10 pixels)
+    final isAtBottom = currentScroll >= maxScroll - 10;
+    
+    if (isAtBottom != _isAtBottom) {
+      setState(() {
+        _isAtBottom = isAtBottom;
       });
     }
-  }
+    
+    // If user scrolls away from bottom, mark as interacted
+    // Only set to true if they are significantly away from bottom
+    if (!isAtBottom && currentScroll < maxScroll - 50) {
+      _userInteractedWithComments = true;
+    } else if (isAtBottom) {
+      // If user scrolls back to bottom, allow auto-scroll again
+      _userInteractedWithComments = false;
+    }
+  });
 
   Future<void> _fetchComments() async {
     try {
@@ -1167,12 +1180,18 @@ class _ProductDetailsState extends State<ProductDetails>
       ToastComponent.tickSoundPlaying = true;
       print('✅ Tick sound STARTED (looping)');
 
+      // Stop any existing playback first
       await _audioPlayer.stop();
+      
+      // Play with loop mode
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
       );
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      
+      // Verify it's playing
+      print('🔊 Tick sound playing: ${await _audioPlayer.getCurrentPosition()}');
     } catch (e) {
       print('Tick sound error: $e');
       _isTickSoundPlaying = false;
@@ -1189,6 +1208,7 @@ class _ProductDetailsState extends State<ProductDetails>
     ToastComponent.tickSoundPlaying = false;
     try {
       await _audioPlayer.stop();
+      await _audioPlayer.setReleaseMode(ReleaseMode.release);
     } catch (e) {
       print('Stop tick error: $e');
     }
