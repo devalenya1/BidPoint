@@ -158,12 +158,11 @@ class _ProductDetailsState extends State<ProductDetails>
 
     // Preload the tick sound
     _audioPlayer.setReleaseMode(ReleaseMode.release);
-    _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 0); // Preload silently
+    _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 0);
     Future.delayed(const Duration(milliseconds: 100), () {
       _audioPlayer.stop();
     });
 
-    // Replace the existing scroll listener in initState with this:
     _commentsScrollController.addListener(() {
       final maxScroll = _commentsScrollController.position.maxScrollExtent;
       final currentScroll = _commentsScrollController.position.pixels;
@@ -178,15 +177,16 @@ class _ProductDetailsState extends State<ProductDetails>
       }
       
       // If user scrolls away from bottom, mark as interacted
-      if (!isAtBottom) {
+      // Only set to true if they are significantly away from bottom
+      if (!isAtBottom && currentScroll < maxScroll - 50) {
         _userInteractedWithComments = true;
-      } else {
+      } else if (isAtBottom) {
         // If user scrolls back to bottom, allow auto-scroll again
         _userInteractedWithComments = false;
       }
     });
     
-    // Remove the onPlayerComplete listener - we handle sound differently now
+    // ❌ DELETE the duplicate listener that starts at line 242
     
     _fetchAllData();
     _startPolling();
@@ -239,28 +239,7 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  _commentsScrollController.addListener(() {
-    final maxScroll = _commentsScrollController.position.maxScrollExtent;
-    final currentScroll = _commentsScrollController.position.pixels;
-    
-    // Check if user is at or near the bottom (within 10 pixels)
-    final isAtBottom = currentScroll >= maxScroll - 10;
-    
-    if (isAtBottom != _isAtBottom) {
-      setState(() {
-        _isAtBottom = isAtBottom;
-      });
-    }
-    
-    // If user scrolls away from bottom, mark as interacted
-    // Only set to true if they are significantly away from bottom
-    if (!isAtBottom && currentScroll < maxScroll - 50) {
-      _userInteractedWithComments = true;
-    } else if (isAtBottom) {
-      // If user scrolls back to bottom, allow auto-scroll again
-      _userInteractedWithComments = false;
-    }
-  });
+
 
   Future<void> _fetchComments() async {
     try {
