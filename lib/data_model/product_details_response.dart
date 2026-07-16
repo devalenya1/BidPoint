@@ -241,6 +241,8 @@ class DetailedProduct {
   // ============ END GETTERS AND SETTERS ============
 
   // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
+  int? get buy_now => buyNow;
+  String? get pay_link => payLink;
   String? get added_by => addedBy;
   int? get seller_id => sellerId;
   int? get shop_id => shopId;
@@ -276,92 +278,97 @@ class DetailedProduct {
   // ============ END SNAKE_CASE GETTERS ============
 
   factory DetailedProduct.fromJson(Map<String, dynamic> json) => DetailedProduct(
-        id: json["id"],
-        name: json["name"],
-        addedBy: json["added_by"],
-        sellerId: json["seller_id"],
-        shopId: json["shop_id"],
-        shopSlug: json["shop_slug"],
-        shopName: json["shop_name"],
-        shopLogo: json["shop_logo"],
-        estShippingTime: json["est_shipping_time"],
-        photos: json["photos"] != null
-            ? List<Photo>.from(json["photos"].map((x) => Photo.fromJson(x)))
-            : [],
-        thumbnailImage: json["thumbnail_image"],
-        tags: json["tags"] != null
-            ? List<String>.from(json["tags"].map((x) => x))
-            : [],
-        // priceHighLow: json["price_high_low"],
-        choiceOptions: json["choice_options"] != null
-            ? List<ChoiceOption>.from(
-                json["choice_options"].map((x) => ChoiceOption.fromJson(x)))
-            : [],
-        colors: json["colors"] != null
-            ? List<dynamic>.from(json["colors"].map((x) => x))
-            : [],
-        myStatus: json["my_status"],
-        userHasBid: json['user_has_bid'] ?? false,
-        hasDiscount: json["has_discount"],
-        discount: json["discount"],
-        strokedPrice: json["stroked_price"],
-        mainPrice: json["main_price"],
-        calculablePrice: json["calculable_price"],
-        currencySymbol: json["currency_symbol"],
-        currentStock: json["current_stock"],
-        unit: json["unit"],
-        rating: json["rating"]?.toInt(),
-        ratingCount: json["rating_count"],
-        earnPoint: json["earn_point"]?.toInt(),
-        description: json["description"] == null || json["description"] == ""
-            ? "No Description is available"
-            : json['description'],
-        downloads: json["downloads"],
-        videoLink: json["video_link"],
-        link: json["link"],
-        brand: json["brand"] != null ? Brand.fromJson(json["brand"]) : null,
-        wholesale: json["wholesale"] != null
-            ? List<Wholesale>.from(
-                json["wholesale"].map((x) => Wholesale.fromJson(x)))
-            : [],
-        // Auction Related
-        auctionEndDate: json["auction_end_date"],
-        auctionStartDate: json["auction_start_date"],
-        startingBid: json["starting_bid"],
-        minBidPrice: json["min_bid_price"],
-        highestBid: json["highest_bid"],
-        swipeRight: json["swipe_right"],
-        swipeLeft: json["swipe_left"],
-        pointPerBid: json["point_per_bid"],
-        pointPerBidCustom: json["point_per_bid_custom"],
-        pointMultiplierSystem: json["point_multiplier_system"],
-        auctionProduct: json["auction_product"],
-        videos: json["videos"] != null
-            ? List<Video>.from(json["videos"].map((x) => Video.fromJson(x)))
-            : [],
-        // Additional fields from poll data
-        totalBids: json["total_bids"],
-        lastBidderName: json["last_bidder_name"],
-        isInWishlist: json["is_in_wishlist"] ?? false,
-        reviewsCount: json["reviews_count"],
-        highestBidFormatted: json["highest_bid_formatted"],
-        lastBidAmount: json["last_bid_amount"]?.toDouble(),
-        isEndingSoon: json["is_ending_soon"],
-        remainingSeconds: json["remaining_seconds"],
-        auctionEnded: json["auction_ended"],
-        winner: json["winner"],
-        comments: json["comments"] != null
-            ? List<Map<String, dynamic>>.from(json["comments"])
-            : [],
-        reviews: json["reviews"] != null
-            ? List<Map<String, dynamic>>.from(json["reviews"])
-            : [],
-        bidHistory: json["bid_history"] != null
-            ? List<Map<String, dynamic>>.from(json["bid_history"])
-            : [],
-        isAuctionUpcoming: json["is_auction_upcoming"] ?? false,
-        upcomingStatus: json["upcoming_status"], // NEW: Parse upcoming_status from JSON
-      );
+    id: json["id"],
+    name: json["name"],
+    addedBy: json["added_by"],
+    sellerId: json["seller_id"],
+    shopId: json["shop_id"],
+    shopSlug: json["shop_slug"],
+    shopName: json["shop_name"],
+    shopLogo: json["shop_logo"],
+    estShippingTime: json["est_shipping_time"],
+    photos: json["photos"] != null
+        ? List<Photo>.from(json["photos"].map((x) => Photo.fromJson(x)))
+        : [],
+    thumbnailImage: json["thumbnail_image"],
+    tags: json["tags"] != null
+        ? List<String>.from(json["tags"].map((x) => x))
+        : [],
+    choiceOptions: json["choice_options"] != null
+        ? List<ChoiceOption>.from(
+            json["choice_options"].map((x) => ChoiceOption.fromJson(x)))
+        : [],
+    colors: json["colors"] != null
+        ? List<dynamic>.from(json["colors"].map((x) => x))
+        : [],
+    myStatus: json["my_status"],
+    userHasBid: json['user_has_bid'] ?? false,
+    hasDiscount: json["has_discount"],
+    discount: json["discount"],
+    strokedPrice: json["stroked_price"],
+    mainPrice: json["main_price"],
+    calculablePrice: json["calculable_price"],
+    currencySymbol: json["currency_symbol"],
+    currentStock: json["current_stock"],
+    unit: json["unit"],
+    rating: json["rating"]?.toInt(),
+    ratingCount: json["rating_count"],
+    earnPoint: json["earn_point"]?.toInt(),
+    description: json["description"] == null || json["description"] == ""
+        ? "No Description is available"
+        : json['description'],
+    downloads: json["downloads"],
+    videoLink: json["video_link"],
+    link: json["link"],
+    brand: json["brand"] != null ? Brand.fromJson(json["brand"]) : null,
+    wholesale: json["wholesale"] != null
+        ? List<Wholesale>.from(
+            json["wholesale"].map((x) => Wholesale.fromJson(x)))
+        : [],
+    
+    // Auction Related
+    auctionEndDate: json["auction_end_date"],
+    auctionStartDate: json["auction_start_date"],
+    startingBid: json["starting_bid"],
+    minBidPrice: json["min_bid_price"],
+    highestBid: json["highest_bid"],
+    swipeRight: json["swipe_right"],
+    swipeLeft: json["swipe_left"],
+    pointPerBid: json["point_per_bid"],
+    pointPerBidCustom: json["point_per_bid_custom"],
+    pointMultiplierSystem: json["point_multiplier_system"],
+    auctionProduct: json["auction_product"],
+    videos: json["videos"] != null
+        ? List<Video>.from(json["videos"].map((x) => Video.fromJson(x)))
+        : [],
+    
+    // Additional fields from poll data
+    totalBids: json["total_bids"],
+    lastBidderName: json["last_bidder_name"],
+    isInWishlist: json["is_in_wishlist"] ?? false,
+    reviewsCount: json["reviews_count"],
+    highestBidFormatted: json["highest_bid_formatted"],
+    lastBidAmount: json["last_bid_amount"]?.toDouble(),
+    isEndingSoon: json["is_ending_soon"],
+    remainingSeconds: json["remaining_seconds"],
+    auctionEnded: json["auction_ended"],
+    winner: json["winner"],
+    comments: json["comments"] != null
+        ? List<Map<String, dynamic>>.from(json["comments"])
+        : [],
+    reviews: json["reviews"] != null
+        ? List<Map<String, dynamic>>.from(json["reviews"])
+        : [],
+    bidHistory: json["bid_history"] != null
+        ? List<Map<String, dynamic>>.from(json["bid_history"])
+        : [],
+    isAuctionUpcoming: json["is_auction_upcoming"] ?? false,
+    upcomingStatus: json["upcoming_status"],
+    
+    // ✅ ADD THESE TWO LINES:
+    buyNow: json["buy_now"] ?? 0,
+    payLink: json["pay_link"] ?? '',
+  );
 
   Map<String, dynamic> toJson() => {
         "id": id,
@@ -434,6 +441,8 @@ class DetailedProduct {
         "bid_history": bidHistory,
         "is_auction_upcoming": _isAuctionUpcoming,
         "upcoming_status": _upcomingStatus, // NEW: Include in JSON
+        "buy_now": buyNow ?? 0,
+        "pay_link": payLink ?? '',
       };
 
   // ============ HELPER METHODS ============

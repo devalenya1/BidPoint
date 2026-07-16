@@ -14,8 +14,8 @@ import '../data_model/user_info_response.dart' as model;
 import '../screens/product_details.dart'; // Import product details page
 import '../screens/auction_purchase_history.dart'; // Import activity page
 import '../screens/messenger_list.dart'; // Import messenger list
-import '../screens/point_history_page.dart'; // Import point history
-import 'package:active_ecommerce_flutter/screens/point_page.dart';
+import '../screens/points_history_page.dart';
+import 'package:active_ecommerce_flutter/screens/points_page.dart';
 import 'package:active_ecommerce_flutter/screens/activity_page.dart';
 import '../screens/withdrawal_page.dart'; // Import withdrawal history page
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
@@ -204,7 +204,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
 
     // Update unread count
-    if (_userInfo != null && _userInfo!.unreadNotificationsCount > 0) {
+    if (_userInfo != null && (_userInfo!.unreadNotificationsCount ?? 0) > 0) {
       _userInfo!.unreadNotificationsCount = (_userInfo!.unreadNotificationsCount ?? 0) - 1;
       unread_notifications_count.$ = _userInfo!.unreadNotificationsCount;
       unread_notifications_count.save();
@@ -219,7 +219,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'auction_lose':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const ActivityPage()),
+          MaterialPageRoute(builder: (context) => ActivityPage()),
         );
         break;
 
@@ -247,7 +247,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'point_deduction':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PointsHistoryPage()),
+          MaterialPageRoute(builder: (context) => PointsHistoryPage()),
         );
         break;
 
@@ -257,7 +257,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'new_chat':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const MessengerList()),
+          MaterialPageRoute(builder: (context) => MessengerList()),
         );
         break;
 
@@ -273,7 +273,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         // Navigate to Point History
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PointsPage()),
+          MaterialPageRoute(builder: (context) => PointsPage()),
         );
         break;
 
@@ -286,7 +286,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         // Navigate to Point History
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PointsPage()),
+          MaterialPageRoute(builder: (context) => PointsPage()),
         );
         break;
 
@@ -299,7 +299,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         // Navigate to Withdrawal History
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const WithdrawalPage()),
+          MaterialPageRoute(builder: (context) => WithdrawalPage()),
         );
         break;
 
