@@ -11,6 +11,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 // Import the data model with a prefix to avoid naming conflict
 import '../data_model/user_info_response.dart' as model;
+import '../screens/product_details.dart'; // Import product details page
+import '../screens/auction_purchase_history.dart'; // Import activity page
+import '../screens/messenger_list.dart'; // Import messenger list
+import '../screens/point_history.dart'; // Import point history
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -40,10 +44,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   // ============ CACHED LISTS FOR INFINITE SCROLL ============
   List<model.Notification> _allNotifications = [];
-  // ❌ COMMENTED OUT - These are no longer needed for counts
-  // List<model.Notification> _auctionNotifications = [];
-  // List<model.Notification> _paymentNotifications = [];
-  // List<model.Notification> _systemNotifications = [];
 
   // Track if initial load is complete for each tab
   bool _initialLoadComplete = false;
@@ -74,10 +74,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
           _currentNotificationPage = 1;
           _hasMoreNotifications = true;
           _allNotifications.clear();
-          // ❌ COMMENTED OUT
-          // _auctionNotifications.clear();
-          // _paymentNotifications.clear();
-          // _systemNotifications.clear();
         });
       }
 
@@ -111,14 +107,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (loadMore) {
             // Append to existing lists
             _allNotifications.addAll(newNotifications);
-            // ❌ COMMENTED OUT - No longer filtering for counts
-            // _updateFilteredLists();
           } else {
             // Replace entire user info and lists
             _userInfo = newUserInfo;
             _allNotifications = newNotifications;
-            // ❌ COMMENTED OUT - No longer filtering for counts
-            // _updateFilteredLists();
 
             // Update global unread count
             unread_notifications_count.$ = _userInfo?.unreadNotificationsCount ?? 0;
@@ -131,7 +123,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
         });
 
-        // ✅ FIX: Mark all as read in background (only on first load, after data is loaded)
+        // Mark all as read in background (only on first load, after data is loaded)
         if (!loadMore && _allNotifications.isNotEmpty) {
           _markAllAsReadInBackground();
         }
@@ -139,10 +131,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
         if (!loadMore) {
           setState(() {
             _allNotifications = [];
-            // ❌ COMMENTED OUT
-            // _auctionNotifications = [];
-            // _paymentNotifications = [];
-            // _systemNotifications = [];
           });
         }
       }
@@ -158,41 +146,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       });
     }
   }
-
-  // ❌ COMMENTED OUT - No longer needed
-  // void _updateFilteredLists() {
-  //   const auctionTypes = [
-  //     'outbid',
-  //     'newbid',
-  //     'point_deduction',
-  //     'bid_placed',
-  //     'auction_win',
-  //     'auction_lose',
-  //     'auction_ending'
-  //   ];
-  // 
-  //   const paymentTypes = [
-  //     'payment',
-  //     'payment_success',
-  //     'payment_failed',
-  //     'package_purchase',
-  //     'withdrawal',
-  //     'withdrawal_success',
-  //     'withdrawal_failed'
-  //   ];
-  // 
-  //   _auctionNotifications = _allNotifications.where((n) {
-  //     return auctionTypes.contains(n.type);
-  //   }).toList();
-  // 
-  //   _paymentNotifications = _allNotifications.where((n) {
-  //     return paymentTypes.contains(n.type);
-  //   }).toList();
-  // 
-  //   _systemNotifications = _allNotifications.where((n) {
-  //     return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
-  //   }).toList();
-  // }
 
   // ============ LOAD MORE NOTIFICATIONS (INFINITE SCROLL) ============
   Future<void> _loadMoreNotifications() async {
@@ -229,6 +182,88 @@ class _NotificationsPageState extends State<NotificationsPage> {
       }
     } catch (e) {
       print('❌ Failed to mark all notifications as read: $e');
+    }
+  }
+
+  // ============================================================
+  // ✅ NOTIFICATION CLICK HANDLER - Navigate to appropriate page
+  // ============================================================
+  void _onNotificationTap(model.Notification notification) {
+    final type = notification.type ?? '';
+    final slug = notification.slug; // Now from the notification itself
+    final productId = notification.productId; // Also available
+    final message = notification.message ?? '';
+
+    // Mark notification as read locally
+    setState(() {
+      notification.readAt = DateTime.now();
+    });
+
+    // Update unread count
+    if (_userInfo != null && _userInfo!.unreadNotificationsCount > 0) {
+      _userInfo!.unreadNotificationsCount = (_userInfo!.unreadNotificationsCount ?? 0) - 1;
+      unread_notifications_count.$ = _userInfo!.unreadNotificationsCount;
+      unread_notifications_count.save();
+    }
+
+    // Navigate based on notification type
+    switch (type) {
+      case 'auction_win':
+      case 'auction_lose':
+        // Activity page - show auction history
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AuctionPurchaseHistory()),
+        );
+        break;
+
+      case 'newbid':
+      case 'outbid':
+      case 'bid_placed':
+        // Product details page - requires slug
+        if (slug != null && slug.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetails(slug: slug),
+            ),
+          );
+        } else {
+          ToastComponent.showWarning('Product details not available');
+        }
+        break;
+
+      case 'point_deduction':
+        // Point history page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PointHistory()),
+        );
+        break;
+
+      case 'new_chat':
+        // Messenger list page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MessengerList()),
+        );
+        break;
+
+      case 'payment':
+      case 'payment_success':
+      case 'payment_failed':
+      case 'package_purchase':
+      case 'withdrawal':
+      case 'withdrawal_success':
+      case 'withdrawal_failed':
+        // Payment related - could go to wallet or payment history
+        ToastComponent.showInfo('Payment notification: $message');
+        break;
+
+      default:
+        // Default: show message in toast
+        ToastComponent.showInfo(message);
+        break;
     }
   }
 
@@ -342,7 +377,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   // ============ GET FILTERED NOTIFICATIONS ============
   List<model.Notification> _getCurrentNotifications() {
-    // ✅ Use type filtering to show correct notifications
     final auctionTypes = [
       'outbid', 'newbid', 'point_deduction', 'bid_placed',
       'auction_win', 'auction_lose', 'auction_ending'
@@ -506,10 +540,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // ✅ UPDATED: Tabs using API counts from _userInfo ONLY
+  // Tabs using API counts from _userInfo
   // ============================================================
   Widget _buildTabs() {
-    // ✅ ONLY USE API COUNTS - DO NOT COUNT FROM LOCAL LISTS
     final allCount = _userInfo?.allNotificationCount ?? 0;
     final auctionCount = _userInfo?.auctionNotificationCount ?? 0;
     final paymentCount = _userInfo?.paymentNotificationCount ?? 0;
@@ -560,96 +593,99 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // ✅ Notification Item with "New" Badge based on readAt
+  // Notification Item with Click Handler
   // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
     
-    // ✅ Check readAt directly - if null, it's unread (NEW)
+    // Check readAt directly - if null, it's unread (NEW)
     final bool isUnread = notification.readAt == null;
 
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: const Color(0xFFF0F0F0),
-            width: 1.w,
+    return GestureDetector(
+      onTap: () => _onNotificationTap(notification),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: const Color(0xFFF0F0F0),
+              width: 1.w,
+            ),
           ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Notification Icon
-          Container(
-            width: 44.w,
-            height: 44.w,
-            decoration: BoxDecoration(
-              color: _getIconBackgroundColor(type),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              _getIconData(type),
-              size: 20.sp,
-              color: _getIconColor(type),
-            ),
-          ),
-          SizedBox(width: 14.w),
-
-          // Notification Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification.title ?? '',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  notification.message ?? '',
-                  style: TextStyle(
-                    fontSize: 13.6.sp,
-                    color: const Color(0xFF666666),
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  notification.createdAt != null
-                      ? _formatDate(notification.createdAt!)
-                      : '',
-                  style: TextStyle(
-                    fontSize: 11.2.sp,
-                    color: const Color(0xFF999999),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // "NEW" BADGE - Shows when readAt is null (unread)
-          if (isUnread)
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Notification Icon
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              width: 44.w,
+              height: 44.w,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30),
-                borderRadius: BorderRadius.circular(20.r),
+                color: _getIconBackgroundColor(type),
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                AppLocalizations.of(context)!.new_ucf,
-                style: TextStyle(
-                  fontSize: 10.4.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+              child: Icon(
+                _getIconData(type),
+                size: 20.sp,
+                color: _getIconColor(type),
               ),
             ),
-        ],
+            SizedBox(width: 14.w),
+
+            // Notification Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notification.title ?? '',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    notification.message ?? '',
+                    style: TextStyle(
+                      fontSize: 13.6.sp,
+                      color: const Color(0xFF666666),
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    notification.createdAt != null
+                        ? _formatDate(notification.createdAt!)
+                        : '',
+                    style: TextStyle(
+                      fontSize: 11.2.sp,
+                      color: const Color(0xFF999999),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // "NEW" BADGE - Shows when readAt is null (unread)
+            if (isUnread)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF3B30),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.new_ucf,
+                  style: TextStyle(
+                    fontSize: 10.4.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

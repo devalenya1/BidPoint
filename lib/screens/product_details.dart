@@ -642,7 +642,7 @@ class _ProductDetailsState extends State<ProductDetails>
         context,
         MaterialPageRoute(
           builder: (context) => CommonWebviewScreen(
-            page_name: AppLocalizations.of(context)!.buy_now,
+            page_name: AppLocalizations.of(context)!.buy_now_ucf,
             url: _payLink,
           ),
         ),

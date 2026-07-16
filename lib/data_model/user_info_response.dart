@@ -466,6 +466,12 @@ class Notification {
   dynamic? readAt;
   DateTime? createdAt;
   bool? isRead;
+  
+  // =============================================
+  // ✅ ADDED: Product ID and Slug for navigation
+  // =============================================
+  int? productId;
+  String? slug;
 
   Notification({
     this.id,
@@ -475,6 +481,8 @@ class Notification {
     this.readAt,
     this.createdAt,
     this.isRead,
+    this.productId,
+    this.slug,
   });
 
   factory Notification.fromJson(Map<String, dynamic> json) => Notification(
@@ -485,6 +493,8 @@ class Notification {
     readAt: json["read_at"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     isRead: json["read_at"] != null,
+    productId: json["product_id"] ?? 0,
+    slug: json["slug"] ?? "",
   );
 
   Map<String, dynamic> toJson() => {
@@ -495,6 +505,8 @@ class Notification {
     "read_at": readAt,
     "created_at": createdAt?.toIso8601String(),
     "is_read": isRead,
+    "product_id": productId,
+    "slug": slug,
   };
 }
 
