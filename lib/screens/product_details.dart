@@ -158,7 +158,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     // Preload the tick sound
     _audioPlayer.setReleaseMode(ReleaseMode.release);
-    _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 0);
+    _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 10);
     Future.delayed(const Duration(milliseconds: 100), () {
       _audioPlayer.stop();
     });
@@ -169,7 +169,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _startPolling();
     _fetchUserInfo(); 
     
-    _audioPlayer.setReleaseMode(ReleaseMode.release);
+    // _audioPlayer.setReleaseMode(ReleaseMode.release);
     _setupLoginStateListener();
     
     _blinkController = AnimationController(
@@ -422,7 +422,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopTickSound(); // Clean start
+    _stopTickSound(); // Always clean
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -444,10 +444,11 @@ class _ProductDetailsState extends State<ProductDetails>
       final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
 
       if (shouldBeEndingSoon != _isEndingSoon) {
+        print('🔄 Ending soon changed: $shouldBeEndingSoon');
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          _playTickSound();
+          _playTickSound();  // ← This should now fire
           _countdownCircleController.repeat(period: const Duration(seconds: 1));
         } else {
           _stopTickSound();
@@ -1139,27 +1140,35 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND - TICK SOUND ONLY (FIXED)
+  // SOUND - TICK SOUND (FINAL ROBUST VERSION)
   // ============================================
 
   void _playTickSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || _tickSoundPlayedThisSession) return;
+    if (!_soundEnabled || _isTickSoundPlaying || _tickSoundPlayedThisSession) {
+      print('⏭️ Tick sound skipped (already playing or disabled)');
+      return;
+    }
 
     try {
       _isTickSoundPlaying = true;
       _tickSoundPlayedThisSession = true;
 
-      print('🛎️ Tick sound STARTED');
+      print('🛎️ TICK SOUND STARTED - Ending Soon Phase!');
 
       await _audioPlayer.stop();
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
+        volume: 0.85,
       );
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+
+      // Notify ToastComponent
+      ToastComponent.tickSoundPlaying = true;
     } catch (e) {
-      print('Tick sound error: $e');
+      print('❌ Tick sound error: $e');
       _isTickSoundPlaying = false;
+      _tickSoundPlayedThisSession = false;
     }
   }
 
@@ -1169,6 +1178,7 @@ class _ProductDetailsState extends State<ProductDetails>
     print('⏹️ Tick sound STOPPED');
     _isTickSoundPlaying = false;
     _tickSoundPlayedThisSession = false;
+    ToastComponent.tickSoundPlaying = false;
 
     try {
       await _audioPlayer.stop();
