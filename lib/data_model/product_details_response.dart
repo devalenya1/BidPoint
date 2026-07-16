@@ -241,8 +241,8 @@ class DetailedProduct {
   // ============ END GETTERS AND SETTERS ============
 
   // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
-  int? get buy_now => buyNow;
-  String? get pay_link => payLink;
+  // int? get buy_now => buyNow;
+  // String? get pay_link => payLink;
   String? get added_by => addedBy;
   int? get seller_id => sellerId;
   int? get shop_id => shopId;

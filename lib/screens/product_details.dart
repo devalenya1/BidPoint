@@ -3257,7 +3257,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          '🚀 ${AppLocalizations.of(context)!.buy_now}',
+                                          '🚀 ${AppLocalizations.of(context)!.buy_now_ucf}',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: _getResponsiveFontSize(12, 16),
@@ -3297,7 +3297,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             ),
                                           )
                                         : Text(
-                                            AppLocalizations.of(context)!.buy_now,
+                                            AppLocalizations.of(context)!.buy_now_ucf,
                                             style: TextStyle(
                                               color: Color(0xFF667eea),
                                               fontSize: _getResponsiveFontSize(10, 14),
