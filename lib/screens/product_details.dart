@@ -100,7 +100,6 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
   String _auctionStatus = "live";
-  bool _bellSoundPlayed = false;
   
   // Bid Data
   double _currentHighestBid = 0;
@@ -411,7 +410,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // ENDING COUNTDOWN TIMER - UPDATED
+  // ENDING COUNTDOWN TIMER - FIXED
   // ============================================
 
   void _startCountdown(DateTime endTime) {
@@ -1130,18 +1129,18 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND - BELL SOUND (Plays once when ending soon starts)
+  // SOUND - BELL SOUND (FIXED - Plays once per ending phase)
   // ============================================
 
   void _playBellSound() async {
-    if (!_soundEnabled || _isBellSoundPlaying || _bellSoundPlayed) {
-      print('⏭️ Bell sound skipped (already playing or disabled)');
+    // Only prevent if currently playing
+    if (!_soundEnabled || _isBellSoundPlaying) {
+      print('⏭️ Bell sound skipped (disabled or already playing)');
       return;
     }
 
     try {
       _isBellSoundPlaying = true;
-      _bellSoundPlayed = true;
 
       print('🛎️ BELL SOUND STARTED - Ending Soon Phase!');
 
@@ -1157,7 +1156,7 @@ class _ProductDetailsState extends State<ProductDetails>
       // Notify ToastComponent that bell is playing
       ToastComponent.tickSoundPlaying = true;
       
-      // Reset flags after bell finishes (approx 1.5 seconds)
+      // Reset flags after bell finishes (approx 1.8 seconds)
       Future.delayed(const Duration(milliseconds: 1800), () {
         _isBellSoundPlaying = false;
         ToastComponent.tickSoundPlaying = false;
@@ -1168,7 +1167,6 @@ class _ProductDetailsState extends State<ProductDetails>
     } catch (e) {
       print('❌ Bell sound error: $e');
       _isBellSoundPlaying = false;
-      _bellSoundPlayed = false;
       ToastComponent.tickSoundPlaying = false;
     }
   }
@@ -1180,7 +1178,6 @@ class _ProductDetailsState extends State<ProductDetails>
       print('Stop bell error: $e');
     }
     _isBellSoundPlaying = false;
-    _bellSoundPlayed = false;
     ToastComponent.tickSoundPlaying = false;
   }
 
