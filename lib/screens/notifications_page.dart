@@ -14,7 +14,10 @@ import '../data_model/user_info_response.dart' as model;
 import '../screens/product_details.dart'; // Import product details page
 import '../screens/auction_purchase_history.dart'; // Import activity page
 import '../screens/messenger_list.dart'; // Import messenger list
-import '../screens/point_history.dart'; // Import point history
+import '../screens/point_history_page.dart'; // Import point history
+import 'package:active_ecommerce_flutter/screens/point_page.dart';
+import '../screens/withdrawal_page.dart'; // Import withdrawal history page
+import 'package:active_ecommerce_flutter/screens/product_details.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -190,8 +193,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   // ============================================================
   void _onNotificationTap(model.Notification notification) {
     final type = notification.type ?? '';
-    final slug = notification.slug; // Now from the notification itself
-    final productId = notification.productId; // Also available
+    final slug = notification.slug;
+    final productId = notification.productId;
     final message = notification.message ?? '';
 
     // Mark notification as read locally
@@ -208,19 +211,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     // Navigate based on notification type
     switch (type) {
+      // ============================================
+      // AUCTION WIN/LOSE → Activity Page
+      // ============================================
       case 'auction_win':
       case 'auction_lose':
-        // Activity page - show auction history
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const AuctionPurchaseHistory()),
+          MaterialPageRoute(builder: (context) => const ActivityPage()),
         );
         break;
 
+      // ============================================
+      // BID RELATED → Product Details Page
+      // ============================================
       case 'newbid':
       case 'outbid':
       case 'bid_placed':
-        // Product details page - requires slug
         if (slug != null && slug.isNotEmpty) {
           Navigator.push(
             context,
@@ -233,35 +240,72 @@ class _NotificationsPageState extends State<NotificationsPage> {
         }
         break;
 
+      // ============================================
+      // POINT DEDUCTION → Point History Page
+      // ============================================
       case 'point_deduction':
-        // Point history page
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PointHistory()),
+          MaterialPageRoute(builder: (context) => const PointsHistoryPage()),
         );
         break;
 
+      // ============================================
+      // CHAT NOTIFICATION → Messenger List Page
+      // ============================================
       case 'new_chat':
-        // Messenger list page
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const MessengerList()),
         );
         break;
 
+      // ============================================
+      // PAYMENT NOTIFICATIONS
+      // ============================================
       case 'payment':
+        // Just show toast
+        ToastComponent.showInfo(message);
+        break;
+
       case 'payment_success':
+        // Navigate to Point History
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PointsPage()),
+        );
+        break;
+
       case 'payment_failed':
+        // Just show toast
+        ToastComponent.showError('Payment failed: $message');
+        break;
+
       case 'package_purchase':
+        // Navigate to Point History
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PointsPage()),
+        );
+        break;
+
+      // ============================================
+      // WITHDRAWAL NOTIFICATIONS
+      // ============================================
       case 'withdrawal':
       case 'withdrawal_success':
       case 'withdrawal_failed':
-        // Payment related - could go to wallet or payment history
-        ToastComponent.showInfo('Payment notification: $message');
+        // Navigate to Withdrawal History
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const WithdrawalPage()),
+        );
         break;
 
+      // ============================================
+      // DEFAULT
+      // ============================================
       default:
-        // Default: show message in toast
         ToastComponent.showInfo(message);
         break;
     }
