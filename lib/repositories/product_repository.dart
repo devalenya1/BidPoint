@@ -271,6 +271,46 @@ class ProductRepository {
     return productMiniResponseFromJson(response.body);
   }
 
+  // ============================================
+  // TRACK BUY NOW CLICK
+  // ============================================
+  Future<Map<String, dynamic>> trackBuyNowClick(int productId) async {
+    String url = "${AppConfig.BASE_URL}/buy-now/track";
+    
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: json.encode({
+          'product_id': productId,
+          'user_id': int.tryParse(user_id.$ ?? '0') ?? 0,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to track buy now click',
+          'status': response.statusCode,
+        };
+      }
+      
+    } catch (e) {
+      print("Error in trackBuyNowClick: $e");
+      return {
+        'success': false,
+        'message': 'Network error occurred',
+        'status': 500,
+      };
+    }
+  }
+
   // ============ AUCTION METHODS ============
   
   Future<ProductMiniResponse> getHotAuctions({int page = 1}) async {

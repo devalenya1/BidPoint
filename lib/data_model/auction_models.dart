@@ -381,8 +381,10 @@ class PollDataResponse {
   double? lastBidAmount;
   bool? isAuctionUpcoming;
   String? upcomingStatus;
-  bool? myStatus; // ADD THIS FIELD
+  bool? myStatus;
   bool? userHasBid;
+  int? buyNow;  // ADDED: 0 or 1
+  String? payLink;  // ADDED: payment link or empty
   Winner? winner;
   List<Comment>? comments;
   List<Review>? reviews;
@@ -407,8 +409,10 @@ class PollDataResponse {
     this.lastBidAmount,
     this.isAuctionUpcoming,
     this.upcomingStatus,
-    this.myStatus, // ADD THIS
+    this.myStatus,
     this.userHasBid,
+    this.buyNow,  // ADDED
+    this.payLink,  // ADDED
     this.winner,
     this.comments,
     this.reviews,
@@ -439,7 +443,9 @@ class PollDataResponse {
       isAuctionUpcoming: data['is_auction_upcoming'] ?? false,
       upcomingStatus: data['upcoming_status'],
       userHasBid: json['user_has_bid'] ?? false,
-      myStatus: data['my_status'], // ADD THIS - default to false if null
+      myStatus: data['my_status'],
+      buyNow: data['buy_now'],  // ADDED: handles 0 or 1
+      payLink: data['pay_link'],  // ADDED: handles link or empty
       winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
       comments: data['comments'] != null 
           ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))
@@ -472,8 +478,10 @@ class PollDataResponse {
     'last_bid_amount': lastBidAmount,
     'is_auction_upcoming': isAuctionUpcoming,
     'upcoming_status': upcomingStatus,
-    'my_status': myStatus, // ADD THIS
+    'my_status': myStatus,
     'user_has_bid': userHasBid,
+    'buy_now': buyNow,  // ADDED
+    'pay_link': payLink,  // ADDED
     'winner': winner?.toJson(),
     'comments': comments?.map((x) => x.toJson()).toList(),
     'reviews': reviews?.map((x) => x.toJson()).toList(),
@@ -491,7 +499,9 @@ class PollDataResponse {
   int? get reviews_count => reviewsCount;
   bool? get is_in_wishlist => isInWishlist;
   String? get upcoming_status => upcomingStatus;
-  bool? get my_status => myStatus; // ADD SNAKE_CASE GETTER
+  bool? get my_status => myStatus;
+  int? get buy_now => buyNow;  // ADDED SNAKE_CASE GETTER
+  String? get pay_link => payLink;  // ADDED SNAKE_CASE GETTER
   
   // ============ HELPER METHODS ============
   bool get isAuctionEnded => auctionEnded ?? false;
@@ -507,7 +517,9 @@ class PollDataResponse {
   bool get isUpcoming => upcomingStatus == 'Upcoming';
   bool get isLive => upcomingStatus == 'Live' || upcomingStatus == null;
   bool get isEnded => upcomingStatus == 'Ended';
-  bool get isUserWinning => myStatus ?? false; // ADD HELPER - returns true if user is winning
+  bool get isUserWinning => myStatus ?? false;
+  bool get isBuyNowAvailable => buyNow == 1;  // ADDED HELPER
+  bool get hasPaymentLink => payLink != null && payLink!.isNotEmpty;  // ADDED HELPER
 }
 
 // ============================================

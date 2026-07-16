@@ -117,6 +117,11 @@ class _ProductDetailsState extends State<ProductDetails>
   // Winner Data
   Winner? _winnerData;
 
+  // Buy Now Data
+  int _buyNow = 0;
+  String _payLink = '';
+  bool _isBuyNowLoading = false;
+
   // Sound
   bool _soundEnabled = true;
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -181,11 +186,9 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    // _stopBellSound();
     ToastComponent.tickSoundPlaying = false;
     _audioPlayer.stop();
     _audioPlayer.dispose();
-    // _bellPlayer.stop();
     _bellPlayer.dispose();
     _commentsScrollController.dispose();
     super.dispose();
@@ -207,7 +210,6 @@ class _ProductDetailsState extends State<ProductDetails>
       setState(() => _isAtBottom = isAtBottom);
     }
 
-    // Only mark as interacted if user scrolled UP significantly
     if (!isAtBottom && currentScroll < maxScroll - 80) {
       _userInteractedWithComments = true;
     } else if (isAtBottom) {
@@ -215,7 +217,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // Improved scroll to bottom - only when appropriate
   void _scrollToBottom() {
     if (_commentsScrollController.hasClients && 
         _isAtBottom && 
@@ -235,7 +236,6 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true && response.comments != null) {
         setState(() {
           _comments = response.comments!.reversed.toList();
-          // Reset for manual fetch
           _isAtBottom = true;
           _userInteractedWithComments = false;
         });
@@ -312,6 +312,10 @@ class _ProductDetailsState extends State<ProductDetails>
 
         _myStatus = _product!.myStatus;
         _userHasBid = _product!.userHasBid ?? false;
+
+        // Get Buy Now data
+        _buyNow = _product!.buyNow ?? 0;
+        _payLink = _product!.payLink ?? '';
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
@@ -411,12 +415,11 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // ENDING COUNTDOWN TIMER - UPDATED
+  // ENDING COUNTDOWN TIMER - Bell plays when ending soon starts
   // ============================================
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    // _stopBellSound();
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -424,11 +427,11 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
-        // _stopBellSound();
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
+          _bellSoundPlayed = false;
         });
         _pollData();
         return;
@@ -445,7 +448,6 @@ class _ProductDetailsState extends State<ProductDetails>
           _playBellSound();
           _countdownCircleController.repeat(period: const Duration(seconds: 1));
         } else {
-          // _stopBellSound();
           _countdownCircleController.stop();
         }
       }
@@ -481,7 +483,6 @@ class _ProductDetailsState extends State<ProductDetails>
           setState(() { _currentHighestBid = response.highestBid!; });
           
           if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
-            // SOUND REMOVED
             ToastComponent.showInfo(
               '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
             );
@@ -501,6 +502,14 @@ class _ProductDetailsState extends State<ProductDetails>
         }
         if (response.pointPerBidCustom != null) {
           setState(() { _pointPerBidCustom = response.pointPerBidCustom!; });
+        }
+
+        // Update Buy Now data from poll
+        if (response.buyNow != null) {
+          setState(() { _buyNow = response.buyNow!; });
+        }
+        if (response.payLink != null) {
+          setState(() { _payLink = response.payLink!; });
         }
 
         _minNextBidNow = _currentHighestBid + 0.01;
@@ -548,10 +557,10 @@ class _ProductDetailsState extends State<ProductDetails>
             _auctionStatus = "ended";
             _timeLeft = Duration.zero;
             _isEndingSoon = false;
+            _bellSoundPlayed = false;
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
-          // _stopBellSound();
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -600,6 +609,51 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       print('Polling error: $e');
+    }
+  }
+
+  // ============================================
+  // BUY NOW ACTION
+  // ============================================
+
+  void _onBuyNowPressed() async {
+    if (!is_logged_in.$) {
+      _showLoginRequired();
+      return;
+    }
+
+    if (_isBuyNowLoading) return;
+    
+    if (_payLink.isEmpty) {
+      ToastComponent.showWarning('Payment link not available');
+      return;
+    }
+
+    setState(() { _isBuyNowLoading = true; });
+
+    try {
+      final productId = _product?.id ?? 0;
+      
+      // Send tracking request with product_id
+      await _productRepository.trackBuyNowClick(productId);
+      
+      // Navigate to webview
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CommonWebviewScreen(
+            page_name: AppLocalizations.of(context)!.buy_now,
+            url: _payLink,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error opening buy now: $e');
+      ToastComponent.showError('Failed to open payment page');
+    } finally {
+      if (mounted) {
+        setState(() { _isBuyNowLoading = false; });
+      }
     }
   }
 
@@ -744,7 +798,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (response.success == true) {
-        // SOUND REMOVED
         if (response.timeExtended == true) {
           ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
           if (response.newEndDate != null) {
@@ -808,7 +861,6 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (response.success == true) {
-        // SOUND REMOVED
         _bidController.clear();
         if (response.timeExtended == true) {
           ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
@@ -1002,10 +1054,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (response.success == true) {
         if (wasInWishlist) {
-          // SOUND REMOVED
           ToastComponent.showSuccess(AppLocalizations.of(context)!.removed_from_wishlist);
         } else {
-          // SOUND REMOVED
           ToastComponent.showSuccess(AppLocalizations.of(context)!.added_to_wishlist);
         }
         
@@ -1130,7 +1180,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND - BELL SOUND (Plays once when ending soon starts)
+  // SOUND - BELL SOUND (Plays when ending soon starts, nothing stops it)
   // ============================================
 
   void _playBellSound() async {
@@ -1145,7 +1195,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
       print('🛎️ BELL SOUND STARTED - Ending Soon Phase!');
 
-      // Use separate player for bell to avoid conflicts
       await _bellPlayer.stop();
       await _bellPlayer.setReleaseMode(ReleaseMode.release);
       await _bellPlayer.play(
@@ -1154,7 +1203,6 @@ class _ProductDetailsState extends State<ProductDetails>
         volume: 0.85,
       );
 
-      // Notify ToastComponent that bell is playing
       ToastComponent.tickSoundPlaying = true;
       
       // Reset flags after bell finishes (approx 1.5 seconds)
@@ -1171,17 +1219,6 @@ class _ProductDetailsState extends State<ProductDetails>
       _bellSoundPlayed = false;
       ToastComponent.tickSoundPlaying = false;
     }
-  }
-
-  void _stopBellSound() async {
-    try {
-      await _bellPlayer.stop();
-    } catch (e) {
-      print('Stop bell error: $e');
-    }
-    _isBellSoundPlaying = false;
-    _bellSoundPlayed = false;
-    ToastComponent.tickSoundPlaying = false;
   }
 
   // ============================================
@@ -1916,8 +1953,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
-
-    // _stopBellSound();
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
@@ -3137,6 +3172,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     ],
                   ),
                   
+                  // Bid Information + Buy Now Button
                   Transform.translate(
                     offset: Offset(0, -15),
                     child: Container(
@@ -3190,11 +3226,99 @@ class _ProductDetailsState extends State<ProductDetails>
                               ),
                             ],
                           ),
+                          
+                          // ============================================
+                          // BUY NOW BUTTON (Between Bid Information and Reviews)
+                          // ============================================
+                          if (_buyNow == 1) ...[
+                            SizedBox(height: _getResponsiveSize(12, 16)),
+                            Container(
+                              padding: EdgeInsets.all(_getResponsivePadding(10, 14)),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.purple.withOpacity(0.3),
+                                    blurRadius: _getResponsiveSize(8, 12),
+                                    offset: Offset(0, _getResponsiveSize(2, 4)),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 1,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '🚀 ${AppLocalizations.of(context)!.buy_now}',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: _getResponsiveFontSize(12, 16),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          AppLocalizations.of(context)!.instant_purchase,
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: _getResponsiveFontSize(8, 11),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: _isBuyNowLoading ? null : _onBuyNowPressed,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: _getResponsivePadding(16, 24),
+                                        vertical: _getResponsivePadding(8, 12),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(_getResponsiveSize(20, 30)),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: _isBuyNowLoading
+                                        ? SizedBox(
+                                            height: _getResponsiveSize(16, 20),
+                                            width: _getResponsiveSize(16, 20),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFF667eea),
+                                            ),
+                                          )
+                                        : Text(
+                                            AppLocalizations.of(context)!.buy_now,
+                                            style: TextStyle(
+                                              color: Color(0xFF667eea),
+                                              fontSize: _getResponsiveFontSize(10, 14),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          // ============================================
+                          // END BUY NOW BUTTON
+                          // ============================================
+                          
                         ],
                       ),
                     ),
                   ),
                   
+                  // Reviews Section
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 18)),
                     child: GestureDetector(
@@ -3545,58 +3669,5 @@ class _ProductDetailsState extends State<ProductDetails>
         'status': 500,
       };
     }
-  }
-}
-
-// ============================================
-// CUSTOM PAINTER FOR CIRCULAR TIMER
-// ============================================
-
-class CircularTimerPainter extends CustomPainter {
-  final double progress;
-  final Color backgroundColor;
-  final Color progressColor;
-
-  CircularTimerPainter({
-    required this.progress,
-    required this.backgroundColor,
-    required this.progressColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final strokeWidth = size.width * 0.08;
-
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-
-    canvas.drawCircle(center, radius, backgroundPaint);
-
-    final progressPaint = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final startAngle = -pi / 2;
-    final sweepAngle = 2 * pi * progress;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CircularTimerPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.progressColor != progressColor;
   }
 }
