@@ -16,6 +16,7 @@ import '../screens/auction_purchase_history.dart'; // Import activity page
 import '../screens/messenger_list.dart'; // Import messenger list
 import '../screens/point_history_page.dart'; // Import point history
 import 'package:active_ecommerce_flutter/screens/point_page.dart';
+import 'package:active_ecommerce_flutter/screens/activity_page.dart';
 import '../screens/withdrawal_page.dart'; // Import withdrawal history page
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 
