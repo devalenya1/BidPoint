@@ -66,7 +66,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isLoading = true;
   bool _isCommentSoundPlaying = false;
   bool _isBidSoundPlaying = false;
-  bool _isTickSoundPlaying = false;
+  bool _isBellSoundPlaying = false;
   bool _userInteractedWithComments = false;
   bool _initialScrollDone = false; 
   bool _isAtBottom = true;
@@ -100,7 +100,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
   String _auctionStatus = "live";
-  bool _tickSoundPlayedThisSession = false;
+  bool _bellSoundPlayed = false;
   
   // Bid Data
   double _currentHighestBid = 0;
@@ -120,7 +120,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // Sound
   bool _soundEnabled = true;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final AudioPlayer _tickPlayer = AudioPlayer();
+  final AudioPlayer _bellPlayer = AudioPlayer();
   
   // Repository
   final ProductRepository _productRepository = ProductRepository();
@@ -156,13 +156,6 @@ class _ProductDetailsState extends State<ProductDetails>
       duration: const Duration(seconds: 10),
     );
 
-    // Fix: Remove the preload entirely or use proper volume
-    // _audioPlayer.setReleaseMode(ReleaseMode.release);
-    // _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 0);
-    // Future.delayed(const Duration(milliseconds: 100), () {
-    //   _audioPlayer.stop();
-    // });
-
     _commentsScrollController.addListener(_onCommentsScroll);
     
     _fetchAllData();
@@ -188,10 +181,12 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    _stopTickSound();
+    _stopBellSound();
     ToastComponent.tickSoundPlaying = false;
     _audioPlayer.stop();
     _audioPlayer.dispose();
+    _bellPlayer.stop();
+    _bellPlayer.dispose();
     _commentsScrollController.dispose();
     super.dispose();
   }
@@ -421,7 +416,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopTickSound(); // Always clean
+    _stopBellSound();
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -429,7 +424,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
-        _stopTickSound();
+        _stopBellSound();
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
@@ -447,10 +442,10 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
-          _playTickSound();  // ← This should now fire
+          _playBellSound();
           _countdownCircleController.repeat(period: const Duration(seconds: 1));
         } else {
-          _stopTickSound();
+          _stopBellSound();
           _countdownCircleController.stop();
         }
       }
@@ -556,7 +551,7 @@ class _ProductDetailsState extends State<ProductDetails>
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
-          _stopTickSound(); // Force stop when auction ends
+          _stopBellSound();
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -577,11 +572,8 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.comments != null && response.comments!.isNotEmpty) {
           setState(() {
             _comments = response.comments!.reversed.toList();
-            // Don't reset _isAtBottom and _userInteractedWithComments here
-            // Let the scroll listener handle these values
           });
           
-          // Only scroll if user is at bottom AND hasn't interacted
           if (_isAtBottom && !_userInteractedWithComments) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _scrollToBottom();
@@ -870,7 +862,6 @@ class _ProductDetailsState extends State<ProductDetails>
         await _fetchComments();
         ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
         
-        // Only scroll if user is at bottom
         if (_isAtBottom) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _scrollToBottom();
@@ -1139,62 +1130,58 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND - TICK SOUND (FINAL ROBUST VERSION)
+  // SOUND - BELL SOUND (Plays once when ending soon starts)
   // ============================================
 
-  void _playTickSound() async {
-    if (!_soundEnabled || _isTickSoundPlaying || _tickSoundPlayedThisSession) {
-      print('⏭️ Tick sound skipped (already playing or disabled)');
+  void _playBellSound() async {
+    if (!_soundEnabled || _isBellSoundPlaying || _bellSoundPlayed) {
+      print('⏭️ Bell sound skipped (already playing or disabled)');
       return;
     }
 
     try {
-      _isTickSoundPlaying = true;
-      _tickSoundPlayedThisSession = true;
+      _isBellSoundPlaying = true;
+      _bellSoundPlayed = true;
 
-      print('🛎️ TICK SOUND STARTED - Ending Soon Phase!');
+      print('🛎️ BELL SOUND STARTED - Ending Soon Phase!');
 
-      // Stop any existing audio
-      await _audioPlayer.stop();
-      
-      // Set release mode BEFORE playing
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      
-      // Play with volume
-      await _audioPlayer.play(
-        AssetSource('sounds/tick_clock.mp3'),
+      // Use separate player for bell to avoid conflicts
+      await _bellPlayer.stop();
+      await _bellPlayer.setReleaseMode(ReleaseMode.release);
+      await _bellPlayer.play(
+        AssetSource('sounds/bell1.mp3'),
         mode: PlayerMode.lowLatency,
         volume: 0.85,
       );
-      
-      // Double-check loop mode after play
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
 
-      // Notify ToastComponent
+      // Notify ToastComponent that bell is playing
       ToastComponent.tickSoundPlaying = true;
       
-      print('🔊 Tick sound is now looping');
+      // Reset flags after bell finishes (approx 1.5 seconds)
+      Future.delayed(const Duration(milliseconds: 1800), () {
+        _isBellSoundPlaying = false;
+        ToastComponent.tickSoundPlaying = false;
+        print('🔔 Bell sound finished playing');
+      });
+      
+      print('🔔 Bell sound playing');
     } catch (e) {
-      print('❌ Tick sound error: $e');
-      _isTickSoundPlaying = false;
-      _tickSoundPlayedThisSession = false;
+      print('❌ Bell sound error: $e');
+      _isBellSoundPlaying = false;
+      _bellSoundPlayed = false;
+      ToastComponent.tickSoundPlaying = false;
     }
   }
 
-  void _stopTickSound() async {
-    if (!_isTickSoundPlaying) return;
-
-    print('⏹️ Tick sound STOPPED');
-    _isTickSoundPlaying = false;
-    _tickSoundPlayedThisSession = false;
-    ToastComponent.tickSoundPlaying = false;
-
+  void _stopBellSound() async {
     try {
-      await _audioPlayer.stop();
-      await _audioPlayer.setReleaseMode(ReleaseMode.release);
+      await _bellPlayer.stop();
     } catch (e) {
-      print('Stop tick error: $e');
+      print('Stop bell error: $e');
     }
+    _isBellSoundPlaying = false;
+    _bellSoundPlayed = false;
+    ToastComponent.tickSoundPlaying = false;
   }
 
   // ============================================
@@ -1930,7 +1917,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    _stopTickSound();
+    _stopBellSound();
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
@@ -2259,7 +2246,8 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // HELPER METHODS  // ============================================
+  // HELPER METHODS
+  // ============================================
 
   String _formatTime(String? dateTime) {
     if (dateTime == null) return '';
