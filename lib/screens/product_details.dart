@@ -120,7 +120,8 @@ class _ProductDetailsState extends State<ProductDetails>
   // Sound
   bool _soundEnabled = true;
   final AudioPlayer _audioPlayer = AudioPlayer();
-
+  final AudioPlayer _tickPlayer = AudioPlayer();
+  
   // Repository
   final ProductRepository _productRepository = ProductRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
@@ -150,18 +151,17 @@ class _ProductDetailsState extends State<ProductDetails>
     _mainScrollController = ScrollController();
     _fullScreenCarouselController = CarouselController();
     
-    // Initialize the countdown circle animation controller
     _countdownCircleController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
     );
 
-    // Preload the tick sound
-    _audioPlayer.setReleaseMode(ReleaseMode.release);
-    _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 10);
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _audioPlayer.stop();
-    });
+    // Fix: Remove the preload entirely or use proper volume
+    // _audioPlayer.setReleaseMode(ReleaseMode.release);
+    // _audioPlayer.play(AssetSource('sounds/tick_clock.mp3'), volume: 0);
+    // Future.delayed(const Duration(milliseconds: 100), () {
+    //   _audioPlayer.stop();
+    // });
 
     _commentsScrollController.addListener(_onCommentsScroll);
     
@@ -169,7 +169,6 @@ class _ProductDetailsState extends State<ProductDetails>
     _startPolling();
     _fetchUserInfo(); 
     
-    // _audioPlayer.setReleaseMode(ReleaseMode.release);
     _setupLoginStateListener();
     
     _blinkController = AnimationController(
@@ -1155,16 +1154,26 @@ class _ProductDetailsState extends State<ProductDetails>
 
       print('🛎️ TICK SOUND STARTED - Ending Soon Phase!');
 
+      // Stop any existing audio
       await _audioPlayer.stop();
+      
+      // Set release mode BEFORE playing
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      
+      // Play with volume
       await _audioPlayer.play(
         AssetSource('sounds/tick_clock.mp3'),
         mode: PlayerMode.lowLatency,
         volume: 0.85,
       );
+      
+      // Double-check loop mode after play
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
 
       // Notify ToastComponent
       ToastComponent.tickSoundPlaying = true;
+      
+      print('🔊 Tick sound is now looping');
     } catch (e) {
       print('❌ Tick sound error: $e');
       _isTickSoundPlaying = false;
