@@ -100,6 +100,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
   String _auctionStatus = "live";
+  bool _bellSoundPlayed = false;
   
   // Bid Data
   double _currentHighestBid = 0;
@@ -180,11 +181,11 @@ class _ProductDetailsState extends State<ProductDetails>
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    _stopBellSound();
+    // _stopBellSound();
     ToastComponent.tickSoundPlaying = false;
     _audioPlayer.stop();
     _audioPlayer.dispose();
-    _bellPlayer.stop();
+    // _bellPlayer.stop();
     _bellPlayer.dispose();
     _commentsScrollController.dispose();
     super.dispose();
@@ -410,12 +411,12 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // ENDING COUNTDOWN TIMER - FIXED
+  // ENDING COUNTDOWN TIMER - UPDATED
   // ============================================
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-    _stopBellSound();
+    // _stopBellSound();
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final now = DateTime.now();
@@ -423,7 +424,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
-        _stopBellSound();
+        // _stopBellSound();
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
@@ -444,7 +445,7 @@ class _ProductDetailsState extends State<ProductDetails>
           _playBellSound();
           _countdownCircleController.repeat(period: const Duration(seconds: 1));
         } else {
-          _stopBellSound();
+          // _stopBellSound();
           _countdownCircleController.stop();
         }
       }
@@ -550,7 +551,7 @@ class _ProductDetailsState extends State<ProductDetails>
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
-          _stopBellSound();
+          // _stopBellSound();
           
           if (response.winner != null && !_winnerModalShown) {
             _winnerData = response.winner;
@@ -1129,18 +1130,18 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================
-  // SOUND - BELL SOUND (FIXED - Plays once per ending phase)
+  // SOUND - BELL SOUND (Plays once when ending soon starts)
   // ============================================
 
   void _playBellSound() async {
-    // Only prevent if currently playing
-    if (!_soundEnabled || _isBellSoundPlaying) {
-      print('⏭️ Bell sound skipped (disabled or already playing)');
+    if (!_soundEnabled || _isBellSoundPlaying || _bellSoundPlayed) {
+      print('⏭️ Bell sound skipped (already playing or disabled)');
       return;
     }
 
     try {
       _isBellSoundPlaying = true;
+      _bellSoundPlayed = true;
 
       print('🛎️ BELL SOUND STARTED - Ending Soon Phase!');
 
@@ -1156,7 +1157,7 @@ class _ProductDetailsState extends State<ProductDetails>
       // Notify ToastComponent that bell is playing
       ToastComponent.tickSoundPlaying = true;
       
-      // Reset flags after bell finishes (approx 1.8 seconds)
+      // Reset flags after bell finishes (approx 1.5 seconds)
       Future.delayed(const Duration(milliseconds: 1800), () {
         _isBellSoundPlaying = false;
         ToastComponent.tickSoundPlaying = false;
@@ -1167,6 +1168,7 @@ class _ProductDetailsState extends State<ProductDetails>
     } catch (e) {
       print('❌ Bell sound error: $e');
       _isBellSoundPlaying = false;
+      _bellSoundPlayed = false;
       ToastComponent.tickSoundPlaying = false;
     }
   }
@@ -1178,6 +1180,7 @@ class _ProductDetailsState extends State<ProductDetails>
       print('Stop bell error: $e');
     }
     _isBellSoundPlaying = false;
+    _bellSoundPlayed = false;
     ToastComponent.tickSoundPlaying = false;
   }
 
@@ -1914,7 +1917,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    _stopBellSound();
+    // _stopBellSound();
 
     final productId = _product?.id ?? 0;
     final userId = _winnerData?.userId ?? 0;
