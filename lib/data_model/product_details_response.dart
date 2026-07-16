@@ -114,11 +114,16 @@ class DetailedProduct {
     this.reviews,
     this.bidHistory,
     bool? isAuctionUpcoming,
-    String? upcomingStatus, // NEW: Parameter for upcoming_status
-    this.myStatus, // ADD THIS PARAMETER
-    this.userHasBid, 
+    String? upcomingStatus,
+    this.myStatus,
+    this.userHasBid,
+    
+    // ✅ ADD THESE TWO LINES:
+    this.buyNow,
+    this.payLink,
+    
   })  : _isAuctionUpcoming = isAuctionUpcoming,
-        _upcomingStatus = upcomingStatus; // NEW: Initialize private field
+        _upcomingStatus = upcomingStatus;
 
   int? id;
   String? name;
