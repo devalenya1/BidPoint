@@ -46,13 +46,20 @@ class ProductDetailsResponse {
       };
 }
 
-
 class DetailedProduct {
-  bool? _isAuctionUpcoming; // Private field for upcoming status
-  String? _upcomingStatus; // NEW: Store upcoming_status from API
-  bool? myStatus; // ADD THIS FIELD
+  // ============ PRIVATE FIELDS ============
+  bool? _isAuctionUpcoming;
+  String? _upcomingStatus;
+  
+  // ============ PUBLIC FIELDS ============
+  bool? myStatus;
   bool? userHasBid;
+  
+  // ✅ ADDED: Buy Now fields
+  int? buyNow;
+  String? payLink;
 
+  // ============ CONSTRUCTOR ============
   DetailedProduct({
     this.id,
     this.name,
@@ -118,13 +125,14 @@ class DetailedProduct {
     this.myStatus,
     this.userHasBid,
     
-    // ✅ ADD THESE TWO LINES:
+    // ✅ ADDED: Buy Now constructor parameters
     this.buyNow,
     this.payLink,
     
   })  : _isAuctionUpcoming = isAuctionUpcoming,
         _upcomingStatus = upcomingStatus;
 
+  // ============ FIELDS ============
   int? id;
   String? name;
   String? addedBy;
@@ -189,26 +197,21 @@ class DetailedProduct {
 
   // ============ GETTERS AND SETTERS FOR isAuctionUpcoming ============
   bool get isAuctionUpcoming {
-    // Return cached value if set
     if (_isAuctionUpcoming != null) {
       return _isAuctionUpcoming!;
     }
     
-    // Fallback: Calculate from auctionStartDate
     if (auctionStartDate == null) return false;
     
-    // If it's a string 'Upcoming' from server
     if (auctionStartDate is String && auctionStartDate == 'Upcoming') {
       return true;
     }
     
-    // If it's a timestamp, check if it's in the future
     if (auctionStartDate is int) {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       return auctionStartDate > now;
     }
     
-    // If it's a string that can be parsed as int
     if (auctionStartDate is String) {
       final timestamp = int.tryParse(auctionStartDate);
       if (timestamp != null) {
@@ -223,7 +226,6 @@ class DetailedProduct {
   set isAuctionUpcoming(bool value) {
     _isAuctionUpcoming = value;
   }
-  // ============ END GETTERS AND SETTERS ============
 
   // ============ GETTERS AND SETTERS FOR upcomingStatus ============
   String? get upcomingStatus => _upcomingStatus;
@@ -243,11 +245,12 @@ class DetailedProduct {
   bool get isEndedStatus {
     return _upcomingStatus == 'Ended';
   }
-  // ============ END GETTERS AND SETTERS ============
 
   // ============ SNAKE_CASE GETTERS FOR BACKWARDS COMPATIBILITY ============
-  // int? get buy_now => buyNow;
-  // String? get pay_link => payLink;
+  // Buy Now snake case getters - REMOVED because they cause circular reference
+  // int? get buy_now => buyNow;  // REMOVED
+  // String? get pay_link => payLink;  // REMOVED
+  
   String? get added_by => addedBy;
   int? get seller_id => sellerId;
   int? get shop_id => shopId;
@@ -255,7 +258,6 @@ class DetailedProduct {
   String? get shop_name => shopName;
   String? get shop_logo => shopLogo;
   String? get thumbnail_image => thumbnailImage;
-  // String? get price_high_low => priceHighLow;
   List<ChoiceOption>? get choice_options => choiceOptions;
   bool? get has_discount => hasDiscount;
   String? get stroked_price => strokedPrice;
@@ -275,13 +277,10 @@ class DetailedProduct {
   bool? get is_ending_soon => isEndingSoon;
   int? get remaining_seconds => remainingSeconds;
   bool? get auction_ended => auctionEnded;
-  // Map<String, dynamic>? get winner => winner;
-  // List<Map<String, dynamic>>? get comments => comments;
-  // List<Map<String, dynamic>>? get reviews => reviews;
   List<Map<String, dynamic>>? get bid_history => bidHistory;
-  String? get upcoming_status => _upcomingStatus; // NEW: Snake case getter
-  // ============ END SNAKE_CASE GETTERS ============
+  String? get upcoming_status => _upcomingStatus;
 
+  // ============ FROM JSON ============
   factory DetailedProduct.fromJson(Map<String, dynamic> json) => DetailedProduct(
     id: json["id"],
     name: json["name"],
@@ -370,89 +369,89 @@ class DetailedProduct {
     isAuctionUpcoming: json["is_auction_upcoming"] ?? false,
     upcomingStatus: json["upcoming_status"],
     
-    // ✅ ADD THESE TWO LINES:
+    // ✅ Buy Now from JSON
     buyNow: json["buy_now"] ?? 0,
     payLink: json["pay_link"] ?? '',
   );
 
+  // ============ TO JSON ============
   Map<String, dynamic> toJson() => {
-        "id": id,
-        "name": name,
-        "added_by": addedBy,
-        "seller_id": sellerId,
-        "shop_id": shopId,
-        "est_shipping_time": estShippingTime,
-        "shop_slug": shopSlug,
-        "shop_name": shopName,
-        "shop_logo": shopLogo,
-        "photos": photos != null
-            ? List<dynamic>.from(photos!.map((x) => x.toJson()))
-            : [],
-        "thumbnail_image": thumbnailImage,
-        "tags": tags != null ? List<dynamic>.from(tags!.map((x) => x)) : [],
-        // "price_high_low": priceHighLow,
-        "choice_options": choiceOptions != null
-            ? List<dynamic>.from(choiceOptions!.map((x) => x.toJson()))
-            : [],
-        "colors": colors != null ? List<dynamic>.from(colors!.map((x) => x)) : [],
-        "has_discount": hasDiscount,
-        "discount": discount,
-        "stroked_price": strokedPrice,
-        "main_price": mainPrice,
-        "calculable_price": calculablePrice,
-        "currency_symbol": currencySymbol,
-        "current_stock": currentStock,
-        "unit": unit,
-        "rating": rating,
-        "my_status": myStatus,
-        'user_has_bid': userHasBid,
-        "rating_count": ratingCount,
-        "earn_point": earnPoint,
-        "description": description,
-        "downloads": downloads,
-        "video_link": videoLink,
-        "link": link, 
-        "brand": brand?.toJson(),
-        "wholesale": wholesale != null
-            ? List<dynamic>.from(wholesale!.map((x) => x.toJson()))
-            : [],
-        "auction_end_date": auctionEndDate,
-        "auction_start_date": auctionStartDate,
-        "starting_bid": startingBid,
-        "min_bid_price": minBidPrice,
-        "highest_bid": highestBid,
-        "swipe_right": swipeRight,
-        "swipe_left": swipeLeft,
-        "point_per_bid": pointPerBid,
-        "point_per_bid_custom": pointPerBidCustom,
-        "point_multiplier_system": pointMultiplierSystem,
-        "auction_product": auctionProduct,
-        "videos": videos != null
-            ? List<dynamic>.from(videos!.map((x) => x.toJson()))
-            : [],
-        // Additional fields from poll data
-        "total_bids": totalBids,
-        "last_bidder_name": lastBidderName,
-        "is_in_wishlist": isInWishlist,
-        "reviews_count": reviewsCount,
-        "highest_bid_formatted": highestBidFormatted,
-        "last_bid_amount": lastBidAmount,
-        "is_ending_soon": isEndingSoon,
-        "remaining_seconds": remainingSeconds,
-        "auction_ended": auctionEnded,
-        "winner": winner,
-        "comments": comments,
-        "reviews": reviews,
-        "bid_history": bidHistory,
-        "is_auction_upcoming": _isAuctionUpcoming,
-        "upcoming_status": _upcomingStatus, // NEW: Include in JSON
-        "buy_now": buyNow ?? 0,
-        "pay_link": payLink ?? '',
-      };
+    "id": id,
+    "name": name,
+    "added_by": addedBy,
+    "seller_id": sellerId,
+    "shop_id": shopId,
+    "est_shipping_time": estShippingTime,
+    "shop_slug": shopSlug,
+    "shop_name": shopName,
+    "shop_logo": shopLogo,
+    "photos": photos != null
+        ? List<dynamic>.from(photos!.map((x) => x.toJson()))
+        : [],
+    "thumbnail_image": thumbnailImage,
+    "tags": tags != null ? List<dynamic>.from(tags!.map((x) => x)) : [],
+    "choice_options": choiceOptions != null
+        ? List<dynamic>.from(choiceOptions!.map((x) => x.toJson()))
+        : [],
+    "colors": colors != null ? List<dynamic>.from(colors!.map((x) => x)) : [],
+    "has_discount": hasDiscount,
+    "discount": discount,
+    "stroked_price": strokedPrice,
+    "main_price": mainPrice,
+    "calculable_price": calculablePrice,
+    "currency_symbol": currencySymbol,
+    "current_stock": currentStock,
+    "unit": unit,
+    "rating": rating,
+    "my_status": myStatus,
+    'user_has_bid': userHasBid,
+    "rating_count": ratingCount,
+    "earn_point": earnPoint,
+    "description": description,
+    "downloads": downloads,
+    "video_link": videoLink,
+    "link": link, 
+    "brand": brand?.toJson(),
+    "wholesale": wholesale != null
+        ? List<dynamic>.from(wholesale!.map((x) => x.toJson()))
+        : [],
+    "auction_end_date": auctionEndDate,
+    "auction_start_date": auctionStartDate,
+    "starting_bid": startingBid,
+    "min_bid_price": minBidPrice,
+    "highest_bid": highestBid,
+    "swipe_right": swipeRight,
+    "swipe_left": swipeLeft,
+    "point_per_bid": pointPerBid,
+    "point_per_bid_custom": pointPerBidCustom,
+    "point_multiplier_system": pointMultiplierSystem,
+    "auction_product": auctionProduct,
+    "videos": videos != null
+        ? List<dynamic>.from(videos!.map((x) => x.toJson()))
+        : [],
+    "total_bids": totalBids,
+    "last_bidder_name": lastBidderName,
+    "is_in_wishlist": isInWishlist,
+    "reviews_count": reviewsCount,
+    "highest_bid_formatted": highestBidFormatted,
+    "last_bid_amount": lastBidAmount,
+    "is_ending_soon": isEndingSoon,
+    "remaining_seconds": remainingSeconds,
+    "auction_ended": auctionEnded,
+    "winner": winner,
+    "comments": comments,
+    "reviews": reviews,
+    "bid_history": bidHistory,
+    "is_auction_upcoming": _isAuctionUpcoming,
+    "upcoming_status": _upcomingStatus,
+    
+    // ✅ Buy Now to JSON
+    "buy_now": buyNow ?? 0,
+    "pay_link": payLink ?? '',
+  };
 
   // ============ HELPER METHODS ============
   
-  // Auction helpers
   bool get isAuctionProduct => (auctionProduct ?? 0) == 1;
   
   bool get isAuctionEnded {
@@ -474,18 +473,15 @@ class DetailedProduct {
     return false;
   }
   
-  // NEW: Get auction status using upcoming_status first
   String getAuctionStatus() {
     if (!isAuctionProduct) return 'Regular Product';
     
-    // Use upcoming_status from API if available
     if (_upcomingStatus != null) {
       if (_upcomingStatus == 'Upcoming') return 'Upcoming';
       if (_upcomingStatus == 'Live') return 'Live Auction';
       if (_upcomingStatus == 'Ended') return 'Auction Ended';
     }
     
-    // Fallback to calculated status
     if (isAuctionUpcoming) return 'Upcoming';
     if (isAuctionActive) return 'Live Auction';
     if (isAuctionEnded) return 'Auction Ended';
@@ -542,7 +538,6 @@ class DetailedProduct {
   
   bool get hasHighestBid => highestBid != null && highestBid!.isNotEmpty;
   
-  // Swipe helpers
   int get totalSwipes => (swipeRight ?? 0) + (swipeLeft ?? 0);
   
   int get swipeRatio {
@@ -551,7 +546,6 @@ class DetailedProduct {
     return ((swipeRight ?? 0) / total * 100).round();
   }
   
-  // Points helpers
   int get effectivePointPerBid {
     if (pointPerBidCustom != null && pointPerBidCustom! > 0) {
       return pointPerBidCustom!;
@@ -563,7 +557,6 @@ class DetailedProduct {
     return effectivePointPerBid.toString();
   }
   
-  // Stock helpers
   bool get isInStock => (currentStock ?? 0) > 0;
   
   String getStockStatus() {
@@ -578,7 +571,6 @@ class DetailedProduct {
     return Colors.green;
   }
   
-  // Rating helpers
   double get averageRating => (rating ?? 0).toDouble();
   
   int get totalReviews => ratingCount ?? 0;
@@ -588,7 +580,6 @@ class DetailedProduct {
     return '$averageRating ★ ($totalReviews reviews)';
   }
   
-  // Video helpers
   List<String> getVideoLinks() {
     if (videoLink is String && (videoLink as String).isNotEmpty) {
       return [videoLink as String];
@@ -601,7 +592,6 @@ class DetailedProduct {
   
   bool get hasVideos => getVideoLinks().isNotEmpty || (videos?.isNotEmpty ?? false);
   
-  // Date helpers
   DateTime? getAuctionEndDateTime() {
     if (auctionEndDate is int && (auctionEndDate as int) > 0) {
       return DateTime.fromMillisecondsSinceEpoch((auctionEndDate as int) * 1000);
@@ -612,7 +602,6 @@ class DetailedProduct {
   DateTime? getAuctionStartDateTime() {
     if (auctionStartDate == null) return null;
     
-    // If it's a string 'Upcoming', we don't have a real date
     if (auctionStartDate is String && auctionStartDate == 'Upcoming') {
       return null;
     }
@@ -638,7 +627,6 @@ class DetailedProduct {
     return auctionEndDate?.toString() ?? '0';
   }
   
-  // Price helpers
   String getFormattedPrice(String? price) {
     if (price == null || price.isEmpty) return '0';
     return price;
@@ -648,7 +636,6 @@ class DetailedProduct {
     return priceHighLow ?? getDisplayPrice();
   }
   
-  // Description helper
   String getDisplayDescription() {
     if (description == null || description!.isEmpty) {
       return 'No description is available';
@@ -656,7 +643,6 @@ class DetailedProduct {
     return description!;
   }
   
-  // Shop helper
   bool get isInHouseProduct => addedBy == 'admin';
   
   String getShopDisplayName() {
@@ -664,7 +650,6 @@ class DetailedProduct {
     return shopName ?? 'Unknown Shop';
   }
   
-  // Wholesale helpers
   bool get hasWholesalePrices => wholesale != null && wholesale!.isNotEmpty;
   
   Wholesale? getWholesalePriceForQuantity(int quantity) {
@@ -684,7 +669,6 @@ class DetailedProduct {
     return null;
   }
   
-  // Photo helpers
   List<String> getAllImageUrls() {
     final List<String> urls = [];
     if (thumbnailImage != null && thumbnailImage!.isNotEmpty) {
@@ -699,8 +683,6 @@ class DetailedProduct {
     }
     return urls;
   }
-  
-  // ============ UPDATED HELPER METHODS (Now using poll data) ============
   
   double getStartingBidAsDouble() {
     if (startingBid != null && startingBid!.isNotEmpty) {
@@ -758,8 +740,6 @@ class DetailedProduct {
     }
     return thumbnailImage ?? '';
   }
-  
-  // ============ NEW HELPER METHODS FOR POLL DATA ============
   
   String getHighestBidFormattedText() {
     return highestBidFormatted ?? '';
@@ -830,13 +810,14 @@ class DetailedProduct {
     return reviews != null && reviews!.isNotEmpty;
   }
   
-  // Helper to get bid count text
   String getBidCountText() {
     final count = getTotalBidCount();
     if (count == 0) return 'No bids yet';
     return '$count bid${count > 1 ? 's' : ''}';
   }
 }
+
+// ============ SUPPORTING CLASSES ============
 
 class Photo {
   Photo({
