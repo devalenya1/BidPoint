@@ -278,19 +278,15 @@ class ProductRepository {
     String url = "${AppConfig.BASE_URL}/buy-now/track";
     
     try {
-      // Convert user_id to string safely
-      String userIdString = user_id.$?.toString() ?? '0';
-      
       final response = await ApiRequest.post(
         url: url,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer ${access_token.$}",
+          "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
           "App-Language": app_language.$!,
         },
         body: json.encode({
           'product_id': productId,
-          'user_id': int.tryParse(userIdString) ?? 0,
         }),
       );
       

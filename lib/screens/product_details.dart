@@ -66,7 +66,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isLoading = true;
   bool _isCommentSoundPlaying = false;
   bool _isBidSoundPlaying = false;
-  bool _isBellSoundPlaying = false;
+  // bool _isBellSoundPlaying = false;
   bool _userInteractedWithComments = false;
   bool _initialScrollDone = false; 
   bool _isAtBottom = true;
@@ -100,7 +100,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   int _endingSeconds = 10;
   String _auctionStatus = "live";
-  bool _bellSoundPlayed = false;
+  // bool _bellSoundPlayed = false;
   
   // Bid Data
   double _currentHighestBid = 0;
@@ -431,7 +431,7 @@ class _ProductDetailsState extends State<ProductDetails>
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
-          _bellSoundPlayed = false;
+          // _bellSoundPlayed = false;  // Reset for next time
         });
         _pollData();
         return;
@@ -445,6 +445,7 @@ class _ProductDetailsState extends State<ProductDetails>
         setState(() => _isEndingSoon = shouldBeEndingSoon);
 
         if (shouldBeEndingSoon) {
+          // ALWAYS play the bell sound when ending soon starts
           _playBellSound();
           _countdownCircleController.repeat(period: const Duration(seconds: 1));
         } else {
@@ -557,7 +558,7 @@ class _ProductDetailsState extends State<ProductDetails>
             _auctionStatus = "ended";
             _timeLeft = Duration.zero;
             _isEndingSoon = false;
-            _bellSoundPlayed = false;
+            // _bellSoundPlayed = false;
           });
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
@@ -617,10 +618,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _onBuyNowPressed() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
+    // if (!is_logged_in.$) {
+    //   _showLoginRequired();
+    //   return;
+    // }
 
     if (_isBuyNowLoading) return;
     
@@ -1184,18 +1185,14 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _playBellSound() async {
-    // if (!_soundEnabled || _isBellSoundPlaying || _bellSoundPlayed) {
-    //   print('⏭️ Bell sound skipped (already playing or disabled)');
-    //   return;
-    // }
-
+    // Remove all checks that prevent playing - ALWAYS play when called
+    // No conditions, no flags - just play the sound
+    
     try {
-      _isBellSoundPlaying = true;
-      _bellSoundPlayed = true;
+      print('🛎️ BELL SOUND TRIGGERED - Playing bell sound');
 
-      print('🛎️ BELL SOUND STARTED - Ending Soon Phase!');
-
-      // await _bellPlayer.stop();
+      // Reset the player before playing
+      await _bellPlayer.stop();
       await _bellPlayer.setReleaseMode(ReleaseMode.release);
       await _bellPlayer.play(
         AssetSource('sounds/bell1.mp3'),
@@ -1205,18 +1202,9 @@ class _ProductDetailsState extends State<ProductDetails>
 
       ToastComponent.tickSoundPlaying = true;
       
-      // Reset flags after bell finishes (approx 1.5 seconds)
-      Future.delayed(const Duration(milliseconds: 1800), () {
-        _isBellSoundPlaying = false;
-        ToastComponent.tickSoundPlaying = false;
-        print('🔔 Bell sound finished playing');
-      });
-      
       print('🔔 Bell sound playing');
     } catch (e) {
       print('❌ Bell sound error: $e');
-      _isBellSoundPlaying = false;
-      _bellSoundPlayed = false;
       ToastComponent.tickSoundPlaying = false;
     }
   }

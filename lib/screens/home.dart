@@ -13,6 +13,7 @@ import 'package:active_ecommerce_flutter/screens/filter.dart';
 import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
+import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/ui_elements/hot_auction_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/ending_soon_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/upcoming_card.dart';
@@ -149,6 +150,69 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   void _redirectToLogin() {
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
+  }
+
+  // ============================================================
+  // ✅ SLIDER CLICK HANDLER - Opens webview properly
+  // ============================================================
+  void _handleSliderTap(String? url) {
+    if (url == null || url.isEmpty) return;
+    
+    // Clean the URL
+    var cleanUrl = url.split(AppConfig.DOMAIN_PATH).last ?? "";
+    if (cleanUrl.isEmpty) {
+      // If the URL doesn't contain the domain path, use it as is
+      cleanUrl = url;
+    }
+    
+    // Check if it's a full URL or a relative path
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      // Full URL - open in webview
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CommonWebviewScreen(
+            page_name: 'Slider',
+            url: cleanUrl,
+          ),
+        ),
+      );
+    } else {
+      // Relative path - check if it's a route or a web page
+      // For product or category pages, use GoRouter navigation
+      if (cleanUrl.contains('/product/') || cleanUrl.contains('/category/') || cleanUrl.contains('/auction/')) {
+        // Try to navigate using GoRouter
+        try {
+          GoRouter.of(context).go(cleanUrl);
+        } catch (e) {
+          // If GoRouter fails, open in webview
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CommonWebviewScreen(
+                page_name: 'Slider',
+                url: url,
+              ),
+            ),
+          );
+        }
+      } else {
+        // For other relative paths, use webview with full URL
+        String fullUrl = url;
+        if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+          fullUrl = AppConfig.RAW_BASE_URL + url;
+        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CommonWebviewScreen(
+              page_name: 'Slider',
+              url: fullUrl,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -1061,12 +1125,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(12.r),
                         child: InkWell(
                           onTap: () {
-                            if (i.url != null) {
-                              var url = i.url!.split(AppConfig.DOMAIN_PATH).last ?? "";
-                              if (url.isNotEmpty) {
-                                GoRouter.of(context).go(url);
-                              }
-                            }
+                            _handleSliderTap(i.url);
                           },
                           child: i.photo != null
                               ? Image.network(
