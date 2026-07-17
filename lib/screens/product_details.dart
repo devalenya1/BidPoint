@@ -1184,10 +1184,10 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _playBellSound() async {
-    if (!_soundEnabled || _isBellSoundPlaying || _bellSoundPlayed) {
-      print('⏭️ Bell sound skipped (already playing or disabled)');
-      return;
-    }
+    // if (!_soundEnabled || _isBellSoundPlaying || _bellSoundPlayed) {
+    //   print('⏭️ Bell sound skipped (already playing or disabled)');
+    //   return;
+    // }
 
     try {
       _isBellSoundPlaying = true;
@@ -1195,7 +1195,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
       print('🛎️ BELL SOUND STARTED - Ending Soon Phase!');
 
-      await _bellPlayer.stop();
+      // await _bellPlayer.stop();
       await _bellPlayer.setReleaseMode(ReleaseMode.release);
       await _bellPlayer.play(
         AssetSource('sounds/bell1.mp3'),
@@ -3236,14 +3236,17 @@ class _ProductDetailsState extends State<ProductDetails>
                               padding: EdgeInsets.all(_getResponsivePadding(10, 14)),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                                  colors: [
+                                    MyTheme.accent_color, 
+                                    MyTheme.accent_color.withOpacity(0.85),
+                                  ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
                                 borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.purple.withOpacity(0.3),
+                                    color: MyTheme.accent_color.withOpacity(0.3),
                                     blurRadius: _getResponsiveSize(8, 12),
                                     offset: Offset(0, _getResponsiveSize(2, 4)),
                                   ),
@@ -3293,13 +3296,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                             width: _getResponsiveSize(16, 20),
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: Color(0xFF667eea),
+                                              color: MyTheme.accent_color,
                                             ),
                                           )
                                         : Text(
                                             AppLocalizations.of(context)!.buy_now_ucf,
                                             style: TextStyle(
-                                              color: Color(0xFF667eea),
+                                              color: MyTheme.accent_color,
                                               fontSize: _getResponsiveFontSize(10, 14),
                                               fontWeight: FontWeight.bold,
                                             ),
