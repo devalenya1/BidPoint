@@ -219,7 +219,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'auction_lose':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ActivityPage()),
+          MaterialPageRoute(builder: (context) => ActivityPage(initialTabIndex: 1,)),
         );
         break;
 

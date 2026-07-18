@@ -17,8 +17,13 @@ import 'package:active_ecommerce_flutter/app_config.dart';
 import '../data_model/user_info_response.dart';
 
 class ActivityPage extends StatefulWidget {
-  const ActivityPage({Key? key}) : super(key: key);
- 
+  final int initialTabIndex; // 0: Bids, 1: Purchases, 2: Favorites
+  
+  const ActivityPage({
+    Key? key,
+    this.initialTabIndex = 0, // Default to Bids tab
+  }) : super(key: key);
+
   @override
   State<ActivityPage> createState() => _ActivityPageState();
 }
@@ -70,6 +75,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
+    // Set initial tab from widget parameter
+    _selectedParentTab = widget.initialTabIndex;
+    
     if (is_logged_in.$ == true) {
       _fetchAllData();
     } else {
