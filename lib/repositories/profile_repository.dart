@@ -60,6 +60,9 @@ class LocalizedMessages {
     'message_sent_to_seller': 'Message sent to seller!',
     'failed_to_contact_seller': 'Failed to contact seller',
     'something_went_wrong': 'Something went wrong',
+    'referral_code_applied_successfully': 'Referral code applied successfully!',
+    'referral_skipped_successfully': 'Referral skipped successfully',
+    'failed_to_apply_referral': 'Failed to apply referral code',
   };
 
   static String getMessage(String key, [Map<String, String>? params]) {
@@ -988,18 +991,62 @@ class ProfileRepository {
     required int userId,
     String? referralCode,
   }) async {
-    var url = "${AppConfig.BASE_URL}/api/user/submit-referral";
+    String url = "${AppConfig.BASE_URL}/api/user/submit-referral";
     
-    final body = {
+    Map<String, dynamic> requestBody = {
       "user_id": userId.toString(),
-      if (referralCode != null) "referral_code": referralCode,
     };
     
-    var response = await ApiRequest.post(
-      url: url,
-      body: body,
-    );
+    if (referralCode != null && referralCode.isNotEmpty) {
+      requestBody["referral_code"] = referralCode;
+    }
     
-    return jsonDecode(response.body);
+    var postBody = jsonEncode(requestBody);
+    
+    try {
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: postBody,
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ?? 
+              (referralCode != null 
+                  ? LocalizedMessages.getMessage('referral_code_applied_successfully') 
+                  : LocalizedMessages.getMessage('referral_skipped_successfully')),
+          'data': responseData['data'],
+        };
+      } else {
+        // Try to parse error message from response
+        try {
+          final Map<String, dynamic> errorData = jsonDecode(response.body);
+          return {
+            'success': false,
+            'message': errorData['message'] ?? LocalizedMessages.getMessage('failed_to_apply_referral'),
+            'status': response.statusCode,
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'message': LocalizedMessages.getMessage('failed_to_apply_referral'),
+            'status': response.statusCode,
+          };
+        }
+      }
+    } catch (e) {
+      print("Error submitting referral code: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
+      };
+    }
   }
 }
