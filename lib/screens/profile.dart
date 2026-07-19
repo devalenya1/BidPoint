@@ -454,6 +454,7 @@ class _ProfileState extends State<Profile> {
       return;
     }
 
+    // Show loading on the buttons
     setState(() {
       _isSubmittingReferral = true;
     });
@@ -464,11 +465,13 @@ class _ProfileState extends State<Profile> {
         referralCode: referralCode,
       );
 
-      if (response['success'] == true) {
-        // Close dialog
+      // Close dialog first
+      if (mounted) {
         Navigator.of(context).pop();
         _showReferralDialog = false;
-        
+      }
+
+      if (response['success'] == true) {
         // Show success message
         ToastComponent.showSuccess(
           response['message'] ?? 
@@ -479,22 +482,35 @@ class _ProfileState extends State<Profile> {
         
         // Refresh user data to update referral status and points
         await _fetchUserData();
+        
+        // Force UI refresh after data is loaded
+        if (mounted) {
+          setState(() {
+            _isSubmittingReferral = false;
+          });
+        }
       } else {
+        // Reset loading state on error
+        if (mounted) {
+          setState(() {
+            _isSubmittingReferral = false;
+          });
+        }
         ToastComponent.showError(
           response['message'] ?? AppLocalizations.of(context)!.failed_to_apply_referral
         );
       }
     } catch (e) {
       print("Error submitting referral: $e");
-      ToastComponent.showError(
-        AppLocalizations.of(context)!.failed_to_apply_referral
-      );
-    } finally {
+      // Reset loading state on error
       if (mounted) {
         setState(() {
           _isSubmittingReferral = false;
         });
       }
+      ToastComponent.showError(
+        AppLocalizations.of(context)!.failed_to_apply_referral
+      );
     }
   }
     
