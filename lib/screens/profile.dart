@@ -71,7 +71,13 @@ class _ProfileState extends State<Profile> {
   bool _isLoading = true;
   bool _isRefreshing = false;
   UserInformation? _userInfo;
-  
+  // ============ REFERRAL DIALOG STATE ============
+  bool _showReferralDialog = false;
+  bool _isSubmittingReferral = false;
+  final TextEditingController _referralCodeController = TextEditingController();
+
+
+
   // ============ INIT ============
   @override
   void initState() {
@@ -92,7 +98,6 @@ class _ProfileState extends State<Profile> {
     super.dispose();
   }
 
-  // ============ FETCH DATA FROM API ============
   Future<void> _fetchUserData() async {
     try {
       setState(() {
@@ -119,6 +124,9 @@ class _ProfileState extends State<Profile> {
           points_balance.save();
           affiliate_balance.$ = _userInfo!.affiliateBalance?.toString() ?? "0";
           affiliate_balance.save();
+          
+          // ✅ Check and show referral dialog after data is loaded
+          _checkAndShowReferralDialog();
         }
       } else {
         _loadFromSharedPreferences();
@@ -134,7 +142,7 @@ class _ProfileState extends State<Profile> {
       });
     }
   }
-  
+
   void _loadFromSharedPreferences() {
     setState(() {
       _userInfo = UserInformation(
@@ -152,7 +160,7 @@ class _ProfileState extends State<Profile> {
   Future<void> _onPageRefresh() async {
     setState(() {
       _isRefreshing = true;
-    });
+    }); 
     await _fetchUserData();
   }
   
@@ -182,6 +190,315 @@ class _ProfileState extends State<Profile> {
     });
   }
 
+
+  // ============ REFERRAL DIALOG LOGIC ============
+  void _checkAndShowReferralDialog() {
+    if (_userInfo == null) return;
+    
+    // Check conditions: referred_by is NULL/empty and has_upline is "0"
+    final hasUpline = _userInfo!.hasUpline ?? "0";
+    final referredBy = _userInfo!.referredBy;
+    
+    final shouldShowDialog = 
+        (referredBy == null || referredBy.isEmpty || referredBy == "null") && 
+        hasUpline == "0";
+    
+    if (shouldShowDialog && !_showReferralDialog && mounted) {
+      _showReferralDialog = true;
+      // Use addPostFrameCallback to show dialog after build is complete
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showReferralOfferDialog();
+        }
+      });
+    }
+  }
+
+  void _showReferralOfferDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must choose an option
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return WillPopScope(
+              onWillPop: () async => false, // Prevent back button dismissal
+              child: Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24.r),
+                ),
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  padding: EdgeInsets.all(24.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header with gradient decoration
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              MyTheme.accent_color,
+                              MyTheme.accent_color.withOpacity(0.7),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.emoji_events,
+                              size: 40.sp,
+                              color: Colors.white,
+                            ),
+                            SizedBox(height: 8.h),
+                            Text(
+                              AppLocalizations.of(context)!.referral_offer_title ?? '🎉 Get Free Points!',
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 4.h),
+                            Text(
+                              AppLocalizations.of(context)!.referral_offer_subtitle ?? 'Enter a referral code to earn free points',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      SizedBox(height: 20.h),
+                      
+                      // Info text
+                      Text(
+                        AppLocalizations.of(context)!.referral_offer_description ?? 
+                        'Get 100 bonus points when you enter a valid referral code!',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: const Color(0xFF64748B),
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      
+                      SizedBox(height: 20.h),
+                      
+                      // Input field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FC),
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.w,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _referralCodeController,
+                          enabled: !_isSubmittingReferral,
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(context)!.enter_referral_code ?? 'Enter referral code',
+                            hintStyle: TextStyle(
+                              fontSize: 13.sp,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.code,
+                              size: 20.sp,
+                              color: MyTheme.accent_color,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 14.h,
+                            ),
+                            suffixIcon: _referralCodeController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.clear,
+                                      size: 18.sp,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                    onPressed: () {
+                                      _referralCodeController.clear();
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                          textCapitalization: TextCapitalization.characters,
+                        ),
+                      ),
+                      
+                      SizedBox(height: 16.h),
+                      
+                      // Two buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDialogButton(
+                              label: AppLocalizations.of(context)!.i_dont_have_referral ?? "I don't have a referral",
+                              onPressed: _isSubmittingReferral ? null : () => _submitReferralCode(null),
+                              isPrimary: false,
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: _buildDialogButton(
+                              label: AppLocalizations.of(context)!.submit_ucf ?? "Submit",
+                              onPressed: _isSubmittingReferral 
+                                  ? null 
+                                  : () {
+                                      final code = _referralCodeController.text.trim();
+                                      if (code.isEmpty) {
+                                        ToastComponent.showWarning(
+                                          AppLocalizations.of(context)!.please_enter_referral_code ?? 'Please enter a referral code',
+                                        );
+                                        return;
+                                      }
+                                      _submitReferralCode(code);
+                                    },
+                              isPrimary: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      if (_isSubmittingReferral) ...[
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          height: 20.w,
+                          width: 20.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.w,
+                            color: MyTheme.accent_color,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogButton({
+    required String label,
+    required VoidCallback? onPressed,
+    required bool isPrimary,
+  }) {
+    return SizedBox(
+      height: 44.h,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isPrimary ? MyTheme.accent_color : Colors.white,
+          foregroundColor: isPrimary ? Colors.white : MyTheme.accent_color,
+          elevation: isPrimary ? 2 : 1,
+          shadowColor: isPrimary ? MyTheme.accent_color.withOpacity(0.3) : Colors.black.withOpacity(0.05),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            side: BorderSide(
+              color: isPrimary ? MyTheme.accent_color : const Color(0xFFE2E8F0),
+              width: 1.w,
+            ),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitReferralCode(String? referralCode) async {
+    if (_userInfo == null || _userInfo!.id == null) {
+      ToastComponent.showError(AppLocalizations.of(context)!.user_not_found);
+      return;
+    }
+
+    setState(() {
+      _isSubmittingReferral = true;
+    });
+
+    try {
+      final response = await ProfileRepository().submitReferralCode(
+        userId: _userInfo!.id!,
+        referralCode: referralCode,
+      );
+
+      if (response['success'] == true) {
+        // Close dialog
+        Navigator.of(context).pop();
+        _showReferralDialog = false;
+        
+        // Show success message
+        ToastComponent.showSuccess(
+          response['message'] ?? 
+          (referralCode != null 
+            ? AppLocalizations.of(context)!.referral_code_applied_successfully 
+            : AppLocalizations.of(context)!.referral_skipped_successfully)
+        );
+        
+        // Refresh user data to update referral status and points
+        await _fetchUserData();
+      } else {
+        ToastComponent.showError(
+          response['message'] ?? AppLocalizations.of(context)!.failed_to_apply_referral
+        );
+      }
+    } catch (e) {
+      print("Error submitting referral: $e");
+      ToastComponent.showError(
+        AppLocalizations.of(context)!.failed_to_apply_referral
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingReferral = false;
+        });
+      }
+    }
+  }
+    
+    
   // ============ LOGOUT ============
   void _onTapLogout(BuildContext context) async {
     bool? confirm = await showDialog<bool>(

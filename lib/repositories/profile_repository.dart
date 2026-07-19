@@ -983,4 +983,23 @@ class ProfileRepository {
       perPage: perPage,
     );
   }
+
+  Future<Map<String, dynamic>> submitReferralCode({
+    required int userId,
+    String? referralCode,
+  }) async {
+    var url = "${AppConfig.BASE_URL}/api/user/submit-referral";
+    
+    final body = {
+      "user_id": userId.toString(),
+      if (referralCode != null) "referral_code": referralCode,
+    };
+    
+    var response = await ApiRequest.post(
+      url: url,
+      body: body,
+    );
+    
+    return jsonDecode(response.body);
+  }
 }
