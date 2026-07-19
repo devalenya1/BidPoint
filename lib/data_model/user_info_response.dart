@@ -86,6 +86,9 @@ class Pagination {
 // =============================================
 // USER INFORMATION MODEL
 // =============================================
+// =============================================
+// USER INFORMATION MODEL
+// =============================================
 class UserInformation {
   int? id;
   String? name;
@@ -102,6 +105,12 @@ class UserInformation {
   dynamic? remainingUploads;
   dynamic? packageId;
   String? packageName;
+  
+  // =============================================
+  // ✅ NEW FIELDS: Upline & Referral
+  // =============================================
+  String? hasUpline;      // "0" or "1"
+  String? referredBy;     // User ID or NULL
   
   // ============ AFFILIATE LOGS ============
   List<AffiliateLog>? affiliateLogs;
@@ -189,6 +198,11 @@ class UserInformation {
     this.remainingUploads,
     this.packageId,
     this.packageName,
+    // =============================================
+    // ✅ NEW FIELDS: Upline & Referral
+    // =============================================
+    this.hasUpline,
+    this.referredBy,
     // ============ ADDED ============
     this.affiliateLogs,
     this.totalAffiliateEarnings,
@@ -258,6 +272,12 @@ class UserInformation {
     remainingUploads: json["remaining_uploads"],
     packageId: json["package_id"],
     packageName: json["package_name"],
+    
+    // =============================================
+    // ✅ NEW FIELDS: Upline & Referral
+    // =============================================
+    hasUpline: json["has_upline"]?.toString() ?? "0",
+    referredBy: json["referred_by"]?.toString(),
     
     // ============ ADDED ============
     affiliateLogs: json["affiliate_logs"] != null
@@ -391,6 +411,11 @@ class UserInformation {
     "remaining_uploads": remainingUploads,
     "package_id": packageId,
     "package_name": packageName,
+    // =============================================
+    // ✅ NEW FIELDS: Upline & Referral
+    // =============================================
+    "has_upline": hasUpline ?? "0",
+    "referred_by": referredBy,
     // ============ ADDED ============
     "affiliate_logs": affiliateLogs != null ? List<dynamic>.from(affiliateLogs!.map((x) => x.toJson())) : [],
     "total_affiliate_earnings": totalAffiliateEarnings,

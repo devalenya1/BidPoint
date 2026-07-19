@@ -618,10 +618,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================
 
   void _onBuyNowPressed() async {
-    // if (!is_logged_in.$) {
-    //   _showLoginRequired();
-    //   return;
-    // }
 
     if (_isBuyNowLoading) return;
     
@@ -680,8 +676,8 @@ class _ProductDetailsState extends State<ProductDetails>
     }
     
     final text = isWinning 
-        ? "🎉 You are winning!"
-        : "😔 You have been outbid";
+        ? "${AppLocalizations.of(context)!.you_are_winning}"
+        : "${AppLocalizations.of(context)!.you_are_losing}";
     
     return AnimatedBuilder(
       animation: _blinkController,

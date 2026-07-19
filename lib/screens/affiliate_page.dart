@@ -109,7 +109,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
   String get _referralCode => _userInfo?.referralCode ?? "";
   
   // UPDATED: Use AppConfig.RAW_BASE_URL for referral link
-  String get _referralLink => "${AppConfig.RAW_BASE_URL}/registration?referral_code=$_referralCode";
+  // String get _referralLink => "${AppConfig.RAW_BASE_URL}/registration?referral_code=$_referralCode";
+  String get _referralLink => "$_referralCode";
   
   void _copyToClipboard(String text, String type) {
     Clipboard.setData(ClipboardData(text: text));
@@ -122,7 +123,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
       return;
     }
     
-    final String shareText = '${AppLocalizations.of(context)!.join_me_on_bidpoint} ${AppLocalizations.of(context)!.use_my_referral_code}: $_referralCode\n\n$_referralLink';
+    // final String shareText = '${AppLocalizations.of(context)!.join_me_on_bidpoint} ${AppLocalizations.of(context)!.use_my_referral_code}: $_referralCode\n\n$_referralLink';
+    final String shareText = '${AppLocalizations.of(context)!.join_me_on_bidpoint} ${AppLocalizations.of(context)!.use_my_referral_code}: $_referralCode';
     
     await Share.share(
       shareText,
@@ -630,7 +632,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.referral_link,
+          AppLocalizations.of(context)!.referral_code,
           style: TextStyle(
             fontSize: 11.sp,
             fontWeight: FontWeight.w600,
