@@ -601,7 +601,12 @@ class _ProfileState extends State<Profile> {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              context.go("/");
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const Main(initialIndex: 0),
+                ),
+              );
             }
           },
         ),

@@ -19,6 +19,7 @@ import 'package:active_ecommerce_flutter/screens/points_page.dart';
 import 'package:active_ecommerce_flutter/screens/activity_page.dart';
 import '../screens/withdrawal_page.dart'; // Import withdrawal history page
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({Key? key}) : super(key: key);
@@ -468,7 +469,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
             if (Navigator.canPop(context)) {
               Navigator.of(context).pop();
             } else {
-              context.go("/");
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const Main(initialIndex: 0),
+                ),
+              );
             }
           },
         ),

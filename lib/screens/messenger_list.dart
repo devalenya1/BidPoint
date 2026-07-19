@@ -10,6 +10,7 @@ import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart';
 
 class MessengerList extends StatefulWidget {
   @override
@@ -130,13 +131,17 @@ class _MessengerListState extends State<MessengerList> {
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        icon: Icon(Icons.arrow_back, size: 24.sp),
         onPressed: () {
           if (Navigator.canPop(context)) {
             Navigator.of(context).pop();
           } else {
-            // Go to home if can't pop
-            context.go("/");
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const Main(initialIndex: 0),
+              ),
+            );
           }
         },
       ),
