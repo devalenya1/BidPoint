@@ -8,7 +8,7 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
-import 'package:active_ecommerce_flutter/screens/main.dart';
+import 'package:active_ecommerce_flutter/screens/main.dart'; 
 import 'dart:async';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';

@@ -37,22 +37,21 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   UserInformation? _userInfo;  // Store user info for referral data
   
   // ============ CACHED LISTS ============
-  List<AffiliateLog> _allInviteHistory = [];
+  List<InviteHistory> _allInviteHistory = [];
   
   // ============ EXPANDED MONTHS STATE ============
   Set<String> _expandedMonths = {};
   
   // Referral data derived from _userInfo
-  int get _totalReferrals => _userInfo?.affiliateLogs?.where((log) => log.bonusType == 'referral').length ?? 0;
+  int get _totalReferrals => _allInviteHistory.length;
   int get _totalPoints => (_userInfo?.balance ?? 0).toInt();
   double get _totalEarnings => _userInfo?.affiliateBalance ?? 0.0;
   String get _referralCode => _userInfo?.referralCode ?? "";
   
-  // String get _referralLink => "${AppConfig.RAW_BASE_URL}/registration?referral_code=$_referralCode";
   String get _referralLink => "$_referralCode";
   
-  // Display list (paginated)
-  List<AffiliateLog> get _displayHistory => _allInviteHistory;
+  // Display list
+  List<InviteHistory> get _displayHistory => _allInviteHistory;
   
   // ============ USER GETTERS ============
   String get _userName => _userInfo?.name ?? "";
@@ -94,19 +93,22 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       var response = await ProfileRepository().getUserInfoResponse(
         notificationPage: 1,
         notificationPerPage: 10,
-        pointPage: page,
-        pointPerPage: _perPage,
+        pointPage: 1,
+        pointPerPage: 10,
         cashPage: 1,
         cashPerPage: 10,
         withdrawPage: 1,
         withdrawPerPage: 10,
+        // ✅ Use invite_page for invite history pagination
+        invitePage: page,
+        invitePerPage: _perPage,
       );
       
       if (response.success == true && response.data != null && response.data!.isNotEmpty) {
         final newUserInfo = response.data![0];
         
-        // Update pagination info from points_pagination
-        final pagination = newUserInfo.pointsPagination;
+        // Update pagination info from invite_pagination
+        final pagination = newUserInfo.invitePagination;
         if (pagination != null) {
           _currentPage = pagination.currentPage;
           _totalPages = pagination.totalPages;
@@ -118,14 +120,12 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         setState(() {
           if (loadMore) {
             // Append new items to existing list
-            final newLogs = newUserInfo.affiliateLogs ?? [];
+            final newLogs = newUserInfo.inviteHistory ?? [];
             _allInviteHistory.addAll(newLogs);
           } else {
             // First page - replace all data
             _userInfo = newUserInfo;
-            _allInviteHistory = newUserInfo.affiliateLogs?.where((log) => 
-              log.bonusType == 'referral' && log.cameFrom != null
-            ).toList() ?? [];
+            _allInviteHistory = newUserInfo.inviteHistory ?? [];
           }
         });
       } else {
@@ -181,19 +181,12 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
   
-  String _getReferralName(AffiliateLog log) {
-    if (log.cameFrom != null && log.cameFrom!.isNotEmpty) {
-      return log.cameFrom!;
-    }
-    return AppLocalizations.of(context)!.referred_user;
-  }
-  
   // ============ GROUP BY MONTH ============
-  Map<String, List<AffiliateLog>> _groupByMonth() {
-    final Map<String, List<AffiliateLog>> grouped = {};
+  Map<String, List<InviteHistory>> _groupByMonth() {
+    final Map<String, List<InviteHistory>> grouped = {};
     
     // Sort by date (newest first)
-    final sortedList = List<AffiliateLog>.from(_displayHistory)
+    final sortedList = List<InviteHistory>.from(_displayHistory)
       ..sort((a, b) {
         final aDate = a.createdAt ?? DateTime.now();
         final bDate = b.createdAt ?? DateTime.now();
@@ -205,7 +198,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       
       final month = log.createdAt!.month;
       final year = log.createdAt!.year;
-      final monthKey = '$year-$month';
       
       // Format: "Monthly Balance February 2026"
       final monthName = _getMonthName(month);
@@ -228,7 +220,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     return months[month - 1];
   }
   
-  int _getMonthTotalPoints(List<AffiliateLog> logs) {
+  int _getMonthTotalPoints(List<InviteHistory> logs) {
     int total = 0;
     for (var log in logs) {
       total += (log.amount ?? 0).toInt();
@@ -280,8 +272,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                       SizedBox(height: 24.h),
                       _buildStatsRow(),
                       SizedBox(height: 24.h),
-                      // _buildReferralSection(), // ✅ COMMENTED OUT
-                      // SizedBox(height: 24.h), // ✅ COMMENTED OUT
                       _buildHistorySection(),
                     ],
                   ),
@@ -563,87 +553,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     );
   }
   
-  // ============ REFERRAL SECTION - COMMENTED OUT ============
-  /*
-  Widget _buildReferralSection() {
-    final displayLink = _referralCode.isNotEmpty 
-        ? _referralLink 
-        : AppLocalizations.of(context)!.referral_code_not_available;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.your_referral_link,
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF64748B),
-            letterSpacing: 0.5,
-          ),
-        ),
-        SizedBox(height: 8.h),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: const Color(0xFFEEF2F8), width: 1.w),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                  child: Text(
-                    displayLink,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontFamily: 'monospace',
-                      color: const Color(0xFF1A1A2E),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              if (_referralCode.isNotEmpty)
-                GestureDetector(
-                  onTap: _copyToClipboard,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.horizontal(
-                        right: Radius.circular(11.r),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.copy,
-                          size: 14.sp,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 6.w),
-                        Text(
-                          AppLocalizations.of(context)!.copy_ucf,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-  */
-  
   // ============ HISTORY SECTION WITH MONTHLY GROUPS ============
   Widget _buildHistorySection() {
     final groupedData = _groupByMonth();
@@ -799,7 +708,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                         ),
                       ),
                       
-                      // List items
+                      // List items - Using InviteHistory data
                       ...logs.map((log) {
                         final pointsValue = (log.amount ?? 0).abs().toInt();
                         final isEarned = (log.amount ?? 0) > 0;
@@ -819,7 +728,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  _getReferralName(log),
+                                  log.userName ?? AppLocalizations.of(context)!.referred_user,
                                   style: TextStyle(
                                     fontSize: 13.sp,
                                     fontWeight: FontWeight.w500,

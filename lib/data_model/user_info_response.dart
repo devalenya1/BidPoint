@@ -86,9 +86,6 @@ class Pagination {
 // =============================================
 // USER INFORMATION MODEL
 // =============================================
-// =============================================
-// USER INFORMATION MODEL
-// =============================================
 class UserInformation {
   int? id;
   String? name;
@@ -138,6 +135,12 @@ class UserInformation {
   List<CashHistory>? cashHistory;
   double? totalCashEarnings;
   Pagination? cashPagination;
+  
+  // =============================================
+  // ✅ NEW: INVITE HISTORY WITH PAGINATION
+  // =============================================
+  List<InviteHistory>? inviteHistory;
+  Pagination? invitePagination;
   
   // Withdraw requests with pagination
   List<AffiliateWithdrawRequest>? affiliateWithdrawRequests;
@@ -223,6 +226,12 @@ class UserInformation {
     this.cashHistory,
     this.totalCashEarnings,
     this.cashPagination,
+    // =============================================
+    // ✅ NEW: INVITE HISTORY WITH PAGINATION
+    // =============================================
+    this.inviteHistory,
+    this.invitePagination,
+    // =============================================
     this.affiliateWithdrawRequests,
     this.totalWithdrawnAmount,
     this.pendingWithdrawAmount,
@@ -319,6 +328,16 @@ class UserInformation {
     totalCashEarnings: json["total_cash_earnings"]?.toDouble(),
     cashPagination: json["cash_pagination"] != null
         ? Pagination.fromJson(json["cash_pagination"])
+        : null,
+    
+    // =============================================
+    // ✅ NEW: INVITE HISTORY WITH PAGINATION
+    // =============================================
+    inviteHistory: json["invite_history"] != null
+        ? List<InviteHistory>.from(json["invite_history"].map((x) => InviteHistory.fromJson(x)))
+        : [],
+    invitePagination: json["invite_pagination"] != null
+        ? Pagination.fromJson(json["invite_pagination"])
         : null,
     
     // Withdraw Requests
@@ -436,6 +455,12 @@ class UserInformation {
     "cash_earning_history": cashHistory != null ? List<dynamic>.from(cashHistory!.map((x) => x.toJson())) : [],
     "total_cash_earnings": totalCashEarnings,
     "cash_pagination": cashPagination?.toJson(),
+    // =============================================
+    // ✅ NEW: INVITE HISTORY WITH PAGINATION
+    // =============================================
+    "invite_history": inviteHistory != null ? List<dynamic>.from(inviteHistory!.map((x) => x.toJson())) : [],
+    "invite_pagination": invitePagination?.toJson(),
+    // =============================================
     "affiliate_withdraw_requests": affiliateWithdrawRequests != null ? List<dynamic>.from(affiliateWithdrawRequests!.map((x) => x.toJson())) : [],
     "total_withdrawn_amount": totalWithdrawnAmount,
     "pending_withdraw_amount": pendingWithdrawAmount,
@@ -477,6 +502,65 @@ class UserInformation {
     // ✅ NEW: User has bid on product
     // =============================================
     "user_has_bid": userHasBid,
+  };
+}
+
+// =============================================
+// ✅ NEW: INVITE HISTORY MODEL
+// =============================================
+class InviteHistory {
+  int? id;
+  int? userId;
+  String? userName;
+  double? amount;
+  String? formattedAmount;
+  String? bonusType;
+  String? affiliateType;
+  String? cameFrom;
+  int? status;
+  DateTime? createdAt;
+  int? referredByUser;
+
+  InviteHistory({
+    this.id,
+    this.userId,
+    this.userName,
+    this.amount,
+    this.formattedAmount,
+    this.bonusType,
+    this.affiliateType,
+    this.cameFrom,
+    this.status,
+    this.createdAt,
+    this.referredByUser,
+  });
+
+  factory InviteHistory.fromJson(Map<String, dynamic> json) => InviteHistory(
+    id: json["id"],
+    userId: json["user_id"],
+    userName: json["user_name"] ?? 'Unknown User',
+    amount: json["amount"]?.toDouble() ?? 0.0,
+    formattedAmount: json["formatted_amount"] ?? '0.00',
+    bonusType: json["bonus_type"],
+    affiliateType: json["affiliate_type"],
+    cameFrom: json["came_from"],
+    status: json["status"],
+    createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
+    referredByUser: json["referred_by_user"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "user_id": userId,
+    "user_name": userName,
+    "amount": amount,
+    "formatted_amount": formattedAmount,
+    "bonus_type": bonusType,
+    "affiliate_type": affiliateType,
+    "came_from": cameFrom,
+    "status": status,
+    "created_at": createdAt?.toIso8601String(),
+    "referred_by_user": referredByUser,
   };
 }
 
