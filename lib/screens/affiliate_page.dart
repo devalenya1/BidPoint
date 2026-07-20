@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import 'package:one_context/one_context.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../repositories/auth_repository.dart';
+import 'package:active_ecommerce_flutter/screens/invite_history_page.dart';
 import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
 import 'package:active_ecommerce_flutter/screens/cash_earnings_page.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';
@@ -148,7 +149,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
   void _navigateToPoints() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const PointsHistoryPage()),
+      MaterialPageRoute(builder: (context) => const InviteHistoryPage()),
     );
   }
   
@@ -382,7 +383,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        AppLocalizations.of(context)!.points_balance,
+                        AppLocalizations.of(context)!.referral_history,
                         style: TextStyle(
                           fontSize: 10.sp,
                           color: const Color(0xFF666666),

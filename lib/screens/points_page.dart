@@ -11,6 +11,7 @@ import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/customer_package_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/checkout.dart';
+import 'package:active_ecommerce_flutter/screens/points_history_page.dart'; // ✅ Import points history page
 import 'package:active_ecommerce_flutter/custom/enum_classes.dart';
 import '../repositories/auth_repository.dart';
 import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
@@ -723,26 +724,28 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     );
   }
   
+  // ============ UPDATED: USER POINTS CARD ============
   Widget _buildUserPointsCard() {
     return Container(
-      padding: EdgeInsets.all(24.w),
+      padding: EdgeInsets.all(20.w), // Reduced padding
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
         borderRadius: BorderRadius.circular(24.r),
       ),
       child: Column(
         children: [
+          // User avatar and name - Reduced size
           Row(
             children: [
               Container(
-                width: 70.w,
-                height: 70.w,
+                width: 50.w, // Reduced from 70
+                height: 50.w, // Reduced from 70
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
                     color: Colors.white.withOpacity(0.3),
-                    width: 3.w,
+                    width: 2.w, // Reduced from 3
                   ),
                 ),
                 child: ClipOval(
@@ -753,19 +756,19 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                           errorBuilder: (context, error, stackTrace) {
                             return Icon(
                               Icons.person,
-                              size: 40.sp,
+                              size: 28.sp, // Reduced from 40
                               color: MyTheme.medium_grey,
                             );
                           },
                         )
                       : Icon(
                           Icons.person,
-                          size: 40.sp,
+                          size: 28.sp, // Reduced from 40
                           color: MyTheme.medium_grey,
                         ),
                 ),
               ),
-              SizedBox(width: 16.w),
+              SizedBox(width: 12.w), // Reduced from 16
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,18 +776,18 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.guest_user,
                       style: TextStyle(
-                        fontSize: 17.sp,
+                        fontSize: 15.sp, // Reduced from 17
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF0F172A),
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h), // Reduced from 4
                     Text(
                       _userEmail,
                       style: TextStyle(
-                        fontSize: 11.sp,
+                        fontSize: 10.sp, // Reduced from 11
                         color: const Color(0xFF64748B),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -795,10 +798,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               ),
             ],
           ),
-          SizedBox(height: 20.h),
+          SizedBox(height: 16.h), // Reduced from 20
+          
+          // Points and buttons row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Points section - Reduced size
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,38 +812,71 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       AppLocalizations.of(context)!.referral_and_points,
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize: 8.sp, // Reduced from 9
                         fontWeight: FontWeight.w700,
                         color: MyTheme.accent_color,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h), // Reduced from 4
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '$_userPoints',
                           style: TextStyle(
-                            fontSize: 23.sp,
+                            fontSize: 20.sp, // Reduced from 23
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
-                        SizedBox(width: 4.w),
+                        SizedBox(width: 3.w), // Reduced from 4
                         Text(
                           AppLocalizations.of(context)!.points_ucf,
                           style: TextStyle(
-                            fontSize: 11.sp,
+                            fontSize: 10.sp, // Reduced from 11
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
                       ],
                     ),
+                    // ✅ NEW: View button below points
+                    SizedBox(height: 6.h),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PointsHistoryPage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                          border: Border.all(
+                            color: MyTheme.accent_color.withOpacity(0.3),
+                            width: 1.w,
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.view_ucf,
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w500,
+                            color: MyTheme.accent_color,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
+              
+              // Buy Points button - Same size as before
               GestureDetector(
                 onTap: _openBuyPointsDrawer,
                 child: Container(

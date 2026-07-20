@@ -1206,6 +1206,7 @@
   "bidder_ucf": "Bidder",
   "date_time_ucf": "Date & Time",
   "no_bids_yet": "No bids yet",
+  "referral_history" : "Referral History",
   "auction_ended_exclamation": "Auction Ended!",
   "winner_ucf": "Winner",
   "congratulations_to_winner": "Congratulations to the winner!",

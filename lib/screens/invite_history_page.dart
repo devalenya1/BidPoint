@@ -25,6 +25,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   bool _isLoading = true;
   bool _isRefreshing = false;
   bool _isLoadingMore = false;
+  bool _pointsVisible = true;
   
   // ============ PAGINATION STATE ============
   int _currentPage = 1;
@@ -38,6 +39,9 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   // ============ CACHED LISTS ============
   List<AffiliateLog> _allInviteHistory = [];
   
+  // ============ EXPANDED MONTHS STATE ============
+  Set<String> _expandedMonths = {};
+  
   // Referral data derived from _userInfo
   int get _totalReferrals => _userInfo?.affiliateLogs?.where((log) => log.bonusType == 'referral').length ?? 0;
   int get _totalPoints => (_userInfo?.balance ?? 0).toInt();
@@ -49,6 +53,11 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   
   // Display list (paginated)
   List<AffiliateLog> get _displayHistory => _allInviteHistory;
+  
+  // ============ USER GETTERS ============
+  String get _userName => _userInfo?.name ?? "";
+  String get _userEmail => _userInfo?.email ?? "";
+  String get _userAvatar => _userInfo?.avatar ?? "";
   
   @override
   void initState() {
@@ -76,6 +85,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
           _currentPage = 1;
           _hasMore = true;
           _allInviteHistory.clear();
+          _expandedMonths.clear();
         });
       }
 
@@ -151,14 +161,20 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     await _fetchReferralData(loadMore: false);
   }
   
-  void _copyToClipboard() {
-    if (_referralCode.isEmpty) {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.referral_code_not_available);
-      return;
-    }
-    
-    Clipboard.setData(ClipboardData(text: _referralLink));
-    ToastComponent.showSuccess(AppLocalizations.of(context)!.copied_to_clipboard);
+  void _togglePointsVisibility() {
+    setState(() {
+      _pointsVisible = !_pointsVisible;
+    });
+  }
+  
+  void _toggleMonthExpansion(String monthKey) {
+    setState(() {
+      if (_expandedMonths.contains(monthKey)) {
+        _expandedMonths.remove(monthKey);
+      } else {
+        _expandedMonths.add(monthKey);
+      }
+    });
   }
   
   String _formatDate(DateTime date) {
@@ -170,6 +186,54 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       return log.cameFrom!;
     }
     return AppLocalizations.of(context)!.referred_user;
+  }
+  
+  // ============ GROUP BY MONTH ============
+  Map<String, List<AffiliateLog>> _groupByMonth() {
+    final Map<String, List<AffiliateLog>> grouped = {};
+    
+    // Sort by date (newest first)
+    final sortedList = List<AffiliateLog>.from(_displayHistory)
+      ..sort((a, b) {
+        final aDate = a.createdAt ?? DateTime.now();
+        final bDate = b.createdAt ?? DateTime.now();
+        return bDate.compareTo(aDate);
+      });
+    
+    for (var log in sortedList) {
+      if (log.createdAt == null) continue;
+      
+      final month = log.createdAt!.month;
+      final year = log.createdAt!.year;
+      final monthKey = '$year-$month';
+      
+      // Format: "Monthly Balance February 2026"
+      final monthName = _getMonthName(month);
+      final displayKey = '$monthName $year';
+      
+      if (!grouped.containsKey(displayKey)) {
+        grouped[displayKey] = [];
+      }
+      grouped[displayKey]!.add(log);
+    }
+    
+    return grouped;
+  }
+  
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+  
+  int _getMonthTotalPoints(List<AffiliateLog> logs) {
+    int total = 0;
+    for (var log in logs) {
+      total += (log.amount ?? 0).toInt();
+    }
+    return total;
   }
   
   // ============ BUILD UI ============
@@ -200,7 +264,6 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             ? _buildShimmer()
             : NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification scrollInfo) {
-                  // Detect when user scrolls to bottom
                   if (!_isLoadingMore &&
                       _hasMore &&
                       scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
@@ -213,10 +276,12 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                   padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
                   child: Column(
                     children: [
+                      _buildProfileCard(),
+                      SizedBox(height: 24.h),
                       _buildStatsRow(),
                       SizedBox(height: 24.h),
-                      _buildReferralSection(),
-                      SizedBox(height: 24.h),
+                      // _buildReferralSection(), // ✅ COMMENTED OUT
+                      // SizedBox(height: 24.h), // ✅ COMMENTED OUT
                       _buildHistorySection(),
                     ],
                   ),
@@ -232,6 +297,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
       child: Column(
         children: [
+          // Profile card shimmer
+          ShimmerHelper().buildBasicShimmer(height: 100.h, radius: 20.r),
+          SizedBox(height: 16.h),
+          // Stats row shimmer
           Row(
             children: [
               Expanded(child: ShimmerHelper().buildBasicShimmer(height: 90.h, radius: 16.r)),
@@ -242,17 +311,175 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
             ],
           ),
           SizedBox(height: 24.h),
-          ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 12.r),
-          SizedBox(height: 24.h),
+          // History section shimmer
           ShimmerHelper().buildBasicShimmer(height: 20.h, width: 150.w),
           SizedBox(height: 16.h),
           Column(
-            children: List.generate(5, (index) => 
+            children: List.generate(3, (index) => 
               Padding(
-                padding: EdgeInsets.only(bottom: 12.h),
-                child: ShimmerHelper().buildBasicShimmer(height: 50.h, radius: 8.r),
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: ShimmerHelper().buildBasicShimmer(height: 60.h, radius: 8.r),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ============ PROFILE CARD ============
+  Widget _buildProfileCard() {
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(24.r),
+      ),
+      child: Column(
+        children: [
+          // User avatar and name
+          Row(
+            children: [
+              Container(
+                width: 50.w,
+                height: 50.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2.w,
+                  ),
+                ),
+                child: ClipOval(
+                  child: _userAvatar.isNotEmpty
+                      ? Image.network(
+                          _userAvatar,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.person,
+                              size: 28.sp,
+                              color: MyTheme.medium_grey,
+                            );
+                          },
+                        )
+                      : Icon(
+                          Icons.person,
+                          size: 28.sp,
+                          color: MyTheme.medium_grey,
+                        ),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.guest_user,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0F172A),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      _userEmail,
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: const Color(0xFF64748B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          
+          // Points section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.referral_and_points,
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w700,
+                        color: MyTheme.accent_color,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _pointsVisible ? '$_totalPoints' : '****',
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        SizedBox(width: 3.w),
+                        Text(
+                          AppLocalizations.of(context)!.points_ucf,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: _togglePointsVisibility,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(6.r),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.w,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _pointsVisible ? Icons.visibility : Icons.visibility_off,
+                        size: 14.sp,
+                        color: MyTheme.accent_color,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        _pointsVisible ? 'Hide' : 'Show',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w500,
+                          color: MyTheme.accent_color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -336,6 +563,8 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
     );
   }
   
+  // ============ REFERRAL SECTION - COMMENTED OUT ============
+  /*
   Widget _buildReferralSection() {
     final displayLink = _referralCode.isNotEmpty 
         ? _referralLink 
@@ -413,104 +642,253 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
       ],
     );
   }
+  */
   
+  // ============ HISTORY SECTION WITH MONTHLY GROUPS ============
   Widget _buildHistorySection() {
-    final history = _displayHistory;
+    final groupedData = _groupByMonth();
+    
+    if (groupedData.isEmpty) {
+      return _buildEmptyState();
+    }
     
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 14.h),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: const Color(0xFFEEF2F8),
-                width: 1.w,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  AppLocalizations.of(context)!.referral_name,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Text(
-                  AppLocalizations.of(context)!.points_ucf,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Text(
-                  AppLocalizations.of(context)!.date_ucf,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
+        Text(
+          AppLocalizations.of(context)!.invite_history,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF0F172A),
           ),
         ),
-        
-        if (history.isEmpty)
-          _buildEmptyState()
-        else
-          Container(
-            constraints: BoxConstraints(maxHeight: 500.h),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: history.length + (_hasMore ? 1 : 0),
-              separatorBuilder: (context, index) => Divider(
-                height: 0,
-                color: const Color(0xFFEEF2F8),
-              ),
-              itemBuilder: (context, index) {
-                // Show loading indicator at the end if there are more items
-                if (index == history.length && _hasMore) {
-                  return Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16.h),
-                    child: Center(
-                      child: SizedBox(
-                        height: 24.w,
-                        width: 24.w,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.w,
-                          color: MyTheme.accent_color,
+        SizedBox(height: 16.h),
+        ...groupedData.entries.map((entry) {
+          final monthKey = entry.key;
+          final logs = entry.value;
+          final totalPoints = _getMonthTotalPoints(logs);
+          final isExpanded = _expandedMonths.contains(monthKey);
+          
+          return Column(
+            children: [
+              // Monthly header - expandable
+              GestureDetector(
+                onTap: () => _toggleMonthExpansion(monthKey),
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 16.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: const Color(0xFFEEF2F8),
+                      width: 1.w,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              isExpanded 
+                                  ? Icons.keyboard_arrow_down 
+                                  : Icons.keyboard_arrow_right,
+                              size: 20.sp,
+                              color: const Color(0xFF64748B),
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                '${AppLocalizations.of(context)!.monthly_balance} $monthKey',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: MyTheme.accent_color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Text(
+                          '$totalPoints pts',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w600,
+                            color: MyTheme.accent_color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Expanded content - list of referrals for this month
+              if (isExpanded) ...[
+                SizedBox(height: 8.h),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFAFBFC),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: const Color(0xFFEEF2F8),
+                      width: 1.w,
                     ),
-                  );
-                }
-                final item = history[index];
-                return _buildHistoryItem(item, index);
-              },
+                  ),
+                  child: Column(
+                    children: [
+                      // Header row
+                      Container(
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: const Color(0xFFEEF2F8),
+                              width: 1.w,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                AppLocalizations.of(context)!.referral_name,
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                AppLocalizations.of(context)!.points_ucf,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                AppLocalizations.of(context)!.date_ucf,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // List items
+                      ...logs.map((log) {
+                        final pointsValue = (log.amount ?? 0).abs().toInt();
+                        final isEarned = (log.amount ?? 0) > 0;
+                        
+                        return Container(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: const Color(0xFFF1F5F9),
+                                width: 0.5.w,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  _getReferralName(log),
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF1A1A2E),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  '${isEarned ? '+' : ''}$pointsValue',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: isEarned 
+                                        ? const Color(0xFF0092AC) 
+                                        : const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  log.createdAt != null 
+                                      ? _formatDate(log.createdAt!) 
+                                      : AppLocalizations.of(context)!.unknown,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      
+                      SizedBox(height: 4.h),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
+            ],
+          );
+        }).toList(),
+        
+        // Loading more indicator
+        if (_isLoadingMore)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: Center(
+              child: SizedBox(
+                height: 24.w,
+                width: 24.w,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.w,
+                  color: MyTheme.accent_color,
+                ),
+              ),
             ),
           ),
         
-        // Show "End of list" message when no more items
-        if (!_hasMore && history.isNotEmpty)
+        // End of list message
+        if (!_hasMore && _displayHistory.isNotEmpty)
           Padding(
             padding: EdgeInsets.only(top: 16.h),
             child: Text(
@@ -519,58 +897,10 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                 fontSize: 12.sp,
                 color: const Color(0xFF999999),
               ),
+              textAlign: TextAlign.center,
             ),
           ),
       ],
-    );
-  }
-  
-  Widget _buildHistoryItem(AffiliateLog item, int index) {
-    final pointsValue = (item.amount ?? 0).abs().toInt();
-    final isEarned = (item.amount ?? 0) > 0;
-    
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              _getReferralName(item),
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF1A1A2E),
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              '${isEarned ? '+' : ''}$pointsValue',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: isEarned ? const Color(0xFF0092AC) : const Color(0xFFEF4444),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              item.createdAt != null ? _formatDate(item.createdAt!) : AppLocalizations.of(context)!.unknown,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
   
