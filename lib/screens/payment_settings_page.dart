@@ -445,6 +445,31 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
                     child: Column(
                       children: [
+                        // ✅ ADDED: Subtitle text at the top
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: const Color(0xFFEEF2F8),
+                              width: 1.w,
+                            ),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)!.payment_settings_subtitle,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF1E293B),
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(height: 20.h),
+                        
                         _buildPaymentCard(
                           icon: Icons.account_balance,
                           title: AppLocalizations.of(context)!.bank_details,
@@ -485,6 +510,8 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 30.h),
       child: Column(
         children: [
+          ShimmerHelper().buildBasicShimmer(height: 60.h, radius: 12.r),
+          SizedBox(height: 16.h),
           ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 7.r),
           SizedBox(height: 8.h),
           ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 7.r),
