@@ -230,6 +230,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'newbid':
       case 'outbid':
       case 'bid_placed':
+      case 'new_product':
         if (slug != null && slug.isNotEmpty) {
           Navigator.push(
             context,
@@ -318,6 +319,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     const auctionTypes = [
       'outbid',
       'newbid',
+      'new_product',
       'bid_placed',
       'auction_win',
       'auction_lose',
@@ -424,7 +426,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   // ============ GET FILTERED NOTIFICATIONS ============
   List<model.Notification> _getCurrentNotifications() {
     final auctionTypes = [
-      'outbid', 'newbid', 'point_deduction', 'bid_placed',
+      'outbid', 'newbid', 'new_product', 'point_deduction', 'bid_placed',
       'auction_win', 'auction_lose', 'auction_ending'
     ];
     final paymentTypes = [
