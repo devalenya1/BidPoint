@@ -11,6 +11,8 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 
 class MessengerList extends StatefulWidget {
   @override

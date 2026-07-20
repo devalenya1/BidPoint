@@ -1206,6 +1206,8 @@
   "bidder_ucf": "Bidder",
   "date_time_ucf": "Date & Time",
   "no_bids_yet": "No bids yet",
+  "payment_settings_subtitle": "How would you like us to pay you the commission you earn from your referrals?",
+  "monthly_balance": "Monthly Balance",
   "referral_history" : "Referral History",
   "auction_ended_exclamation": "Auction Ended!",
   "winner_ucf": "Winner",
