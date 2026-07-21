@@ -104,7 +104,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
   String get _userEmail => _userInfo?.email ?? "";
   String get _userPhone => _userInfo?.phone ?? "";
   String get _userAvatar => _userInfo?.avatar ?? "";
-  int get _pointsBalance => (_userInfo?.balance ?? 0).toInt();
+  double get _pointsBalance => _userInfo?.balance ?? 0.0;
   double get _cashEarnings => _userInfo?.affiliateBalance ?? 0.0;
   double get _referralEarnings => _userInfo?.affiliateBalance ?? 0.0;
   String get _referralCode => _userInfo?.referralCode ?? "";
@@ -405,7 +405,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        _pointsVisible ? '$_pointsBalance' : '****',
+                        _pointsVisible ? FormatHelper.formatPrice(_pointsBalance) : '****',
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w700,

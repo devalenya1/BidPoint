@@ -44,7 +44,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
   
   // Referral data derived from _userInfo
   int get _totalReferrals => _allInviteHistory.length;
-  int get _totalPoints => (_userInfo?.balance ?? 0).toInt();
+  double get _totalPoints => _userInfo?.balance ?? 0.0;
   double get _totalEarnings => _userInfo?.affiliateBalance ?? 0.0;
   String get _referralCode => _userInfo?.referralCode ?? "";
   
@@ -415,7 +415,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _pointsVisible ? '$_totalPoints' : '****',
+                           _pointsVisible ? FormatHelper.formatPrice(_totalPoints) : '****',
                           style: TextStyle(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w700,
@@ -486,7 +486,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         SizedBox(width: 12.w),
         _buildStatCard(
           label: AppLocalizations.of(context)!.points_ucf,
-          value: '$_totalPoints',
+          value: FormatHelper.formatPrice(_totalPoints),
           unit: 'pts',
         ),
         SizedBox(width: 12.w),

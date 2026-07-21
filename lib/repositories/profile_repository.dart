@@ -170,6 +170,9 @@ class ProfileRepository {
     int auctionBidPerPage = 20,
     int distinctPage = 1,
     int distinctPerPage = 20,
+    // ✅ ADD: invite pagination parameters
+    int invitePage = 1,
+    int invitePerPage = 10,
   }) async {
     String url = "${AppConfig.BASE_URL}/customer/info"
         "?notification_page=$notificationPage"
@@ -185,7 +188,10 @@ class ProfileRepository {
         "&auction_bid_page=$auctionBidPage"
         "&auction_bid_per_page=$auctionBidPerPage"
         "&distinct_page=$distinctPage"
-        "&distinct_per_page=$distinctPerPage";
+        "&distinct_per_page=$distinctPerPage"
+        // ✅ ADD: invite pagination to URL
+        "&invite_page=$invitePage"
+        "&invite_per_page=$invitePerPage";
     
     try {
       final response = await ApiRequest.get(
