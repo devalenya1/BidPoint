@@ -248,7 +248,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   String get _userEmail => _userInfo?.email ?? "";
   String get _userPhone => _userInfo?.phone ?? "";
   String get _userAvatar => _userInfo?.avatar ?? "";
-  int get _pointsBalance => (_userInfo?.balance ?? 0).toInt();
+  double get _pointsBalance => _userInfo?.balance ?? 0.0;
   double get _userCash => _userInfo?.affiliateBalance ?? 0.0;
   
   DateTime _parseMonthYear(String monthYear) {
@@ -469,7 +469,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      '$_pointsBalance ${AppLocalizations.of(context)!.points_ucf}',
+                      '${FormatHelper.formatPrice(_pointsBalance)} ${AppLocalizations.of(context)!.points_ucf}',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w800,

@@ -306,7 +306,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   }
   
   int get _userPoints {
-    return (_userInfo?.balance ?? 0).toInt();
+    return _userInfo?.balance ?? 0.0;
   }
   
   String get _userName {
@@ -823,7 +823,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$_userPoints',
+                          FormatHelper.formatPrice(_userPoints),
                           style: TextStyle(
                             fontSize: 20.sp, // Reduced from 23
                             fontWeight: FontWeight.w700,
