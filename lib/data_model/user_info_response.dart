@@ -117,12 +117,6 @@ class UserInformation {
   List<Notification>? notifications;
   int? unreadNotificationsCount;
   Pagination? notificationsPagination;
-  
-  // =============================================
-  // INVITE HISTORY WITH PAGINATION
-  // =============================================
-  List<InviteHistory>? inviteHistory;
-  Pagination? invitePagination;
 
   // =============================================
   // ✅ ADDED: Notification category counts
@@ -309,15 +303,15 @@ class UserInformation {
         ? Pagination.fromJson(json["notifications_pagination"])
         : null,
     
-    // =============================================
-    // INVITE HISTORY WITH PAGINATION
-    // =============================================
-    inviteHistory: json["invite_history"] != null
-        ? List<InviteHistory>.from(json["invite_history"].map((x) => InviteHistory.fromJson(x)))
-        : [],
-    invitePagination: json["invite_pagination"] != null
-        ? Pagination.fromJson(json["invite_pagination"])
-        : null,
+    // // =============================================
+    // // INVITE HISTORY WITH PAGINATION
+    // // =============================================
+    // inviteHistory: json["invite_history"] != null
+    //     ? List<InviteHistory>.from(json["invite_history"].map((x) => InviteHistory.fromJson(x)))
+    //     : [],
+    // invitePagination: json["invite_pagination"] != null
+    //     ? Pagination.fromJson(json["invite_pagination"])
+    //     : null,
     
 
 

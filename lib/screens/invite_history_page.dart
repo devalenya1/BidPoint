@@ -100,7 +100,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         withdrawPage: 1,
         withdrawPerPage: 10,
         // ✅ Use invite_page for invite history pagination
-        InviteHistoryPage: page,
+        invitePage: page,
         invitePerPage: _perPage,
       );
       
