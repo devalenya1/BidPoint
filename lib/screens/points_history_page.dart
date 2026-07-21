@@ -786,7 +786,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                 ),
                 SizedBox(height: 8.h),
                 Text(
-                  '$monthPoints ${AppLocalizations.of(context)!.points_ucf}',
+                  '${FormatHelper.formatPrice(monthPoints.toDouble())} ${AppLocalizations.of(context)!.points_ucf}', // ✅ Updated
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
