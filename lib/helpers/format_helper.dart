@@ -18,10 +18,23 @@ class FormatHelper {
     return '$symbol${formatter.format(price)}';
   }
   
+  // ✅ FIXED: Now formats with thousands separators
   static String formatPoints(dynamic points) {
     if (points == null) return '0';
-    if (points is double) return points.toInt().toString();
-    return points.toString();
+    
+    // Convert to int first
+    int value;
+    if (points is double) {
+      value = points.toInt();
+    } else if (points is int) {
+      value = points;
+    } else {
+      value = int.tryParse(points.toString()) ?? 0;
+    }
+    
+    // Format with thousands separators
+    final formatter = NumberFormat('#,###', 'en_US');
+    return formatter.format(value);
   }
   
   static String formatAffiliateBalance(double? balance) {

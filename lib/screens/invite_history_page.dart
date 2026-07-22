@@ -415,7 +415,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                           _pointsVisible ? FormatHelper.formatPrice(_totalPoints) : '****',
+                           _pointsVisible ? FormatHelper.formatPoints(_totalPoints) : '****',
                           style: TextStyle(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w700,
@@ -486,7 +486,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         SizedBox(width: 12.w),
         _buildStatCard(
           label: AppLocalizations.of(context)!.points_ucf,
-          value: FormatHelper.formatPrice(_totalPoints),
+          value: FormatHelper.formatPoints(_totalPoints),
           unit: 'pts',
         ),
         SizedBox(width: 12.w),

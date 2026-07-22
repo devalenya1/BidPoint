@@ -405,7 +405,7 @@ class _AffiliatePageState extends State<AffiliatePage> {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        _pointsVisible ? FormatHelper.formatPrice(_pointsBalance) : '****',
+                        _pointsVisible ? FormatHelper.formatPoints(_pointsBalance) : '****',
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w700,

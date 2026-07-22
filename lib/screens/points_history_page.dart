@@ -469,7 +469,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      '${FormatHelper.formatPrice(_pointsBalance)} ${AppLocalizations.of(context)!.points_ucf}',
+                      '${FormatHelper.formatPoints(_pointsBalance)} ${AppLocalizations.of(context)!.points_ucf}',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w800,

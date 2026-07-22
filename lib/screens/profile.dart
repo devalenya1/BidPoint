@@ -872,7 +872,7 @@ class _ProfileState extends State<Profile> {
                 children: [
                   Text(
                     _pointsVisible 
-                        ? (_userInfo?.balance?.toInt() ?? 0).toString() 
+                        ? FormatHelper.formatPoints(_userInfo?.balance) 
                         : '****',
                     style: TextStyle(
                       fontSize: 14.sp,

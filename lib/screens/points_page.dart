@@ -818,7 +818,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          FormatHelper.formatPrice(_userPoints),  // ✅ _userPoints is now double
+                          FormatHelper.formatPoints(_userPoints),  // ✅ _userPoints is now double
                           style: TextStyle(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w700,
