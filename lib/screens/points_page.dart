@@ -11,7 +11,7 @@ import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/customer_package_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/checkout.dart';
-import 'package:active_ecommerce_flutter/screens/points_history_page.dart'; // ✅ Import points history page
+import 'package:active_ecommerce_flutter/screens/points_history_page.dart';
 import 'package:active_ecommerce_flutter/custom/enum_classes.dart';
 import '../repositories/auth_repository.dart';
 import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
@@ -200,7 +200,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     return 0.0;
   }
   
-  // ============ SUBMIT PURCHASE (Connects to Payment Gateway) ============
+  // ============ SUBMIT PURCHASE ============
   Future<void> _submitPurchase() async {
     if (_selectedPackage == null) {
       ToastComponent.showWarning(AppLocalizations.of(context)!.please_select_a_package);
@@ -246,7 +246,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     });
     _drawerAnimationController.forward();
     
-    // Scroll to selected package when drawer opens (matches HTML behavior)
+    // Scroll to selected package when drawer opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_selectedPackage != null) {
         _scrollToPackage(_selectedPackage!);
@@ -296,17 +296,14 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     }
   }
   
-  String _formatPrice(double price) {
-    return FormatHelper.formatPrice(price);
-  }
-  
-  // Helper getters
+  // ✅ Helper getters - FIXED: _userPoints returns double now
   List<CustomerPackagePayment> get _purchaseHistory {
     return _userInfo?.customerPackagePayments ?? [];
   }
   
-  int get _userPoints {
-    return _userInfo?.balance ?? 0.0;
+  // ✅ FIX: Changed from int to double
+  double get _userPoints {
+    return _userInfo?.balance ?? 0.0;  // ✅ Now returns double
   }
   
   String get _userName {
@@ -417,7 +414,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
           ),
         ),
         
-        // Bottom Drawer - Responsive height
+        // Bottom Drawer
         if (_isDrawerOpen || _isDrawerAnimating)
           AnimatedBuilder(
             animation: _drawerAnimationController,
@@ -432,7 +429,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     ),
                   ),
                   
-                  // Drawer - Responsive height
+                  // Drawer
                   Transform.translate(
                     offset: Offset(0, MediaQuery.of(context).size.height * _drawerSlideAnimation.value),
                     child: Align(
@@ -461,7 +458,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                               ),
                             ),
                             
-                            // Header with cancel button on the right
+                            // Header
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                               child: Row(
@@ -496,12 +493,12 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                               ),
                             ),
                             
-                            // Responsive package slider with flexible height
+                            // Package slider
                             Expanded(
                               child: _buildPackageSlider(),
                             ),
                             
-                            // Buy button - Fixed at bottom of drawer
+                            // Buy button
                             Container(
                               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
                               child: GestureDetector(
@@ -556,11 +553,9 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       },
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Calculate responsive card size based on available space
           final availableHeight = constraints.maxHeight;
           final availableWidth = constraints.maxWidth;
           
-          // Responsive card height - use percentage of available height
           final cardHeight = availableHeight * 0.85;
           final cardWidth = availableWidth * 0.75;
           
@@ -666,7 +661,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     packagePrice == 0 
                         ? AppLocalizations.of(context)!.free_ucf 
-                        : _formatPrice(packagePrice),
+                        : FormatHelper.formatPrice(packagePrice),  // ✅ Using FormatHelper directly
                     style: TextStyle(
                       fontSize: (height * 0.12).clamp(14.sp, 18.sp),
                       fontWeight: FontWeight.w500,
@@ -724,28 +719,28 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     );
   }
   
-  // ============ UPDATED: USER POINTS CARD ============
+  // ============ USER POINTS CARD ============
   Widget _buildUserPointsCard() {
     return Container(
-      padding: EdgeInsets.all(20.w), // Reduced padding
+      padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
         borderRadius: BorderRadius.circular(24.r),
       ),
       child: Column(
         children: [
-          // User avatar and name - Reduced size
+          // User avatar and name
           Row(
             children: [
               Container(
-                width: 50.w, // Reduced from 70
-                height: 50.w, // Reduced from 70
+                width: 50.w,
+                height: 50.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
                   border: Border.all(
                     color: Colors.white.withOpacity(0.3),
-                    width: 2.w, // Reduced from 3
+                    width: 2.w,
                   ),
                 ),
                 child: ClipOval(
@@ -756,19 +751,19 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                           errorBuilder: (context, error, stackTrace) {
                             return Icon(
                               Icons.person,
-                              size: 28.sp, // Reduced from 40
+                              size: 28.sp,
                               color: MyTheme.medium_grey,
                             );
                           },
                         )
                       : Icon(
                           Icons.person,
-                          size: 28.sp, // Reduced from 40
+                          size: 28.sp,
                           color: MyTheme.medium_grey,
                         ),
                 ),
               ),
-              SizedBox(width: 12.w), // Reduced from 16
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -776,18 +771,18 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       _userName.isNotEmpty ? _userName : AppLocalizations.of(context)!.guest_user,
                       style: TextStyle(
-                        fontSize: 15.sp, // Reduced from 17
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF0F172A),
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    SizedBox(height: 2.h), // Reduced from 4
+                    SizedBox(height: 2.h),
                     Text(
                       _userEmail,
                       style: TextStyle(
-                        fontSize: 10.sp, // Reduced from 11
+                        fontSize: 10.sp,
                         color: const Color(0xFF64748B),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -798,13 +793,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
               ),
             ],
           ),
-          SizedBox(height: 16.h), // Reduced from 20
+          SizedBox(height: 16.h),
           
           // Points and buttons row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Points section - Reduced size
+              // Points section
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -812,36 +807,36 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     Text(
                       AppLocalizations.of(context)!.referral_and_points,
                       style: TextStyle(
-                        fontSize: 8.sp, // Reduced from 9
+                        fontSize: 8.sp,
                         fontWeight: FontWeight.w700,
                         color: MyTheme.accent_color,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    SizedBox(height: 2.h), // Reduced from 4
+                    SizedBox(height: 2.h),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          FormatHelper.formatPrice(_userPoints),
+                          FormatHelper.formatPrice(_userPoints),  // ✅ _userPoints is now double
                           style: TextStyle(
-                            fontSize: 20.sp, // Reduced from 23
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
-                        SizedBox(width: 3.w), // Reduced from 4
+                        SizedBox(width: 3.w),
                         Text(
                           AppLocalizations.of(context)!.points_ucf,
                           style: TextStyle(
-                            fontSize: 10.sp, // Reduced from 11
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
                       ],
                     ),
-                    // ✅ NEW: View button below points
+                    // View button
                     SizedBox(height: 6.h),
                     GestureDetector(
                       onTap: () {
@@ -876,7 +871,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                 ),
               ),
               
-              // Buy Points button - Same size as before
+              // Buy Points button
               GestureDetector(
                 onTap: _openBuyPointsDrawer,
                 child: Container(
@@ -1028,7 +1023,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _formatPrice(amount),
+                FormatHelper.formatPrice(amount),  // ✅ Using FormatHelper directly
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
