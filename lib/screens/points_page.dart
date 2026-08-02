@@ -168,17 +168,24 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     if (index != -1 && _packageScrollController.hasClients) {
       // Calculate scroll position to center the package
       final screenWidth = MediaQuery.of(context).size.width;
-      final cardWidth = screenWidth * 0.69; // 69% of screen width like HTML
+      final cardWidth = screenWidth * 0.75; // Matches your card width
       final spacing = 12.0;
+      final horizontalPadding = 16.0; // From SingleChildScrollView padding
       
-      double scrollPosition = index * (cardWidth + spacing);
-      // Center the card
-      scrollPosition = scrollPosition - (screenWidth / 2) + (cardWidth / 2);
+      // Calculate total width of each item including spacing
+      final itemWidth = cardWidth + spacing;
+      
+      // Calculate scroll position to center the selected card
+      double scrollPosition = (index * itemWidth) - (screenWidth / 2) + (cardWidth / 2) - horizontalPadding;
+      
+      // Clamp to valid range
+      final maxScroll = _packageScrollController.position.maxScrollExtent;
       if (scrollPosition < 0) scrollPosition = 0;
+      if (scrollPosition > maxScroll) scrollPosition = maxScroll;
       
       _packageScrollController.animateTo(
         scrollPosition,
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeOut,
       );
     }
@@ -266,11 +273,15 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       });
     }
   }
-  
+    
   void _selectPackage(Package package) {
     if (package.id != null && package.id! > 0) {
       setState(() {
         _selectedPackage = package;
+      });
+      // Scroll to center the selected package
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToPackage(package);
       });
     } else {
       ToastComponent.showWarning(AppLocalizations.of(context)!.invalid_package_selected);
@@ -545,10 +556,14 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       ],
     );
   }
-  
+    
   Widget _buildPackageSlider() {
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
+        // Auto-select package when scrolling stops (optional)
+        if (scrollInfo is ScrollEndNotification) {
+          _onScrollEnd();
+        }
         return false;
       },
       child: LayoutBuilder(
@@ -591,6 +606,31 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
       ),
     );
   }
+
+  // Optional: Auto-select package when scrolling ends
+  void _onScrollEnd() {
+    if (!_packageScrollController.hasClients || _packages.isEmpty) return;
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth * 0.75;
+    final spacing = 12.0;
+    final itemWidth = cardWidth + spacing;
+    final scrollOffset = _packageScrollController.offset;
+    final horizontalPadding = 16.0;
+    
+    // Calculate which package is closest to center
+    final centerOffset = scrollOffset + (screenWidth / 2) - horizontalPadding;
+    final index = (centerOffset / itemWidth).round();
+    
+    if (index >= 0 && index < _packages.length) {
+      final package = _packages[index];
+      if (package.id != null && package.id! > 0 && _selectedPackage?.id != package.id) {
+        setState(() {
+          _selectedPackage = package;
+        });
+      }
+    }
+  }
   
   Widget _buildPackageCard({
     required Package package,
@@ -605,20 +645,22 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     return GestureDetector(
       onTap: () => _selectPackage(package),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 300),
         height: height,
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected ? MyTheme.accent_color : const Color(0xFFEEF2F8),
-            width: 2.w,
+            width: isSelected ? 3.w : 2.w, // Thicker border when selected
           ),
           borderRadius: BorderRadius.circular(20.r),
           color: isSelected ? MyTheme.accent_color : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: isSelected 
+                  ? MyTheme.accent_color.withOpacity(0.3) 
+                  : Colors.black.withOpacity(0.04),
               offset: const Offset(0, 2),
-              blurRadius: 12.r,
+              blurRadius: isSelected ? 16.r : 12.r,
             ),
           ],
         ),
@@ -661,7 +703,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                   Text(
                     packagePrice == 0 
                         ? AppLocalizations.of(context)!.free_ucf 
-                        : FormatHelper.formatPrice(packagePrice),  // ✅ Using FormatHelper directly
+                        : FormatHelper.formatPrice(packagePrice),
                     style: TextStyle(
                       fontSize: (height * 0.12).clamp(14.sp, 18.sp),
                       fontWeight: FontWeight.w500,
@@ -689,13 +731,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey[200],
+                              color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey[200],
                               borderRadius: BorderRadius.circular(14.r),
                             ),
                             child: Icon(
                               Icons.card_giftcard, 
                               size: imageSize.clamp(28.sp, 52.sp), 
-                              color: Colors.grey,
+                              color: isSelected ? Colors.white : Colors.grey,
                             ),
                           );
                         },
@@ -703,13 +745,13 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
                     )
                   : Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey[200],
                         borderRadius: BorderRadius.circular(14.r),
                       ),
                       child: Icon(
                         Icons.card_giftcard, 
                         size: imageSize.clamp(28.sp, 52.sp), 
-                        color: Colors.grey,
+                        color: isSelected ? Colors.white : Colors.grey,
                       ),
                     ),
             ),
