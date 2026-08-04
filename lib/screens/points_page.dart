@@ -54,6 +54,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   late AnimationController _drawerAnimationController;
   late Animation<double> _drawerSlideAnimation;
   late Animation<double> _overlayFadeAnimation;
+  late PageController _packagePageController;
   
   // Scroll controller for package slider
   final ScrollController _packageScrollController = ScrollController();
@@ -75,6 +76,11 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     _overlayFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _drawerAnimationController, curve: Curves.easeOut),
     );
+     
+    _packagePageController = PageController(
+      initialPage: 1, // Start with second package (index 1)
+      viewportFraction: 0.75,
+    );
     
     if (is_logged_in.$ == true) {
       _fetchUserData();
@@ -88,6 +94,7 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   
   @override
   void dispose() {
+    _packagePageController.dispose();
     _drawerAnimationController.dispose();
     _packageScrollController.dispose();
     super.dispose();
@@ -253,14 +260,16 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
     });
     _drawerAnimationController.forward();
     
-    // Scroll to selected package when drawer opens
+    // Scroll to default package (index 1) when drawer opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_selectedPackage != null) {
-        _scrollToPackage(_selectedPackage!);
+      if (_packages.length >= 2) {
+        _packagePageController.jumpToPage(1);
+        _selectedPackage = _packages[1];
       } else if (_packages.isNotEmpty) {
-        final index = _packages.length >= 2 ? 1 : 0;
-        _scrollToPackage(_packages[index]);
+        _packagePageController.jumpToPage(0);
+        _selectedPackage = _packages[0];
       }
+      setState(() {});
     });
   }
   
@@ -558,52 +567,45 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
   }
     
   Widget _buildPackageSlider() {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (scrollInfo) {
-        // Auto-select package when scrolling stops (optional)
-        if (scrollInfo is ScrollEndNotification) {
-          _onScrollEnd();
-        }
-        return false;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        
+        return PageView.builder(
+          controller: _packagePageController,
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: _packages.length,
+          itemBuilder: (context, index) {
+            final package = _packages[index];
+            final isSelected = _selectedPackage?.id == package.id;
+            final packagePrice = _getPackagePrice(package);
+            final packagePoints = _getPackagePoints(package);
+            final cardHeight = availableHeight * 0.85;
+            
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6.w),
+              child: _buildPackageCard(
+                package: package,
+                isSelected: isSelected,
+                packagePoints: packagePoints,
+                packagePrice: packagePrice,
+                cardHeight: cardHeight.clamp(120.h, 300.h),
+              ),
+            );
+          },
+          onPageChanged: (index) {
+            if (index >= 0 && index < _packages.length) {
+              final package = _packages[index];
+              if (package.id != null && package.id! > 0) {
+                setState(() {
+                  _selectedPackage = package;
+                });
+              }
+            }
+          },
+        );
       },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final availableHeight = constraints.maxHeight;
-          final availableWidth = constraints.maxWidth;
-          
-          final cardHeight = availableHeight * 0.85;
-          final cardWidth = availableWidth * 0.75;
-          
-          return SingleChildScrollView(
-            controller: _packageScrollController,
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: _packages.asMap().entries.map((entry) {
-                final index = entry.key;
-                final package = entry.value;
-                final isSelected = _selectedPackage?.id == package.id;
-                final packagePrice = _getPackagePrice(package);
-                final packagePoints = _getPackagePoints(package);
-                
-                return Container(
-                  width: cardWidth.clamp(200.w, 400.w),
-                  height: cardHeight.clamp(120.h, 300.h),
-                  margin: EdgeInsets.only(right: index != _packages.length - 1 ? 12.w : 0),
-                  child: _buildPackageCard(
-                    package: package,
-                    isSelected: isSelected,
-                    packagePoints: packagePoints,
-                    packagePrice: packagePrice,
-                    cardHeight: cardHeight.clamp(120.h, 300.h),
-                  ),
-                );
-              }).toList(),
-            ),
-          );
-        },
-      ),
     );
   }
 
