@@ -335,7 +335,7 @@ class _ProductDetailsState extends State<ProductDetails>
       });
     } catch (e) {
       print('Error fetching data: $e');
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
       setState(() => _isLoading = false);
     }
   }

@@ -113,16 +113,16 @@ class _CategoryListState extends State<CategoryList> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.of(context).pop();
-              } else {
+              // if (Navigator.canPop(context)) {
+              //   Navigator.of(context).pop();
+              // } else {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const Main(initialIndex: 0),
                   ),
                 );
-              }
+              // }
             },
           ),
         ),

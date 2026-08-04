@@ -140,8 +140,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         }
       }
     } catch (e) {
-      print("Error loading notifications: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notifications);
+      // print("Error loading notifications: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notifications);
     } finally {
       setState(() {
         _isLoading = false;

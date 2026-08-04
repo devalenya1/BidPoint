@@ -136,8 +136,8 @@ class _ProfileEditState extends State<ProfileEdit> {
         _emailController.text = user.email ?? "";
       }
     } catch (e) {
-      print("Error fetching user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_user_data);
+      // print("Error fetching user data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_user_data);
     }
   }
 

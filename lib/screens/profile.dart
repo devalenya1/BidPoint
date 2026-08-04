@@ -133,7 +133,7 @@ class _ProfileState extends State<Profile> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_profile_data);
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_profile_data);
       _loadFromSharedPreferences();
     } finally {
       setState(() {
@@ -598,16 +598,16 @@ class _ProfileState extends State<Profile> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            } else {
+            // if (Navigator.canPop(context)) {
+            //   Navigator.of(context).pop();
+            // } else {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const Main(initialIndex: 0),
                 ),
               );
-            }
+            // }
           },
         ),
         actions: [

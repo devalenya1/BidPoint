@@ -145,8 +145,8 @@ class _CashEarningsPageState extends State<CashEarningsPage> {
         }
       }
     } catch (e) {
-      print("Error loading user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_cash_earnings);
+      // print("Error loading user data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_cash_earnings);
     } finally {
       setState(() {
         _isLoading = false;

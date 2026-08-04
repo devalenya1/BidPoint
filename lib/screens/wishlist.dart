@@ -150,7 +150,7 @@ class _WishlistState extends State<Wishlist> {
       }
     } catch (e) {
       print("Error loading wishlist data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_wishlist);
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_wishlist);
     } finally {
       setState(() {
         _isLoading = false;

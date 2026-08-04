@@ -112,8 +112,8 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         _useDefaultSettings();
       }
     } catch (e) {
-      print("Error loading notification settings: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notification_settings);
+      // print("Error loading notification settings: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notification_settings);
       _useDefaultSettings();
     } finally {
       setState(() {

@@ -192,8 +192,8 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         }
       }
     } catch (e) {
-      print("Error loading data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_activities);
+      // print("Error loading data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_activities);
     } finally {
       setState(() {
         _isLoading = false;
@@ -585,16 +585,16 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
         leading: IconButton(
           icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            } else {
+            // if (Navigator.canPop(context)) {
+            //   Navigator.of(context).pop();
+            // } else {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const Main(initialIndex: 0),
                 ),
               );
-            }
+            // }
           },
         ),
       ),

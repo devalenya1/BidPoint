@@ -81,8 +81,8 @@ class _AffiliatePageState extends State<AffiliatePage> {
         }
       }
     } catch (e) {
-      print("Error loading user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_affiliate_data);
+      // print("Error loading user data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_affiliate_data);
     } finally {
       setState(() {
         _isLoading = false;
@@ -178,16 +178,16 @@ class _AffiliatePageState extends State<AffiliatePage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, size: 24.sp),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            } else {
+            // if (Navigator.canPop(context)) {
+            //   Navigator.of(context).pop();
+            // } else {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const Main(initialIndex: 0),
                 ),
               );
-            }
+            // }
           },
         ),
       ),

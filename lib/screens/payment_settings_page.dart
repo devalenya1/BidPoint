@@ -81,7 +81,7 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
       }
     } catch (e) {
       print("Error loading user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_payment_details);
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_payment_details);
     } finally {
       setState(() {
         _isLoading = false;

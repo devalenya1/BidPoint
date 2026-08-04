@@ -128,7 +128,7 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       }
     } catch (e) {
       print("Error loading withdrawal data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_withdrawal_data);
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_withdrawal_data);
       if (!loadMore) {
         _useDefaultData();
       }

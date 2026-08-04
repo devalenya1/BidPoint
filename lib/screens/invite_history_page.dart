@@ -136,8 +136,8 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
         }
       }
     } catch (e) {
-      print("Error loading referral data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_referral_data);
+      // print("Error loading referral data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_referral_data);
     } finally {
       setState(() {
         _isLoading = false;

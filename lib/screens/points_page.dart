@@ -111,8 +111,8 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
         }
       }
     } catch (e) {
-      print("Error loading user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_user_data);
+      // print("Error loading user data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_user_data);
     }
   }
   
@@ -358,16 +358,16 @@ class _PointsPageState extends State<PointsPage> with SingleTickerProviderStateM
             child: Icon(Icons.arrow_back_ios, size: 18.sp, color: const Color(0xFF64748B)),
           ),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            } else {
+            // if (Navigator.canPop(context)) {
+            //   Navigator.of(context).pop();
+            // } else {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const Main(initialIndex: 0),
                 ),
               );
-            }
+            // }
           },
         ),
         toolbarHeight: 60.h,

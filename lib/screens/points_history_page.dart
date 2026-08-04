@@ -141,8 +141,8 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         }
       }
     } catch (e) {
-      print("Error loading user data: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_points_history);
+      // print("Error loading user data: $e");
+      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_points_history);
     } finally {
       setState(() {
         _isLoading = false;
