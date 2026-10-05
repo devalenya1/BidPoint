@@ -18,7 +18,7 @@ class AppConfig {
   //configure this
   static const bool HTTPS = true;
 
-  static const DOMAIN_PATH = "bidpoint.evergreenlifestyle.name.ng/install";
+  static const DOMAIN_PATH = "bidpoint.elitecope.online/install";
 
   //do not configure these below
   static const String API_ENDPATH = "api/v2";
