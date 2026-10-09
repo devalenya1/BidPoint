@@ -1495,12 +1495,47 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                       ),
                       SizedBox(height: 12),
-                      Html(
-                        data: _product?.description ?? '',
-                        style: {
-                          'body': Style(
-                            fontSize: FontSize(_getResponsiveFontSize(11, 14)),
-                          ),
+                      // Constrain the HTML content to the dialog's width
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SizedBox(
+                            width: constraints.maxWidth,
+                            child: Html(
+                              data: _product?.description ?? '',
+                              style: {
+                                "body": Style(
+                                  margin: Margins.zero,
+                                  padding: HtmlPaddings.zero,
+                                  fontSize: FontSize(_getResponsiveFontSize(11, 14)),
+                                ),
+                                // Force images to fit within the container width
+                                "img": Style(
+                                  width: Width(100, Unit.percent),
+                                  height: Height.auto(),
+                                ),
+                                // Prevent tables and pre from overflowing
+                                "table": Style(
+                                  width: Width(100, Unit.percent),
+                                ),
+                                "pre": Style(
+                                  width: Width(100, Unit.percent),
+                                  whiteSpace: WhiteSpace.preWrap,
+                                ),
+                                // Ensure iframes/videos don't overflow either
+                                "iframe": Style(
+                                  width: Width(100, Unit.percent),
+                                ),
+                                "video": Style(
+                                  width: Width(100, Unit.percent),
+                                ),
+                              },
+                              onLinkTap: (url, attributes, element) {
+                                if (url != null) {
+                                  // Optional: handle link taps
+                                }
+                              },
+                            ),
+                          );
                         },
                       ),
                     ],
