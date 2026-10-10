@@ -372,6 +372,7 @@ class DetailedProduct {
     // ✅ Buy Now from JSON
     buyNow: json["buy_now"] ?? 0,
     payLink: json["pay_link"] ?? '',
+    buyNowLink: json["buy_now_link"] ?? '',
   );
 
   // ============ TO JSON ============
@@ -448,6 +449,7 @@ class DetailedProduct {
     // ✅ Buy Now to JSON
     "buy_now": buyNow ?? 0,
     "pay_link": payLink ?? '',
+    "buy_now_link": buyNowLink ?? '',
   };
 
   // ============ HELPER METHODS ============

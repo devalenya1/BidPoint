@@ -1265,6 +1265,7 @@ class AuctionBid {
     // =============================================
     activityStatus: json["activity_status"],
     payLink: json["pay_link"],
+    buyNowLink: json["buy_now_link"],
     createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
     updatedAt: json["updated_at"] != null ? DateTime.parse(json["updated_at"]) : null,
   );
@@ -1289,6 +1290,7 @@ class AuctionBid {
     // =============================================
     "activity_status": activityStatus,
     "pay_link": payLink,
+    "buy_now_link": buyNowLink ?? '',
     "created_at": createdAt?.toIso8601String(),
     "updated_at": updatedAt?.toIso8601String(),
   };
@@ -1408,6 +1410,7 @@ class DistinctAuctionBid {
     // =============================================
     activityStatus: json["activity_status"],
     payLink: json["pay_link"],
+    buyNowLink: json["buy_now_link"],
     createdAt: json["created_at"],
     updatedAt: json["updated_at"],
   );
@@ -1431,6 +1434,7 @@ class DistinctAuctionBid {
     // =============================================
     "activity_status": activityStatus,
     "pay_link": payLink,
+    "buy_now_link": buyNowLink ?? '',
     "created_at": createdAt,
     "updated_at": updatedAt,
   };

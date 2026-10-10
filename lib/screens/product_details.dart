@@ -119,7 +119,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Buy Now Data
   int _buyNow = 0;
-  String _payLink = '';
+  String _buyNowLink = '';
   bool _isBuyNowLoading = false;
 
   // Sound
@@ -315,7 +315,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
         // Get Buy Now data
         _buyNow = _product!.buyNow ?? 0;
-        _payLink = _product!.payLink ?? '';
+        _buyNowLink = _product!.buyNowLink ?? '';
 
         _minNextBidNow = _currentHighestBid + 0.01;
         _minNextBid = _currentHighestBid + 1;
@@ -509,8 +509,8 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.buyNow != null) {
           setState(() { _buyNow = response.buyNow!; });
         }
-        if (response.payLink != null) {
-          setState(() { _payLink = response.payLink!; });
+        if (response.buyNowLink != null) {
+          setState(() { _buyNowLink = response.buyNowLink!; });
         }
 
         _minNextBidNow = _currentHighestBid + 0.01;
@@ -621,7 +621,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
     if (_isBuyNowLoading) return;
     
-    if (_payLink.isEmpty) {
+    if (_buyNowLink.isEmpty) {
       ToastComponent.showWarning('Payment link not available');
       return;
     }
@@ -640,7 +640,7 @@ class _ProductDetailsState extends State<ProductDetails>
         MaterialPageRoute(
           builder: (context) => CommonWebviewScreen(
             page_name: AppLocalizations.of(context)!.buy_now_ucf,
-            url: _payLink,
+            url: _buyNowLink,
           ),
         ),
       );
