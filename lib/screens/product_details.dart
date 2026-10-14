@@ -788,6 +788,7 @@ class _ProductDetailsState extends State<ProductDetails>
       final response = await _productRepository.placeBid(
         (_product!.id ?? 0).toString(),
         amount.toString(),
+        type: "quick",
       );
 
       if (mounted) {
@@ -851,6 +852,7 @@ class _ProductDetailsState extends State<ProductDetails>
       final response = await _productRepository.placeBid(
         (_product!.id ?? 0).toString(),
         amount.toString(),
+        type: "custom",
       );
 
       if (mounted) {
