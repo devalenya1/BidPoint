@@ -1218,6 +1218,7 @@ class AuctionBid {
   // =============================================
   int? activityStatus;
   String? payLink;
+  String? buyNowLink;
   DateTime? createdAt;
   DateTime? updatedAt;
 
@@ -1241,6 +1242,7 @@ class AuctionBid {
     // =============================================
     this.activityStatus,
     this.payLink,
+    this.buyNowLink, 
     this.createdAt,
     this.updatedAt,
   });
@@ -1365,6 +1367,7 @@ class DistinctAuctionBid {
   // =============================================
   int? activityStatus;
   String? payLink;
+  String? buyNowLink;
   String? createdAt;
   String? updatedAt;
 
@@ -1387,6 +1390,7 @@ class DistinctAuctionBid {
     // =============================================
     this.activityStatus,
     this.payLink,
+    this.buyNowLink,
     this.createdAt,
     this.updatedAt,
   });

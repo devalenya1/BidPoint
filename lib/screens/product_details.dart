@@ -1521,7 +1521,8 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                                 "pre": Style(
                                   width: Width(100, Unit.percent),
-                                  whiteSpace: WhiteSpace.preWrap,
+                                  // whiteSpace: WhiteSpace.preWrap,
+                                  whiteSpace: WhiteSpace.pre,
                                 ),
                                 // Ensure iframes/videos don't overflow either
                                 "iframe": Style(
