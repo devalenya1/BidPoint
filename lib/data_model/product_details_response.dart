@@ -58,6 +58,7 @@ class DetailedProduct {
   // ✅ ADDED: Buy Now fields
   int? buyNow;
   String? payLink;
+  String? buyNowLink;
 
   // ============ CONSTRUCTOR ============
   DetailedProduct({
@@ -128,6 +129,7 @@ class DetailedProduct {
     // ✅ ADDED: Buy Now constructor parameters
     this.buyNow,
     this.payLink,
+    this.buyNowLink, 
     
   })  : _isAuctionUpcoming = isAuctionUpcoming,
         _upcomingStatus = upcomingStatus;

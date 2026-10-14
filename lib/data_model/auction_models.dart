@@ -385,6 +385,7 @@ class PollDataResponse {
   bool? userHasBid;
   int? buyNow;  // ADDED: 0 or 1
   String? payLink;  // ADDED: payment link or empty
+  String? buyNowLink;
   Winner? winner;
   List<Comment>? comments;
   List<Review>? reviews;
@@ -413,6 +414,7 @@ class PollDataResponse {
     this.userHasBid,
     this.buyNow,  // ADDED
     this.payLink,  // ADDED
+    this.buyNowLink,
     this.winner,
     this.comments,
     this.reviews,
@@ -446,6 +448,7 @@ class PollDataResponse {
       myStatus: data['my_status'],
       buyNow: data['buy_now'],  // ADDED: handles 0 or 1
       payLink: data['pay_link'],  // ADDED: handles link or empty
+      buyNowLink: json["buy_now_link"],
       winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
       comments: data['comments'] != null 
           ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))
@@ -482,6 +485,7 @@ class PollDataResponse {
     'user_has_bid': userHasBid,
     'buy_now': buyNow,  // ADDED
     'pay_link': payLink,  // ADDED
+    "buy_now_link": buyNowLink,
     'winner': winner?.toJson(),
     'comments': comments?.map((x) => x.toJson()).toList(),
     'reviews': reviews?.map((x) => x.toJson()).toList(),
