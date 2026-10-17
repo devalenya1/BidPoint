@@ -2,6 +2,7 @@ import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class CommonWebviewScreen extends StatefulWidget {
@@ -20,7 +21,6 @@ class _CommonWebviewScreenState extends State<CommonWebviewScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     webView();
   }
@@ -31,7 +31,27 @@ class _CommonWebviewScreenState extends State<CommonWebviewScreen> {
       ..setBackgroundColor(const Color(0x00000000))
       ..setNavigationDelegate(
         NavigationDelegate(
-          onWebResourceError: (error) {},
+          onNavigationRequest: (NavigationRequest request) async {
+            final uri = Uri.parse(request.url);
+
+            // Normal web pages stay inside the WebView
+            if (uri.scheme == 'http' || uri.scheme == 'https') {
+              return NavigationDecision.navigate;
+            }
+
+            // Anything else (mercadolibre://, intent://, whatsapp://, tel:, mailto:)
+            // is opened in the external browser / app, never inside the WebView.
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else {
+              debugPrint('Could not launch URL: ${request.url}');
+            }
+
+            return NavigationDecision.prevent;
+          },
+          onWebResourceError: (error) {
+            debugPrint('WebView error: ${error.description}');
+          },
           onPageFinished: (page) {},
         ),
       )
@@ -41,7 +61,8 @@ class _CommonWebviewScreenState extends State<CommonWebviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
+      textDirection:
+          app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: buildAppBar(context),
