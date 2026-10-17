@@ -760,7 +760,7 @@ class _InviteHistoryPageState extends State<InviteHistoryPage> {
                                       : AppLocalizations.of(context)!.unknown,
                                   textAlign: TextAlign.right,
                                   style: TextStyle(
-                                    fontSize: 11.sp,
+                                    fontSize: 8.sp,
                                     color: const Color(0xFF64748B),
                                   ),
                                 ),
