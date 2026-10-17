@@ -12,7 +12,7 @@ class FaqPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return CommonWebviewScreen(
       page_name: AppLocalizations.of(context)!.faq,
-      url: '${AppConfig.RAW_BASE_URL}/mobile-page/faq',
+      url: '${AppConfig.RAW_BASE_URL}/faq',
     );
   }
 }

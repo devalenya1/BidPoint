@@ -1136,7 +1136,7 @@
   "enter_postal_code_hint": "Enter postal code",
   "failed_to_load_addresses": "Failed to load addresses",
   "select_label_hint": "Select {label}",
-  "terms_conditions_coming_soon": "Terms & Conditions Coming Soon",
+  "terms_conditions_coming_soon": "Terms & Conditions",
   "terms_conditions_description": "Please review our terms and conditions before using our services.",
   "view_terms_conditions": "View Terms & Conditions",
   "unknown_date": "Unknown date",
