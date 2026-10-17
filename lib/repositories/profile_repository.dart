@@ -225,7 +225,7 @@ class ProfileRepository {
       rethrow;
     }
   }
-
+ 
   // =============================================
   // GET NOTIFICATIONS WITH PAGINATION
   // =============================================
