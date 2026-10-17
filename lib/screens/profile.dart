@@ -51,6 +51,7 @@ import 'coming_soon_page.dart';
 import 'invite_history_page.dart';
 import 'payment_settings_page.dart';
 import 'terms_conditions_page.dart';
+import 'privacy_policy_page.dart';
 import 'faq_page.dart';
 import 'package:flutter/services.dart';
 
@@ -1161,6 +1162,14 @@ class _ProfileState extends State<Profile> {
                   label: AppLocalizations.of(context)!.terms_conditions,
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsConditionsPage()));
+                  },
+                ),
+                Divider(height: 0, color: const Color(0xFFEEF2F8)),
+                _buildMenuItem(
+                  icon: Icons.description_outlined,
+                  label: AppLocalizations.of(context)!.privacy_policy,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()));
                   },
                 ),
                 Divider(height: 0, color: const Color(0xFFEEF2F8)),

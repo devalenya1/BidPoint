@@ -11,8 +11,10 @@ class AppConfig {
       r"9a663b28-9ec7-4567-b05b-849cd4461fa44"; //enter your purchase code for the app from codecanyon
 
   //Default language config
-  static String default_language = "en";
-  static String mobile_app_code = "en";
+  // static String default_language = "en";
+  // static String mobile_app_code = "en";
+  static String default_language = "es";
+  static String mobile_app_code = "es";
   static bool app_language_rtl = false;
 
   //configure this

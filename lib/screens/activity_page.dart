@@ -70,6 +70,14 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
   final Map<int, Timer> _timers = {};
   final Map<int, String> _timeLeft = {};
   
+  // ============ IMAGE LOADING QUEUE ============
+  final Map<String, bool> _imageLoaded = {};
+  final Map<String, bool> _imageLoading = {};
+  final List<String> _imageLoadQueue = [];
+  bool _isProcessingImageQueue = false;
+  static const int _maxConcurrentImages = 1; // Load one at a time
+  static const Duration _imageLoadDelay = Duration(milliseconds: 100);
+  
   final ProfileRepository _profileRepository = ProfileRepository();
 
   @override
@@ -92,7 +100,114 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
     for (var timer in _timers.values) {
       timer.cancel();
     }
+    _imageLoadQueue.clear();
     super.dispose();
+  }
+  
+  // ============ IMAGE LOADING QUEUE METHODS ============
+  void _enqueueImage(String imageUrl) {
+    if (imageUrl.isEmpty) return;
+    if (_imageLoaded[imageUrl] == true) return;
+    if (_imageLoading[imageUrl] == true) return;
+    if (_imageLoadQueue.contains(imageUrl)) return;
+    
+    _imageLoadQueue.add(imageUrl);
+    _processImageQueue();
+  }
+  
+  Future<void> _processImageQueue() async {
+    if (_isProcessingImageQueue) return;
+    _isProcessingImageQueue = true;
+    
+    while (_imageLoadQueue.isNotEmpty) {
+      final imageUrl = _imageLoadQueue.removeAt(0);
+      
+      if (_imageLoaded[imageUrl] == true) continue;
+      
+      _imageLoading[imageUrl] = true;
+      
+      // Precache the image
+      try {
+        await precacheImage(
+          NetworkImage(imageUrl),
+          context,
+        );
+        _imageLoaded[imageUrl] = true;
+      } catch (e) {
+        // If precache fails, mark as loaded anyway to avoid retry loop
+        _imageLoaded[imageUrl] = true;
+      }
+      
+      _imageLoading[imageUrl] = false;
+      
+      // Small delay between images to avoid overwhelming the network
+      await Future.delayed(_imageLoadDelay);
+    }
+    
+    _isProcessingImageQueue = false;
+  }
+  
+  Widget _buildQueuedImage({
+    required String imageUrl,
+    required double width,
+    required double height,
+    BoxFit fit = BoxFit.cover,
+    Widget? errorWidget,
+  }) {
+    if (imageUrl.isEmpty) {
+      return errorWidget ?? _buildDefaultImagePlaceholder(width, height);
+    }
+    
+    // Enqueue the image for loading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _enqueueImage(imageUrl);
+    });
+    
+    final isLoaded = _imageLoaded[imageUrl] == true;
+    
+    return Image.network(
+      imageUrl,
+      fit: fit,
+      width: width,
+      height: height,
+      // Use frameBuilder to show placeholder while loading
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded || frame != null) {
+          return child;
+        }
+        return Container(
+          width: width,
+          height: height,
+          color: const Color(0xFFE2E8F0),
+          child: Center(
+            child: SizedBox(
+              width: 20.w,
+              height: 20.w,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.w,
+                color: MyTheme.accent_color,
+              ),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return errorWidget ?? _buildDefaultImagePlaceholder(width, height);
+      },
+    );
+  }
+  
+  Widget _buildDefaultImagePlaceholder(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      color: const Color(0xFFE2E8F0),
+      child: Icon(
+        Icons.inventory_2,
+        size: 40.sp,
+        color: const Color(0xFF94A3B8),
+      ),
+    );
   }
   
   // ============ FETCH ALL DATA ============
@@ -119,6 +234,9 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
           _endingSoonItems.clear();
           _outbidWishlistItems.clear();
           _recentlyEndedWishlistItems.clear();
+          _imageLoaded.clear();
+          _imageLoading.clear();
+          _imageLoadQueue.clear();
         });
       }
 
@@ -1220,30 +1338,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                   bottomLeft: Radius.circular(12.r),
                 ),
                 child: productImage != null && productImage.isNotEmpty
-                    ? Image.network(
-                        productImage,
-                        fit: BoxFit.cover,
+                    ? _buildQueuedImage(
+                        imageUrl: productImage,
                         width: 120.w,
                         height: 150.h,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: const Color(0xFFE2E8F0),
-                            child: Icon(
-                              Icons.inventory_2,
-                              size: 40.sp,
-                              color: const Color(0xFF94A3B8),
-                            ),
-                          );
-                        },
+                        errorWidget: _buildDefaultImagePlaceholder(120.w, 150.h),
                       )
-                    : Container(
-                        color: const Color(0xFFE2E8F0),
-                        child: Icon(
-                          Icons.inventory_2,
-                          size: 40.sp,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                      ),
+                    : _buildDefaultImagePlaceholder(120.w, 150.h),
               ),
             ),
           ),
@@ -1506,30 +1607,13 @@ class _ActivityPageState extends State<ActivityPage> with SingleTickerProviderSt
                 child: Stack(
                   children: [
                     item.productImage != null && item.productImage!.isNotEmpty
-                        ? Image.network(
-                            item.productImage!,
-                            fit: BoxFit.cover,
+                        ? _buildQueuedImage(
+                            imageUrl: item.productImage!,
                             width: 120.w,
                             height: 150.h,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: const Color(0xFFE2E8F0),
-                                child: Icon(
-                                  Icons.inventory_2,
-                                  size: 40.sp,
-                                  color: const Color(0xFF94A3B8),
-                                ),
-                              );
-                            },
+                            errorWidget: _buildDefaultImagePlaceholder(120.w, 150.h),
                           )
-                        : Container(
-                            color: const Color(0xFFE2E8F0),
-                            child: Icon(
-                              Icons.inventory_2,
-                              size: 40.sp,
-                              color: const Color(0xFF94A3B8),
-                            ),
-                          ),
+                        : _buildDefaultImagePlaceholder(120.w, 150.h),
                     if (showEndingSoonBadge)
                       Positioned(
                         top: 8.w,

@@ -95,22 +95,56 @@ class _ChangeLanguageState extends State<ChangeLanguage> {
     }
   }
 
-  onLanguageItemTap(index) {
+  // onLanguageItemTap(index) {
+  //   if (index != _selected_index) {
+  //     setState(() {
+  //       _selected_index = index;
+  //     });
+
+  //     app_language.$ = _list[_selected_index].code;
+  //     app_language.save();
+  //     app_mobile_language.$ = _list[_selected_index].mobile_app_code;
+  //     app_mobile_language.save();
+  //     app_language_rtl.$ = _list[_selected_index].rtl;
+  //     app_language_rtl.save();
+
+  //     Provider.of<LocaleProvider>(context, listen: false)
+  //         .setLocale(_list[_selected_index].mobile_app_code);
+  //     context.go('/');
+  //   }
+  // }
+  onLanguageItemTap(index) async {
     if (index != _selected_index) {
       setState(() {
         _selected_index = index;
       });
 
       app_language.$ = _list[_selected_index].code;
-      app_language.save();
+      await app_language.save();
       app_mobile_language.$ = _list[_selected_index].mobile_app_code;
-      app_mobile_language.save();
+      await app_mobile_language.save();
       app_language_rtl.$ = _list[_selected_index].rtl;
-      app_language_rtl.save();
+      await app_language_rtl.save();
 
+      if (!mounted) return;
+
+      // 1. Update the locale in the provider
       Provider.of<LocaleProvider>(context, listen: false)
           .setLocale(_list[_selected_index].mobile_app_code);
-      context.go('/');
+
+      // 2. Give the provider a frame to propagate the new locale
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      if (!mounted) return;
+
+      // 3. Rebuild the whole app from scratch with the new locale,
+      //    instead of just navigating to '/'
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const Main(initialIndex: 0),
+        ),
+        (route) => false,
+      );
     }
   }
 
