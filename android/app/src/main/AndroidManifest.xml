@@ -185,10 +185,10 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="tel" />
-        <!-- </intent>
+        </intent>
     </queries>
-    <queries>
-        <intent> -->
+    <!-- <queries>
+        <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
@@ -200,6 +200,6 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="whatsapp" />
         </intent>
-    </queries>
+    </queries> -->
 
 </manifest>

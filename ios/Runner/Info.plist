@@ -54,8 +54,8 @@
 		<string>fbshareextension</string>
 		<string>sms</string>
 		<string>tel</string>
-		<string>mercadolibre</string>
-    	<string>whatsapp</string>
+		<!-- <string>mercadolibre</string>
+    	<string>whatsapp</string> -->
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
