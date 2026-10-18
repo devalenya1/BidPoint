@@ -267,6 +267,59 @@ class ProfileRepository {
     }
   }
 
+// ============================================================
+  // ✅ NEW: mark a SINGLE customer notification as read
+  // ============================================================
+  Future<bool> markNotificationAsRead(int notificationId) async {
+    final uri = Uri.parse('${MainHelper.baseUrl}/api/v2/notifications/$notificationId/read');
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer ${AuthHelper.getToken()}',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return json['success'] == true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ============================================================
+  // ✅ Hardened: mark ALL as read — returns Map, times out, catches errors
+  // ============================================================
+  Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
+    final uri = Uri.parse('${MainHelper.baseUrl}/api/v2/notifications/read-all');
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer ${AuthHelper.getToken()}',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'success': false, 'message': 'HTTP ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+  
   // =============================================
   // GET POINT HISTORY WITH PAGINATION
   // =============================================

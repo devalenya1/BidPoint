@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
@@ -6,19 +8,16 @@ import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/user_data_helper.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Import the data model with a prefix to avoid naming conflict
 import '../data_model/user_info_response.dart' as model;
-import '../screens/product_details.dart'; // Import product details page
-import '../screens/auction_purchase_history.dart'; // Import activity page
-import '../screens/messenger_list.dart'; // Import messenger list
+import '../screens/product_details.dart';
+import '../screens/messenger_list.dart';
 import '../screens/points_history_page.dart';
 import 'package:active_ecommerce_flutter/screens/points_page.dart';
 import 'package:active_ecommerce_flutter/screens/activity_page.dart';
-import '../screens/withdrawal_page.dart'; // Import withdrawal history page
-import 'package:active_ecommerce_flutter/screens/product_details.dart';
+import '../screens/withdrawal_page.dart';
 import 'package:active_ecommerce_flutter/screens/main.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -29,16 +28,17 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  int _selectedTab = 0; // 0: All, 1: Auctions, 2: Payments, 3: System
+  static const String _pendingReadIdsKey = 'pending_read_notification_ids';
+  static const String _pendingReadAllKey = 'pending_read_all_flag';
 
-  // ============ LOCAL STATE ============
+  int _selectedTab = 0;
+
   bool _isLoading = true;
   bool _isRefreshing = false;
   bool _isLoadingMore = false;
 
-  model.UserInformation? _userInfo; // Store the complete user info response
+  model.UserInformation? _userInfo;
 
-  // ============ PAGINATION STATE ============
   int _currentNotificationPage = 1;
   int _currentPointPage = 1;
   int _currentCashPage = 1;
@@ -47,32 +47,35 @@ class _NotificationsPageState extends State<NotificationsPage> {
   bool _hasMorePoints = true;
   bool _hasMoreCash = true;
 
-  // ============ CACHED LISTS FOR INFINITE SCROLL ============
   List<model.Notification> _allNotifications = [];
-
-  // Track if initial load is complete for each tab
   bool _initialLoadComplete = false;
 
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _fetchNotifications(); // Fetch fresh data from API
+      _flushPendingWritesThenFetch();
     } else {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
-  // ============ FETCH DATA FROM API WITH PAGINATION ============
+  // ============================================================
+  // FLUSH + FETCH
+  // ============================================================
+  Future<void> _flushPendingWritesThenFetch() async {
+    await _flushPendingReads();
+    if (mounted) await _fetchNotifications();
+  }
+
+  // ============================================================
+  // FETCH WITH PAGINATION
+  // ============================================================
   Future<void> _fetchNotifications({bool loadMore = false}) async {
     try {
       if (loadMore) {
         if (_isLoadingMore || !_hasMoreNotifications) return;
-        setState(() {
-          _isLoadingMore = true;
-        });
+        setState(() => _isLoadingMore = true);
       } else {
         setState(() {
           _isLoading = true;
@@ -84,7 +87,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
       final page = loadMore ? _currentNotificationPage + 1 : 1;
 
-      var response = await ProfileRepository().getUserInfoResponse(
+      final response = await ProfileRepository().getUserInfoResponse(
         notificationPage: page,
         notificationPerPage: 10,
         pointPage: _currentPointPage,
@@ -95,138 +98,133 @@ class _NotificationsPageState extends State<NotificationsPage> {
         withdrawPerPage: 10,
       );
 
-      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+      if (response.success == true &&
+          response.data != null &&
+          response.data!.isNotEmpty) {
         final newUserInfo = response.data![0];
-
-        // Update pagination info
         final pagination = newUserInfo.notificationsPagination;
         if (pagination != null) {
           _hasMoreNotifications = pagination.hasNext;
           _currentNotificationPage = pagination.currentPage;
         }
 
-        // Process notifications
         final newNotifications = newUserInfo.notifications ?? [];
+
+        // ✅ Reconcile pending reads BEFORE rendering
+        await _applyPendingOptimisticReads(newNotifications);
 
         setState(() {
           if (loadMore) {
-            // Append to existing lists
             _allNotifications.addAll(newNotifications);
           } else {
-            // Replace entire user info and lists
             _userInfo = newUserInfo;
             _allNotifications = newNotifications;
-
-            // Update global unread count
-            unread_notifications_count.$ = _userInfo?.unreadNotificationsCount ?? 0;
+            unread_notifications_count.$ =
+                _userInfo?.unreadNotificationsCount ?? 0;
             unread_notifications_count.save();
-
-            // Save user data
             if (_userInfo != null) {
               UserDataHelper.saveUserData(_userInfo!);
             }
           }
         });
 
-        // Mark all as read in background (only on first load, after data is loaded)
+        // ✅ Flush queue again after a successful fetch — good network moment
         if (!loadMore && _allNotifications.isNotEmpty) {
           _markAllAsReadInBackground();
+          _flushPendingReads();
         }
       } else {
-        if (!loadMore) {
-          setState(() {
-            _allNotifications = [];
-          });
-        }
+        if (!loadMore) setState(() => _allNotifications = []);
       }
-    } catch (e) {
-      // print("Error loading notifications: $e");
-      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notifications);
+    } catch (_) {
+      // silent — pull-to-refresh gives the user control
     } finally {
-      setState(() {
-        _isLoading = false;
-        _isRefreshing = false;
-        _isLoadingMore = false;
-        _initialLoadComplete = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+          _isLoadingMore = false;
+          _initialLoadComplete = true;
+        });
+      }
     }
   }
 
-  // ============ LOAD MORE NOTIFICATIONS (INFINITE SCROLL) ============
   Future<void> _loadMoreNotifications() async {
     if (!_hasMoreNotifications || _isLoadingMore) return;
     await _fetchNotifications(loadMore: true);
   }
 
-  // ============ PULL TO REFRESH ============
   Future<void> _onPageRefresh() async {
-    setState(() {
-      _isRefreshing = true;
-    });
+    setState(() => _isRefreshing = true);
+    await _flushPendingReads();
     await _fetchNotifications(loadMore: false);
   }
 
-  // ============ MARK ALL AS READ (BACKGROUND - AFTER DATA IS LOADED) ============
+  // ============================================================
+  // MARK-ALL-AS-READ (background, retried)
+  // ============================================================
   void _markAllAsReadInBackground() {
     if (_userInfo == null || (_userInfo?.unreadNotificationsCount ?? 0) <= 0) {
       return;
     }
-
-    // Send background request to mark all as read
     _sendMarkAllAsReadRequest();
   }
 
-  void _sendMarkAllAsReadRequest() async {
-    try {
-      final Map<String, dynamic> response = await ProfileRepository().markAllNotificationsAsRead();
-
-      if (response['success'] == true) {
-        print('✅ All notifications marked as read in background');
-      } else {
-        print('❌ Failed to mark all notifications as read: ${response['message']}');
+  Future<void> _sendMarkAllAsReadRequest() async {
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        final response =
+            await ProfileRepository().markAllNotificationsAsRead();
+        if (response['success'] == true) {
+          unread_notifications_count.$ = 0;
+          unread_notifications_count.save();
+          if (_userInfo != null) _userInfo!.unreadNotificationsCount = 0;
+          await _clearPendingReadAllFlag();
+          return;
+        }
+      } catch (_) {
+        // retry
       }
-    } catch (e) {
-      print('❌ Failed to mark all notifications as read: $e');
+      await Future.delayed(Duration(seconds: 1 << attempt));
     }
+    // Still failing → persist so we retry on next launch/fetch
+    await _setPendingReadAllFlag();
   }
 
   // ============================================================
-  // ✅ NOTIFICATION CLICK HANDLER - Navigate to appropriate page
+  // PER-NOTIFICATION TAP
   // ============================================================
   void _onNotificationTap(model.Notification notification) {
     final type = notification.type ?? '';
     final slug = notification.slug;
-    final productId = notification.productId;
     final message = notification.message ?? '';
 
-    // Mark notification as read locally
-    setState(() {
-      notification.readAt = DateTime.now();
-    });
-
-    // Update unread count
+    // Optimistic local update
+    setState(() => notification.readAt = DateTime.now());
     if (_userInfo != null && (_userInfo!.unreadNotificationsCount ?? 0) > 0) {
-      _userInfo!.unreadNotificationsCount = (_userInfo!.unreadNotificationsCount ?? 0) - 1;
+      _userInfo!.unreadNotificationsCount =
+          (_userInfo!.unreadNotificationsCount ?? 0) - 1;
       unread_notifications_count.$ = _userInfo!.unreadNotificationsCount;
       unread_notifications_count.save();
     }
 
-    // Navigate based on notification type
+    // Persist to server (fire-and-forget with retries + offline queue)
+    if (notification.id != null) {
+      _markSingleAsReadWithRetry(notification.id!);
+    }
+
+    // Navigate
     switch (type) {
-      // ============================================
-      // AUCTION WIN/LOSE → Activity Page
-      // ============================================
       case 'auction_win':
       case 'auction_lose':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ActivityPage(initialTabIndex: 1,)),
+          MaterialPageRoute(
+              builder: (_) => ActivityPage(initialTabIndex: 1)),
         );
         break;
 
-      // ============================================
-      // BID RELATED → Product Details Page
-      // ============================================
       case 'newbid':
       case 'outbid':
       case 'bid_placed':
@@ -234,118 +232,176 @@ class _NotificationsPageState extends State<NotificationsPage> {
         if (slug != null && slug.isNotEmpty) {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetails(slug: slug),
-            ),
+            MaterialPageRoute(builder: (_) => ProductDetails(slug: slug)),
           );
         } else {
           ToastComponent.showWarning('Product details not available');
         }
         break;
 
-      // ============================================
-      // POINT DEDUCTION → Point History Page
-      // ============================================
       case 'point_deduction':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PointsHistoryPage()),
+          MaterialPageRoute(builder: (_) => PointsHistoryPage()),
         );
         break;
 
-      // ============================================
-      // CHAT NOTIFICATION → Messenger List Page
-      // ============================================
       case 'new_chat':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => MessengerList()),
+          MaterialPageRoute(builder: (_) => MessengerList()),
         );
         break;
 
-      // ============================================
-      // PAYMENT NOTIFICATIONS
-      // ============================================
       case 'payment':
-        // Just show toast
         ToastComponent.showInfo(message);
         break;
 
       case 'payment_success':
-        // Navigate to Point History
+      case 'package_purchase':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PointsPage()),
+          MaterialPageRoute(builder: (_) => PointsPage()),
         );
         break;
 
       case 'payment_failed':
-        // Just show toast
         ToastComponent.showError('Payment failed: $message');
         break;
 
-      case 'package_purchase':
-        // Navigate to Point History
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PointsPage()),
-        );
-        break;
-
-      // ============================================
-      // WITHDRAWAL NOTIFICATIONS
-      // ============================================
       case 'withdrawal':
       case 'withdrawal_success':
       case 'withdrawal_failed':
-        // Navigate to Withdrawal History
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => WithdrawalPage()),
+          MaterialPageRoute(builder: (_) => WithdrawalPage()),
         );
         break;
 
-      // ============================================
-      // DEFAULT
-      // ============================================
       default:
         ToastComponent.showInfo(message);
-        break;
     }
   }
 
-  // ============ HELPER METHODS ============
+  // ============================================================
+  // OFFLINE-SAFE PENDING QUEUE
+  // ============================================================
+  Future<void> _markSingleAsReadWithRetry(int notificationId) async {
+    await _enqueuePendingRead(notificationId);
+
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        final ok =
+            await ProfileRepository().markNotificationAsRead(notificationId);
+        if (ok) {
+          await _dequeuePendingRead(notificationId);
+          return;
+        }
+      } catch (_) {}
+      await Future.delayed(Duration(seconds: 1 << attempt));
+    }
+    // stays queued — flushed on next init/fetch/refresh
+  }
+
+  Future<void> _flushPendingReads() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1) Handle pending "mark all read"
+    final pendingReadAll = prefs.getBool(_pendingReadAllKey) ?? false;
+    if (pendingReadAll) {
+      try {
+        final r = await ProfileRepository().markAllNotificationsAsRead();
+        if (r['success'] == true) await _clearPendingReadAllFlag();
+      } catch (_) {}
+    }
+
+    // 2) Handle individual pending IDs
+    final ids = prefs.getStringList(_pendingReadIdsKey) ?? [];
+    if (ids.isEmpty) return;
+
+    for (final idStr in List<String>.from(ids)) {
+      final id = int.tryParse(idStr);
+      if (id == null) {
+        await _dequeuePendingReadById(idStr);
+        continue;
+      }
+      try {
+        final ok = await ProfileRepository().markNotificationAsRead(id);
+        if (ok) await _dequeuePendingRead(id);
+      } catch (_) {
+        // still offline — leave queued
+      }
+    }
+  }
+
+  Future<void> _applyPendingOptimisticReads(
+      List<model.Notification> notifications) async {
+    final prefs = await SharedPreferences.getInstance();
+    final pendingIds = (prefs.getStringList(_pendingReadIdsKey) ?? [])
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+
+    if (pendingIds.isEmpty) return;
+
+    for (final n in notifications) {
+      if (n.id != null && pendingIds.contains(n.id)) {
+        n.readAt ??= DateTime.now();
+      }
+    }
+  }
+
+  Future<void> _enqueuePendingRead(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_pendingReadIdsKey) ?? [];
+    if (!ids.contains(id.toString())) {
+      ids.add(id.toString());
+      await prefs.setStringList(_pendingReadIdsKey, ids);
+    }
+  }
+
+  Future<void> _dequeuePendingRead(int id) async {
+    await _dequeuePendingReadById(id.toString());
+  }
+
+  Future<void> _dequeuePendingReadById(String idStr) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_pendingReadIdsKey) ?? [];
+    ids.remove(idStr);
+    await prefs.setStringList(_pendingReadIdsKey, ids);
+  }
+
+  Future<void> _setPendingReadAllFlag() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_pendingReadAllKey, true);
+  }
+
+  Future<void> _clearPendingReadAllFlag() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_pendingReadAllKey, false);
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
   String _getNotificationType(String type) {
     const auctionTypes = [
-      'outbid',
-      'newbid',
-      'new_product',
-      'bid_placed',
-      'auction_win',
-      'auction_lose',
-      'auction_ending'
+      'outbid', 'newbid', 'new_product', 'bid_placed',
+      'auction_win', 'auction_lose', 'auction_ending',
     ];
     const paymentTypes = [
-      'payment',
-      'payment_success',
-      'payment_failed',
-      'package_purchase',
-      'withdrawal',
-      'withdrawal_success',
-      'withdrawal_failed'
+      'payment', 'payment_success', 'payment_failed',
+      'package_purchase', 'withdrawal', 'withdrawal_success', 'withdrawal_failed',
     ];
-
     if (auctionTypes.contains(type)) return 'auction';
     if (paymentTypes.contains(type)) return 'payment';
     if (type == 'point_deduction') return 'point';
     if (type == 'new_chat') return 'chat';
-
     return 'system';
   }
 
   Color _getIconBackgroundColor(String type) {
-    final notificationType = _getNotificationType(type);
-    switch (notificationType) {
+    switch (_getNotificationType(type)) {
       case 'outbid':
         return const Color(0xFFFFE5E5);
       case 'auction':
@@ -362,8 +418,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Color _getIconColor(String type) {
-    final notificationType = _getNotificationType(type);
-    switch (notificationType) {
+    switch (_getNotificationType(type)) {
       case 'outbid':
         return const Color(0xFFFF3B30);
       case 'auction':
@@ -380,8 +435,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   IconData _getIconData(String type) {
-    final notificationType = _getNotificationType(type);
-    switch (notificationType) {
+    switch (_getNotificationType(type)) {
       case 'outbid':
         return Icons.trending_down;
       case 'auction':
@@ -399,56 +453,49 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
     ];
-
-    String hourFormat = date.hour > 12 ? (date.hour - 12).toString() : date.hour.toString();
-    String ampm = date.hour >= 12 ? 'pm' : 'am';
+    String hourFormat =
+        date.hour > 12 ? (date.hour - 12).toString() : date.hour.toString();
+    final ampm = date.hour >= 12 ? 'pm' : 'am';
     if (date.hour == 0) hourFormat = '12';
     if (date.hour == 12) hourFormat = '12';
-
     final minute = date.minute.toString().padLeft(2, '0');
-
     return '${months[date.month - 1]} ${date.day} ${date.year}, $hourFormat:$minute $ampm';
   }
 
-  // ============ GET FILTERED NOTIFICATIONS ============
   List<model.Notification> _getCurrentNotifications() {
-    final auctionTypes = [
+    const auctionTypes = [
       'outbid', 'newbid', 'new_product', 'point_deduction', 'bid_placed',
-      'auction_win', 'auction_lose', 'auction_ending'
+      'auction_win', 'auction_lose', 'auction_ending',
     ];
-    final paymentTypes = [
+    const paymentTypes = [
       'payment', 'payment_success', 'payment_failed',
-      'package_purchase', 'withdrawal', 'withdrawal_success', 'withdrawal_failed'
+      'package_purchase', 'withdrawal', 'withdrawal_success', 'withdrawal_failed',
     ];
-
     switch (_selectedTab) {
       case 1:
-        return _allNotifications.where((n) => auctionTypes.contains(n.type)).toList();
+        return _allNotifications
+            .where((n) => auctionTypes.contains(n.type))
+            .toList();
       case 2:
-        return _allNotifications.where((n) => paymentTypes.contains(n.type)).toList();
+        return _allNotifications
+            .where((n) => paymentTypes.contains(n.type))
+            .toList();
       case 3:
         return _allNotifications.where((n) {
-          return !auctionTypes.contains(n.type) && !paymentTypes.contains(n.type);
+          return !auctionTypes.contains(n.type) &&
+              !paymentTypes.contains(n.type);
         }).toList();
       default:
         return _allNotifications;
     }
   }
 
-  // ============ BUILD UI ============
+  // ============================================================
+  // BUILD
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     final currentNotifications = _getCurrentNotifications();
@@ -474,7 +521,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const Main(initialIndex: 0),
+                  builder: (_) => const Main(initialIndex: 0),
                 ),
               );
             }
@@ -492,11 +539,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   _buildTabs(),
                   Expanded(
                     child: NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification scrollInfo) {
-                        // Detect when user scrolls to bottom
+                      onNotification: (scrollInfo) {
                         if (!_isLoadingMore &&
                             _hasMoreNotifications &&
-                            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                            scrollInfo.metrics.pixels >=
+                                scrollInfo.metrics.maxScrollExtent - 100) {
                           _loadMoreNotifications();
                         }
                         return true;
@@ -510,24 +557,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             else
                               Column(
                                 children: [
-                                  ...currentNotifications.map((notification) =>
-                                    _buildNotificationItem(notification)
-                                  ).toList(),
-                                  // Loading more indicator
+                                  ...currentNotifications.map(
+                                      (n) => _buildNotificationItem(n)),
                                   if (_isLoadingMore)
                                     Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 20.h),
                                       child: CircularProgressIndicator(
                                         color: MyTheme.accent_color,
                                         strokeWidth: 2.w,
                                       ),
                                     ),
-                                  // End of list indicator
-                                  if (!_hasMoreNotifications && currentNotifications.isNotEmpty)
+                                  if (!_hasMoreNotifications &&
+                                      currentNotifications.isNotEmpty)
                                     Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 20.h),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 20.h),
                                       child: Text(
-                                        AppLocalizations.of(context)!.no_more_notifications,
+                                        AppLocalizations.of(context)!
+                                            .no_more_notifications,
                                         style: TextStyle(
                                           fontSize: 12.sp,
                                           color: const Color(0xFF999999),
@@ -548,19 +596,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  // ============ SHIMMER LOADING STATE ============
   Widget _buildShimmer() {
     return Column(
       children: [
-        // Tabs shimmer
         Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
           margin: EdgeInsets.only(bottom: 16.h),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: List.generate(4, (index) =>
-                Container(
+              children: List.generate(
+                4,
+                (_) => Container(
                   margin: EdgeInsets.only(right: 4.w),
                   width: 100.w,
                   height: 42.h,
@@ -573,7 +620,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ),
         ),
-        // Notification items shimmer
         Expanded(
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -582,7 +628,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 for (int i = 0; i < 5; i++)
                   Padding(
                     padding: EdgeInsets.only(bottom: 16.h),
-                    child: ShimmerHelper().buildBasicShimmer(height: 80.h, radius: 12.r),
+                    child: ShimmerHelper()
+                        .buildBasicShimmer(height: 80.h, radius: 12.r),
                   ),
               ],
             ),
@@ -592,9 +639,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  // ============================================================
-  // Tabs using API counts from _userInfo
-  // ============================================================
   Widget _buildTabs() {
     final allCount = _userInfo?.allNotificationCount ?? 0;
     final auctionCount = _userInfo?.auctionNotificationCount ?? 0;
@@ -617,14 +661,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
           children: List.generate(tabs.length, (index) {
             final isActive = _selectedTab == index;
             return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedTab = index;
-                });
-              },
+              onTap: () => setState(() => _selectedTab = index),
               child: Container(
                 margin: EdgeInsets.only(right: 4.w),
-                padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 10.h),
+                padding:
+                    EdgeInsets.symmetric(horizontal: 28.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: isActive ? MyTheme.accent_color : Colors.transparent,
                   borderRadius: BorderRadius.circular(7.r),
@@ -645,13 +686,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  // ============================================================
-  // Notification Item with Click Handler
-  // ============================================================
   Widget _buildNotificationItem(model.Notification notification) {
     final type = notification.type ?? 'system';
-    
-    // Check readAt directly - if null, it's unread (NEW)
     final bool isUnread = notification.readAt == null;
 
     return GestureDetector(
@@ -660,16 +696,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
         padding: EdgeInsets.symmetric(vertical: 16.h),
         decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(
-              color: const Color(0xFFF0F0F0),
-              width: 1.w,
-            ),
+            bottom: BorderSide(color: const Color(0xFFF0F0F0), width: 1.w),
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Notification Icon
             Container(
               width: 44.w,
               height: 44.w,
@@ -684,8 +716,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
             ),
             SizedBox(width: 14.w),
-
-            // Notification Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -719,11 +749,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ],
               ),
             ),
-
-            // "NEW" BADGE - Shows when readAt is null (unread)
             if (isUnread)
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                padding:
+                    EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFF3B30),
                   borderRadius: BorderRadius.circular(20.r),
@@ -774,17 +803,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       child: Column(
         children: [
-          Text(
-            icon,
-            style: TextStyle(fontSize: 48.sp),
-          ),
+          Text(icon, style: TextStyle(fontSize: 48.sp)),
           SizedBox(height: 16.h),
           Text(
             text,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: const Color(0xFF999999),
-            ),
+            style: TextStyle(fontSize: 14.sp, color: const Color(0xFF999999)),
             textAlign: TextAlign.center,
           ),
         ],
