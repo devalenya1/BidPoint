@@ -1,5 +1,4 @@
 import 'package:active_ecommerce_flutter/app_config.dart';
-import 'package:http/http.dart' as http;
 import 'package:active_ecommerce_flutter/helpers/system_config.dart';
 import 'package:active_ecommerce_flutter/data_model/check_response_model.dart';
 import 'package:active_ecommerce_flutter/data_model/profile_image_update_response.dart';
@@ -14,7 +13,7 @@ import 'package:active_ecommerce_flutter/repositories/api-request.dart';
 import 'package:active_ecommerce_flutter/middlewares/banned_user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:active_ecommerce_flutter/helpers/debug_helper.dart';
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -67,23 +66,22 @@ class LocalizedMessages {
 
   static String getMessage(String key, [Map<String, String>? params]) {
     String message = _defaultMessages[key] ?? key;
-    
+
     if (params != null) {
       params.forEach((key, value) {
         message = message.replaceAll('{$key}', value);
       });
     }
-    
+
     return message;
   }
 }
 
 class ProfileRepository {
-
   Future<dynamic> getProfileCountersResponse() async {
-    String url=("${AppConfig.BASE_URL}/profile/counters");
+    String url = ("${AppConfig.BASE_URL}/profile/counters");
     final response = await ApiRequest.get(
-      url:url,
+      url: url,
       headers: {
         "Authorization": "Bearer ${access_token.$}",
         "App-Language": app_language.$!,
@@ -93,60 +91,61 @@ class ProfileRepository {
   }
 
   Future<dynamic> getProfileUpdateResponse({required String post_body}) async {
-    String url=("${AppConfig.BASE_URL}/profile/update");
+    String url = ("${AppConfig.BASE_URL}/profile/update");
     final response = await ApiRequest.post(
-      url:url,
+      url: url,
       headers: {
-        "Content-Type": "application/json", 
+        "Content-Type": "application/json",
         "Authorization": "Bearer ${access_token.$}",
         "App-Language": app_language.$!,
       },
-      body: post_body 
+      body: post_body,
     );
     return profileUpdateResponseFromJson(response.body);
   }
 
   Future<dynamic> getDeviceTokenUpdateResponse(String device_token) async {
     var post_body = jsonEncode({"device_token": "${device_token}"});
-    String url=("${AppConfig.BASE_URL}/profile/update-device-token");
+    String url = ("${AppConfig.BASE_URL}/profile/update-device-token");
     final response = await ApiRequest.post(
-      url:url,
+      url: url,
       headers: {
-        "Content-Type": "application/json", 
+        "Content-Type": "application/json",
         "Authorization": "Bearer ${access_token.$}",
         "App-Language": app_language.$!,
       },
-      body: post_body 
+      body: post_body,
     );
     return deviceTokenUpdateResponseFromJson(response.body);
   }
 
-  Future<dynamic> getProfileImageUpdateResponse(String image, String filename) async {
+  Future<dynamic> getProfileImageUpdateResponse(
+      String image, String filename) async {
     var post_body = jsonEncode({"image": "${image}", "filename": "$filename"});
     print(post_body.toString());
-    String url=("${AppConfig.BASE_URL}/profile/update-image");
+    String url = ("${AppConfig.BASE_URL}/profile/update-image");
     final response = await ApiRequest.post(
-      url:url,
+      url: url,
       headers: {
-        "Content-Type": "application/json", 
+        "Content-Type": "application/json",
         "Authorization": "Bearer ${access_token.$}",
         "App-Language": app_language.$!,
       },
-      body: post_body 
+      body: post_body,
     );
     return profileImageUpdateResponseFromJson(response.body);
   }
 
   Future<dynamic> getPhoneEmailAvailabilityResponse() async {
-    String url=("${AppConfig.BASE_URL}/profile/check-phone-and-email");
+    String url = ("${AppConfig.BASE_URL}/profile/check-phone-and-email");
     final response = await ApiRequest.post(
-      url:url,
+      url: url,
       headers: {
-        "Content-Type": "application/json", 
+        "Content-Type": "application/json",
         "Authorization": "Bearer ${access_token.$}",
         "App-Language": app_language.$!,
       },
-      body: ''
+      body: '',
     );
     return phoneEmailAvailabilityResponseFromJson(response.body);
   }
@@ -170,7 +169,6 @@ class ProfileRepository {
     int auctionBidPerPage = 20,
     int distinctPage = 1,
     int distinctPerPage = 20,
-    // ✅ ADD: invite pagination parameters
     int invitePage = 1,
     int invitePerPage = 10,
   }) async {
@@ -189,20 +187,18 @@ class ProfileRepository {
         "&auction_bid_per_page=$auctionBidPerPage"
         "&distinct_page=$distinctPage"
         "&distinct_per_page=$distinctPerPage"
-        // ✅ ADD: invite pagination to URL
         "&invite_page=$invitePage"
         "&invite_per_page=$invitePerPage";
-    
+
     try {
       final response = await ApiRequest.get(
         url: url,
         headers: {
-          "Authorization": "Bearer ${access_token.$}", 
+          "Authorization": "Bearer ${access_token.$}",
           "App-Language": app_language.$!
         },
       );
-      
-      // Show debug popup with response
+
       if (context != null && kDebugMode) {
         DebugHelper.showApiResponseDialog(
           context,
@@ -211,7 +207,7 @@ class ProfileRepository {
           isSuccess: response.statusCode == 200,
         );
       }
-      
+
       return userInfoResponseFromJson(response.body);
     } catch (e, stackTrace) {
       if (context != null && kDebugMode) {
@@ -225,7 +221,7 @@ class ProfileRepository {
       rethrow;
     }
   }
- 
+
   // =============================================
   // GET NOTIFICATIONS WITH PAGINATION
   // =============================================
@@ -233,8 +229,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 10,
   }) async {
-    String url = "${AppConfig.BASE_URL}/notifications?page=$page&per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/notifications?page=$page&per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -243,7 +240,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
@@ -255,7 +252,8 @@ class ProfileRepository {
       } else {
         return {
           'success': false,
-          'message': LocalizedMessages.getMessage('failed_to_load_notifications'),
+          'message':
+              LocalizedMessages.getMessage('failed_to_load_notifications'),
         };
       }
     } catch (e) {
@@ -267,59 +265,72 @@ class ProfileRepository {
     }
   }
 
-// ============================================================
-  // ✅ NEW: mark a SINGLE customer notification as read
+  // ============================================================
+  // ✅ Mark a SINGLE customer notification as read (offline-safe)
   // ============================================================
   Future<bool> markNotificationAsRead(int notificationId) async {
-    final uri = Uri.parse('${MainHelper.baseUrl}/api/v2/notifications/$notificationId/read');
+    String url = "${AppConfig.BASE_URL}/notifications/$notificationId/read";
     try {
-      final response = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer ${AuthHelper.getToken()}',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({}),
+      );
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['success'] == true;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return data['success'] == true;
       }
       return false;
-    } catch (_) {
+    } catch (e) {
+      print("Error marking notification $notificationId as read: $e");
       return false;
     }
   }
 
   // ============================================================
-  // ✅ Hardened: mark ALL as read — returns Map, times out, catches errors
+  // ✅ Mark ALL customer notifications as read (hardened)
   // ============================================================
   Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
-    final uri = Uri.parse('${MainHelper.baseUrl}/api/v2/notifications/read-all');
+    String url = "${AppConfig.BASE_URL}/notifications/read-all";
     try {
-      final response = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer ${AuthHelper.getToken()}',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await ApiRequest.post(
+        url: url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${access_token.$}",
+          "App-Language": app_language.$!,
+        },
+        body: jsonEncode({}),
+      );
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return {
+          'success': responseData['success'] ?? true,
+          'message': responseData['message'] ??
+              LocalizedMessages.getMessage('all_notifications_marked_read'),
+          'data': responseData['data'],
+        };
       }
-      return {'success': false, 'message': 'HTTP ${response.statusCode}'};
+      return {
+        'success': false,
+        'message':
+            LocalizedMessages.getMessage('failed_to_mark_notifications_read'),
+      };
     } catch (e) {
-      return {'success': false, 'message': e.toString()};
+      print("Error marking all notifications as read: $e");
+      return {
+        'success': false,
+        'message': LocalizedMessages.getMessage('network_error_try_again'),
+      };
     }
   }
-  
+
   // =============================================
   // GET POINT HISTORY WITH PAGINATION
   // =============================================
@@ -327,8 +338,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 10,
   }) async {
-    String url = "${AppConfig.BASE_URL}/point-history?page=$page&per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/point-history?page=$page&per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -337,7 +349,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
@@ -368,8 +380,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 10,
   }) async {
-    String url = "${AppConfig.BASE_URL}/cash-history?page=$page&per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/cash-history?page=$page&per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -378,7 +391,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
@@ -409,8 +422,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 10,
   }) async {
-    String url = "${AppConfig.BASE_URL}/withdraw-requests?page=$page&per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/withdraw-requests?page=$page&per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -419,7 +433,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
@@ -482,9 +496,10 @@ class ProfileRepository {
   }
 
   // Update notification settings
-  Future<Map<String, dynamic>> updateNotificationSettings(Map<String, bool> settings) async {
+  Future<Map<String, dynamic>> updateNotificationSettings(
+      Map<String, bool> settings) async {
     String url = "${AppConfig.BASE_URL}/notification-settings/update";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -495,18 +510,20 @@ class ProfileRepository {
         },
         body: jsonEncode(settings),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('notification_settings_saved'),
+          'message': responseData['message'] ??
+              LocalizedMessages.getMessage('notification_settings_saved'),
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': LocalizedMessages.getMessage('failed_to_save_notification_settings'),
+          'message': LocalizedMessages.getMessage(
+              'failed_to_save_notification_settings'),
           'status': response.statusCode,
         };
       }
@@ -522,7 +539,7 @@ class ProfileRepository {
   // Remove from wishlist
   Future<Map<String, dynamic>> removeFromWishlist(int productId) async {
     String url = "${AppConfig.BASE_URL}/wishlist/remove";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -535,18 +552,20 @@ class ProfileRepository {
           "product_id": productId,
         }),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('removed_from_wishlist_success'),
+          'message': responseData['message'] ??
+              LocalizedMessages.getMessage('removed_from_wishlist_success'),
           'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': LocalizedMessages.getMessage('failed_to_remove_from_wishlist'),
+          'message': LocalizedMessages.getMessage(
+              'failed_to_remove_from_wishlist'),
           'status': response.statusCode,
         };
       }
@@ -562,7 +581,7 @@ class ProfileRepository {
   // Get notification settings
   Future<Map<String, dynamic>> getNotificationSettings() async {
     String url = "${AppConfig.BASE_URL}/notification-settings";
-    
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -572,7 +591,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
@@ -584,7 +603,8 @@ class ProfileRepository {
         return {
           'success': false,
           'settings': {},
-          'message': LocalizedMessages.getMessage('failed_to_get_notification_settings'),
+          'message': LocalizedMessages.getMessage(
+              'failed_to_get_notification_settings'),
         };
       }
     } catch (e) {
@@ -600,7 +620,7 @@ class ProfileRepository {
   // Send email verification code
   Future<Map<String, dynamic>> sendEmailVerificationCode(String email) async {
     String url = "${AppConfig.BASE_URL}/user/email/verify/send";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -609,28 +629,31 @@ class ProfileRepository {
           "Authorization": "Bearer ${access_token.$}",
           "App-Language": app_language.$!,
         },
-        body: jsonEncode({"email": email})
+        body: jsonEncode({"email": email}),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('verification_code_sent'),
+          'message': responseData['message'] ??
+              LocalizedMessages.getMessage('verification_code_sent'),
           'data': responseData['data'],
         };
       } else {
-        // Try to parse error message from response
         try {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? LocalizedMessages.getMessage('failed_to_send_verification_code'),
+            'message': errorData['message'] ??
+                LocalizedMessages.getMessage(
+                    'failed_to_send_verification_code'),
           };
         } catch (e) {
           return {
             'success': false,
-            'message': LocalizedMessages.getMessage('failed_to_send_verification_code'),
+            'message': LocalizedMessages.getMessage(
+                'failed_to_send_verification_code'),
           };
         }
       }
@@ -644,9 +667,10 @@ class ProfileRepository {
   }
 
   // Verify and update email
-  Future<Map<String, dynamic>> verifyAndUpdateEmail(String email, String code) async {
+  Future<Map<String, dynamic>> verifyAndUpdateEmail(
+      String email, String code) async {
     String url = "${AppConfig.BASE_URL}/user/email/verify/update";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -658,23 +682,24 @@ class ProfileRepository {
         body: jsonEncode({
           "email": email,
           "code": code,
-        })
+        }),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('email_updated_successfully'),
+          'message': responseData['message'] ??
+              LocalizedMessages.getMessage('email_updated_successfully'),
           'data': responseData['data'],
         };
       } else {
-        // Try to parse error message from response
         try {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? LocalizedMessages.getMessage('verification_failed'),
+            'message': errorData['message'] ??
+                LocalizedMessages.getMessage('verification_failed'),
           };
         } catch (e) {
           return {
@@ -692,47 +717,10 @@ class ProfileRepository {
     }
   }
 
-  // Mark all notifications as read
-  Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
-    String url = "${AppConfig.BASE_URL}/notification/mark-all-read";
-    
-    try {
-      final response = await ApiRequest.post(
-        url: url,
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": "Bearer ${access_token.$}",
-          "App-Language": app_language.$!,
-        },
-        body: jsonEncode({}),
-      );
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        return {
-          'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('all_notifications_marked_read'),
-          'data': responseData['data'],
-        };
-      } else {
-        return {
-          'success': false,
-          'message': LocalizedMessages.getMessage('failed_to_mark_notifications_read'),
-        };
-      }
-    } catch (e) {
-      print("Error marking all notifications as read: $e");
-      return {
-        'success': false,
-        'message': LocalizedMessages.getMessage('network_error_try_again'),
-      };
-    }
-  }
-
   // Submit withdrawal request
   Future<Map<String, dynamic>> submitWithdrawalRequest(double amount) async {
     String url = "${AppConfig.BASE_URL}/affiliate/withdraw-request";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -743,29 +731,31 @@ class ProfileRepository {
         },
         body: jsonEncode({
           "amount": amount,
-        })
+        }),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('withdrawal_request_submitted'),
+          'message': responseData['message'] ??
+              LocalizedMessages.getMessage('withdrawal_request_submitted'),
           'data': responseData['data'],
         };
       } else {
-        // Try to parse error message from response
         try {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? LocalizedMessages.getMessage('failed_to_submit_withdrawal'),
+            'message': errorData['message'] ??
+                LocalizedMessages.getMessage('failed_to_submit_withdrawal'),
             'status': response.statusCode,
           };
         } catch (e) {
           return {
             'success': false,
-            'message': LocalizedMessages.getMessage('failed_to_submit_withdrawal'),
+            'message':
+                LocalizedMessages.getMessage('failed_to_submit_withdrawal'),
             'status': response.statusCode,
           };
         }
@@ -788,7 +778,7 @@ class ProfileRepository {
     required String ifscCode,
   }) async {
     String url = "${AppConfig.BASE_URL}/affiliate/payment-details/update";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -803,9 +793,9 @@ class ProfileRepository {
           "account_holder": accountHolder,
           "account_number": accountNumber,
           "ifsc_code": ifscCode,
-        })
+        }),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return responseData;
@@ -813,7 +803,8 @@ class ProfileRepository {
         return {
           'success': false,
           'status': response.statusCode,
-          'message': LocalizedMessages.getMessage('failed_to_update_payment_details')
+          'message': LocalizedMessages.getMessage(
+              'failed_to_update_payment_details')
         };
       }
     } catch (e) {
@@ -828,7 +819,7 @@ class ProfileRepository {
   // Get affiliate payment details
   Future<Map<String, dynamic>> getAffiliatePaymentDetails() async {
     String url = "${AppConfig.BASE_URL}/affiliate/payment-details";
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -837,9 +828,9 @@ class ProfileRepository {
           "Authorization": "Bearer ${access_token.$}",
           "App-Language": app_language.$!,
         },
-        body: '{}'
+        body: '{}',
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return responseData;
@@ -847,7 +838,8 @@ class ProfileRepository {
         return {
           'success': false,
           'status': response.statusCode,
-          'message': LocalizedMessages.getMessage('failed_to_get_payment_details')
+          'message':
+              LocalizedMessages.getMessage('failed_to_get_payment_details')
         };
       }
     } catch (e) {
@@ -866,8 +858,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 20,
   }) async {
-    String url = "${AppConfig.BASE_URL}/customer/info?wishlist_page=$page&wishlist_per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/customer/info?wishlist_page=$page&wishlist_per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -876,10 +869,9 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        // Extract the first customer's data (assuming single user)
         if (responseData['data'] != null && responseData['data'].isNotEmpty) {
           final customerData = responseData['data'][0];
           return WishlistPaginatedResponse.fromJson(customerData);
@@ -887,14 +879,16 @@ class ProfileRepository {
         return WishlistPaginatedResponse(
           success: true,
           data: [],
-          pagination: WishlistPagination(currentPage: page, perPage: perPage, total: 0),
+          pagination:
+              WishlistPagination(currentPage: page, perPage: perPage, total: 0),
           wishlistCount: 0,
         );
       } else {
         return WishlistPaginatedResponse(
           success: false,
           data: [],
-          pagination: WishlistPagination(currentPage: page, perPage: perPage, total: 0),
+          pagination:
+              WishlistPagination(currentPage: page, perPage: perPage, total: 0),
           wishlistCount: 0,
         );
       }
@@ -903,7 +897,8 @@ class ProfileRepository {
       return WishlistPaginatedResponse(
         success: false,
         data: [],
-        pagination: WishlistPagination(currentPage: page, perPage: perPage, total: 0),
+        pagination:
+            WishlistPagination(currentPage: page, perPage: perPage, total: 0),
         wishlistCount: 0,
       );
     }
@@ -916,8 +911,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 20,
   }) async {
-    String url = "${AppConfig.BASE_URL}/customer/info?auction_bid_page=$page&auction_bid_per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/customer/info?auction_bid_page=$page&auction_bid_per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -926,7 +922,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         if (responseData['data'] != null && responseData['data'].isNotEmpty) {
@@ -936,14 +932,16 @@ class ProfileRepository {
         return AuctionBidsPaginatedResponse(
           success: true,
           data: [],
-          pagination: AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          pagination: AuctionBidsPagination(
+              currentPage: page, perPage: perPage, total: 0),
           auctionBidsCount: 0,
         );
       } else {
         return AuctionBidsPaginatedResponse(
           success: false,
           data: [],
-          pagination: AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          pagination: AuctionBidsPagination(
+              currentPage: page, perPage: perPage, total: 0),
           auctionBidsCount: 0,
         );
       }
@@ -952,7 +950,8 @@ class ProfileRepository {
       return AuctionBidsPaginatedResponse(
         success: false,
         data: [],
-        pagination: AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+        pagination:
+            AuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
         auctionBidsCount: 0,
       );
     }
@@ -965,8 +964,9 @@ class ProfileRepository {
     int page = 1,
     int perPage = 20,
   }) async {
-    String url = "${AppConfig.BASE_URL}/customer/info?distinct_page=$page&distinct_per_page=$perPage";
-    
+    String url =
+        "${AppConfig.BASE_URL}/customer/info?distinct_page=$page&distinct_per_page=$perPage";
+
     try {
       final response = await ApiRequest.get(
         url: url,
@@ -975,7 +975,7 @@ class ProfileRepository {
           "App-Language": app_language.$!,
         },
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         if (responseData['data'] != null && responseData['data'].isNotEmpty) {
@@ -985,14 +985,16 @@ class ProfileRepository {
         return DistinctAuctionBidsPaginatedResponse(
           success: true,
           data: [],
-          pagination: DistinctAuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          pagination: DistinctAuctionBidsPagination(
+              currentPage: page, perPage: perPage, total: 0),
           distinctAuctionBidsCount: 0,
         );
       } else {
         return DistinctAuctionBidsPaginatedResponse(
           success: false,
           data: [],
-          pagination: DistinctAuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+          pagination: DistinctAuctionBidsPagination(
+              currentPage: page, perPage: perPage, total: 0),
           distinctAuctionBidsCount: 0,
         );
       }
@@ -1001,7 +1003,8 @@ class ProfileRepository {
       return DistinctAuctionBidsPaginatedResponse(
         success: false,
         data: [],
-        pagination: DistinctAuctionBidsPagination(currentPage: page, perPage: perPage, total: 0),
+        pagination: DistinctAuctionBidsPagination(
+            currentPage: page, perPage: perPage, total: 0),
         distinctAuctionBidsCount: 0,
       );
     }
@@ -1051,17 +1054,17 @@ class ProfileRepository {
     String? referralCode,
   }) async {
     String url = "${AppConfig.BASE_URL}/api/user/submit-referral";
-    
+
     Map<String, dynamic> requestBody = {
       "user_id": userId.toString(),
     };
-    
+
     if (referralCode != null && referralCode.isNotEmpty) {
       requestBody["referral_code"] = referralCode;
     }
-    
+
     var postBody = jsonEncode(requestBody);
-    
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -1072,24 +1075,26 @@ class ProfileRepository {
         },
         body: postBody,
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         return {
           'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? 
-              (referralCode != null 
-                  ? LocalizedMessages.getMessage('referral_code_applied_successfully') 
-                  : LocalizedMessages.getMessage('referral_skipped_successfully')),
+          'message': responseData['message'] ??
+              (referralCode != null
+                  ? LocalizedMessages.getMessage(
+                      'referral_code_applied_successfully')
+                  : LocalizedMessages.getMessage(
+                      'referral_skipped_successfully')),
           'data': responseData['data'],
         };
       } else {
-        // Try to parse error message from response
         try {
           final Map<String, dynamic> errorData = jsonDecode(response.body);
           return {
             'success': false,
-            'message': errorData['message'] ?? LocalizedMessages.getMessage('failed_to_apply_referral'),
+            'message': errorData['message'] ??
+                LocalizedMessages.getMessage('failed_to_apply_referral'),
             'status': response.statusCode,
           };
         } catch (e) {
