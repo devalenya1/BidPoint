@@ -266,10 +266,12 @@ class ProfileRepository {
   }
 
   // ============================================================
-  // ✅ Mark a SINGLE customer notification as read (offline-safe)
+  // ✅ Mark a SINGLE customer notification as read
   // ============================================================
   Future<bool> markNotificationAsRead(int notificationId) async {
-    String url = "${AppConfig.BASE_URL}/notifications/$notificationId/read";
+    final String url = "${AppConfig.BASE_URL}/notifications/$notificationId/read";
+    print("🚀 [MARK-ONE] POST $url");
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -281,22 +283,28 @@ class ProfileRepository {
         body: jsonEncode({}),
       );
 
+      print("📥 [MARK-ONE] status=${response.statusCode} body=${response.body}");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        return data['success'] == true;
+        final ok = data['success'] == true;
+        print("✅ [MARK-ONE] success=$ok updated=${data['updated']} unread=${data['unread']}");
+        return ok;
       }
       return false;
     } catch (e) {
-      print("Error marking notification $notificationId as read: $e");
+      print("❌ [MARK-ONE] exception: $e");
       return false;
     }
   }
 
   // ============================================================
-  // ✅ Mark ALL customer notifications as read (hardened)
+  // ✅ Mark ALL customer notifications as read
   // ============================================================
   Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
-    String url = "${AppConfig.BASE_URL}/notifications/read-all";
+    final String url = "${AppConfig.BASE_URL}/notifications/read-all";
+    print("🚀 [MARK-ALL] POST $url");
+
     try {
       final response = await ApiRequest.post(
         url: url,
@@ -307,6 +315,8 @@ class ProfileRepository {
         },
         body: jsonEncode({}),
       );
+
+      print("📥 [MARK-ALL] status=${response.statusCode} body=${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -323,7 +333,7 @@ class ProfileRepository {
             LocalizedMessages.getMessage('failed_to_mark_notifications_read'),
       };
     } catch (e) {
-      print("Error marking all notifications as read: $e");
+      print("❌ [MARK-ALL] exception: $e");
       return {
         'success': false,
         'message': LocalizedMessages.getMessage('network_error_try_again'),

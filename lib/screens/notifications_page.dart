@@ -50,6 +50,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<model.Notification> _allNotifications = [];
   bool _initialLoadComplete = false;
 
+  /// ✅ Prevents duplicate mark-all calls in the same page-open.
+  bool _markAllFired = false;
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +64,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   // ============================================================
-  // FLUSH + FETCH
+  // FLUSH + FETCH (init)
   // ============================================================
   Future<void> _flushPendingWritesThenFetch() async {
     await _flushPendingReads();
@@ -128,16 +131,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
           }
         });
 
-        // ✅ Flush queue again after a successful fetch — good network moment
-        if (!loadMore && _allNotifications.isNotEmpty) {
+        // ✅ FIX: Always fire mark-all once per page-open,
+        // on ANY successful fetch (even if the list is empty).
+        if (!loadMore && !_markAllFired) {
+          _markAllFired = true;
           _markAllAsReadInBackground();
-          _flushPendingReads();
         }
+
+        // ✅ Also flush any queued individual read requests
+        _flushPendingReads();
       } else {
+        // ✅ FIX: Even if the server returned no notifications, still try mark-all once
+        if (!loadMore && !_markAllFired) {
+          _markAllFired = true;
+          _markAllAsReadInBackground();
+        }
+
         if (!loadMore) setState(() => _allNotifications = []);
       }
-    } catch (_) {
-      // silent — pull-to-refresh gives the user control
+    } catch (e) {
+      print("❌ [PAGE] fetch error: $e");
+      // ✅ Still try mark-all even if fetch failed — the server may have unread rows
+      if (!loadMore && !_markAllFired) {
+        _markAllFired = true;
+        _markAllAsReadInBackground();
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -156,18 +174,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _onPageRefresh() async {
-    setState(() => _isRefreshing = true);
+    setState(() {
+      _isRefreshing = true;
+      _markAllFired = false; // allow re-firing on refresh
+    });
     await _flushPendingReads();
     await _fetchNotifications(loadMore: false);
   }
 
   // ============================================================
-  // MARK-ALL-AS-READ (background, retried)
+  // MARK-ALL-AS-READ — no early-return, always tries
   // ============================================================
   void _markAllAsReadInBackground() {
-    if (_userInfo == null || (_userInfo?.unreadNotificationsCount ?? 0) <= 0) {
-      return;
-    }
+    // ✅ REMOVED the guard that prevented firing when unreadNotificationsCount <= 0.
+    final localUnread =
+        _allNotifications.where((n) => n.readAt == null).length;
+    print("📤 [PAGE] Firing mark-all-as-read "
+        "(local unread=$localUnread, "
+        "server unread=${_userInfo?.unreadNotificationsCount ?? 0})");
+
     _sendMarkAllAsReadRequest();
   }
 
@@ -180,15 +205,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
           unread_notifications_count.$ = 0;
           unread_notifications_count.save();
           if (_userInfo != null) _userInfo!.unreadNotificationsCount = 0;
+          // Also clear local readAt on all rows so the UI matches the DB
+          setState(() {
+            for (final n in _allNotifications) {
+              n.readAt ??= DateTime.now();
+            }
+          });
           await _clearPendingReadAllFlag();
+          print("✅ [PAGE] mark-all completed");
           return;
         }
-      } catch (_) {
-        // retry
+      } catch (e) {
+        print("⚠️ [PAGE] mark-all attempt $attempt failed: $e");
       }
       await Future.delayed(Duration(seconds: 1 << attempt));
     }
     // Still failing → persist so we retry on next launch/fetch
+    print("❌ [PAGE] mark-all failed after 3 attempts — queued");
     await _setPendingReadAllFlag();
   }
 
@@ -209,7 +242,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       unread_notifications_count.save();
     }
 
-    // Persist to server (fire-and-forget with retries + offline queue)
+    // ✅ FIRE-AND-FORGET but do NOT await before navigation —
+    // the repo method catches its own errors, so no uncaught async here.
     if (notification.id != null) {
       _markSingleAsReadWithRetry(notification.id!);
     }
@@ -220,8 +254,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'auction_lose':
         Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => ActivityPage(initialTabIndex: 1)),
+          MaterialPageRoute(builder: (_) => ActivityPage(initialTabIndex: 1)),
         );
         break;
 
@@ -297,16 +330,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
           await _dequeuePendingRead(notificationId);
           return;
         }
-      } catch (_) {}
+      } catch (e) {
+        print("⚠️ [PAGE] mark-one id=$notificationId attempt $attempt: $e");
+      }
       await Future.delayed(Duration(seconds: 1 << attempt));
     }
     // stays queued — flushed on next init/fetch/refresh
+    print("❌ [PAGE] mark-one id=$notificationId queued for later");
   }
 
   Future<void> _flushPendingReads() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1) Handle pending "mark all read"
+    // 1) Pending "mark all read"
     final pendingReadAll = prefs.getBool(_pendingReadAllKey) ?? false;
     if (pendingReadAll) {
       try {
@@ -315,7 +351,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       } catch (_) {}
     }
 
-    // 2) Handle individual pending IDs
+    // 2) Individual pending IDs
     final ids = prefs.getStringList(_pendingReadIdsKey) ?? [];
     if (ids.isEmpty) return;
 
