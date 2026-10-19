@@ -641,7 +641,7 @@ class ProfileRepository {
 
   // Mark all notifications as read
   Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
-    String url = "${AppConfig.BASE_URL}/notification/mark-all-read";
+    String url = "${AppConfig.RAW_BASE_URL}/notification/mark-all-read";
     
     try {
       final response = await ApiRequest.post(
