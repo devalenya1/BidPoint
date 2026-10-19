@@ -299,7 +299,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       case 'new_chat':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const MessengerList()),
+          MaterialPageRoute(builder: (context) => MessengerList()),
         );
         break;
 
