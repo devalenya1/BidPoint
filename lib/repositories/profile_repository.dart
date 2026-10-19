@@ -675,49 +675,7 @@ class ProfileRepository {
       };
     }
   }
-
   
-  /// Marks a SINGLE notification as read on the server.
-  Future<Map<String, dynamic>> markNotificationAsRead(int notificationId) async {
-    final url = "${AppConfig.RAW_BASE_URL}/notification/mark-all-read";
-
-    try {
-      final response = await ApiRequest.post(
-        url: url,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": "Bearer ${access_token.$}",
-          "App-Language": app_language.$!,
-        },
-        body: jsonEncode({"notification_id": notificationId}),
-      );
-
-      final Map<String, dynamic> body = response.body.isNotEmpty
-          ? jsonDecode(response.body)
-          : {};
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': body['success'] ?? true,
-          'message': body['message'] ?? 'Notification marked as read',
-          'unread_count': body['unread_count'] ?? 0,
-        };
-      }
-
-      return {
-        'success': false,
-        'message': body['message'] ?? 'Failed to mark notification as read',
-        'status': response.statusCode,
-      };
-    } catch (e) {
-      print("❌ Error marking notification as read: $e");
-      return {
-        'success': false,
-        'message': LocalizedMessages.getMessage('network_error_try_again'),
-      };
-    }
-  }
 
   // Submit withdrawal request
   Future<Map<String, dynamic>> submitWithdrawalRequest(double amount) async {
