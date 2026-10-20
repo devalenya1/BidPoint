@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HotAuctionCard extends StatefulWidget {
   final int id;
@@ -42,7 +43,8 @@ class HotAuctionCard extends StatefulWidget {
 
 class _HotAuctionCardState extends State<HotAuctionCard> {
   Timer? _timer;
-  String _timeLeft = "Loading...";
+  String _timeLeft = "";
+  bool _isTimerLoading = true;
   bool _isProcessing = false;
   double _swipeAmount = 0.0;
   bool _isSwiping = false;
@@ -69,10 +71,13 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   void _updateTimer() {
+    final localizations = AppLocalizations.of(context);
+    
     if (widget.auctionEndDate == null) {
       if (mounted) {
         setState(() {
-          _timeLeft = "No Timer";
+          _timeLeft = localizations?.no_timer_ucf ?? "No Timer";
+          _isTimerLoading = false;
         });
       }
       return;
@@ -81,7 +86,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = localizations?.ended_ucf ?? "Ended";
+          _isTimerLoading = false;
         });
       }
       _timer?.cancel();
@@ -100,7 +106,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (endDate <= 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = localizations?.ended_ucf ?? "Ended";
+          _isTimerLoading = false;
         });
       }
       _timer?.cancel();
@@ -113,7 +120,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (distance < 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = localizations?.ended_ucf ?? "Ended";
+          _isTimerLoading = false;
         });
       }
       _timer?.cancel();
@@ -125,20 +133,26 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     final minutes = (distance % 3600) ~/ 60;
     final seconds = distance % 60;
 
+    final daySuffix = localizations?.day_short_ucf ?? "d";
+    final hourSuffix = localizations?.hour_short_ucf ?? "h";
+    final minuteSuffix = localizations?.minute_short_ucf ?? "m";
+    final secondSuffix = localizations?.second_short_ucf ?? "s";
+
     String timeString;
     if (days > 0) {
-      timeString = "${days}d ${hours}h";
+      timeString = "$days$daySuffix $hours$hourSuffix";
     } else if (hours > 0) {
-      timeString = "${hours}h ${minutes}m";
+      timeString = "$hours$hourSuffix $minutes$minuteSuffix";
     } else if (minutes > 0) {
-      timeString = "${minutes}m ${seconds}s";
+      timeString = "$minutes$minuteSuffix $seconds$secondSuffix";
     } else {
-      timeString = "${seconds}s";
+      timeString = "$seconds$secondSuffix";
     }
 
     if (mounted) {
       setState(() {
         _timeLeft = timeString;
+        _isTimerLoading = false;
       });
     }
   }
@@ -224,6 +238,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     try {
       final currentBid = _getDisplayBid();
       final minBid = currentBid + 0.01;
+      final localizations = AppLocalizations.of(context);
       
       final response = await ProductRepository().quickBid(
         widget.id.toString(),
@@ -234,7 +249,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
       if (response.success == true) {
         // ✅ Using showSuccess - Green with success sound
         ToastComponent.showSuccess(
-          'Quick bid placed! Amount: ${_formatPrice(minBid)}',
+          '${localizations?.quick_bid_placed_success_ucf ?? "Quick bid placed! Amount:"} ${_formatPrice(minBid)}',
         );
         Navigator.push(
           context,
@@ -245,12 +260,13 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
       } else {
         // ✅ Using showError - Red with error sound
         ToastComponent.showError(
-          response.message ?? 'Failed to place bid',
+          response.message ?? (localizations?.failed_to_place_bid_ucf ?? 'Failed to place bid'),
         );
       }
     } catch (e) {
       // ✅ Using showError - Red with error sound
-      ToastComponent.showError('Error placing bid');
+      final localizations = AppLocalizations.of(context);
+      ToastComponent.showError(localizations?.error_placing_bid_ucf ?? 'Error placing bid');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -267,23 +283,25 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   void _showLoginDialog() {
+    final localizations = AppLocalizations.of(context);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
-          'Login Required',
+          localizations?.login_required_ucf ?? 'Login Required',
           style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          'Please login to place a bid',
+          localizations?.please_login_to_place_bid_ucf ?? 'Please login to place a bid',
           style: TextStyle(fontSize: 13.sp),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              localizations?.cancel_ucf ?? 'Cancel',
               style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
             ),
           ),
@@ -296,7 +314,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               );
             },
             child: Text(
-              'Login',
+              localizations?.login_ucf ?? 'Login',
               style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
             ),
           ),
@@ -307,8 +325,12 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final displayBid = _getDisplayBid();
-    final showTimer = _timeLeft != "Ended" && _timeLeft != "No Timer";
+    
+    final endedText = localizations?.ended_ucf ?? "Ended";
+    final noTimerText = localizations?.no_timer_ucf ?? "No Timer";
+    final showTimer = !_isTimerLoading && _timeLeft != endedText && _timeLeft != noTimerText;
 
     return Container(
       decoration: BoxDecoration(
@@ -360,7 +382,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
                   decoration: BoxDecoration(
-                    color: _timeLeft == "Ended" 
+                    color: _timeLeft == endedText 
                         ? Colors.red 
                         : const Color(0xFF009572),
                     borderRadius: BorderRadius.circular(30.r),
@@ -376,7 +398,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _timeLeft == "Ended" 
+                        _timeLeft == endedText 
                             ? Icons.cancel 
                             : Icons.access_time,
                         size: 10.sp, 
@@ -408,7 +430,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 GestureDetector(
                   onTap: _navigateToProductDetails,
                   child: Text(
-                    widget.name ?? 'Product',
+                    widget.name ?? (localizations?.product_ucf ?? 'Product'),
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
@@ -443,7 +465,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Current Bid',
+                          localizations?.current_bid_ucf ?? 'Current Bid',
                           style: TextStyle(
                             fontSize: 7.sp,
                             color: const Color(0xFF80818B),
@@ -475,7 +497,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                           ),
                           SizedBox(width: 2.w),
                           Text(
-                            '1 Bid = ${widget.pointPerBid ?? 0}',
+                            '${localizations?.one_bid_equals_ucf ?? "1 Bid ="} ${widget.pointPerBid ?? 0}',
                             style: TextStyle(
                               fontSize: 6.sp,
                               fontWeight: FontWeight.w500,
@@ -540,7 +562,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                                     if (_swipeAmount < 20) ...[
                                       SizedBox(width: 30.w),
                                       Text(
-                                        'Swipe to Bid',
+                                        localizations?.swipe_to_bid_ucf ?? 'Swipe to Bid',
                                         style: TextStyle(
                                           fontSize: 10.sp,
                                           fontWeight: FontWeight.w500,
@@ -549,7 +571,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                                       ),
                                     ] else ...[
                                       Text(
-                                        'Quick Bid',
+                                        localizations?.quick_bid_ucf ?? 'Quick Bid',
                                         style: TextStyle(
                                           fontSize: 10.sp,
                                           fontWeight: FontWeight.w500,

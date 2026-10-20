@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ProductCard extends StatefulWidget {
   final int id;
@@ -56,7 +56,8 @@ class ProductCard extends StatefulWidget {
 
 class _ProductCardState extends State<ProductCard> {
   Timer? _timer;
-  String _timeLeft = "Loading...";
+  String _timeLeft = "";
+  bool _isTimerLoading = true;
   String _auctionStatus = "active"; // "upcoming", "active", "ended"
   bool _isProcessing = false;
   
@@ -68,6 +69,8 @@ class _ProductCardState extends State<ProductCard> {
     _determineAuctionStatus();
     if (_auctionStatus == "active") {
       _startTimer();
+    } else {
+      _isTimerLoading = false;
     }
   }
 
@@ -78,6 +81,7 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _determineAuctionStatus() {
+    final localizations = AppLocalizations.of(context);
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     
     // ============================================
@@ -87,14 +91,14 @@ class _ProductCardState extends State<ProductCard> {
       // Case 1: Server returns string "Upcoming"
       if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
         _auctionStatus = "upcoming";
-        _timeLeft = "Upcoming";
+        _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
         return;
       }
       
       // Case 2: Server returns string "Ended"
       if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
         _auctionStatus = "ended";
-        _timeLeft = "Ended";
+        _timeLeft = localizations?.ended_ucf ?? "Ended";
         return;
       }
       
@@ -103,7 +107,7 @@ class _ProductCardState extends State<ProductCard> {
         final endDate = widget.auctionEndDate as int;
         if (endDate <= 0 || endDate <= now) {
           _auctionStatus = "ended";
-          _timeLeft = "Ended";
+          _timeLeft = localizations?.ended_ucf ?? "Ended";
           return;
         }
         // It's a valid future timestamp, so it's active
@@ -117,7 +121,7 @@ class _ProductCardState extends State<ProductCard> {
         if (endDate != null) {
           if (endDate <= 0 || endDate <= now) {
             _auctionStatus = "ended";
-            _timeLeft = "Ended";
+            _timeLeft = localizations?.ended_ucf ?? "Ended";
             return;
           }
           // It's a valid future timestamp, so it's active
@@ -133,7 +137,7 @@ class _ProductCardState extends State<ProductCard> {
     if (widget.auctionStartDate != null) {
       if (widget.auctionStartDate is String && widget.auctionStartDate == "Upcoming") {
         _auctionStatus = "upcoming";
-        _timeLeft = "Upcoming";
+        _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
         return;
       }
       
@@ -141,7 +145,7 @@ class _ProductCardState extends State<ProductCard> {
         final startDate = widget.auctionStartDate as int;
         if (startDate > now) {
           _auctionStatus = "upcoming";
-          _timeLeft = "Upcoming";
+          _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
           return;
         }
       }
@@ -150,7 +154,7 @@ class _ProductCardState extends State<ProductCard> {
         final startDate = int.tryParse(widget.auctionStartDate);
         if (startDate != null && startDate > now) {
           _auctionStatus = "upcoming";
-          _timeLeft = "Upcoming";
+          _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
           return;
         }
       }
@@ -171,6 +175,8 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _updateTimer() {
+    final localizations = AppLocalizations.of(context);
+    
     // Don't update if not active
     if (_auctionStatus != "active") {
       return;
@@ -179,7 +185,8 @@ class _ProductCardState extends State<ProductCard> {
     if (widget.auctionEndDate == null) {
       if (mounted) {
         setState(() {
-          _timeLeft = "No Timer";
+          _timeLeft = localizations?.no_timer_ucf ?? "No Timer";
+          _isTimerLoading = false;
         });
       }
       return;
@@ -190,8 +197,9 @@ class _ProductCardState extends State<ProductCard> {
       if (widget.auctionEndDate == "Ended") {
         if (mounted) {
           setState(() {
-            _timeLeft = "Ended";
+            _timeLeft = localizations?.ended_ucf ?? "Ended";
             _auctionStatus = "ended";
+            _isTimerLoading = false;
           });
         }
         _timer?.cancel();
@@ -200,8 +208,9 @@ class _ProductCardState extends State<ProductCard> {
       if (widget.auctionEndDate == "Upcoming") {
         if (mounted) {
           setState(() {
-            _timeLeft = "Upcoming";
+            _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
             _auctionStatus = "upcoming";
+            _isTimerLoading = false;
           });
         }
         _timer?.cancel();
@@ -225,14 +234,16 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _handleCountdown(int endDate) {
+    final localizations = AppLocalizations.of(context);
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final distance = endDate - now;
 
     if (distance < 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = "Ended";
+          _timeLeft = localizations?.ended_ucf ?? "Ended";
           _auctionStatus = "ended";
+          _isTimerLoading = false;
         });
       }
       _timer?.cancel();
@@ -244,20 +255,26 @@ class _ProductCardState extends State<ProductCard> {
     final minutes = (distance % 3600) ~/ 60;
     final seconds = distance % 60;
 
+    final daySuffix = localizations?.day_short_ucf ?? "d";
+    final hourSuffix = localizations?.hour_short_ucf ?? "h";
+    final minuteSuffix = localizations?.minute_short_ucf ?? "m";
+    final secondSuffix = localizations?.second_short_ucf ?? "s";
+
     String timeString;
     if (days > 0) {
-      timeString = "${days}d ${hours}h";
+      timeString = "$days$daySuffix $hours$hourSuffix";
     } else if (hours > 0) {
-      timeString = "${hours}h ${minutes}m";
+      timeString = "$hours$hourSuffix $minutes$minuteSuffix";
     } else if (minutes > 0) {
-      timeString = "${minutes}m ${seconds}s";
+      timeString = "$minutes$minuteSuffix $seconds$secondSuffix";
     } else {
-      timeString = "${seconds}s";
+      timeString = "$seconds$secondSuffix";
     }
 
     if (mounted) {
       setState(() {
         _timeLeft = timeString;
+        _isTimerLoading = false;
       });
     }
   }
@@ -313,19 +330,21 @@ class _ProductCardState extends State<ProductCard> {
     setState(() {});
     
     try {
+      final localizations = AppLocalizations.of(context);
       final response = await ProductRepository().notifyMeForAuction(widget.id);
       
       if (response['success'] == true) {
         ToastComponent.showSuccess(
-          response['message'] ?? 'You will be notified when this auction starts!',
+          response['message'] ?? (localizations?.notify_me_success_ucf ?? 'You will be notified when this auction starts!'),
         );
       } else {
         ToastComponent.showError(
-          response['message'] ?? 'Failed to set notification',
+          response['message'] ?? (localizations?.failed_to_set_notification_ucf ?? 'Failed to set notification'),
         );
       }
     } catch (e) {
-      ToastComponent.showError('Error setting notification');
+      final localizations = AppLocalizations.of(context);
+      ToastComponent.showError(localizations?.error_setting_notification_ucf ?? 'Error setting notification');
     } finally {
       _isProcessing = false;
       setState(() {});
@@ -333,23 +352,25 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   void _showLoginDialog() {
+    final localizations = AppLocalizations.of(context);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
-          'Login Required',
+          localizations?.login_required_ucf ?? 'Login Required',
           style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          'Please login to set notification',
+          localizations?.please_login_to_set_notification_ucf ?? 'Please login to set notification',
           style: TextStyle(fontSize: 13.sp),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              localizations?.cancel_ucf ?? 'Cancel',
               style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
             ),
           ),
@@ -362,7 +383,7 @@ class _ProductCardState extends State<ProductCard> {
               );
             },
             child: Text(
-              'Login',
+              localizations?.login_ucf ?? 'Login',
               style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
             ),
           ),
@@ -373,10 +394,14 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final displayBid = _getDisplayBid();
     final isUpcoming = _auctionStatus == "upcoming";
     final isEnded = _auctionStatus == "ended";
     final isActive = _auctionStatus == "active";
+    
+    final upcomingText = localizations?.upcoming_ucf ?? "Upcoming";
+    final endedText = localizations?.ended_ucf ?? "Ended";
 
     return Container(
       decoration: BoxDecoration(
@@ -456,7 +481,7 @@ class _ProductCardState extends State<ProductCard> {
                       ),
                       SizedBox(width: 3.w),
                       Text(
-                        isUpcoming ? "Upcoming" : _timeLeft,
+                        isUpcoming ? upcomingText : _timeLeft,
                         style: TextStyle(
                           fontSize: 8.sp,
                           fontWeight: FontWeight.w600,
@@ -480,7 +505,7 @@ class _ProductCardState extends State<ProductCard> {
                 GestureDetector(
                   onTap: _navigateToProduct,
                   child: Text(
-                    widget.name ?? 'Product',
+                    widget.name ?? (localizations?.product_ucf ?? 'Product'),
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
@@ -511,12 +536,16 @@ class _ProductCardState extends State<ProductCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Current Bid / Starting Bid
+                    // Current Bid / Starting Bid / Final Bid
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isUpcoming ? 'Starting Bid' : (isEnded ? 'Final Bid' : 'Current Bid'),
+                          isUpcoming 
+                              ? (localizations?.starting_bid_ucf ?? 'Starting Bid')
+                              : (isEnded 
+                                  ? (localizations?.final_bid_ucf ?? 'Final Bid') 
+                                  : (localizations?.current_bid_ucf ?? 'Current Bid')),
                           style: TextStyle(
                             fontSize: 7.sp,
                             color: isEnded ? Colors.grey : const Color(0xFF80818B),
@@ -550,7 +579,7 @@ class _ProductCardState extends State<ProductCard> {
                             ),
                             SizedBox(width: 2.w),
                             Text(
-                              '1 Bid = ${widget.pointPerBid ?? 0}',
+                              '${localizations?.one_bid_equals_ucf ?? "1 Bid ="} ${widget.pointPerBid ?? 0}',
                               style: TextStyle(
                                 fontSize: 6.sp,
                                 fontWeight: FontWeight.w600,
@@ -571,7 +600,7 @@ class _ProductCardState extends State<ProductCard> {
                     width: double.infinity,
                     height: 35.h,
                     decoration: BoxDecoration(
-                      color: isEnded ? Colors.grey : (isUpcoming ? MyTheme.accent_color : MyTheme.accent_color),
+                      color: isEnded ? Colors.grey : MyTheme.accent_color,
                       borderRadius: BorderRadius.circular(7.r),
                     ),
                     child: Center(
@@ -595,7 +624,7 @@ class _ProductCardState extends State<ProductCard> {
                                     ),
                                     SizedBox(width: 4.w),
                                     Text(
-                                      'Notify Me',
+                                      localizations?.notify_me_ucf ?? 'Notify Me',
                                       style: TextStyle(
                                         fontSize: 10.sp,
                                         fontWeight: FontWeight.w600,
@@ -608,7 +637,9 @@ class _ProductCardState extends State<ProductCard> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  isEnded ? 'Ended' : 'View Product',
+                                  isEnded 
+                                      ? (localizations?.ended_ucf ?? 'Ended') 
+                                      : (localizations?.view_product_ucf ?? 'View Product'),
                                   style: TextStyle(
                                     fontSize: 10.sp,
                                     fontWeight: FontWeight.w600,

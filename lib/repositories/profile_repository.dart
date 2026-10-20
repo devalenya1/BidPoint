@@ -639,43 +639,80 @@ class ProfileRepository {
     }
   }
 
-  // Mark all notifications as read
-  Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
-    String url = "${AppConfig.RAW_BASE_URL}/notification/mark-all-read";
+  // // Mark all notifications as read
+  // Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
+  //   String url = "${AppConfig.RAW_BASE_URL}/notification/mark-all-read";
     
-    try {
-      final response = await ApiRequest.post(
-        url: url,
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": "Bearer ${access_token.$}",
-          "App-Language": app_language.$!,
-        },
-        body: jsonEncode({}),
-      );
+  //   try {
+  //     final response = await ApiRequest.post(
+  //       url: url,
+  //       headers: { 
+  //         "Content-Type": "application/json",
+  //         "Authorization": "Bearer ${access_token.$}",
+  //         "App-Language": app_language.$!,
+  //       },
+  //       body: jsonEncode({}),
+  //     );
       
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        return {
-          'success': responseData['success'] ?? true,
-          'message': responseData['message'] ?? LocalizedMessages.getMessage('all_notifications_marked_read'),
-          'data': responseData['data'],
-        };
-      } else {
-        return {
-          'success': false,
-          'message': LocalizedMessages.getMessage('failed_to_mark_notifications_read'),
-        };
-      }
-    } catch (e) {
-      print("Error marking all notifications as read: $e");
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       final Map<String, dynamic> responseData = jsonDecode(response.body);
+  //       return {
+  //         'success': responseData['success'] ?? true,
+  //         'message': responseData['message'] ?? LocalizedMessages.getMessage('all_notifications_marked_read'),
+  //         'data': responseData['data'],
+  //       };
+  //     } else {
+  //       return {
+  //         'success': false,
+  //         'message': LocalizedMessages.getMessage('failed_to_mark_notifications_read'),
+  //       };
+  //     }
+  //   } catch (e) {
+  //     print("Error marking all notifications as read: $e");
+  //     return {
+  //       'success': false,
+  //       'message': LocalizedMessages.getMessage('network_error_try_again'),
+  //     };
+  //   }
+  // }
+  
+  // Mark all notifications as read
+Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
+  String url = "${AppConfig.RAW_BASE_URL}/notification/mark-all-read";
+
+  try {
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${access_token.$}",
+        "App-Language": app_language.$ ?? 'en',
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      return {
+        'success': responseData['success'] ?? true,
+        'message': responseData['message'] ??
+            LocalizedMessages.getMessage('all_notifications_marked_read'),
+        'data': responseData['data'],
+      };
+    } else {
       return {
         'success': false,
-        'message': LocalizedMessages.getMessage('network_error_try_again'),
+        'message': LocalizedMessages.getMessage(
+            'failed_to_mark_notifications_read'),
       };
     }
+  } catch (e) {
+    print("Error marking all notifications as read: $e");
+    return {
+      'success': false,
+      'message': LocalizedMessages.getMessage('network_error_try_again'),
+    };
   }
-  
+}
 
   // Submit withdrawal request
   Future<Map<String, dynamic>> submitWithdrawalRequest(double amount) async {

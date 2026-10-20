@@ -53,11 +53,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
   // Track if initial load is complete for each tab
   bool _initialLoadComplete = false;
 
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   if (is_logged_in.$ == true) {
+  //     _fetchNotifications(); // Fetch fresh data from API
+  //   } else {
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
   @override
   void initState() {
     super.initState();
     if (is_logged_in.$ == true) {
-      _fetchNotifications(); // Fetch fresh data from API
+      _fetchNotifications();
+      // Also mark as read if there are unread items cached from a prior session
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _markAllAsReadInBackground();
+      });
     } else {
       setState(() {
         _isLoading = false;
@@ -129,7 +144,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
         });
 
         // Mark all as read in background (only on first load, after data is loaded)
-        if (!loadMore && _allNotifications.isNotEmpty) {
+        // if (!loadMore && _allNotifications.isNotEmpty) {
+        //   _markAllAsReadInBackground();
+        // }
+        if (!loadMore) {
           _markAllAsReadInBackground();
         }
       } else {
@@ -168,22 +186,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   // ============ MARK ALL AS READ (BACKGROUND - AFTER DATA IS LOADED) ============
   void _markAllAsReadInBackground() {
-    if (_userInfo == null || (_userInfo?.unreadNotificationsCount ?? 0) <= 0) {
+    final unread = _userInfo?.unreadNotificationsCount ?? 0;
+    if (unread <= 0) {
       return;
     }
 
-    // Send background request to mark all as read
+    // Fire-and-forget: do not block UI
     _sendMarkAllAsReadRequest();
   }
 
-  void _sendMarkAllAsReadRequest() async {
+  Future<void> _sendMarkAllAsReadRequest() async {
     try {
-      final Map<String, dynamic> response = await ProfileRepository().markAllNotificationsAsRead();
+      final Map<String, dynamic> response =
+          await ProfileRepository().markAllNotificationsAsRead();
 
       if (response['success'] == true) {
-        print('✅ All notifications marked as read in background');
+        print('✅ All notifications marked as read on server');
+
+        // Update local state so UI badges reflect read status immediately
+        if (mounted) {
+          setState(() {
+            if (_userInfo != null) {
+              _userInfo!.unreadNotificationsCount = 0;
+            }
+            // Mark every cached notification as read locally
+            for (final n in _allNotifications) {
+              n.readAt ??= DateTime.now();
+            }
+          });
+        }
+
+        // Persist global unread count as zero
+        unread_notifications_count.$ = 0;
+        unread_notifications_count.save();
       } else {
-        print('❌ Failed to mark all notifications as read: ${response['message']}');
+        print(
+            '❌ Failed to mark all notifications as read: ${response['message']}');
       }
     } catch (e) {
       print('❌ Failed to mark all notifications as read: $e');
