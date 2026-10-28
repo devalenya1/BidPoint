@@ -1,15 +1,15 @@
-import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-import 'package:active_ecommerce_flutter/helpers/system_config.dart';
-import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
+import 'dart:async';
+
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
-import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HotAuctionCard extends StatefulWidget {
   final int id;
@@ -46,10 +46,12 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   String _timeLeft = "";
   bool _isTimerLoading = true;
   bool _isProcessing = false;
-  double _swipeAmount = 0.0;
-  bool _isSwiping = false;
-  double _startX = 0;
-  double _startY = 0;
+
+  // Slide-to-bid state
+  double _slideOffset = 0;
+  double _thumbStartX = 0;
+  bool _isDragging = false;
+  static const double _thumbSize = 41; // 40px icon + 4px margins (HTML)
 
   @override
   void initState() {
@@ -63,20 +65,20 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // TIMER
+  // ─────────────────────────────────────────────────────────────
   void _startTimer() {
     _updateTimer();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updateTimer();
-    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTimer());
   }
 
   void _updateTimer() {
-    final localizations = AppLocalizations.of(context);
-    
+    final loc = AppLocalizations.of(context);
     if (widget.auctionEndDate == null) {
       if (mounted) {
         setState(() {
-          _timeLeft = localizations?.no_timer_ucf ?? "No Timer";
+          _timeLeft = loc?.no_timer_ucf ?? "No Timer";
           _isTimerLoading = false;
         });
       }
@@ -86,7 +88,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
         setState(() {
-          _timeLeft = localizations?.ended_ucf ?? "Ended";
+          _timeLeft = loc?.ended_ucf ?? "Ended";
           _isTimerLoading = false;
         });
       }
@@ -106,7 +108,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (endDate <= 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = localizations?.ended_ucf ?? "Ended";
+          _timeLeft = loc?.ended_ucf ?? "Ended";
           _isTimerLoading = false;
         });
       }
@@ -120,7 +122,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (distance < 0) {
       if (mounted) {
         setState(() {
-          _timeLeft = localizations?.ended_ucf ?? "Ended";
+          _timeLeft = loc?.ended_ucf ?? "Ended";
           _isTimerLoading = false;
         });
       }
@@ -133,20 +135,20 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     final minutes = (distance % 3600) ~/ 60;
     final seconds = distance % 60;
 
-    final daySuffix = localizations?.day_short_ucf ?? "d";
-    final hourSuffix = localizations?.hour_short_ucf ?? "h";
-    final minuteSuffix = localizations?.minute_short_ucf ?? "m";
-    final secondSuffix = localizations?.second_short_ucf ?? "s";
+    final dSuffix = loc?.day_short_ucf ?? "d";
+    final hSuffix = loc?.hour_short_ucf ?? "h";
+    final mSuffix = loc?.minute_short_ucf ?? "m";
+    final sSuffix = loc?.second_short_ucf ?? "s";
 
     String timeString;
     if (days > 0) {
-      timeString = "$days$daySuffix $hours$hourSuffix";
+      timeString = "$days$dSuffix $hours$hSuffix";
     } else if (hours > 0) {
-      timeString = "$hours$hourSuffix $minutes$minuteSuffix";
+      timeString = "$hours$hSuffix $minutes$mSuffix";
     } else if (minutes > 0) {
-      timeString = "$minutes$minuteSuffix $seconds$secondSuffix";
+      timeString = "$minutes$mSuffix $seconds$sSuffix";
     } else {
-      timeString = "$seconds$secondSuffix";
+      timeString = "$seconds$sSuffix";
     }
 
     if (mounted) {
@@ -157,6 +159,9 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // PRICE HELPERS
+  // ─────────────────────────────────────────────────────────────
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -168,10 +173,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     return 0.0;
   }
 
-  // NEW - Uses FormatHelper
   String _formatPrice(dynamic price) {
-    final doubleValue = _parsePrice(price);
-    return FormatHelper.formatPrice(doubleValue);
+    return FormatHelper.formatPrice(_parsePrice(price));
   }
 
   double _getDisplayBid() {
@@ -186,135 +189,132 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     return 0.0;
   }
 
-  void _onPanStart(DragStartDetails details) {
-    _startX = details.localPosition.dx;
-    _startY = details.localPosition.dy;
-    _isSwiping = true;
+  /// HTML: retail_value = purchase_price>0 ? purchase_price : current_bid*100
+  double _getRetailValue() {
+    final current = _getDisplayBid();
+    return current * 100;
   }
 
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (!_isSwiping) return;
-    
-    final deltaX = details.localPosition.dx - _startX;
-    final deltaY = details.localPosition.dy - _startY;
-    
-    if (deltaX > 5 && deltaY.abs() < 50) {
-      setState(() {
-        _swipeAmount = deltaX.clamp(0.0, 60.0);
-      });
-    } else if (deltaX < -5) {
-      setState(() {
-        _swipeAmount = 0;
-      });
-    }
+  // ─────────────────────────────────────────────────────────────
+  // SLIDE-TO-BID
+  // ─────────────────────────────────────────────────────────────
+  void _onSlideStart(DragStartDetails d) {
+    _thumbStartX = d.localPosition.dx;
+    _isDragging = true;
   }
 
-  void _onPanEnd(DragEndDetails details) {
-    if (!_isSwiping) return;
-    
-    final wasSwiped = _swipeAmount >= 40;
-    
+  void _onSlideUpdate(DragUpdateDetails d, double maxOffset) {
+    if (!_isDragging) return;
+    final dx = d.localPosition.dx - _thumbStartX;
     setState(() {
-      _isSwiping = false;
-      _swipeAmount = 0;
+      _slideOffset = dx.clamp(0.0, maxOffset);
     });
-    
-    if (wasSwiped) {
-      _quickBid();
-    }
+  }
+
+  void _onSlideEnd(double maxOffset) {
+    if (!_isDragging) return;
+    _isDragging = false;
+    final shouldBid = _slideOffset > maxOffset * 0.75;
+
+    setState(() {
+      _slideOffset = shouldBid ? maxOffset : 0;
+    });
+
+    // snap back after a short delay
+    Future.delayed(Duration(milliseconds: shouldBid ? 200 : 300), () {
+      if (mounted) {
+        setState(() => _slideOffset = 0);
+      }
+    });
+
+    if (shouldBid) _quickBid();
   }
 
   Future<void> _quickBid() async {
     if (_isProcessing) return;
-    
+
     if (!is_logged_in.$) {
       _showLoginDialog();
       return;
     }
-    
-    _isProcessing = true;
-    setState(() {});
-    
+
+    setState(() => _isProcessing = true);
+
     try {
       final currentBid = _getDisplayBid();
       final minBid = currentBid + 0.01;
-      final localizations = AppLocalizations.of(context);
-      
+      final loc = AppLocalizations.of(context);
+
       final response = await ProductRepository().quickBid(
         widget.id.toString(),
         minBid.toString(),
         type: 'quick',
       );
-      
+
       if (response.success == true) {
-        // ✅ Using showSuccess - Green with success sound
         ToastComponent.showSuccess(
-          '${localizations?.quick_bid_placed_success_ucf ?? "Quick bid placed! Amount:"} ${_formatPrice(minBid)}',
+          '${loc?.quick_bid_placed_success_ucf ?? "Quick bid placed! Amount:"} ${_formatPrice(minBid)}',
         );
+        if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetails(slug: widget.slug),
-          ),
+          MaterialPageRoute(builder: (_) => ProductDetails(slug: widget.slug)),
         );
       } else {
-        // ✅ Using showError - Red with error sound
         ToastComponent.showError(
-          response.message ?? (localizations?.failed_to_place_bid_ucf ?? 'Failed to place bid'),
+          response.message ??
+              (loc?.failed_to_place_bid_ucf ?? 'Failed to place bid'),
         );
       }
-    } catch (e) {
-      // ✅ Using showError - Red with error sound
-      final localizations = AppLocalizations.of(context);
-      ToastComponent.showError(localizations?.error_placing_bid_ucf ?? 'Error placing bid');
+    } catch (_) {
+      final loc = AppLocalizations.of(context);
+      ToastComponent.showError(
+        loc?.error_placing_bid_ucf ?? 'Error placing bid',
+      );
     } finally {
-      _isProcessing = false;
-      setState(() {});
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   void _navigateToProductDetails() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetails(slug: widget.slug),
-      ),
+      MaterialPageRoute(builder: (_) => ProductDetails(slug: widget.slug)),
     );
   }
 
   void _showLoginDialog() {
-    final localizations = AppLocalizations.of(context);
-    
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
-          localizations?.login_required_ucf ?? 'Login Required',
+          loc?.login_required_ucf ?? 'Login Required',
           style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          localizations?.please_login_to_place_bid_ucf ?? 'Please login to place a bid',
+          loc?.please_login_to_place_bid_ucf ?? 'Please login to place a bid',
           style: TextStyle(fontSize: 13.sp),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: Text(
-              localizations?.cancel_ucf ?? 'Cancel',
+              loc?.cancel_ucf ?? 'Cancel',
               style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
             ),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => Login()),
+                MaterialPageRoute(builder: (_) => Login()),
               );
             },
             child: Text(
-              localizations?.login_ucf ?? 'Login',
+              loc?.login_ucf ?? 'Login',
               style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
             ),
           ),
@@ -323,274 +323,494 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
+    final loc = AppLocalizations.of(context)!;
     final displayBid = _getDisplayBid();
-    
-    final endedText = localizations?.ended_ucf ?? "Ended";
-    final noTimerText = localizations?.no_timer_ucf ?? "No Timer";
-    final showTimer = !_isTimerLoading && _timeLeft != endedText && _timeLeft != noTimerText;
+    final retailValue = _getRetailValue();
+    final points = widget.pointPerBid ?? 0;
 
+    final endedText = loc.ended_ucf;
+    final noTimerText = loc.no_timer_ucf;
+    final isEnded = _timeLeft == endedText;
+    final showTimer =
+        !_isTimerLoading && _timeLeft != endedText && _timeLeft != noTimerText;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // HTML desktop: 2-col card, mobile (≤850): stacked
+        final isNarrow = constraints.maxWidth < 320;
+
+        if (isNarrow) return _buildStackedCard(loc, displayBid, retailValue,
+            points, isEnded, showTimer);
+
+        return _buildDesktopCard(
+            loc, displayBid, retailValue, points, isEnded, showTimer);
+      },
+    );
+  }
+
+  // ── DESKTOP CARD (photo 42% left, info 58% right) ─────────────
+  Widget _buildDesktopCard(
+    AppLocalizations loc,
+    double displayBid,
+    double retailValue,
+    int points,
+    bool isEnded,
+    bool showTimer,
+  ) {
     return Container(
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
-        boxShadow: [
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
+        borderRadius: BorderRadius.circular(19.r),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 3.r,
-            offset: const Offset(0, 1),
+            color: Color(0x121b4965),
+            blurRadius: 26,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── PHOTO ───────────────────────────────────────────
+            Expanded(flex: 42, child: _buildPhotoArea(isEnded, showTimer)),
+
+            SizedBox(width: 18.w),
+
+            // ── INFO ────────────────────────────────────────────
+            Expanded(
+              flex: 58,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name
+                  GestureDetector(
+                    onTap: _navigateToProductDetails,
+                    child: Text(
+                      widget.name ?? loc.product_ucf,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF193a58),
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+
+                  // Retail value row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        loc.retail_value_ucf,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: const Color(0xFF71879d),
+                        ),
+                      ),
+                      Text(
+                        _formatPrice(retailValue),
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: const Color(0xFF71879d),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.h),
+
+                  // Current bid + points
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _formatPrice(displayBid),
+                          style: TextStyle(
+                            fontSize: 25.sp,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF00a98d),
+                            letterSpacing: -0.04,
+                            height: 1,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Flexible(
+                        child: Text(
+                          '◉ $points ${loc.point_per_bid_ucf}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF177f81),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10.h),
+
+                  // Progress bar
+                  _buildProgressBar(),
+                  SizedBox(height: 10.h),
+
+                  // Slide-to-bid
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: _buildSlideToBid(loc),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── STACKED CARD (narrow mobile ≤320) ─────────────────────────
+  Widget _buildStackedCard(
+    AppLocalizations loc,
+    double displayBid,
+    double retailValue,
+    int points,
+    bool isEnded,
+    bool showTimer,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
+        borderRadius: BorderRadius.circular(19.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x121b4965),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image with Timer
-          Stack(
+          SizedBox(
+            height: 185.h,
+            child: _buildPhotoArea(isEnded, showTimer),
+          ),
+          SizedBox(height: 12.h),
+          GestureDetector(
+            onTap: _navigateToProductDetails,
+            child: Text(
+              widget.name ?? loc.product_ucf,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF193a58),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              GestureDetector(
-                onTap: _navigateToProductDetails,
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(10.r)),
-                    child: widget.image != null && widget.image!.isNotEmpty
-                        ? Image.network(
-                            widget.image!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[200],
-                                child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
-                          ),
+              Text(
+                loc.retail_value_ucf,
+                style: TextStyle(
+                    fontSize: 11.sp, color: const Color(0xFF71879d)),
+              ),
+              Text(
+                _formatPrice(retailValue),
+                style: TextStyle(
+                    fontSize: 11.sp, color: const Color(0xFF71879d)),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  _formatPrice(displayBid),
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF00a98d),
+                    letterSpacing: -0.04,
+                    height: 1,
                   ),
                 ),
               ),
-              // Timer
-              Positioned(
-                top: 6.h,
-                right: 6.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: _timeLeft == endedText 
-                        ? Colors.red 
-                        : const Color(0xFF009572),
-                    borderRadius: BorderRadius.circular(30.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4.r,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _timeLeft == endedText 
-                            ? Icons.cancel 
-                            : Icons.access_time,
-                        size: 10.sp, 
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 3.w),
-                      Text(
-                        _timeLeft,
-                        style: TextStyle(
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                '◉ $points ${loc.point_per_bid_ucf}',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF177f81),
                 ),
               ),
             ],
           ),
-          
-          // Product Details
-          Padding(
-            padding: EdgeInsets.all(10.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Name
-                GestureDetector(
-                  onTap: _navigateToProductDetails,
-                  child: Text(
-                    widget.name ?? (localizations?.product_ucf ?? 'Product'),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          SizedBox(height: 10.h),
+          _buildProgressBar(),
+          SizedBox(height: 10.h),
+          _buildSlideToBid(loc),
+        ],
+      ),
+    );
+  }
+
+  // ── PHOTO (image + timer + heart) ─────────────────────────────
+  Widget _buildPhotoArea(bool isEnded, bool showTimer) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(11.r),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image
+          GestureDetector(
+            onTap: _navigateToProductDetails,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFe9f3fa), Color(0xFFf6fbff)],
                 ),
-                SizedBox(height: 2.h),
-                
-                // Description
-                GestureDetector(
-                  onTap: _navigateToProductDetails,
-                  child: Text(
-                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                    style: TextStyle(
-                      fontSize: 9.sp,
-                      color: const Color(0xFF8F9AA7),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                
-                // Current Bid and Points Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          localizations?.current_bid_ucf ?? 'Current Bid',
-                          style: TextStyle(
-                            fontSize: 7.sp,
-                            color: const Color(0xFF80818B),
-                          ),
-                        ),
-                        Text(
-                          _formatPrice(displayBid),
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(30.r),
+              ),
+              child: widget.image != null && widget.image!.isNotEmpty
+                  ? Image.network(
+                      widget.image!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.image,
+                        size: 40.sp,
+                        color: Colors.grey,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 9.sp,
-                            color: const Color(0xFF0092AC),
-                          ),
-                          SizedBox(width: 2.w),
-                          Text(
-                            '${localizations?.one_bid_equals_ucf ?? "1 Bid ="} ${widget.pointPerBid ?? 0}',
-                            style: TextStyle(
-                              fontSize: 6.sp,
-                              fontWeight: FontWeight.w500,
-                              color: MyTheme.accent_color,
-                            ),
-                          ),
-                        ],
+                    )
+                  : Icon(Icons.image, size: 40.sp, color: Colors.grey),
+            ),
+          ),
+
+          // Timer (top-left)
+          if (showTimer)
+            Positioned(
+              top: 12.h,
+              left: 12.w,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  gradient: isEnded
+                      ? null
+                      : const LinearGradient(
+                          colors: [Color(0xFFff8d75), Color(0xFFffbd82)],
+                        ),
+                  color: isEnded ? const Color(0xFFdc3545) : null,
+                  borderRadius: BorderRadius.circular(7.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.access_time,
+                        size: 12.sp, color: const Color(0xFF573024)),
+                    SizedBox(width: 3.w),
+                    Text(
+                      _timeLeft,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF573024),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 12.h),
-                
-                // Swipe to Bid Button
-                GestureDetector(
-                  onPanStart: _onPanStart,
-                  onPanUpdate: _onPanUpdate,
-                  onPanEnd: _onPanEnd,
-                  onTap: _navigateToProductDetails,
-                  child: Container(
-                    width: double.infinity,
-                    height: 35.h,
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(7.r),
-                    ),
-                    child: _isProcessing
-                        ? Center(
-                            child: SizedBox(
-                              height: 16.w,
-                              width: 16.w,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.w,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : Stack(
-                            children: [
-                              // Swipe indicator
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 50),
-                                width: 28.w + (_swipeAmount),
-                                height: 40.h,
-                                decoration: BoxDecoration(
-                                  color: _swipeAmount > 20 ? Colors.green : Colors.white,
-                                  borderRadius: BorderRadius.circular(7.r),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 14.sp,
-                                    color: _swipeAmount > 20 ? Colors.white : MyTheme.accent_color,
-                                  ),
-                                ),
-                              ),
-                              // Center text
-                              Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (_swipeAmount < 20) ...[
-                                      SizedBox(width: 30.w),
-                                      Text(
-                                        localizations?.swipe_to_bid_ucf ?? 'Swipe to Bid',
-                                        style: TextStyle(
-                                          fontSize: 10.sp,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ] else ...[
-                                      Text(
-                                        localizations?.quick_bid_ucf ?? 'Quick Bid',
-                                        style: TextStyle(
-                                          fontSize: 10.sp,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-              ],
+              ),
+            ),
+
+          // Heart (top-right)
+          Positioned(
+            top: 12.h,
+            right: 12.w,
+            child: Container(
+              width: 30.w,
+              height: 30.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.93),
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: Color(0x18153550), blurRadius: 12),
+                ],
+              ),
+              child: Icon(
+                Icons.favorite_border,
+                size: 16.sp,
+                color: const Color(0xFF6b8499),
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // ── PROGRESS BAR ──────────────────────────────────────────────
+  Widget _buildProgressBar() {
+    return Container(
+      height: 4.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFFe8f0f6),
+        borderRadius: BorderRadius.circular(5.r),
+      ),
+      child: FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: 0.2,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF18c6b1), Color(0xFF48aee4)],
+            ),
+            borderRadius: BorderRadius.circular(5.r),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── SLIDE-TO-BID PILL ─────────────────────────────────────────
+  Widget _buildSlideToBid(AppLocalizations loc) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxOffset = (constraints.maxWidth - _thumbSize - 8).clamp(
+          0.0,
+          double.infinity,
+        );
+
+        return GestureDetector(
+          onHorizontalDragStart: _onSlideStart,
+          onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
+          onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
+          child: Container(
+            height: 49.h,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment(-0.9, 0),
+                end: Alignment(0.9, 0),
+                colors: [Color(0xFF0dbca9), Color(0xFF2086d8)],
+              ),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: const Color(0x55FFFFFF)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x351597ba),
+                  blurRadius: 14,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: _isProcessing
+                ? Center(
+                    child: SizedBox(
+                      width: 20.w,
+                      height: 20.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : Stack(
+                    children: [
+                      // White circle thumb (follows the drag)
+                      Positioned(
+                        left: 4.w + _slideOffset,
+                        top: 4.h,
+                        bottom: 4.h,
+                        child: Container(
+                          width: _thumbSize - 8,
+                          height: _thumbSize - 8,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x70063e62),
+                                blurRadius: 9,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.chevron_right,
+                            size: 22.sp,
+                            color: const Color(0xFF078c9f),
+                          ),
+                        ),
+                      ),
+
+                      // Center text
+                      Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 30.w),
+                          child: Text(
+                            _slideOffset > 20
+                                ? loc.quick_bid_ucf
+                                : loc.swipe_to_bid_ucf,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.01,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+
+                      // Right-side chevrons (decoration)
+                      Positioned(
+                        right: 14.w,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: Text(
+                            '››',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 3,
+                              color: const Color(0xB3E5FFFF),
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }

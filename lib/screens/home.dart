@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:active_ecommerce_flutter/app_config.dart';
 import 'package:active_ecommerce_flutter/custom/aiz_image.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
@@ -26,7 +28,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-// Import the data model
 import '../data_model/user_info_response.dart';
 
 class Home extends StatefulWidget {
@@ -47,100 +48,93 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> with TickerProviderStateMixin {
   HomePresenter homeData = HomePresenter();
-  
+
   // ============ LOCAL STATE ============
   bool _isLoadingCounts = true;
   bool _isRefreshingCounts = false;
   UserInformation? _userInfo;
-  
+
+  // Used to scroll promo banner CTA → how-it-works section
+  final GlobalKey _howItWorksKey = GlobalKey();
+
   // ============================================================
-  // UPDATED COUNT LOGIC:
-  // - Show NOTHING (no badge) when isLoadingCounts == true
-  // - Show count only when isLoadingCounts == false
-  // - If count is 0, show 0
+  // RECENT WINNERS
   // ============================================================
+  final List<Map<String, dynamic>> _recentWinners = [];
+
+  // ============ BADGE LOGIC ============
   int get _unreadNotificationCount {
     if (is_logged_in.$ != true) return 0;
     return _userInfo?.unreadNotificationsCount ?? 0;
   }
-  
+
   int get _unreadMessageCount {
     if (is_logged_in.$ != true) return 0;
     return _userInfo?.unreadMessagesCount ?? 0;
   }
-  
-  // Badge visibility:
-  // - Show ONLY when NOT loading AND logged in AND count > 0
+
   bool get _shouldShowNotificationBadge {
     if (!is_logged_in.$) return false;
-    if (_isLoadingCounts) return false;  // Don't show while loading
+    if (_isLoadingCounts) return false;
     return _unreadNotificationCount > 0;
   }
-  
+
   bool get _shouldShowMessageBadge {
     if (!is_logged_in.$) return false;
-    if (_isLoadingCounts) return false;  // Don't show while loading
+    if (_isLoadingCounts) return false;
     return _unreadMessageCount > 0;
   }
-  
-  // Display text for badge:
-  // - Show count only when NOT loading
-  // - If count is 0, show "0"
+
   String get _notificationBadgeText {
-    if (_isLoadingCounts) return '';  // Don't show anything while loading
+    if (_isLoadingCounts) return '';
     if (_unreadNotificationCount > 99) return '99+';
     return '$_unreadNotificationCount';
   }
-  
+
   String get _messageBadgeText {
-    if (_isLoadingCounts) return '';  // Don't show anything while loading
+    if (_isLoadingCounts) return '';
     if (_unreadMessageCount > 99) return '99+';
     return '$_unreadMessageCount';
   }
-  
+
   @override
   void initState() {
     super.initState();
     _fetchCounts();
-    
-    Future.delayed(Duration.zero).then((value) {
-      change();
-    });
+    Future.delayed(Duration.zero).then((value) => change());
   }
-  
+
   Future<void> _fetchCounts() async {
     if (is_logged_in.$ != true) {
       setState(() => _isLoadingCounts = false);
       return;
     }
-    
     try {
       setState(() => _isLoadingCounts = true);
-      
       var response = await ProfileRepository().getUserInfoResponse();
-      
-      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
+      if (response.success == true &&
+          response.data != null &&
+          response.data!.isNotEmpty) {
         setState(() => _userInfo = response.data![0]);
         unread_notifications_count.$ = _userInfo!.unreadNotificationsCount ?? 0;
         unread_notifications_count.save();
       }
     } catch (e) {
       print("Error loading notification counts: $e");
-      ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_notifications);
+      ToastComponent.showError(
+          AppLocalizations.of(context)!.failed_to_load_notifications);
     } finally {
       setState(() => _isLoadingCounts = false);
     }
   }
-  
+
   Future<void> _refreshCounts() async {
     setState(() => _isRefreshingCounts = true);
     await _fetchCounts();
     setState(() => _isRefreshingCounts = false);
   }
 
-  change() {
-    homeData.onRefresh();
-  }
+  change() => homeData.onRefresh();
 
   @override
   void dispose() {
@@ -152,81 +146,63 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
   }
 
-  // ============================================================
-  // ✅ SLIDER CLICK HANDLER - Opens webview properly
-  // ============================================================
   void _handleSliderTap(String? url) {
     if (url == null || url.isEmpty) return;
-    
-    // Clean the URL
     var cleanUrl = url.split(AppConfig.DOMAIN_PATH).last ?? "";
-    if (cleanUrl.isEmpty) {
-      // If the URL doesn't contain the domain path, use it as is
-      cleanUrl = url;
-    }
-    
-    // Check if it's a full URL or a relative path
+    if (cleanUrl.isEmpty) cleanUrl = url;
+
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-      // Full URL - open in webview
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CommonWebviewScreen(
-            page_name: 'Slider',
-            url: cleanUrl,
-          ),
+          builder: (_) =>
+              CommonWebviewScreen(page_name: 'Slider', url: cleanUrl),
         ),
       );
     } else {
-      // Relative path - check if it's a route or a web page
-      // For product or category pages, use GoRouter navigation
-      if (cleanUrl.contains('/product/') || cleanUrl.contains('/category/') || cleanUrl.contains('/auction/')) {
-        // Try to navigate using GoRouter
+      if (cleanUrl.contains('/product/') ||
+          cleanUrl.contains('/category/') ||
+          cleanUrl.contains('/auction/')) {
         try {
           GoRouter.of(context).go(cleanUrl);
         } catch (e) {
-          // If GoRouter fails, open in webview
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => CommonWebviewScreen(
-                page_name: 'Slider',
-                url: url,
-              ),
+              builder: (_) => CommonWebviewScreen(page_name: 'Slider', url: url),
             ),
           );
         }
       } else {
-        // For other relative paths, use webview with full URL
         String fullUrl = url;
-        if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+        if (!fullUrl.startsWith('http://') &&
+            !fullUrl.startsWith('https://')) {
           fullUrl = AppConfig.RAW_BASE_URL + url;
         }
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CommonWebviewScreen(
-              page_name: 'Slider',
-              url: fullUrl,
-            ),
+            builder: (_) =>
+                CommonWebviewScreen(page_name: 'Slider', url: fullUrl),
           ),
         );
       }
     }
   }
 
+  // ============================================================
+  // BUILD — ALL SECTIONS ENABLED
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async => true,
       child: Directionality(
-        textDirection: app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
+        textDirection:
+            app_language_rtl.$! ? TextDirection.rtl : TextDirection.ltr,
         child: SafeArea(
           child: Scaffold(
-            appBar: PreferredSize(
-              preferredSize: Size.fromHeight(60.h),
-              child: buildAppBar(),
-            ),
+            appBar: buildAppBar(),
             body: ListenableBuilder(
               listenable: homeData,
               builder: (context, child) {
@@ -243,71 +219,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics()),
                     slivers: <Widget>[
-                      // Carousel Slider
-                      SliverList(
-                        delegate: SliverChildListDelegate([
-                          buildHomeCarouselSlider(),
-                          SizedBox(height: 8.h),
-                        ]),
-                      ),
-                      
-                      // Featured Categories
-                      SliverList(
-                        delegate: SliverChildListDelegate([
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(18.w, 12.h, 18.w, 8.h),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!.featured_categories_ucf,
-                                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ]),
-                      ),
+                      SliverToBoxAdapter(child: buildBidPointsHeroSection()),
                       SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 50.h,
-                          child: buildHomeFeaturedCategories(),
-                        ),
-                      ),
-                      
-                      // Extra space between Featured Categories and Hot Auction
+                          child: buildBidPointsCategoriesSection()),
                       SliverToBoxAdapter(child: SizedBox(height: 16.h)),
-                      
-                      // Hot Auctions Section
-                      SliverToBoxAdapter(
-                        child: _buildHotAuctionSection(),
-                      ),
-                      
-                      // Ending Soon Section
-                      SliverToBoxAdapter(
-                        child: _buildEndingSoonSection(),
-                      ),
-
-                      // ============================================================
-                      // ✅ UPDATED: All Auctions Section with Auto-Load
-                      // ============================================================
-                      SliverToBoxAdapter(
-                        child: _buildAllAuctionsSection(),
-                      ),
-                      
-                      // Upcoming Section
-                      SliverToBoxAdapter(
-                        child: _buildUpcomingSection(),
-                      ),
-
-                      // ============================================================
-                      // NEW: Ended Auctions Section (using ProductCard)
-                      // ============================================================
-                      SliverToBoxAdapter(
-                        child: _buildEndedAuctionsSection(),
-                      ),
-                      
-
+                      SliverToBoxAdapter(child: _buildHotAuctionSection()),
+                      SliverToBoxAdapter(child: _buildEndingSoonSection()),
+                      SliverToBoxAdapter(child: _buildAllAuctionsSection()),
+                      SliverToBoxAdapter(child: _buildUpcomingSection()),
+                      SliverToBoxAdapter(child: _buildEndedAuctionsSection()),
+                      SliverToBoxAdapter(child: buildPromoBanner()),
+                      SliverToBoxAdapter(child: buildHowItWorks()),
+                      SliverToBoxAdapter(child: buildRecentWinners()),
+                      SliverToBoxAdapter(child: buildTrustBenefits()),
                       SliverToBoxAdapter(child: SizedBox(height: 30.h)),
                     ],
                   ),
@@ -320,307 +244,984 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============ HOT AUCTION SECTION ============
+  // ============================================================
+  // HEADER — HTML-MATCHED (BidPoints utility)
+  // ============================================================
+  PreferredSizeWidget buildAppBar() {
+    return PreferredSize(
+      preferredSize: Size.fromHeight(66.h),
+      child: _BpUtilityHeader(
+        isLoggedIn: is_logged_in.$,
+        hasUnreadMessages: _shouldShowMessageBadge,
+        hasUnreadNotifications: _shouldShowNotificationBadge,
+        userBalance: _userInfo?.balance ?? 0,
+        onSearchTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => Filter()),
+        ),
+        onMessagesTap: () {
+          if (is_logged_in.$) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => MessengerList()),
+            );
+          } else {
+            _redirectToLogin();
+          }
+        },
+        onNotificationsTap: () {
+          if (is_logged_in.$) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsPage()),
+            ).then((_) => _refreshCounts());
+          } else {
+            _redirectToLogin();
+          }
+        },
+        onRewardsTap: () {
+          if (is_logged_in.$) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AffiliatePage()),
+            );
+          } else {
+            _redirectToLogin();
+          }
+        },
+        onAccountTap: () {
+          // Replace with your actual account screen route
+          // Example: Navigator.pushNamed(context, '/dashboard');
+        },
+        onLoginTap: () => _redirectToLogin(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 1. BIDPOINTS HERO
+  // ============================================================
+  Widget buildBidPointsHeroSection() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.only(bottom: 16.h),
+        decoration: BoxDecoration(
+          gradient: const RadialGradient(
+            center: Alignment(0.58, -0.16),
+            radius: 1.2,
+            colors: [
+              Color(0xFF155e81),
+              Color(0xFF0c355c),
+              Color(0xFF071c35),
+            ],
+            stops: [0.0, 0.38, 0.80],
+          ),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(isMobile ? 22.r : 27.r),
+            bottomRight: Radius.circular(isMobile ? 22.r : 27.r),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1613395b),
+              blurRadius: 38,
+              offset: Offset(0, 19),
+            ),
+          ],
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: isMobile
+                ? _buildHeroMobileContent()
+                : _buildHeroDesktopContent(),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildHeroDesktopContent() {
+    return Container(
+      constraints: BoxConstraints(minHeight: 425.h),
+      padding: EdgeInsets.symmetric(horizontal: 28.w),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(flex: 47, child: _buildHeroCopy(isMobile: false)),
+          Expanded(flex: 53, child: _buildHeroArt(isMobile: false)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroMobileContent() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 15.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeroCopy(isMobile: true),
+          _buildHeroArt(isMobile: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroCopy({required bool isMobile}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double headlineSize = isMobile
+        ? (screenWidth * 0.08).clamp(32.0, 54.0)
+        : (screenWidth * 0.05).clamp(40.0, 76.0);
+    final headlineStyle = TextStyle(
+      fontSize: headlineSize,
+      fontWeight: FontWeight.w900,
+      height: 1.09,
+      letterSpacing: -headlineSize * 0.045,
+      color: Colors.white,
+    );
+
+    return Padding(
+      padding: isMobile
+          ? EdgeInsets.fromLTRB(5.w, 30.h, 14.w, 5.h)
+          : EdgeInsets.fromLTRB(0, 34.h, 22.w, 46.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.bp_hero_eyebrow,
+            style: TextStyle(
+              color: const Color(0xFF72eadc),
+              fontSize: isMobile ? 13.sp : 15.sp,
+              fontWeight: FontWeight.w900,
+              letterSpacing: isMobile ? 2 : 2.5,
+              height: 1,
+            ),
+          ),
+          SizedBox(height: 14.h),
+          Text(AppLocalizations.of(context)!.bp_hero_line1,
+              style: headlineStyle),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${AppLocalizations.of(context)!.bp_hero_letter_a} ',
+                style: headlineStyle,
+              ),
+              Flexible(
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0xFF5ee7e1),
+                      Color(0xFF19d3be),
+                      Color(0xFF75b8ff),
+                    ],
+                  ).createShader(bounds),
+                  child: Text(
+                    AppLocalizations.of(context)!.bp_hero_line2,
+                    style: headlineStyle.copyWith(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 18.h),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 470),
+            child: Text(
+              AppLocalizations.of(context)!.bp_hero_description,
+              style: TextStyle(
+                fontSize: isMobile ? 14.sp : 17.sp,
+                color: const Color(0xFFd4e7f7),
+                height: 1.6,
+              ),
+            ),
+          ),
+          SizedBox(height: 22.h),
+          GestureDetector(
+            onTap: _showBidPointsVideoPopup,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 17.w : 28.w,
+                vertical: isMobile ? 13.h : 15.h,
+              ),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment(-0.9, -0.4),
+                  end: Alignment(0.9, 0.4),
+                  colors: [Color(0xFF22d5b6), Color(0xFF33b9ec)],
+                ),
+                borderRadius: BorderRadius.circular(35.r),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x3F03bfa1),
+                    blurRadius: 27,
+                    offset: Offset(0, 9),
+                  ),
+                ],
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.bp_hero_video_cta,
+                style: TextStyle(
+                  color: const Color(0xFF07304d),
+                  fontWeight: FontWeight.w900,
+                  fontSize: isMobile ? 12.sp : 13.sp,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 29.h),
+          _buildHeroTrustRow(isMobile: isMobile),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroTrustRow({required bool isMobile}) {
+    final items = <List<String>>[
+      ['🏆', AppLocalizations.of(context)!.bp_trust_authentic],
+      ['♢', AppLocalizations.of(context)!.bp_trust_secure_payments],
+      ['🚚', AppLocalizations.of(context)!.bp_trust_shipping],
+    ];
+
+    return Wrap(
+      spacing: isMobile ? 11.w : 26.w,
+      runSpacing: 8.h,
+      children: items.map((item) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              item[0],
+              style: TextStyle(
+                color: const Color(0xFFffcc38),
+                fontSize: isMobile ? 18.sp : 23.sp,
+                height: 1,
+              ),
+            ),
+            SizedBox(width: 7.w),
+            Text(
+              item[1],
+              style: TextStyle(
+                fontSize: isMobile ? 10.sp : 12.sp,
+                color: const Color(0xFFe5f1fc),
+                height: 1.2,
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildHeroArt({required bool isMobile}) {
+    final artHeight = isMobile ? 280.h : 410.h;
+
+    return SizedBox(
+      height: artHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: homeData.carouselImageList.isEmpty
+                ? const SizedBox.shrink()
+                : ShaderMask(
+                    blendMode: BlendMode.dstIn,
+                    shaderCallback: (bounds) {
+                      if (isMobile) {
+                        return const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black,
+                            Colors.black,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.13, 0.80, 1.0],
+                        ).createShader(bounds);
+                      }
+                      return const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [Colors.transparent, Colors.black],
+                        stops: [0.0, 0.20],
+                      ).createShader(bounds);
+                    },
+                    child: CarouselSlider(
+                      options: CarouselOptions(
+                        height: artHeight,
+                        viewportFraction: 1,
+                        autoPlay: true,
+                        autoPlayInterval: const Duration(seconds: 5),
+                        autoPlayAnimationDuration:
+                            const Duration(milliseconds: 1000),
+                        autoPlayCurve: Curves.easeInExpo,
+                        enableInfiniteScroll: true,
+                        enlargeCenterPage: false,
+                        scrollDirection: Axis.horizontal,
+                      ),
+                      items: homeData.carouselImageList.map((item) {
+                        return GestureDetector(
+                          onTap: () => _handleSliderTap(item.url),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: artHeight,
+                            child: (item.photo != null && item.photo!.isNotEmpty)
+                                ? Image.network(
+                                    item.photo!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const SizedBox.shrink(),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+          ),
+          if (!isMobile)
+            Positioned(
+              top: artHeight * 0.21,
+              right: 3.w,
+              child: Transform.rotate(
+                angle: -3 * math.pi / 180,
+                child: _buildHeroSticker(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSticker() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 17.w, vertical: 15.h),
+      decoration: BoxDecoration(
+        color: const Color(0xEC073457),
+        border: Border.all(color: const Color(0xFF20d8c0), width: 2),
+        borderRadius: BorderRadius.circular(15.r),
+        boxShadow: const [
+          BoxShadow(color: Color(0x550be7cc), blurRadius: 24),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.bp_sticker_top,
+            style: TextStyle(
+              color: const Color(0xFFe3fcff),
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            AppLocalizations.of(context)!.bp_sticker_main,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: const Color(0xFF71f8e3),
+              fontWeight: FontWeight.w900,
+              fontSize: 17.sp,
+              height: 1.15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBidPointsVideoPopup() {
+    showDialog(
+      context: context,
+      barrierColor: const Color(0xB8071c35),
+      builder: (ctx) {
+        return Center(
+          child: Padding(
+            padding: EdgeInsets.all(20.w),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 520),
+              padding: EdgeInsets.fromLTRB(28.w, 35.h, 28.w, 28.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22.r),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x88000000), blurRadius: 80),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.bp_video_title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF143957),
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      Text(
+                        AppLocalizations.of(context)!.bp_video_subtitle,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: const Color(0xFF59738b),
+                          height: 1.6,
+                        ),
+                      ),
+                      SizedBox(height: 20.h),
+                      Container(
+                        height: 180.h,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF0c365d), Color(0xFF0c8e9c)],
+                          ),
+                          borderRadius: BorderRadius.circular(15.r),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          AppLocalizations.of(context)!.bp_video_placeholder,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    right: -14.w,
+                    top: -10.h,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, size: 26),
+                      color: const Color(0xFF31516b),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // 2. BIDPOINTS CATEGORIES
+  // ============================================================
+  Widget buildBidPointsCategoriesSection() {
+    if (homeData.featuredCategoryList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(vertical: isMobile ? 22.h : 28.h),
+        child: isMobile
+            ? _buildCategoriesMobile()
+            : _buildCategoriesDesktop(constraints.maxWidth),
+      );
+    });
+  }
+
+  Widget _buildCategoriesDesktop(double availableWidth) {
+    final gridWidth = math.min(1380.0, availableWidth - 56.w);
+    final categories = homeData.featuredCategoryList;
+    final rows = <Widget>[];
+
+    for (int i = 0; i < categories.length; i += 9) {
+      final end = math.min(i + 9, categories.length);
+      final chunk = categories.sublist(i, end);
+      rows.add(_buildCategoryRow(chunk, gridWidth));
+      if (end < categories.length) {
+        rows.add(SizedBox(height: 9.h));
+      }
+    }
+
+    return Center(
+      child: SizedBox(
+        width: gridWidth,
+        child: Column(children: rows),
+      ),
+    );
+  }
+
+  Widget _buildCategoryRow(List chunk, double gridWidth) {
+    final colWidth = (gridWidth - 8 * 9) / 9;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < 9; i++) ...[
+          if (i > 0) const SizedBox(width: 9),
+          SizedBox(
+            width: colWidth,
+            child: i < chunk.length
+                ? _buildCategoryPill(chunk[i], isMobile: false)
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCategoriesMobile() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 15.w),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: homeData.featuredCategoryList.map((category) {
+              return Padding(
+                padding: EdgeInsets.only(right: 9.w),
+                child: SizedBox(
+                  width: 100.w,
+                  child: _buildCategoryPill(category, isMobile: true),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryPill(dynamic category, {required bool isMobile}) {
+    const isActive = false;
+
+    return InkWell(
+      onTap: () {
+        if (category.slug != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CategoryProducts(slug: category.slug!),
+            ),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(40.r),
+      child: Container(
+        padding: isMobile
+            ? EdgeInsets.symmetric(horizontal: 6.w, vertical: 10.h)
+            : EdgeInsets.symmetric(horizontal: 6.w, vertical: 12.h),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF123c64) : Colors.white,
+          border: Border.all(
+            color:
+                isActive ? const Color(0xFF123c64) : const Color(0xFFdbe7f1),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(40.r),
+          boxShadow: isMobile
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color(0x10143c64),
+                    blurRadius: 16,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: isMobile ? 26.w : 30.w,
+              height: isMobile ? 26.w : 30.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    isActive ? const Color(0xFF0f3357) : const Color(0xFFf0f7fb),
+                border: Border.all(
+                  color: isActive
+                      ? const Color(0xFF53e3d5)
+                      : const Color(0xFFdceaf3),
+                  width: 1,
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: (category.banner != null && category.banner!.isNotEmpty)
+                  ? Image.network(
+                      category.banner!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.category,
+                        size: isMobile ? 16.sp : 18.sp,
+                        color: const Color(0xFF34526c),
+                      ),
+                    )
+                  : Icon(
+                      Icons.category,
+                      size: isMobile ? 16.sp : 18.sp,
+                      color: const Color(0xFF34526c),
+                    ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              category.name ?? '',
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: isMobile ? 11.sp : 12.sp,
+                fontWeight: FontWeight.w500,
+                color: isActive ? Colors.white : const Color(0xFF34526c),
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // SHARED HELPERS
+  // ============================================================
+  Widget _buildSectionHead({
+    required String title,
+    String? subtitle,
+    required VoidCallback onViewAll,
+  }) {
+    final loc = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isMobile ? 21.sp : 24.sp,
+                    color: const Color(0xFF103451),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.05,
+                    height: 1.25,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: const Color(0xFF687e91),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(width: 15.w),
+          GestureDetector(
+            onTap: onViewAll,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(
+                  color: const Color(0xFFd4e3ef),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(22.r),
+              ),
+              child: Text(
+                loc.view_all,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: const Color(0xFF144164),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Container(
+      height: 60.h,
+      alignment: Alignment.center,
+      child: Text(
+        message,
+        style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
+      ),
+    );
+  }
+
+  Widget _buildTwoColumnGrid({
+    required List<dynamic> products,
+    required bool isMobile,
+    required Widget Function(BuildContext, dynamic) cardBuilder,
+  }) {
+    if (isMobile) {
+      return Column(
+        children: products.asMap().entries.map((entry) {
+          final i = entry.key;
+          final product = entry.value;
+          return Padding(
+            padding:
+                EdgeInsets.only(bottom: i < products.length - 1 ? 18.h : 0),
+            child: cardBuilder(context, product),
+          );
+        }).toList(),
+      );
+    }
+
+    final rows = <Widget>[];
+    for (int i = 0; i < products.length; i += 2) {
+      final left = products[i];
+      final right = (i + 1 < products.length) ? products[i + 1] : null;
+
+      rows.add(Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: cardBuilder(context, left)),
+          SizedBox(width: 18.w),
+          Expanded(
+            child: right != null
+                ? cardBuilder(context, right)
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ));
+
+      if (i + 2 < products.length) {
+        rows.add(SizedBox(height: 18.h));
+      }
+    }
+
+    return Column(children: rows);
+  }
+
+  // ============================================================
+  // 3. HOT AUCTIONS
+  // ============================================================
   Widget _buildHotAuctionSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.hot_auctions_ucf,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(slug: 'hot-auctions');
-                  }));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.view_all,
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 8.h),
-        if (homeData.hotAuctionProductList.isEmpty)
-          Container(
-            height: 50.h,
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context)!.no_hot_auctions_available,
-                style: TextStyle(fontSize: 14.sp),
-              ),
-            ),
-          )
-        else
-          _buildStaticHorizontalGrid(
-            products: homeData.hotAuctionProductList,
-            cardBuilder: (context, product) {
-              bool isActive = false;
-              if (product.auctionEndDate != null && product.auctionEndDate is int) {
-                isActive = product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
-              }
-              return HotAuctionCard(
-                id: product.id ?? 0,
-                slug: product.slug ?? '',
-                image: product.thumbnailImage,
-                name: product.name,
-                description: product.description,
-                pointPerBid: product.pointPerBid ?? 0,
-                auctionEndDate: product.auctionEndDate,
-                currentBid: product.highestBid,
-                startingBid: product.startingBid,
-                isAuctionActive: isActive,
-              );
-            },
-          ),
-        SizedBox(height: 20.h),
-      ],
-    );
-  }
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final loc = AppLocalizations.of(context)!;
 
-  // ============ UPCOMING SECTION ============
-  Widget _buildUpcomingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.upcoming_auctions_ucf,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(slug: 'upcoming-auctions');
-                  }));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-                    borderRadius: BorderRadius.circular(8.r),
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(vertical: 28.h),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHead(
+                    title: '🔥 ${loc.hot_auctions_ucf}',
+                    subtitle: isMobile
+                        ? null
+                        : '🟢 ${loc.hot_online_over} 1,200 ${loc.hot_users_bidding_now}',
+                    onViewAll: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return CategoryProducts(slug: 'hot-auctions');
+                      }));
+                    },
                   ),
-                  child: Text(
-                    AppLocalizations.of(context)!.view_all,
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 8.h),
-        if (homeData.upcomingProductList.isEmpty)
-          Container(
-            height: 50.h,
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context)!.no_upcoming_auctions,
-                style: TextStyle(fontSize: 14.sp),
+                  SizedBox(height: 19.h),
+                  if (homeData.hotAuctionProductList.isEmpty)
+                    _buildEmptyState(loc.no_hot_auctions_available)
+                  else
+                    _buildTwoColumnGrid(
+                      products: homeData.hotAuctionProductList,
+                      isMobile: isMobile,
+                      cardBuilder: (context, product) {
+                        bool isActive = false;
+                        if (product.auctionEndDate != null &&
+                            product.auctionEndDate is int) {
+                          isActive = product.auctionEndDate >
+                              DateTime.now().millisecondsSinceEpoch ~/ 1000;
+                        }
+                        return HotAuctionCard(
+                          id: product.id ?? 0,
+                          slug: product.slug ?? '',
+                          image: product.thumbnailImage,
+                          name: product.name,
+                          description: product.description,
+                          pointPerBid: product.pointPerBid ?? 0,
+                          auctionEndDate: product.auctionEndDate,
+                          currentBid: product.highestBid,
+                          startingBid: product.startingBid,
+                          isAuctionActive: isActive,
+                        );
+                      },
+                    ),
+                ],
               ),
             ),
-          )
-        else
-          _buildStaticHorizontalGrid(
-            products: homeData.upcomingProductList,
-            cardBuilder: (context, product) {
-              int? auctionStartTimestamp;
-              if (product.auctionStartDate != null) {
-                if (product.auctionStartDate is int) {
-                  auctionStartTimestamp = product.auctionStartDate;
-                } else if (product.auctionStartDate is String) {
-                  auctionStartTimestamp = int.tryParse(product.auctionStartDate) ?? 0;
-                }
-              }
-              
-              return UpcomingCard(
-                id: product.id ?? 0,
-                slug: product.slug ?? '',
-                image: product.thumbnailImage,
-                name: product.name,
-                description: product.description,
-                pointPerBid: product.pointPerBid ?? 0,
-                auctionEndDate: auctionStartTimestamp ?? product.auctionStartDate,
-                currentBid: product.startingBid,
-                startingBid: product.startingBid,
-                isAuctionActive: false,
-              );
-            },
-          ),
-        SizedBox(height: 20.h),
-      ],
-    );
-  }
-
-  // ============ ENDED AUCTIONS SECTION (NEW) ============
-  Widget _buildEndedAuctionsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.ended_auctions_ucf,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(slug: 'ended-auctions');
-                  }));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.view_all,
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
-        SizedBox(height: 8.h),
-        if (homeData.endedProductList.isEmpty)
-          Container(
-            height: 50.h,
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context)!.no_ended_auctions,
-                style: TextStyle(fontSize: 14.sp),
-              ),
-            ),
-          )
-        else
-          _buildStaticHorizontalGrid(
-            products: homeData.endedProductList,
-            cardBuilder: (context, product) {
-              // Use ProductCard for ended auctions
-              return ProductCard(
-                id: product.id ?? 0,
-                slug: product.slug ?? '',
-                image: product.thumbnailImage,
-                name: product.name,
-                description: product.description,
-                pointPerBid: product.pointPerBid ?? 0,
-                auctionEndDate: 'Ended', // Mark as ended
-                currentBid: product.highestBid,
-                startingBid: product.startingBid,
-                isAuctionActive: false,
-              );
-            },
-          ),
-        SizedBox(height: 20.h),
-      ],
-    );
+      );
+    });
   }
 
   // ============================================================
-  // ✅ UPDATED: All Auctions Section with Auto-Load
+  // 4. ENDING SOON
   // ============================================================
+  Widget _buildEndingSoonSection() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final loc = AppLocalizations.of(context)!;
 
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(vertical: 28.h),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHead(
+                    title: '⏳ ${loc.ending_soon_ucf}',
+                    onViewAll: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return CategoryProducts(slug: 'ending-soon');
+                      }));
+                    },
+                  ),
+                  SizedBox(height: 19.h),
+                  if (homeData.endingSoonProductList.isEmpty)
+                    _buildEmptyState(loc.no_ending_soon_auctions)
+                  else
+                    _buildTwoColumnGrid(
+                      products: homeData.endingSoonProductList,
+                      isMobile: isMobile,
+                      cardBuilder: (context, product) => EndingSoonCard(
+                        id: product.id ?? 0,
+                        slug: product.slug ?? '',
+                        image: product.thumbnailImage,
+                        name: product.name,
+                        description: product.description,
+                        pointPerBid: product.pointPerBid ?? 0,
+                        auctionEndDate: product.auctionEndDate,
+                        currentBid: product.highestBid,
+                        startingBid: product.startingBid,
+                        purchasePrice: product.purchasePrice,
+                        isAuctionActive: product.auctionEndDate != null &&
+                            product.auctionEndDate is int &&
+                            product.auctionEndDate >
+                                DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  // ============================================================
+  // 5. ALL AUCTIONS
+  // ============================================================
   Widget _buildAllAuctionsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.all_auctions_ucf,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return AllProducts(slug: 'all-auctions');
-                  }));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-                    borderRadius: BorderRadius.circular(8.r),
+    final loc = AppLocalizations.of(context)!;
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(vertical: 28.h),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1380),
+          child: LayoutBuilder(builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 700;
+
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHead(
+                    title: '🔨 ${loc.all_auctions_ucf}',
+                    onViewAll: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return AllProducts(slug: 'all-auctions');
+                      }));
+                    },
                   ),
-                  child: Text(
-                    AppLocalizations.of(context)!.view_all,
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-                  ),
-                ),
+                  SizedBox(height: 19.h),
+                  if (homeData.isAllAuctionsInitial &&
+                      homeData.allAuctionsList.isEmpty)
+                    ShimmerHelper().buildProductGridShimmer(
+                      scontroller: homeData.allAuctionsScrollController,
+                    )
+                  else if (homeData.allAuctionsList.isNotEmpty)
+                    _buildAllAuctionsGrid()
+                  else if (homeData.totalAllAuctionsData == 0)
+                    _buildEmptyState(loc.no_auctions_available)
+                  else
+                    Container(),
+                ],
               ),
-            ],
-          ),
+            );
+          }),
         ),
-        SizedBox(height: 8.h),
-        
-        // Show loading shimmer or grid
-        if (homeData.isAllAuctionsInitial && homeData.allAuctionsList.isEmpty)
-          ShimmerHelper().buildProductGridShimmer(
-            scontroller: homeData.allAuctionsScrollController,
-          )
-        else if (homeData.allAuctionsList.isNotEmpty)
-          _buildAllAuctionsGrid()
-        else if (homeData.totalAllAuctionsData == 0)
-          Container(
-            height: 100.h,
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context)!.no_auctions_available,
-                style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
-              ),
-            ),
-          )
-        else
-          Container(),
-            
-        SizedBox(height: 20.h),
-      ],
+      ),
     );
   }
-
-  // ============================================================
-  // ✅ UPDATED: All Auctions Grid with Auto-Load More
-  // This now works like the filter page - scroll to bottom to load more
-  // ============================================================
 
   Widget _buildAllAuctionsGrid() {
     if (homeData.allAuctionsList.isEmpty) return const SizedBox.shrink();
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        // Check if we've scrolled to the bottom
-        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 50) {
-          // Only load more if we're not already loading and there are more products
-          if (!homeData.showAllAuctionsLoadingContainer && 
-              homeData.allAuctionsList.length < (homeData.totalAllAuctionsData ?? 0)) {
+        if (scrollInfo.metrics.pixels >=
+            scrollInfo.metrics.maxScrollExtent - 50) {
+          if (!homeData.showAllAuctionsLoadingContainer &&
+              homeData.allAuctionsList.length <
+                  (homeData.totalAllAuctionsData ?? 0)) {
             homeData.allAuctionsPage++;
             homeData.showAllAuctionsLoadingContainer = true;
             homeData.fetchAllAuctions();
@@ -632,19 +1233,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: 2,
-        mainAxisSpacing: 12.w,
-        crossAxisSpacing: 12.w,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: homeData.allAuctionsList.length + 
+        mainAxisSpacing: 18.w,
+        crossAxisSpacing: 18.w,
+        padding: EdgeInsets.zero,
+        itemCount: homeData.allAuctionsList.length +
             (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
         itemBuilder: (context, index) {
-          // Show loading indicator at the end when loading more products
-          if (index == homeData.allAuctionsList.length && 
+          if (index == homeData.allAuctionsList.length &&
               homeData.showAllAuctionsLoadingContainer) {
             return _buildAllAuctionsLoadingContainer();
           }
-          
-          // Show product card
           final product = homeData.allAuctionsList[index];
           return _buildAllAuctionCard(product);
         },
@@ -652,13 +1250,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============================================================
-  // ✅ All Auctions Loading Container (Same as Filter page)
-  // ============================================================
-
   Widget _buildAllAuctionsLoadingContainer() {
-    if (!homeData.showAllAuctionsLoadingContainer) return const SizedBox.shrink();
-    
+    if (!homeData.showAllAuctionsLoadingContainer) {
+      return const SizedBox.shrink();
+    }
     return Container(
       height: 36.h,
       color: Colors.white,
@@ -672,19 +1267,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============================================================
-  // ✅ Build individual auction card using ProductCard
-  // ============================================================
-
   Widget _buildAllAuctionCard(dynamic product) {
-    // Determine auction status
     bool isActive = false;
     bool isUpcoming = false;
     bool isEnded = false;
-    
     dynamic displayEndDate = product.auctionEndDate;
-    
-    // Check auction status from end date
+
     if (product.auctionEndDate != null) {
       if (product.auctionEndDate is int) {
         final endDate = product.auctionEndDate as int;
@@ -703,7 +1291,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           isUpcoming = true;
           displayEndDate = 'Upcoming';
         } else {
-          // Try to parse as timestamp
           final parsed = int.tryParse(product.auctionEndDate);
           if (parsed != null) {
             final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -718,8 +1305,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         }
       }
     }
-    
-    // Check if it's upcoming based on start date
+
     if (!isActive && !isEnded && product.auctionStartDate != null) {
       if (product.auctionStartDate is int) {
         final startDate = product.auctionStartDate as int;
@@ -728,17 +1314,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           isUpcoming = true;
           displayEndDate = 'Upcoming';
         }
-      } else if (product.auctionStartDate is String && product.auctionStartDate == 'Upcoming') {
+      } else if (product.auctionStartDate is String &&
+          product.auctionStartDate == 'Upcoming') {
         isUpcoming = true;
         displayEndDate = 'Upcoming';
       }
     }
-    
-    // If auction is active, use the actual end date for the timer
+
     if (isActive && displayEndDate is! int) {
       displayEndDate = product.auctionEndDate;
     }
-    
+
     return ProductCard(
       id: product.id ?? 0,
       slug: product.slug ?? '',
@@ -750,236 +1336,522 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       auctionStartDate: isUpcoming ? product.auctionStartDate : null,
       currentBid: product.highestBid ?? product.startingBid,
       startingBid: product.startingBid,
+      purchasePrice: product.purchasePrice,
       isAuctionActive: isActive,
     );
   }
 
-  // ============ REUSABLE STATIC HORIZONTAL GRID (NO SCROLL) ============
-  Widget _buildStaticHorizontalGrid({
-    required List products,
-    required Widget Function(BuildContext, dynamic) cardBuilder,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate how many items to show based on screen width
-        int itemsToShow;
-        double cardWidth;
-        
-        if (constraints.maxWidth >= 1024) {
-          // Desktop: Show 6 items
-          itemsToShow = 6;
-          cardWidth = (constraints.maxWidth - 16.w * 7) / 6;
-        } else if (constraints.maxWidth >= 768) {
-          // Tablet: Show 4 items
-          itemsToShow = 4;
-          cardWidth = (constraints.maxWidth - 16.w * 5) / 4;
-        } else {
-          // Mobile: Show 2 items
-          itemsToShow = 2;
-          cardWidth = (constraints.maxWidth - 16.w * 3) / 2;
-        }
-        
-        cardWidth = cardWidth.clamp(120.w, double.infinity);
-        
-        // Show only up to itemsToShow products
-        final displayProducts = products.take(itemsToShow).toList();
-        
-        // Use IntrinsicHeight to let cards determine their own height
-        return IntrinsicHeight(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: displayProducts.asMap().entries.map((entry) {
-                int index = entry.key;
-                var product = entry.value;
-                return Container(
-                  width: cardWidth,
-                  margin: EdgeInsets.only(right: index < displayProducts.length - 1 ? 12.w : 0),
-                  child: cardBuilder(context, product),
-                );
-              }).toList(),
+  // ============================================================
+  // 6. UPCOMING
+  // ============================================================
+  Widget _buildUpcomingSection() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final loc = AppLocalizations.of(context)!;
+
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(vertical: 28.h),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHead(
+                    title: '📅 ${loc.upcoming_auctions_ucf}',
+                    onViewAll: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return CategoryProducts(slug: 'upcoming-auctions');
+                      }));
+                    },
+                  ),
+                  SizedBox(height: 19.h),
+                  if (homeData.upcomingProductList.isEmpty)
+                    _buildEmptyState(loc.no_upcoming_auctions)
+                  else
+                    _buildTwoColumnGrid(
+                      products: homeData.upcomingProductList,
+                      isMobile: isMobile,
+                      cardBuilder: (context, product) {
+                        int? auctionStartTimestamp;
+                        if (product.auctionStartDate != null) {
+                          if (product.auctionStartDate is int) {
+                            auctionStartTimestamp = product.auctionStartDate;
+                          } else if (product.auctionStartDate is String) {
+                            auctionStartTimestamp =
+                                int.tryParse(product.auctionStartDate) ?? 0;
+                          }
+                        }
+                        return UpcomingCard(
+                          id: product.id ?? 0,
+                          slug: product.slug ?? '',
+                          image: product.thumbnailImage,
+                          name: product.name,
+                          description: product.description,
+                          pointPerBid: product.pointPerBid ?? 0,
+                          auctionEndDate: auctionStartTimestamp ??
+                              product.auctionStartDate,
+                          currentBid: product.startingBid,
+                          startingBid: product.startingBid,
+                          purchasePrice: product.purchasePrice,
+                          isAuctionActive: false,
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
-  
-  // ============ ENDING SOON SECTION ============
-  Widget _buildEndingSoonSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.ending_soon_ucf,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: Colors.black),
+
+  // ============================================================
+  // 7. ENDED / COMPLETED
+  // ============================================================
+  Widget _buildEndedAuctionsSection() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final loc = AppLocalizations.of(context)!;
+
+      return Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(vertical: 28.h),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHead(
+                    title: '🏁 ${loc.ended_auctions_ucf}',
+                    onViewAll: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return CategoryProducts(slug: 'ended-auctions');
+                      }));
+                    },
+                  ),
+                  SizedBox(height: 19.h),
+                  if (homeData.endedProductList.isEmpty)
+                    _buildEmptyState(loc.no_ended_auctions)
+                  else
+                    _buildTwoColumnGrid(
+                      products: homeData.endedProductList,
+                      isMobile: isMobile,
+                      cardBuilder: (context, product) => ProductCard(
+                        id: product.id ?? 0,
+                        slug: product.slug ?? '',
+                        image: product.thumbnailImage,
+                        name: product.name,
+                        description: product.description,
+                        pointPerBid: product.pointPerBid ?? 0,
+                        auctionEndDate: 'Ended',
+                        currentBid: product.highestBid,
+                        startingBid: product.startingBid,
+                        purchasePrice: product.purchasePrice,
+                        isAuctionActive: false,
+                      ),
+                    ),
+                ],
               ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(slug: 'ending-soon');
-                  }));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFF2F2F3), width: 1.w),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.view_all,
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: const Color(0xFF80818B)),
-                  ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  // ============================================================
+  // 8. PROMO BANNER
+  // ============================================================
+  Widget buildPromoBanner() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final isTightMobile = constraints.maxWidth < 520;
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: isMobile ? 15.w : 28.w,
+          right: isMobile ? 15.w : 28.w,
+          top: 24.h,
+          bottom: 24.h,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: isTightMobile ? 16.w : (isMobile ? 18.w : 35.w),
+                vertical: isTightMobile ? 16.h : (isMobile ? 18.h : 28.h),
+              ),
+              decoration: BoxDecoration(
+                gradient: const RadialGradient(
+                  center: Alignment(-0.68, 0),
+                  radius: 1.2,
+                  colors: [
+                    Color(0xFF2376a3),
+                    Color(0xFF0b4168),
+                    Color(0xFF08243e),
+                  ],
+                  stops: [0.0, 0.35, 0.80],
                 ),
+                borderRadius:
+                    BorderRadius.circular(isTightMobile ? 16.r : 20.r),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x20173f62),
+                    blurRadius: 25,
+                    offset: Offset(0, 14),
+                  ),
+                ],
               ),
+              child: isMobile
+                  ? _buildPromoBannerMobile(isTightMobile)
+                  : _buildPromoBannerDesktop(isTightMobile),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildPromoBannerDesktop(bool isTightMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final titleSize = (screenWidth * 0.024).clamp(19.0, 31.0);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '🏆',
+          style: TextStyle(
+            fontSize: 75.sp,
+            shadows: const [
+              Shadow(color: Color(0xFFFFac36), blurRadius: 15),
             ],
           ),
         ),
-        SizedBox(height: 8.h),
-        if (homeData.endingSoonProductList.isEmpty)
-          Container(
-            height: 50.h,
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context)!.no_ending_soon_auctions,
-                style: TextStyle(fontSize: 14.sp),
-              ),
-            ),
-          )
-        else
-          _buildEndingSoonGrid(),
-        SizedBox(height: 20.h),
+        SizedBox(width: 22.w),
+        Expanded(child: _buildPromoTitle(titleSize)),
+        SizedBox(width: 22.w),
+        _buildPromoCtaButton(isMobile: false, isTightMobile: false),
       ],
     );
   }
 
-  Widget _buildEndingSoonGrid() {
-    final products = homeData.endingSoonProductList;
-    if (products.isEmpty) return const SizedBox.shrink();
+  Widget _buildPromoBannerMobile(bool isTightMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final titleSize =
+        isTightMobile ? 17.0 : (screenWidth * 0.05).clamp(19.0, 24.0);
 
-    // Group products in sets of 3
-    List<List<dynamic>> grids = [];
-    for (int i = 0; i < products.length; i += 3) {
-      int end = (i + 3 < products.length) ? i + 3 : products.length;
-      List<dynamic> grid = products.sublist(i, end);
-      grids.add(grid);
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        int gridsToShow;
-        
-        // Mobile: Show 1 grid
-        // Tablet: Show 2 grids
-        // Desktop: Show 3 grids
-        if (constraints.maxWidth >= 1024) {
-          gridsToShow = grids.length > 3 ? 3 : grids.length;
-        } else if (constraints.maxWidth >= 768) {
-          gridsToShow = grids.length > 2 ? 2 : grids.length;
-        } else {
-          gridsToShow = 1;
-        }
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(gridsToShow, (gridIndex) {
-              final grid = grids[gridIndex];
-              return Expanded(
-                child: _buildEndingSoonGridItem(grid),
-              );
-            }),
-          ),
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '🏆',
+              style: TextStyle(fontSize: (isTightMobile ? 36 : 43).sp),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(child: _buildPromoTitle(titleSize)),
+          ],
+        ),
+        SizedBox(height: 12.h),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _buildPromoCtaButton(
+              isMobile: true, isTightMobile: isTightMobile),
+        ),
+      ],
     );
   }
 
-  Widget _buildEndingSoonGridItem(List<dynamic> grid) {
-    if (grid.isEmpty) return const SizedBox.shrink();
-
-    final product1 = grid.length >= 1 ? grid[0] : null;
-    final product2 = grid.length >= 2 ? grid[1] : null;
-    final product3 = grid.length >= 3 ? grid[2] : null;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildPromoTitle(double titleSize) {
+    return Text.rich(
+      TextSpan(
         children: [
-          // Left side - 2/3 width
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                if (product1 != null)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: EndingSoonCard(
-                      id: product1.id ?? 0,
-                      slug: product1.slug ?? '',
-                      image: product1.thumbnailImage,
-                      name: product1.name,
-                      description: product1.description,
-                      pointPerBid: product1.pointPerBid ?? 0,
-                      auctionEndDate: product1.auctionEndDate,
-                      currentBid: product1.highestBid,
-                      startingBid: product1.startingBid,
-                      isAuctionActive: product1.auctionEndDate != null && 
-                          product1.auctionEndDate is int && 
-                          product1.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                      cardType: 'left',
+          TextSpan(
+            text: AppLocalizations.of(context)!.bp_promo_line1,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: titleSize,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+              letterSpacing: -0.04,
+            ),
+          ),
+          TextSpan(
+            text:
+                '\n${AppLocalizations.of(context)!.bp_promo_line2}\n${AppLocalizations.of(context)!.bp_promo_line3}',
+            style: TextStyle(
+              color: const Color(0xFF55e8d5),
+              fontSize: titleSize,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+              letterSpacing: -0.04,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoCtaButton(
+      {required bool isMobile, required bool isTightMobile}) {
+    return GestureDetector(
+      onTap: () {
+        final ctx = _howItWorksKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTightMobile ? 16.w : (isMobile ? 18.w : 24.w),
+          vertical: isTightMobile ? 9.h : (isMobile ? 10.h : 14.h),
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25.r),
+        ),
+        child: Text(
+          '${AppLocalizations.of(context)!.bp_promo_cta}  ➜',
+          style: TextStyle(
+            color: const Color(0xFF0d4462),
+            fontWeight: FontWeight.w900,
+            fontSize: isTightMobile ? 11.sp : (isMobile ? 12.sp : 13.sp),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 9. HOW DOES IT WORK
+  // ============================================================
+  Widget buildHowItWorks() {
+    return KeyedSubtree(
+      key: _howItWorksKey,
+      child: LayoutBuilder(builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+        final isTightMobile = constraints.maxWidth < 520;
+
+        return Padding(
+          padding: EdgeInsets.only(
+            left: isMobile ? 15.w : 28.w,
+            right: isMobile ? 15.w : 28.w,
+            top: 12.h,
+            bottom: 56.h,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1380),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.bp_how_title,
+                    style: TextStyle(
+                      fontSize:
+                          isTightMobile ? 20.sp : (isMobile ? 22.sp : 26.sp),
+                      color: const Color(0xFF103451),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.02,
                     ),
                   ),
-                if (product2 != null)
-                  EndingSoonCard(
-                    id: product2.id ?? 0,
-                    slug: product2.slug ?? '',
-                    image: product2.thumbnailImage,
-                    name: product2.name,
-                    description: product2.description,
-                    pointPerBid: product2.pointPerBid ?? 0,
-                    auctionEndDate: product2.auctionEndDate,
-                    currentBid: product2.highestBid,
-                    startingBid: product2.startingBid,
-                    isAuctionActive: product2.auctionEndDate != null && 
-                        product2.auctionEndDate is int && 
-                        product2.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                    cardType: 'left',
+                  SizedBox(height: 4.h),
+                  Text(
+                    AppLocalizations.of(context)!.bp_how_subtitle,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: const Color(0xFF71879d),
+                    ),
                   ),
+                  SizedBox(height: 22.h),
+                  isMobile
+                      ? _buildHowWorksMobileSteps(isTightMobile)
+                      : _buildHowWorksDesktopSteps(),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  List<Map<String, String>> _howWorksSteps(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    return [
+      {
+        'num': '1',
+        'icon': '🪙',
+        'title': t.bp_how_step1_title,
+        'desc': t.bp_how_step1_desc,
+      },
+      {
+        'num': '2',
+        'icon': '☝️',
+        'title': t.bp_how_step2_title,
+        'desc': t.bp_how_step2_desc,
+      },
+      {
+        'num': '3',
+        'icon': '⚒',
+        'title': t.bp_how_step3_title,
+        'desc': t.bp_how_step3_desc,
+      },
+      {
+        'num': '4',
+        'icon': '📦',
+        'title': t.bp_how_step4_title,
+        'desc': t.bp_how_step4_desc,
+      },
+    ];
+  }
+
+  Widget _buildHowWorksDesktopSteps() {
+    final steps = _howWorksSteps(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: steps.asMap().entries.map((entry) {
+        final i = entry.key;
+        final step = entry.value;
+        return Expanded(
+          child: Container(
+            padding:
+                EdgeInsets.fromLTRB(i == 0 ? 0 : 19.w, 12.h, 19.w, 12.h),
+            decoration: i < 3
+                ? const BoxDecoration(
+                    border: Border(
+                      right: BorderSide(
+                        color: Color(0xFFdce9f2),
+                        width: 1,
+                      ),
+                    ),
+                  )
+                : null,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStepNumBadge(step['num']!),
+                SizedBox(width: 12.w),
+                Text(
+                  step['icon']!,
+                  style: TextStyle(fontSize: 40.sp, height: 1),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        step['title']!,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: const Color(0xFF103451),
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: 5.h),
+                      Text(
+                        step['desc']!,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: const Color(0xFF698099),
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildHowWorksMobileSteps(bool isTightMobile) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildMobileStep(0, isTightMobile)),
+            SizedBox(width: 10.w),
+            Expanded(child: _buildMobileStep(1, isTightMobile)),
+          ],
+        ),
+        SizedBox(height: 10.h),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildMobileStep(2, isTightMobile)),
+            SizedBox(width: 10.w),
+            Expanded(child: _buildMobileStep(3, isTightMobile)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileStep(int index, bool isTightMobile) {
+    final step = _howWorksSteps(context)[index];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 12.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepNumBadge(step['num']!, small: true),
           SizedBox(width: 8.w),
-          // Right side - 1/3 width
+          Text(
+            step['icon']!,
+            style:
+                TextStyle(fontSize: isTightMobile ? 24.sp : 27.sp, height: 1),
+          ),
+          SizedBox(width: 8.w),
           Expanded(
-            flex: 1,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (product3 != null)
-                  Expanded(
-                    child: EndingSoonCard(
-                      id: product3.id ?? 0,
-                      slug: product3.slug ?? '',
-                      image: product3.thumbnailImage,
-                      name: product3.name,
-                      description: product3.description,
-                      pointPerBid: product3.pointPerBid ?? 0,
-                      auctionEndDate: product3.auctionEndDate,
-                      currentBid: product3.highestBid,
-                      startingBid: product3.startingBid,
-                      isAuctionActive: product3.auctionEndDate != null && 
-                          product3.auctionEndDate is int && 
-                          product3.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                      cardType: 'right',
-                    ),
+                Text(
+                  step['title']!,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: const Color(0xFF103451),
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
                   ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  step['desc']!,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: const Color(0xFF698099),
+                    height: 1.5,
+                  ),
+                ),
               ],
             ),
           ),
@@ -988,408 +1860,501 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildHomeFeaturedCategories() {
-    if (homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
-      return ShimmerHelper().buildHorizontalGridShimmerWithAxisCount(
-        crossAxisSpacing: 12.w,
-        mainAxisSpacing: 0,
-        item_count: 6,
-        mainAxisExtent: 160.w,
-        controller: homeData.featuredCategoryScrollController,
-      );
-    } else if (homeData.featuredCategoryList.isNotEmpty) {
-      return SizedBox(
-        height: 35.h,
-        child: ListView.builder(
-          padding: EdgeInsets.only(left: 16.w, right: 16.w),
-          scrollDirection: Axis.horizontal,
-          controller: homeData.featuredCategoryScrollController,
-          physics: const BouncingScrollPhysics(),
-          itemCount: homeData.featuredCategoryList.length,
-          itemBuilder: (context, index) {
-            final category = homeData.featuredCategoryList[index];
-            
-            return GestureDetector(
-              onTap: () {
-                if (category.slug != null) {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CategoryProducts(slug: category.slug!);
-                  }));
-                }
-              },
-              child: Container(
-                width: 160.w,
-                margin: EdgeInsets.only(right: 8.w),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15.r),
-                  border: Border.all(color: const Color.fromRGBO(237, 242, 247, 1), width: 1.w),
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.horizontal(left: Radius.circular(10.r)),
-                      child: FadeInImage.assetNetwork(
-                        placeholder: 'assets/placeholder.png',
-                        image: category.banner ?? '',
-                        fit: BoxFit.cover,
-                        width: 35.w,
-                        height: 35.h,
-                        imageErrorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 35.w,
-                            height: 35.h,
-                            color: const Color.fromRGBO(245, 247, 250, 1),
-                            child: Icon(Icons.category, size: 25.sp, color: const Color.fromRGBO(107, 115, 119, 1)),
-                          );
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
-                        child: Text(
-                          category.name ?? '',
-                          style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w500, color: const Color.fromRGBO(0, 0, 0, 1)),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+  Widget _buildStepNumBadge(String num, {bool small = false}) {
+    return Container(
+      width: small ? 26.w : 31.w,
+      height: small ? 26.w : 31.w,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF13baa8), Color(0xFF288bda)],
         ),
-      );
-    } else if (!homeData.isCategoryInitial && homeData.featuredCategoryList.isEmpty) {
-      return Container(
-        height: 60.h,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        num,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: small ? 12.sp : 13.sp,
+          height: 1,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 10. RECENT WINNERS
+  // ============================================================
+  Widget buildRecentWinners() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final isTightMobile = constraints.maxWidth < 520;
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: isMobile ? 15.w : 28.w,
+          right: isMobile ? 15.w : 28.w,
+          top: 8.h,
+          bottom: 28.h,
+        ),
         child: Center(
-          child: Text(
-            AppLocalizations.of(context)!.no_category_found,
-            style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🏆  ${AppLocalizations.of(context)!.bp_winners_title}',
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    color: const Color(0xFF103451),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  AppLocalizations.of(context)!.bp_winners_subtitle,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: const Color(0xFF71879d),
+                  ),
+                ),
+                SizedBox(height: 15.h),
+                _buildWinnersList(isMobile, isTightMobile),
+              ],
+            ),
           ),
         ),
       );
-    } else {
-      return SizedBox(height: 60.h);
-    }
+    });
   }
-    
-  Widget buildHomeCarouselSlider() {
-    // Get screen width for responsive sizing
-    final screenWidth = MediaQuery.of(context).size.width;
-    
-    // Use the actual banner dimensions 350x167
-    final double carouselHeight = screenWidth * (167 / 350);
-    
-    if (homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.only(left: 18.w, right: 18.w, top: 0, bottom: 20.h),
-        child: ShimmerHelper().buildBasicShimmer(height: carouselHeight),
-      );
-    } else if (homeData.carouselImageList.isNotEmpty) {
-      return CarouselSlider(
-        options: CarouselOptions(
-          height: carouselHeight,
-          viewportFraction: 1,
-          initialPage: 0,
-          enableInfiniteScroll: true,
-          reverse: false,
-          autoPlay: true,
-          autoPlayInterval: const Duration(seconds: 5),
-          autoPlayAnimationDuration: const Duration(milliseconds: 1000),
-          autoPlayCurve: Curves.easeInExpo,
-          enlargeCenterPage: false,
-          scrollDirection: Axis.horizontal,
-          onPageChanged: (index, reason) {
-            homeData.incrementCurrentSlider(index);
-          },
+
+  Widget _buildWinnersList(bool isMobile, bool isTightMobile) {
+    if (_recentWinners.isEmpty) {
+      return Container(
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+        alignment: Alignment.center,
+        child: Text(
+          AppLocalizations.of(context)!.bp_winners_empty,
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: const Color(0xFF71879d),
+          ),
         ),
-        items: homeData.carouselImageList.map((i) {
-          return Builder(
-            builder: (BuildContext context) {
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 18.w),
-                child: Stack(
-                  children: <Widget>[
-                    Container(
-                      width: double.infinity,
-                      height: carouselHeight,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12.r),
-                        child: InkWell(
-                          onTap: () {
-                            _handleSliderTap(i.url);
-                          },
-                          child: i.photo != null
-                              ? Image.network(
-                                  i.photo!,
-                                  fit: BoxFit.contain,
-                                  width: double.infinity,
-                                  height: carouselHeight,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[300],
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          size: 50.sp,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  color: Colors.grey[300],
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.image,
-                                      size: 50.sp,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
-                    // Gradient overlay for better visibility of dots
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 40.h,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(12.r),
-                            bottomRight: Radius.circular(12.r),
-                          ),
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.4),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Dot indicators
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: 12.h),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: homeData.carouselImageList.map((url) {
-                            int index = homeData.carouselImageList.indexOf(url);
-                            return Container(
-                              width: 8.w,
-                              height: 8.w,
-                              margin: EdgeInsets.symmetric(horizontal: 4.w),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: homeData.current_slider == index 
-                                    ? MyTheme.white 
-                                    : Colors.white.withOpacity(0.5),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+      );
+    }
+
+    final columns = isMobile ? 2 : 5;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final spacing = 8.0;
+      final itemWidth =
+          (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: _recentWinners.map((w) {
+          return SizedBox(
+            width: itemWidth,
+            child: _buildWinnerCard(w, isTightMobile),
           );
         }).toList(),
       );
-    } else if (!homeData.isCarouselInitial && homeData.carouselImageList.isEmpty) {
-      return Container(
-        height: carouselHeight,
-        margin: EdgeInsets.symmetric(horizontal: 18.w),
-        child: Center(
-          child: Text(
-            AppLocalizations.of(context)!.no_carousel_image_found,
-            style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
+    });
+  }
+
+  Widget _buildWinnerCard(Map<String, dynamic> w, bool isTightMobile) {
+    final hasImage = (w['image'] as String? ?? '').isNotEmpty;
+    final iconSize = isTightMobile ? 22.w : 30.w;
+    final emojiSize = isTightMobile ? 14.sp : 18.sp;
+    final textSize = isTightMobile ? 10.sp : 11.sp;
+    final subSize = isTightMobile ? 9.sp : 11.sp;
+
+    return Container(
+      padding: EdgeInsets.all(isTightMobile ? 8.w : 12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10123e58),
+            blurRadius: 15,
+            offset: Offset(0, 6),
           ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: iconSize,
+            height: iconSize,
+            decoration: BoxDecoration(
+              color: const Color(0xFFf0f7fb),
+              borderRadius: BorderRadius.circular(7.r),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: hasImage
+                ? Image.network(
+                    w['image'],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Text('🏆', style: TextStyle(fontSize: emojiSize)),
+                    ),
+                  )
+                : Center(
+                    child: Text('🏆', style: TextStyle(fontSize: emojiSize)),
+                  ),
+          ),
+          SizedBox(width: (isTightMobile ? 7 : 9).w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  w['name']?.toString() ?? '',
+                  style: TextStyle(
+                    fontSize: textSize,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF173c59),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${AppLocalizations.of(context)!.bp_winners_won} ${w['product'] ?? ''}',
+                  style: TextStyle(
+                    fontSize: subSize,
+                    color: const Color(0xFF71879d),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: subSize,
+                      color: const Color(0xFF173c59),
+                    ),
+                    children: [
+                      TextSpan(
+                          text:
+                              '${AppLocalizations.of(context)!.bp_winners_for} '),
+                      TextSpan(
+                        text:
+                            '\$${(w['price'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                        style: const TextStyle(
+                          color: Color(0xFF00b7a1),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // 11. TRUST BENEFITS
+  // ============================================================
+  Widget buildTrustBenefits() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+      final isTightMobile = constraints.maxWidth < 520;
+
+      final innerPad = isTightMobile
+          ? EdgeInsets.all(12.w)
+          : (isMobile
+              ? EdgeInsets.all(14.w)
+              : EdgeInsets.symmetric(horizontal: 28.w, vertical: 19.h));
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: isMobile ? 15.w : 28.w,
+          right: isMobile ? 15.w : 28.w,
+          bottom: 12.h,
         ),
-      );
-    } else {
-      return SizedBox(
-        height: carouselHeight,
-        child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 18.w),
-          color: Colors.grey[200],
-          child: Center(
-            child: Text(
-              AppLocalizations.of(context)!.no_images_available,
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1380),
+            child: Container(
+              padding: innerPad,
+              decoration: BoxDecoration(
+                color: const Color(0xFFe9f8f7),
+                border: Border.all(color: const Color(0xFFcfece8), width: 1),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: _buildTrustBenefitsGrid(isMobile, isTightMobile),
             ),
           ),
         ),
       );
+    });
+  }
+
+  Widget _buildTrustBenefitsGrid(bool isMobile, bool isTightMobile) {
+    final t = AppLocalizations.of(context)!;
+    final benefits = <Map<String, String>>[
+      {'icon': '🛡️', 'title': t.bp_trust1_title, 'sub': t.bp_trust1_sub},
+      {'icon': '🚚', 'title': t.bp_trust2_title, 'sub': t.bp_trust2_sub},
+      {'icon': '🔒', 'title': t.bp_trust3_title, 'sub': t.bp_trust3_sub},
+      {'icon': '⭐', 'title': t.bp_trust4_title, 'sub': t.bp_trust4_sub},
+    ];
+
+    final columns = isMobile ? 2 : 4;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final spacing = isMobile ? 14.0 : 16.0;
+      final itemWidth =
+          (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: benefits.map((b) {
+          return SizedBox(
+            width: itemWidth,
+            child: _buildTrustBenefit(b, isMobile, isTightMobile),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Widget _buildTrustBenefit(
+      Map<String, String> b, bool isMobile, bool isTightMobile) {
+    final iconSize = isTightMobile ? 20.sp : (isMobile ? 22.sp : 24.sp);
+    final titleSize = isTightMobile ? 10.sp : (isMobile ? 11.sp : 12.sp);
+    final subSize = isTightMobile ? 9.sp : (isMobile ? 10.sp : 11.sp);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(b['icon']!, style: TextStyle(fontSize: iconSize, height: 1)),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                b['title']!,
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF183c56),
+                ),
+              ),
+              Text(
+                b['sub']!,
+                style: TextStyle(
+                  fontSize: subSize,
+                  color: const Color(0xFF6b8593),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================
+// BIDPOINTS UTILITY HEADER — Matches HTML .bp-utility
+// ============================================================
+class _BpUtilityHeader extends StatefulWidget {
+  final bool isLoggedIn;
+  final bool hasUnreadMessages;
+  final bool hasUnreadNotifications;
+  final int userBalance;
+  final VoidCallback onSearchTap;
+  final VoidCallback onMessagesTap;
+  final VoidCallback onNotificationsTap;
+  final VoidCallback onRewardsTap;
+  final VoidCallback onAccountTap;
+  final VoidCallback onLoginTap;
+
+  const _BpUtilityHeader({
+    Key? key,
+    required this.isLoggedIn,
+    required this.hasUnreadMessages,
+    required this.hasUnreadNotifications,
+    required this.userBalance,
+    required this.onSearchTap,
+    required this.onMessagesTap,
+    required this.onNotificationsTap,
+    required this.onRewardsTap,
+    required this.onAccountTap,
+    required this.onLoginTap,
+  }) : super(key: key);
+
+  @override
+  State<_BpUtilityHeader> createState() => _BpUtilityHeaderState();
+}
+
+class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
+  bool _menuOpen = false;
+  OverlayEntry? _menuOverlay;
+  final GlobalKey _menuBtnKey = GlobalKey();
+
+  void _toggleMenu() {
+    if (_menuOpen) {
+      _closeMenu();
+    } else {
+      _openMenu();
     }
   }
 
-  AppBar buildAppBar() {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.white,
-      centerTitle: false,
-      elevation: 0,
-      toolbarHeight: 60.h,
-      titleSpacing: 0,
-      title: Container(
-        padding: EdgeInsets.only(left: 16.w, right: 16.w),
+  void _openMenu() {
+    final loc = AppLocalizations.of(context)!;
+    final box = _menuBtnKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final pos = box.localToGlobal(Offset.zero);
+    final top = pos.dy + box.size.height + 12;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    _menuOverlay = OverlayEntry(
+      builder: (ctx) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _closeMenu,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          Positioned(
+            top: top,
+            right: screenWidth < 700 ? 15 : 28,
+            width: 310,
+            child: Material(
+              color: Colors.transparent,
+              child: _buildMenuPanel(loc),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    Overlay.of(context).insert(_menuOverlay!);
+    setState(() => _menuOpen = true);
+  }
+
+  void _closeMenu() {
+    _menuOverlay?.remove();
+    _menuOverlay = null;
+    if (mounted) setState(() => _menuOpen = false);
+  }
+
+  @override
+  void dispose() {
+    _menuOverlay?.remove();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 700;
+
+    return Material(
+      color: Colors.white,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFdceaf3))),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x0C123866),
+              blurRadius: 22,
+              offset: Offset(0, 7),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 15.w : 28.w,
+              vertical: isMobile ? 8.h : 9.h,
+            ),
+            child: Row(
+              children: [
+                _buildLogo(isMobile),
+                SizedBox(width: isMobile ? 9.w : 15.w),
+                Expanded(child: _buildSearch(isMobile)),
+                SizedBox(width: isMobile ? 5.w : 9.w),
+                _buildActions(isMobile),
+                if (!isMobile) ...[
+                  SizedBox(width: 9.w),
+                  _buildHamburger(isMobile),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── LOGO
+  Widget _buildLogo(bool isMobile) {
+    final size = isMobile ? 42.0 : 51.0;
+    return Container(
+      width: isMobile ? 39.w : 52.w,
+      height: isMobile ? 43.h : 54.h,
+      alignment: Alignment.center,
+      child: Image.asset(
+        'assets/logo.png',
+        width: isMobile ? 37.w : 48.w,
+        height: size.h,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.gavel,
+          size: isMobile ? 26.sp : 32.sp,
+          color: const Color(0xFF155e81),
+        ),
+      ),
+    );
+  }
+
+  // ── SEARCH
+  Widget _buildSearch(bool isMobile) {
+    final loc = AppLocalizations.of(context)!;
+    return GestureDetector(
+      onTap: widget.onSearchTap,
+      child: Container(
+        height: isMobile ? 38.h : 42.h,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.w : 14.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFFf0f7fb),
+          border: Border.all(color: const Color(0xFFd8e8f2)),
+          borderRadius: BorderRadius.circular(isMobile ? 12.r : 15.r),
+        ),
         child: Row(
           children: [
-            Expanded(child: buildHomeSearchBox()),
-            // Notification Icon
-            Padding(
-              padding: EdgeInsets.only(left: 12.w),
-              child: GestureDetector(
-                onTap: () {
-                  if (is_logged_in.$) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const NotificationsPage()),
-                    ).then((_) => _refreshCounts());
-                  } else {
-                    _redirectToLogin();
-                  }
-                },
-                child: Container(
-                  width: 35.w,
-                  height: 35.w,
-                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Image.asset(
-                          'assets/notification.png',
-                          height: 22.w,
-                          width: 22.w,
-                          // color: MyTheme.dark_grey,
-                        ),
-                      ),
-                      // ==========================================================
-                      // UPDATED BADGE LOGIC:
-                      // - Show only when NOT loading AND logged in AND count > 0
-                      // - Count is only shown after data is fetched from server
-                      // - If count is 0, show 0
-                      // ==========================================================
-                      if (_shouldShowNotificationBadge)
-                        Positioned(
-                          top: 2.h,
-                          right: 2.w,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(10.r),
-                            ),
-                            constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.h),
-                            child: Text(
-                              _notificationBadgeText,
-                              style: TextStyle(
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      // When loading, show nothing (no badge)
-                    ],
-                  ),
-                ),
-              ),
+            Icon(
+              Icons.search_rounded,
+              size: isMobile ? 18.sp : 20.sp,
+              color: const Color(0xFF2d7894),
             ),
-            // Chat Icon
-            Padding(
-              padding: EdgeInsets.only(left: 8.w),
-              child: GestureDetector(
-                onTap: () {
-                  if (is_logged_in.$) {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => MessengerList()));
-                  } else {
-                    _redirectToLogin();
-                  }
-                },
-                child: Container(
-                  width: 35.w,
-                  height: 35.w,
-                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
-                  child: Stack(
-                    children: [
-                      Center(child: Image.asset('assets/message.png', height: 22.w, width: 22.w)),
-                      // ==========================================================
-                      // UPDATED BADGE LOGIC:
-                      // - Show only when NOT loading AND logged in AND count > 0
-                      // - Count is only shown after data is fetched from server
-                      // - If count is 0, show 0
-                      // ==========================================================
-                      if (_shouldShowMessageBadge)
-                        Positioned(
-                          top: 2.h,
-                          right: 2.w,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-                            decoration: BoxDecoration(
-                              color: MyTheme.accent_color,
-                              borderRadius: BorderRadius.circular(10.r),
-                            ),
-                            constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.h),
-                            child: Text(
-                              _messageBadgeText,
-                              style: TextStyle(
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      // When loading, show nothing (no badge)
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Affiliate Icon
-            Padding(
-              padding: EdgeInsets.only(left: 8.w),
-              child: GestureDetector(
-                onTap: () {
-                  if (is_logged_in.$) {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AffiliatePage()));
-                  } else {
-                    _redirectToLogin();
-                  }
-                },
-                child: Container(
-                  width: 35.w,
-                  height: 35.w,
-                  decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8.r)),
-                  child: Center(
-                    child: Image.asset('assets/affiliate.png', 
-                    height: 26.w, 
-                    width: 26.w, 
-                    // color: Colors.white,
-                    ),
-                  ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                loc.search_products_brands_ucf,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: isMobile ? 12.sp : 14.sp,
+                  color: const Color(0xFF6b8a9e),
                 ),
               ),
             ),
@@ -1399,27 +2364,277 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget buildHomeSearchBox() {
+  // ── ACTIONS
+  Widget _buildActions(bool isMobile) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _iconBtn(
+          icon: Icons.chat_bubble_outline_rounded,
+          onTap: widget.onMessagesTap,
+          isMobile: isMobile,
+          showDot: widget.hasUnreadMessages,
+        ),
+        SizedBox(width: isMobile ? 5.w : 9.w),
+        _iconBtn(
+          icon: Icons.notifications_none_rounded,
+          onTap: widget.onNotificationsTap,
+          isMobile: isMobile,
+          showDot: widget.hasUnreadNotifications,
+        ),
+        SizedBox(width: isMobile ? 5.w : 9.w),
+        _iconBtn(
+          icon: Icons.card_giftcard_rounded,
+          onTap: widget.onRewardsTap,
+          isMobile: isMobile,
+          showDot: false,
+          isGift: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _iconBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isMobile,
+    bool showDot = false,
+    bool isGift = false,
+  }) {
+    final size = isMobile ? 35.w : 43.w;
+    final iconSize = isMobile ? 18.sp : 20.sp;
+
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => Filter()));
-      },
-      child: Container(
-        height: 40.h,
-        decoration: BoxDecorations.buildBoxDecoration_1(),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.search_anything,
-                style: TextStyle(fontSize: 11.sp, color: MyTheme.textfield_grey),
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: isMobile ? 37.h : 43.h,
+            decoration: BoxDecoration(
+              color: isGift ? const Color(0xFFe8f9f5) : Colors.white,
+              borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
+              border: Border.all(
+                color: isGift
+                    ? const Color(0xFFbfeae2)
+                    : const Color(0xFFd7e7f1),
+                width: 1,
               ),
-              Image.asset('assets/search.png', height: 16.w, color: MyTheme.dark_grey),
-            ],
+            ),
+            child: Icon(
+              icon,
+              size: iconSize,
+              color: isGift ? const Color(0xFF0b9f98) : const Color(0xFF185275),
+            ),
           ),
+          if (showDot)
+            Positioned(
+              right: isMobile ? 5.w : 8.w,
+              top: isMobile ? 5.h : 7.h,
+              child: Container(
+                width: isMobile ? 6.w : 7.w,
+                height: isMobile ? 6.w : 7.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFf1786e),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── HAMBURGER
+  Widget _buildHamburger(bool isMobile) {
+    return GestureDetector(
+      key: _menuBtnKey,
+      onTap: _toggleMenu,
+      child: Container(
+        width: 44.w,
+        height: 44.h,
+        decoration: BoxDecoration(
+          color: _menuOpen ? const Color(0xFFe7f9f5) : Colors.white,
+          borderRadius: BorderRadius.circular(13.r),
+          border: Border.all(
+            color: _menuOpen
+                ? const Color(0xFF19bbaa)
+                : const Color(0xFFcfe5ee),
+          ),
+        ),
+        child: Icon(
+          Icons.menu_rounded,
+          size: 24.sp,
+          color: const Color(0xFF174b70),
+        ),
+      ),
+    );
+  }
+
+  // ── MENU PANEL
+  Widget _buildMenuPanel(AppLocalizations loc) {
+    return Container(
+      padding: EdgeInsets.all(17.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFd7e8f1)),
+        borderRadius: BorderRadius.circular(17.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x310c3553),
+            blurRadius: 48,
+            offset: Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: 10.h),
+            child: Text(
+              loc.my_menu_ucf,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF143957),
+              ),
+            ),
+          ),
+          _menuLink(loc.home_ucf, () {
+            _closeMenu();
+          }),
+          _menuLink(loc.my_account_ucf, () {
+            _closeMenu();
+            widget.onAccountTap();
+          }),
+          _menuLink(loc.notifications_ucf, () {
+            _closeMenu();
+            widget.onNotificationsTap();
+          }),
+          _menuLink(loc.messages_ucf, () {
+            _closeMenu();
+            widget.onMessagesTap();
+          }),
+          _menuLink(loc.rewards_ucf, () {
+            _closeMenu();
+            widget.onRewardsTap();
+          }),
+          SizedBox(height: 12.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFe7f8f4),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Row(
+              children: [
+                Text('🪙', style: TextStyle(fontSize: 20.sp, height: 1)),
+                SizedBox(width: 8.w),
+                Text(
+                  widget.isLoggedIn ? '${widget.userBalance}' : '0',
+                  style: TextStyle(
+                    color: const Color(0xFF154763),
+                    fontSize: 19.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  loc.points_ucf,
+                  style: TextStyle(
+                    color: const Color(0xFF154763),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 6.h),
+          if (widget.isLoggedIn)
+            _accountRow(
+              label: loc.my_account_ucf,
+              onTap: () {
+                _closeMenu();
+                widget.onAccountTap();
+              },
+            )
+          else
+            _accountRow(
+              label: loc.login_ucf,
+              onTap: () {
+                _closeMenu();
+                widget.onLoginTap();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _menuLink(String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+        margin: EdgeInsets.only(bottom: 3.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(9.r),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF244766),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _accountRow({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        child: Row(
+          children: [
+            Container(
+              width: 32.w,
+              height: 32.w,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0a88d0), Color(0xFF18d2bc)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Icon(
+                Icons.person_rounded,
+                size: 18.sp,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF143957),
+              ),
+            ),
+          ],
         ),
       ),
     );

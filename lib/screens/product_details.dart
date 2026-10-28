@@ -1,46 +1,39 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:active_ecommerce_flutter/screens/chat.dart';
-import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
-import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
-import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
-import 'package:active_ecommerce_flutter/custom/btn.dart';
-import 'package:active_ecommerce_flutter/custom/device_info.dart';
-import 'package:active_ecommerce_flutter/custom/text_styles.dart';
+import 'dart:ui' as ui;
+
+import 'package:active_ecommerce_flutter/app_config.dart';
+import 'package:active_ecommerce_flutter/custom/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
+import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
+import 'package:active_ecommerce_flutter/screens/chat.dart';
 import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart' as http;
 import 'package:photo_view/photo_view.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:toast/toast.dart';
-import 'package:http/http.dart' as http;
-import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+
 import '../data_model/auction_models.dart';
 import '../data_model/user_info_response.dart';
-import 'package:active_ecommerce_flutter/app_config.dart';
-import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
-import 'package:active_ecommerce_flutter/helpers/main_helpers.dart';
-import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 
 class ProductDetails extends StatefulWidget {
-  String slug;
-
+  final String slug;
   ProductDetails({Key? key, required this.slug}) : super(key: key);
 
   @override
@@ -48,28 +41,10 @@ class ProductDetails extends StatefulWidget {
 }
 
 class _ProductDetailsState extends State<ProductDetails>
-    with TickerProviderStateMixin, SingleTickerProviderStateMixin {
-
-  late TabController _tabController;
-  late ScrollController _mainScrollController;
-  late AnimationController _blinkController;
-  late AnimationController _countdownCircleController;
-  TextEditingController _commentController = TextEditingController();
-  TextEditingController _bidController = TextEditingController();
-  TextEditingController _reviewController = TextEditingController();
-
-  // Data
-  bool? _myStatus;
-  bool _userHasBid = false;
-  bool _hasBid = false;
-  bool _isListening = false;
-  bool _isLoading = true;
-  bool _isCommentSoundPlaying = false;
-  bool _isBidSoundPlaying = false;
-  // bool _isBellSoundPlaying = false;
-  bool _userInteractedWithComments = false;
-  bool _initialScrollDone = false; 
-  bool _isAtBottom = true;
+    with TickerProviderStateMixin {
+  // =========================
+  // DATA
+  // =========================
   DetailedProduct? _product;
   UserInformation? _userInfo;
   List<String> _productImages = [];
@@ -79,206 +54,135 @@ class _ProductDetailsState extends State<ProductDetails>
   int _currentImageIndex = 0;
   double _selectedRating = 0;
 
-  // UI State
-  bool _isWishlisted = false;
+  // =========================
+  // STATE
+  // =========================
+  bool _isLoading = true;
+  bool _isProcessing = false;
+  bool _isBuyNowLoading = false;
   bool _isInWishlist = false;
   bool _showMoreMenu = false;
-  bool _showDesktopMoreMenu = false;
-  bool _showReviewsModal = false;
-  bool _showAddReviewModal = false;
-  bool _showBidHistoryModal = false;
-  bool _showTitleModal = false;
+  bool _isSendingMessage = false;
   bool _showWinnerModal = false;
   bool _winnerModalShown = false;
+  bool _isEndingSoon = false;
+  bool _userInteractedWithComments = false;
+  bool _isAtBottom = true;
 
-  // Timer
+  // =========================
+  // TIMER / AUCTION STATE
+  // =========================
   Timer? _countdownTimer;
   Timer? _pollingTimer;
   Timer? _upcomingTimer;
+  Timer? _bellTimer;
   Duration _timeLeft = Duration.zero;
   Duration _timeUntilStart = Duration.zero;
-  bool _isEndingSoon = false;
+  String _auctionStatus = "live"; // "live" | "upcoming" | "ended"
   int _endingSeconds = 10;
-  String _auctionStatus = "live";
-  // bool _bellSoundPlayed = false;
-  
-  // Bid Data
+
+  // =========================
+  // BID
+  // =========================
   double _currentHighestBid = 0;
   double _minNextBidNow = 0;
-  double _minNextBid = 0;
-  int _totalBids = 0;
-  String _highestBidder = '';
   double _startingBid = 0;
   double _pointPerBid = 0;
   double _pointPerBidCustom = 0;
-  int _reviewsCount = 0;
+  int _totalBids = 0;
+  String _highestBidder = '';
   double _rating = 0;
- 
-  // Winner Data
-  Winner? _winnerData;
+  int _reviewsCount = 0;
+  bool? _myStatus;
+  bool _userHasBid = false;
 
-  // Buy Now Data
+  // Buy Now
   int _buyNow = 0;
   String _buyNowLink = '';
-  bool _isBuyNowLoading = false;
 
-  // Sound
-  bool _soundEnabled = true;
+  // Winner
+  Winner? _winnerData;
+
+  // Controllers
+  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _bidController = TextEditingController();
+  final TextEditingController _reviewController = TextEditingController();
+  final ScrollController _commentsScrollController = ScrollController();
+  final ScrollController _mainScrollController = ScrollController();
+  final GlobalKey<RefreshIndicatorState> _refreshKey =
+      GlobalKey<RefreshIndicatorState>();
+
+  // Animations
+  late AnimationController _blinkController;
+  late AnimationController _countdownCircleController;
+
+  // Slide to bid
+  double _slideOffset = 0;
+  double _thumbStartX = 0;
+  bool _isDragging = false;
+  static const double _thumbSize = 49;
+
+  // Audio
   final AudioPlayer _audioPlayer = AudioPlayer();
   final AudioPlayer _bellPlayer = AudioPlayer();
-  
-  // Repository
+  bool _bellSoundPlayed = false;
+
+  // Repositories
   final ProductRepository _productRepository = ProductRepository();
   final ProfileRepository _profileRepository = ProfileRepository();
 
-  // Refresh indicator key
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-      GlobalKey<RefreshIndicatorState>();
-
-  // Loading state for buttons
-  bool _isProcessing = false;
-
-  // Screen width for responsive sizing
+  // Responsive
   double _screenWidth = 0;
-
-  // Scroll controller for comments to auto-scroll to bottom
-  final ScrollController _commentsScrollController = ScrollController();
-  
-  late CarouselController _fullScreenCarouselController;
-
-  // Track if we've already triggered auto-scroll for current counter state
-  bool _counterScrollTriggered = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _mainScrollController = ScrollController();
-    _fullScreenCarouselController = CarouselController();
-    
-    _countdownCircleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    );
 
-    _commentsScrollController.addListener(_onCommentsScroll);
-    
-    _fetchAllData();
-    _startPolling();
-    _fetchUserInfo(); 
-    
-    _setupLoginStateListener();
-    
     _blinkController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
+
+    _countdownCircleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+
+    _commentsScrollController.addListener(_onCommentsScroll);
+
+    _fetchAllData();
+    _startPolling();
+    _fetchUserInfo();
   }
 
   @override
   void dispose() {
     _blinkController.dispose();
-    _tabController.dispose();
-    _mainScrollController.dispose();
-    _commentController.dispose();
-    _bidController.dispose();
-    _reviewController.dispose();
+    _countdownCircleController.dispose();
     _countdownTimer?.cancel();
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
-    ToastComponent.tickSoundPlaying = false;
-    _audioPlayer.stop();
+    _bellTimer?.cancel();
+    _commentController.dispose();
+    _bidController.dispose();
+    _reviewController.dispose();
+    _commentsScrollController.dispose();
+    _mainScrollController.dispose();
     _audioPlayer.dispose();
     _bellPlayer.dispose();
-    _commentsScrollController.dispose();
+    ToastComponent.tickSoundPlaying = false;
     super.dispose();
   }
 
-  // ============================================
-  // API CALLS
-  // ============================================
-
-  void _onCommentsScroll() {
-    if (!_commentsScrollController.hasClients) return;
-
-    final maxScroll = _commentsScrollController.position.maxScrollExtent;
-    final currentScroll = _commentsScrollController.position.pixels;
-
-    final isAtBottom = currentScroll >= maxScroll - 30;
-
-    if (isAtBottom != _isAtBottom) {
-      setState(() => _isAtBottom = isAtBottom);
-    }
-
-    if (!isAtBottom && currentScroll < maxScroll - 80) {
-      _userInteractedWithComments = true;
-    } else if (isAtBottom) {
-      _userInteractedWithComments = false;
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _screenWidth = MediaQuery.of(context).size.width;
   }
 
-  void _scrollToBottom() {
-    if (_commentsScrollController.hasClients && 
-        _isAtBottom && 
-        !_userInteractedWithComments) {
-      _commentsScrollController.animateTo(
-        _commentsScrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  Future<void> _fetchComments() async {
-    try {
-      final response =
-          await _productRepository.getProductComments(_product?.id ?? 0);
-      if (response.success == true && response.comments != null) {
-        setState(() {
-          _comments = response.comments!.reversed.toList();
-          _isAtBottom = true;
-          _userInteractedWithComments = false;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
-      }
-    } catch (e) {
-      print('Error fetching comments: $e');
-    }
-  }
-
-  Future<void> _fetchReviews() async {
-    try {
-      final response =
-          await _productRepository.getProductReviews(_product?.id ?? 0);
-      if (response.success == true && response.reviews != null) {
-        setState(() => _reviews = response.reviews!);
-        _reviewsCount = _reviews.length;
-      }
-    } catch (e) {
-      print('Error fetching reviews: $e');
-    }
-  }
-
-  Future<void> _fetchBidHistory() async {
-    try {
-      final response =
-          await _productRepository.getProductBidHistory(_product?.id ?? 0);
-      if (response.success == true && response.bids != null) {
-        setState(() => _bidHistory = response.bids!);
-      }
-    } catch (e) {
-      print('Error fetching bid history: $e');
-    }
-  }
-
-  void _startPolling() {
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(Duration(seconds: 2), (timer) async {
-      await _pollData();
-    });
-  }
+  // ============================================================
+  // FETCHING
+  // ============================================================
 
   Future<void> _fetchAllData() async {
     setState(() => _isLoading = true);
@@ -298,27 +202,18 @@ class _ProductDetailsState extends State<ProductDetails>
         _currentHighestBid = _product!.highestBid != null
             ? double.tryParse(_product!.highestBid!) ?? 0
             : 0;
-        
         _totalBids = _product!.totalBids ?? 0;
         _highestBidder = _product!.lastBidderName ?? '';
-        
         _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
         _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
         _reviewsCount = _product!.ratingCount ?? 0;
         _rating = (_product!.rating ?? 0).toDouble();
-        _isWishlisted = false;
-        _isInWishlist = false;
         _endingSeconds = _product!.swipeLeft ?? 10;
-
         _myStatus = _product!.myStatus;
         _userHasBid = _product!.userHasBid ?? false;
-
-        // Get Buy Now data
         _buyNow = _product!.buyNow ?? 0;
         _buyNowLink = _product!.buyNowLink ?? '';
-
         _minNextBidNow = _currentHighestBid + 0.01;
-        _minNextBid = _currentHighestBid + 1;
 
         _determineAuctionStatus();
       }
@@ -329,126 +224,272 @@ class _ProductDetailsState extends State<ProductDetails>
       await _fetchWishlistStatus();
 
       setState(() => _isLoading = false);
-      
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
     } catch (e) {
       print('Error fetching data: $e');
-      // ToastComponent.showError(AppLocalizations.of(context)!.failed_to_load_product_details);
       setState(() => _isLoading = false);
     }
   }
 
-  // ============================================
-  // DETERMINE AUCTION STATUS
-  // ============================================
-  
   void _determineAuctionStatus() {
     if (_product == null) return;
-    
-    final String? upcomingStatus = _product?.upcomingStatus;
-    
-    if (upcomingStatus == "Upcoming") {
+
+    if (_product?.upcomingStatus == "Upcoming") {
       _auctionStatus = "upcoming";
       _startUpcomingTimer();
       return;
     }
-    
+
     if (_product?.isAuctionEnded == true) {
       _auctionStatus = "ended";
       _timeLeft = Duration.zero;
       return;
     }
-    
+
     _auctionStatus = "live";
-    
     if (_product!.getAuctionEndDateTime() != null) {
       final endTime = _product!.getAuctionEndDateTime()!;
-      final now = DateTime.now();
-      _timeLeft = endTime.difference(now);
+      _timeLeft = endTime.difference(DateTime.now());
       if (_timeLeft.isNegative) _timeLeft = Duration.zero;
       _startCountdown(endTime);
     }
   }
 
-  // ============================================
-  // UPCOMING TIMER
-  // ============================================
-  
-  void _startUpcomingTimer() {
-    _upcomingTimer?.cancel();
-    
-    DateTime? startDateTime = _product?.getAuctionStartDateTime();
-    if (startDateTime == null) {
-      _timeUntilStart = Duration.zero;
-      return;
-    }
-    
-    _updateUpcomingTimer(startDateTime);
-    
-    _upcomingTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      _updateUpcomingTimer(startDateTime);
-    });
-  }
-
-  void _updateUpcomingTimer(DateTime startDateTime) {
-    final now = DateTime.now();
-    final remaining = startDateTime.difference(now);
-    
-    if (remaining.isNegative) {
-      _upcomingTimer?.cancel();
-      setState(() {
-        _timeUntilStart = Duration.zero;
-        _auctionStatus = "live";
-      });
-      if (_product!.getAuctionEndDateTime() != null) {
-        final endTime = _product!.getAuctionEndDateTime()!;
-        _startCountdown(endTime);
+  Future<void> _fetchComments() async {
+    try {
+      final response =
+          await _productRepository.getProductComments(_product?.id ?? 0);
+      if (response.success == true && response.comments != null) {
+        setState(() {
+          _comments = response.comments!.reversed.toList();
+          _isAtBottom = true;
+          _userInteractedWithComments = false;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
-      return;
+    } catch (e) {
+      print('Error fetching comments: $e');
     }
-    
-    setState(() {
-      _timeUntilStart = remaining;
-    });
   }
 
-  // ============================================
-  // ENDING COUNTDOWN TIMER - Bell plays when ending soon starts
-  // ============================================
+  Future<void> _fetchReviews() async {
+    try {
+      final response =
+          await _productRepository.getProductReviews(_product?.id ?? 0);
+      if (response.success == true && response.reviews != null) {
+        setState(() {
+          _reviews = response.reviews!;
+          _reviewsCount = _reviews.length;
+        });
+      }
+    } catch (e) {
+      print('Error fetching reviews: $e');
+    }
+  }
+
+  Future<void> _fetchBidHistory() async {
+    try {
+      final response =
+          await _productRepository.getProductBidHistory(_product?.id ?? 0);
+      if (response.success == true && response.bids != null) {
+        setState(() => _bidHistory = response.bids!);
+      }
+    } catch (e) {
+      print('Error fetching bid history: $e');
+    }
+  }
+
+  Future<void> _fetchWishlistStatus() async {
+    if (!is_logged_in.$ || _product == null) return;
+    try {
+      final result =
+          await _productRepository.getWishlistStatus(_product!.id ?? 0);
+      if (result['success'] == true) {
+        setState(() => _isInWishlist = result['isInWishlist'] ?? false);
+      }
+    } catch (e) {
+      print('Error fetching wishlist: $e');
+    }
+  }
+
+  Future<void> _fetchUserInfo() async {
+    if (!is_logged_in.$) return;
+    try {
+      final response = await _profileRepository.getUserInfoResponse();
+      if (response.success == true &&
+          response.data != null &&
+          response.data!.isNotEmpty) {
+        setState(() => _userInfo = response.data![0]);
+      }
+    } catch (e) {
+      print('Error fetching user info: $e');
+    }
+  }
+
+  // ============================================================
+  // POLLING
+  // ============================================================
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _pollData(),
+    );
+  }
+
+  Future<void> _pollData() async {
+    if (_product == null) return;
+
+    try {
+      final response =
+          await _productRepository.pollProductData(_product!.id ?? 0);
+
+      if (response.success != true) return;
+
+      setState(() {
+        if (response.myStatus != null) {
+          _myStatus = response.myStatus;
+          _userHasBid = true;
+        } else {
+          _myStatus = null;
+          _userHasBid = response.userHasBid ?? false;
+        }
+
+        if (response.startingBid != null) _startingBid = response.startingBid!;
+
+        if (response.highestBid != null) {
+          final old = _currentHighestBid;
+          _currentHighestBid = response.highestBid!;
+          if (_currentHighestBid > old && response.lastBidderName != null) {
+            ToastComponent.showInfo(
+              '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
+            );
+          }
+        }
+
+        if (response.totalBids != null) _totalBids = response.totalBids!;
+        if (response.lastBidderName != null &&
+            response.lastBidderName!.isNotEmpty) {
+          _highestBidder = response.lastBidderName!;
+        }
+        if (response.pointPerBid != null) _pointPerBid = response.pointPerBid!;
+        if (response.pointPerBidCustom != null) {
+          _pointPerBidCustom = response.pointPerBidCustom!;
+        }
+        if (response.buyNow != null) _buyNow = response.buyNow!;
+        if (response.buyNowLink != null) _buyNowLink = response.buyNowLink!;
+
+        _minNextBidNow = _currentHighestBid + 0.01;
+
+        if (response.upcomingStatus != null) {
+          final newStatus = response.upcomingStatus!;
+          if (_auctionStatus != newStatus) {
+            _auctionStatus = newStatus;
+            if (newStatus == "upcoming") {
+              _startUpcomingTimer();
+              _countdownTimer?.cancel();
+            } else if (newStatus == "live" &&
+                response.auctionEndDate != null) {
+              _upcomingTimer?.cancel();
+              try {
+                final endTime = DateTime.parse(response.auctionEndDate!);
+                _startCountdown(endTime);
+              } catch (_) {}
+            }
+          }
+        }
+
+        if (response.auctionEndDate != null && _auctionStatus == "live") {
+          try {
+            final newEnd = DateTime.parse(response.auctionEndDate!);
+            final newLeft = newEnd.difference(DateTime.now());
+            if (_timeLeft != newLeft && !newLeft.isNegative) {
+              _timeLeft = newLeft;
+              _startCountdown(newEnd);
+            }
+          } catch (_) {}
+        }
+
+        if (response.auctionEnded == true) {
+          _auctionStatus = "ended";
+          _timeLeft = Duration.zero;
+          _isEndingSoon = false;
+          _bellSoundPlayed = false;
+          _countdownTimer?.cancel();
+          _countdownCircleController.stop();
+        }
+
+        if (response.rating != null) _rating = response.rating!;
+        if (response.reviewsCount != null) _reviewsCount = response.reviewsCount!;
+
+        if (response.comments != null && response.comments!.isNotEmpty) {
+          _comments = response.comments!.reversed.toList();
+          if (_isAtBottom && !_userInteractedWithComments) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          }
+        }
+
+        if (response.reviews != null && response.reviews!.isNotEmpty) {
+          _reviews = response.reviews!;
+          _reviewsCount = _reviews.length;
+        }
+
+        if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
+          _bidHistory = response.bidHistory!.map((item) {
+            return BidHistory(
+              userId: item.userId,
+              userName: item.userName,
+              amount: item.amount,
+              createdAt: item.createdAt,
+            );
+          }).toList();
+        }
+      });
+
+      if (response.auctionEnded == true &&
+          response.winner != null &&
+          !_winnerModalShown) {
+        _winnerData = response.winner;
+        _winnerModalShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showWinnerModalDialog();
+        });
+      }
+    } catch (e) {
+      print('Polling error: $e');
+    }
+  }
+
+  // ============================================================
+  // TIMERS
+  // ============================================================
 
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
-
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final now = DateTime.now();
-      final remaining = endTime.difference(now);
-
+      final remaining = endTime.difference(DateTime.now());
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
         setState(() {
           _timeLeft = Duration.zero;
           _auctionStatus = "ended";
           _isEndingSoon = false;
-          // _bellSoundPlayed = false;  // Reset for next time
+          _bellSoundPlayed = false;
         });
         _pollData();
         return;
       }
 
-      final secondsLeft = remaining.inSeconds;
-      final shouldBeEndingSoon = secondsLeft > 0 && secondsLeft <= _endingSeconds;
+      final seconds = remaining.inSeconds;
+      final shouldEnd = seconds > 0 && seconds <= _endingSeconds;
 
-      if (shouldBeEndingSoon != _isEndingSoon) {
-        print('🔄 Ending soon changed: $shouldBeEndingSoon');
-        setState(() => _isEndingSoon = shouldBeEndingSoon);
-
-        if (shouldBeEndingSoon) {
-          // ALWAYS play the bell sound when ending soon starts
-          _playBellSound();
-          _countdownCircleController.repeat(period: const Duration(seconds: 1));
-        } else {
+      if (shouldEnd != _isEndingSoon) {
+        setState(() => _isEndingSoon = shouldEnd);
+        if (shouldEnd && !_bellSoundPlayed) {
+          _bellSoundPlayed = true;
+          _playBell();
+          _countdownCircleController.repeat();
+        } else if (!shouldEnd) {
           _countdownCircleController.stop();
         }
       }
@@ -457,331 +498,90 @@ class _ProductDetailsState extends State<ProductDetails>
     });
   }
 
-  Future<void> _pollData() async {
-    if (_product == null) return;
+  void _startUpcomingTimer() {
+    _upcomingTimer?.cancel();
+    final start = _product?.getAuctionStartDateTime();
+    if (start == null) return;
 
-    try { 
-      final response =
-          await _productRepository.pollProductData(_product!.id ?? 0);
-
-      if (response.success == true) {
-        setState(() {
-          if (response.myStatus != null) {
-            _myStatus = response.myStatus;
-            _userHasBid = true;
-          } else {
-            _myStatus = null;
-            _userHasBid = response.userHasBid ?? false;
-          }
-        });
-
-        if (response.startingBid != null) {
-          setState(() { _startingBid = response.startingBid!; });
-        }
-
-        if (response.highestBid != null) {
-          final oldHighestBid = _currentHighestBid;
-          setState(() { _currentHighestBid = response.highestBid!; });
-          
-          if (_currentHighestBid > oldHighestBid && response.lastBidderName != null) {
-            ToastComponent.showInfo(
-              '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
-            );
-          }
-        }
-
-        if (response.totalBids != null) {
-          setState(() { _totalBids = response.totalBids!; });
-        }
-
-        if (response.lastBidderName != null && response.lastBidderName!.isNotEmpty) {
-          setState(() { _highestBidder = response.lastBidderName!; });
-        }
-
-        if (response.pointPerBid != null) {
-          setState(() { _pointPerBid = response.pointPerBid!; });
-        }
-        if (response.pointPerBidCustom != null) {
-          setState(() { _pointPerBidCustom = response.pointPerBidCustom!; });
-        }
-
-        // Update Buy Now data from poll
-        if (response.buyNow != null) {
-          setState(() { _buyNow = response.buyNow!; });
-        }
-        if (response.buyNowLink != null) {
-          setState(() { _buyNowLink = response.buyNowLink!; });
-        }
-
-        _minNextBidNow = _currentHighestBid + 0.01;
-        _minNextBid = _currentHighestBid + 1;
-
-        if (response.upcomingStatus != null) {
-          final newStatus = response.upcomingStatus!;
-          if (_auctionStatus != newStatus) {
-            setState(() {
-              _auctionStatus = newStatus;
-            });
-            
-            if (newStatus == "upcoming") {
-              _startUpcomingTimer();
-              _countdownTimer?.cancel();
-            } else if (newStatus == "live" && response.auctionEndDate != null) {
-              _upcomingTimer?.cancel();
-              try {
-                final endTime = DateTime.parse(response.auctionEndDate!);
-                _startCountdown(endTime);
-              } catch (e) {
-                print('Error parsing auction end date: $e');
-              }
-            }
-          }
-        }
-
-        if (response.auctionEndDate != null && 
-            _auctionStatus == "live") {
-          try {
-            final newEndTime = DateTime.parse(response.auctionEndDate!);
-            final now = DateTime.now();
-            final newTimeLeft = newEndTime.difference(now);
-            if (_timeLeft != newTimeLeft && !newTimeLeft.isNegative) {
-              setState(() => _timeLeft = newTimeLeft);
-              _startCountdown(newEndTime);
-            }
-          } catch (e) {
-            print('Error parsing auction end date: $e');
-          }
-        }
-
-        if (response.auctionEnded == true) {
-          setState(() {
-            _auctionStatus = "ended";
-            _timeLeft = Duration.zero;
-            _isEndingSoon = false;
-            // _bellSoundPlayed = false;
-          });
-          _countdownTimer?.cancel();
-          _countdownCircleController.stop();
-          
-          if (response.winner != null && !_winnerModalShown) {
-            _winnerData = response.winner;
-            _winnerModalShown = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _showWinnerModalDialog();
-            });
-          }
-        }
-
-        if (response.rating != null) {
-          setState(() { _rating = response.rating!; });
-        }
-        if (response.reviewsCount != null) {
-          setState(() { _reviewsCount = response.reviewsCount!; });
-        }
-
-        if (response.comments != null && response.comments!.isNotEmpty) {
-          setState(() {
-            _comments = response.comments!.reversed.toList();
-          });
-          
-          if (_isAtBottom && !_userInteractedWithComments) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollToBottom();
-            });
-          }
-        }
-
-        if (response.reviews != null && response.reviews!.isNotEmpty) {
-          setState(() => _reviews = response.reviews!);
-          _reviewsCount = _reviews.length;
-        }
-
-        if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
-          final List<BidHistory> convertedBids = response.bidHistory!.map((item) {
-            return BidHistory(
-              userId: item.userId,
-              userName: item.userName,
-              amount: item.amount,
-              createdAt: item.createdAt,
-            );
-          }).toList();
-          setState(() => _bidHistory = convertedBids);
-        }
-      }
-    } catch (e) {
-      print('Polling error: $e');
-    }
-  }
-
-  // ============================================
-  // BUY NOW ACTION
-  // ============================================
-
-  void _onBuyNowPressed() async {
-
-    if (_isBuyNowLoading) return;
-    
-    if (_buyNowLink.isEmpty) {
-      ToastComponent.showWarning('Payment link not available');
-      return;
-    }
-
-    setState(() { _isBuyNowLoading = true; });
-
-    try {
-      final productId = _product?.id ?? 0;
-      
-      // Send tracking request with product_id
-      await _productRepository.trackBuyNowClick(productId);
-      
-      // Navigate to webview
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CommonWebviewScreen(
-            page_name: AppLocalizations.of(context)!.buy_now_ucf,
-            url: _buyNowLink,
-          ),
-        ),
-      );
-    } catch (e) {
-      print('Error opening buy now: $e');
-      ToastComponent.showError('Failed to open payment page');
-    } finally {
-      if (mounted) {
-        setState(() { _isBuyNowLoading = false; });
-      }
-    }
-  }
-
-  // ============================================
-  // BLINKING STATUS TEXT
-  // ============================================
-  
-  Widget _buildBlinkingStatusText() {
-    if (_auctionStatus != "live") {
-      return const SizedBox.shrink();
-    }
-    
-    if (_userHasBid != true) {
-      return const SizedBox.shrink();
-    }
-    
-    bool isWinning = false;
-    
-    if (_myStatus != null) {
-      isWinning = _myStatus!;
-    } else {
-      isWinning = _determineWinningStatusFromBids();
-    }
-    
-    final text = isWinning 
-        ? "${AppLocalizations.of(context)!.you_are_winning}"
-        : "${AppLocalizations.of(context)!.you_are_losing}";
-    
-    return AnimatedBuilder(
-      animation: _blinkController,
-      builder: (context, child) {
-        final opacity = 0.3 + (0.7 * _blinkController.value);
-        return Opacity(
-          opacity: opacity,
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isWinning ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
-              fontSize: _getResponsiveFontSize(10, 14),
-            ),
-          ),
-        );
-      },
+    _tickUpcoming(start);
+    _upcomingTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _tickUpcoming(start),
     );
   }
 
-  bool _determineWinningStatusFromBids() {
-    if (_bidHistory.isEmpty) return false;
-    
-    final myBids = _bidHistory.where((bid) => 
-      bid.userId == _userInfo?.id
-    ).toList();
-    
-    if (myBids.isEmpty) return false;
-    
-    final myHighestBid = myBids.map((b) => b.amount ?? 0).reduce((a, b) => a > b ? a : b);
-    final allBids = _bidHistory.map((b) => b.amount ?? 0).toList();
-    final highestBid = allBids.isNotEmpty ? allBids.reduce((a, b) => a > b ? a : b) : 0;
-    
-    return myHighestBid >= highestBid && highestBid > 0;
-  }
-
-  void _checkAndRefreshWishlist() {
-    if (_product != null && is_logged_in.$ && !_isLoading && !_isProcessing) {
-      print('✅ Checking wishlist status on page focus...');
-      _fetchWishlistStatus();
-    }
-  }
-
-  void _setupLoginStateListener() {
-    if (!_isListening) {
-      _isListening = true;
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _screenWidth = MediaQuery.of(context).size.width;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndRefreshWishlist();
-    });
-  }
-
-  Future<void> _likeComment(int commentId) async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
+  void _tickUpcoming(DateTime start) {
+    final remaining = start.difference(DateTime.now());
+    if (remaining.isNegative) {
+      _upcomingTimer?.cancel();
+      setState(() {
+        _timeUntilStart = Duration.zero;
+        _auctionStatus = "live";
+      });
+      if (_product!.getAuctionEndDateTime() != null) {
+        _startCountdown(_product!.getAuctionEndDateTime()!);
+      }
       return;
     }
-    
+    setState(() => _timeUntilStart = remaining);
+  }
+
+  Future<void> _playBell() async {
     try {
-      final response = await _productRepository.likeProductComment(commentId);
-      if (response['success'] == true) {
-        setState(() {
-          final index = _comments.indexWhere((c) => c.id == commentId);
-          if (index != -1) {
-            _comments[index].likes = response['data']['likes'].toString();
-          }
-        });
-        ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_liked);
-      }
-    } catch (e) {
-      print('Error liking comment: $e');
+      await _bellPlayer.stop();
+      await _bellPlayer.setReleaseMode(ReleaseMode.release);
+      await _bellPlayer.play(
+        AssetSource('sounds/bell1.mp3'),
+        mode: PlayerMode.lowLatency,
+        volume: 0.85,
+      );
+      ToastComponent.tickSoundPlaying = true;
+    } catch (_) {}
+  }
+
+  // ============================================================
+  // COMMENTS SCROLL
+  // ============================================================
+
+  void _onCommentsScroll() {
+    if (!_commentsScrollController.hasClients) return;
+    final max = _commentsScrollController.position.maxScrollExtent;
+    final cur = _commentsScrollController.position.pixels;
+    final atBottom = cur >= max - 30;
+    if (atBottom != _isAtBottom) setState(() => _isAtBottom = atBottom);
+    if (!atBottom && cur < max - 80) {
+      _userInteractedWithComments = true;
+    } else if (atBottom) {
+      _userInteractedWithComments = false;
     }
   }
 
-  void _replyToComment(String userName) {
-    _commentController.text = '@$userName ';
-    FocusScope.of(context).requestFocus(FocusNode());
+  void _scrollToBottom() {
+    if (_commentsScrollController.hasClients &&
+        _isAtBottom &&
+        !_userInteractedWithComments) {
+      _commentsScrollController.animateTo(
+        _commentsScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
-  // ============================================
-  // BID ACTIONS
-  // ============================================
+  // ============================================================
+  // ACTIONS
+  // ============================================================
 
   Future<void> _placeBidNow() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
-
+    if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
-    
     if (_auctionStatus != "live") {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.auction_not_active);
       return;
     }
 
     final amount = _minNextBidNow;
-
     setState(() => _isProcessing = true);
 
     try {
@@ -791,63 +591,49 @@ class _ProductDetailsState extends State<ProductDetails>
         type: "quick",
       );
 
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
 
       if (response.success == true) {
-        if (response.timeExtended == true) {
-          ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
-          if (response.newEndDate != null) {
-            try {
-              final newEndTime = DateTime.parse(response.newEndDate!);
-              _startCountdown(newEndTime);
-            } catch (e) {
-              print('Error parsing new end date: $e');
-            }
-          }
+        if (response.timeExtended == true && response.newEndDate != null) {
+          ToastComponent.showSuccess(
+              response.message ?? AppLocalizations.of(context)!.auction_time_extended);
+          try {
+            _startCountdown(DateTime.parse(response.newEndDate!));
+          } catch (_) {}
         } else {
           ToastComponent.showSuccess(
-              response.message ?? '${AppLocalizations.of(context)!.bid_placed} ${AppLocalizations.of(context)!.amount_ucf}: ${_formatPrice(amount)}');
+              response.message ??
+                  '${AppLocalizations.of(context)!.bid_placed} ${_formatPrice(amount)}');
         }
-
         await _pollData();
       } else {
-        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.something_went_wrong);
+        ToastComponent.showError(response.message ??
+            AppLocalizations.of(context)!.something_went_wrong);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+    } catch (_) {
+      if (mounted) setState(() => _isProcessing = false);
       ToastComponent.showError(AppLocalizations.of(context)!.error_placing_bid);
     }
   }
 
   Future<void> _submitCustomBid() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
-
+    if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
-    
     if (_auctionStatus != "live") {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.auction_not_active);
       return;
     }
 
     final amount = double.tryParse(_bidController.text);
-    if (amount == null) {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_valid_amount);
-      return;
-    }
-    if (amount < _minNextBidNow) {
-      ToastComponent.showWarning('${AppLocalizations.of(context)!.bid_must_be_at_least} ${_formatPrice(_minNextBidNow)}');
+    if (amount == null || amount < _minNextBidNow) {
+      ToastComponent.showWarning(
+          '${AppLocalizations.of(context)!.bid_must_be_at_least} ${_formatPrice(_minNextBidNow)}');
       return;
     }
 
     setState(() => _isProcessing = true);
-
     try {
       final response = await _productRepository.placeBid(
         (_product!.id ?? 0).toString(),
@@ -855,547 +641,1478 @@ class _ProductDetailsState extends State<ProductDetails>
         type: "custom",
       );
 
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
 
       if (response.success == true) {
         _bidController.clear();
-        if (response.timeExtended == true) {
-          ToastComponent.showSuccess(response.message ?? AppLocalizations.of(context)!.auction_time_extended);
-        } else {
-          ToastComponent.showSuccess('${AppLocalizations.of(context)!.bid_placed} ${AppLocalizations.of(context)!.amount_ucf}: ${_formatPrice(amount)}');
-        }
+        ToastComponent.showSuccess(
+            response.message ?? AppLocalizations.of(context)!.bid_placed);
         await _pollData();
       } else {
-        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_placing_bid);
+        ToastComponent.showError(response.message ??
+            AppLocalizations.of(context)!.error_placing_bid);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+    } catch (_) {
+      if (mounted) setState(() => _isProcessing = false);
       ToastComponent.showError(AppLocalizations.of(context)!.error_placing_bid);
     }
   }
 
-  // ============================================
-  // COMMENT ACTIONS
-  // ============================================
-
   Future<void> _sendComment() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
-
+    if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
 
-    final comment = _commentController.text.trim();
-    if (comment.isEmpty) {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.please_enter_comment);
+    final text = _commentController.text.trim();
+    if (text.isEmpty) {
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.please_enter_comment);
       return;
     }
 
     setState(() => _isProcessing = true);
-
     try {
-      final response = await _productRepository.addProductComment(
-        _product!.id ?? 0,
-        comment,
-      );
-
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+      final response =
+          await _productRepository.addProductComment(_product!.id ?? 0, text);
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
 
       if (response.success == true) {
         _commentController.clear();
         await _fetchComments();
-        ToastComponent.showSuccess(AppLocalizations.of(context)!.comment_added);
-        
-        if (_isAtBottom) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
-        }
+        ToastComponent.showSuccess(
+            AppLocalizations.of(context)!.comment_added);
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       } else {
-        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_adding_comment);
+        ToastComponent.showError(response.message ??
+            AppLocalizations.of(context)!.error_adding_comment);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-      ToastComponent.showError(AppLocalizations.of(context)!.error_adding_comment);
+    } catch (_) {
+      if (mounted) setState(() => _isProcessing = false);
+      ToastComponent.showError(
+          AppLocalizations.of(context)!.error_adding_comment);
     }
   }
 
-  // ============================================
-  // REVIEW ACTIONS
-  // ============================================
-
   Future<void> _submitReview() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
-
+    if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
-
     if (_selectedRating == 0) {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.please_select_rating);
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.please_select_rating);
       return;
     }
-
-    final comment = _reviewController.text.trim();
-    if (comment.isEmpty) {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.please_write_review);
+    if (_reviewController.text.trim().isEmpty) {
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.please_write_review);
       return;
     }
 
     setState(() => _isProcessing = true);
-
     try {
       final response = await _productRepository.addProductReview(
-        _product!.id ?? 0,
-        _selectedRating.toInt(),
-        comment,
-      );
-
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+          _product!.id ?? 0, _selectedRating.toInt(), _reviewController.text);
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
 
       if (response.success == true) {
-        ToastComponent.showSuccess(AppLocalizations.of(context)!.review_submitted);
-        _showAddReviewModal = false;
+        ToastComponent.showSuccess(
+            AppLocalizations.of(context)!.review_submitted);
         _selectedRating = 0;
         _reviewController.clear();
+        Navigator.pop(context);
         await _fetchReviews();
         await _pollData();
-        setState(() {});
       } else {
-        ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_submitting_review);
+        ToastComponent.showError(response.message ??
+            AppLocalizations.of(context)!.error_submitting_review);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-      ToastComponent.showError(AppLocalizations.of(context)!.error_submitting_review);
+    } catch (_) {
+      if (mounted) setState(() => _isProcessing = false);
+      ToastComponent.showError(
+          AppLocalizations.of(context)!.error_submitting_review);
     }
   }
-
-  // ============================================
-  // WISHLIST STATUS
-  // ============================================
-
-  Future<void> _fetchWishlistStatus() async {
-    if (!is_logged_in.$) {
-      setState(() { _isInWishlist = false; });
-      return;
-    }
-    
-    if (_product == null) {
-      return;
-    }
-    
-    try {
-      print('🔄 Fetching wishlist status from dedicated endpoint...');
-      final result = await _productRepository.getWishlistStatus(_product!.id ?? 0);
-      
-      print('📡 Wishlist status response: $result');
-      
-      if (result['success'] == true) {
-        final newState = result['isInWishlist'] ?? false;
-        if (_isInWishlist != newState) {
-          setState(() { _isInWishlist = newState; });
-          print('✅ Updated wishlist to: $_isInWishlist');
-        }
-      } else {
-        print('❌ Failed to get wishlist status: ${result['message']}');
-      }
-    } catch (e) {
-      print('❌ Error fetching wishlist status: $e');
-    }
-  }
-
-  // ============================================
-  // WISHLIST ACTIONS
-  // ============================================
 
   Future<void> _toggleWishlist() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
-
+    if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
 
-    final wasInWishlist = _isInWishlist;
-    
+    final wasIn = _isInWishlist;
     setState(() {
       _isProcessing = true;
-      _isInWishlist = !wasInWishlist;
+      _isInWishlist = !wasIn;
     });
 
     try {
-      late WishlistResponse response;
-      
-      if (wasInWishlist) {
-        print('🗑️ Removing from wishlist...');
+      WishlistResponse response;
+      if (wasIn) {
         response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
       } else {
-        print('❤️ Adding to wishlist...');
         response = await _productRepository.addToWishlist(_product!.id ?? 0);
       }
 
-      print('📡 Response success: ${response.success}');
-      print('📡 Response message: ${response.message}');
-
       if (response.success == true) {
-        if (wasInWishlist) {
-          ToastComponent.showSuccess(AppLocalizations.of(context)!.removed_from_wishlist);
-        } else {
-          ToastComponent.showSuccess(AppLocalizations.of(context)!.added_to_wishlist);
-        }
-        
+        ToastComponent.showSuccess(
+            wasIn
+                ? AppLocalizations.of(context)!.removed_from_wishlist
+                : AppLocalizations.of(context)!.added_to_wishlist);
         await _fetchWishlistStatus();
       } else {
-        setState(() { _isInWishlist = wasInWishlist; });
-        
-        print('❌ Wishlist operation failed: ${response.message}');
-        ToastComponent.showError(AppLocalizations.of(context)!.wishlist_update_failed);
-        
-        await _fetchWishlistStatus();
+        setState(() => _isInWishlist = wasIn);
+        ToastComponent.showError(
+            AppLocalizations.of(context)!.wishlist_update_failed);
       }
-    } catch (e) {
-      print('❌ Wishlist error: $e');
-      setState(() { _isInWishlist = wasInWishlist; });
-      ToastComponent.showError(AppLocalizations.of(context)!.wishlist_update_failed);
+    } catch (_) {
+      setState(() => _isInWishlist = wasIn);
+      ToastComponent.showError(
+          AppLocalizations.of(context)!.wishlist_update_failed);
     } finally {
-      if (mounted) {
-        setState(() { _isProcessing = false; });
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
-
-  Future<void> _refreshWishlistStatus() async {
-    if (_product == null) {
-      print('⏭️ Cannot refresh wishlist: product is null');
-      return;
-    }
-    
-    if (!is_logged_in.$) {
-      print('⏭️ Cannot refresh wishlist: user not logged in');
-      return;
-    }
-    
-    try {
-      print('🔄 Refreshing wishlist status for product ${_product!.id}...');
-      final response = await _productRepository.pollProductData(_product!.id ?? 0);
-      print('📡 Poll response success: ${response.success}');
-      print('📡 Poll response isInWishlist: ${response.isInWishlist}');
-      
-      if (response.success == true && response.isInWishlist != null) {
-        final newState = response.isInWishlist!;
-        if (_isInWishlist != newState) {
-          setState(() { _isInWishlist = newState; });
-          print('✅ Updated _isInWishlist to: $_isInWishlist');
-        } else {
-          print('✅ _isInWishlist already set to: $_isInWishlist');
-        }
-      } else {
-        print('❌ Failed to refresh wishlist status');
-      }
-    } catch (e) {
-      print('❌ Error refreshing wishlist status: $e');
-    }
-  }
-
-  // ============================================
-  // CONTACT SELLER
-  // ============================================
 
   Future<void> _contactSeller() async {
-    if (!is_logged_in.$) {
-      _showLoginRequired();
-      return;
-    }
-
+    if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
 
     setState(() => _isProcessing = true);
-
     try {
-      final response = await _productRepository.contactSeller(
-        _product!.id ?? 0,
-      );
-
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-
-      print('📡 Contact Seller Response: $response');
+      final response =
+          await _productRepository.contactSeller(_product!.id ?? 0);
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
 
       if (response['success'] == true) {
-        ToastComponent.showSuccess(response['message'] ?? AppLocalizations.of(context)!.message_sent_to_seller);
-        
-        final conversationId = response['conversation_id'];
+        ToastComponent.showSuccess(response['message'] ??
+            AppLocalizations.of(context)!.message_sent_to_seller);
         final data = response['data'] ?? {};
-        final sellerName = data['seller_name'] ?? AppLocalizations.of(context)!.seller;
-        final productName = data['product_name'] ?? _product?.name ?? '';
-        final sellerAvatar = data['seller_avatar'] ?? '';
-        
-        if (mounted) {
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (context) => Chat(
-                    conversation_id: conversationId,
-                    messenger_name: sellerName,
-                    messenger_title: productName,
-                    messenger_image: sellerAvatar,
-                  )
-                )
-              );
-            }
-          });
-        }
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Chat(
+                  conversation_id: response['conversation_id'],
+                  messenger_name:
+                      data['seller_name'] ?? AppLocalizations.of(context)!.seller,
+                  messenger_title: data['product_name'] ?? _product?.name ?? '',
+                  messenger_image: data['seller_avatar'] ?? '',
+                ),
+              ),
+            );
+          }
+        });
       } else {
-        ToastComponent.showError(response['message'] ?? AppLocalizations.of(context)!.failed_to_contact_seller);
+        ToastComponent.showError(response['message'] ??
+            AppLocalizations.of(context)!.failed_to_contact_seller);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-      print('❌ Error contacting seller: $e');
-      ToastComponent.showError(AppLocalizations.of(context)!.error_contacting_seller);
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+    } catch (_) {
+      if (mounted) setState(() => _isProcessing = false);
+      ToastComponent.showError(
+          AppLocalizations.of(context)!.error_contacting_seller);
     }
   }
 
-  // ============================================
-  // SOUND - BELL SOUND (Plays when ending soon starts, nothing stops it)
-  // ============================================
+  void _onBuyNowPressed() async {
+    if (_isBuyNowLoading) return;
+    if (_buyNowLink.isEmpty) {
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.payment_link_unavailable);
+      return;
+    }
 
-  void _playBellSound() async {
-    // Remove all checks that prevent playing - ALWAYS play when called
-    // No conditions, no flags - just play the sound
-    
+    setState(() => _isBuyNowLoading = true);
     try {
-      print('🛎️ BELL SOUND TRIGGERED - Playing bell sound');
-
-      // Reset the player before playing
-      await _bellPlayer.stop();
-      await _bellPlayer.setReleaseMode(ReleaseMode.release);
-      await _bellPlayer.play(
-        AssetSource('sounds/bell1.mp3'),
-        mode: PlayerMode.lowLatency,
-        volume: 0.85,
+      await _productRepository.trackBuyNowClick(_product?.id ?? 0);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CommonWebviewScreen(
+            page_name: AppLocalizations.of(context)!.buy_now_ucf,
+            url: _buyNowLink,
+          ),
+        ),
       );
-
-      ToastComponent.tickSoundPlaying = true;
-      
-      print('🔔 Bell sound playing');
-    } catch (e) {
-      print('❌ Bell sound error: $e');
-      ToastComponent.tickSoundPlaying = false;
+    } catch (_) {
+      ToastComponent.showError(
+          AppLocalizations.of(context)!.failed_to_open_payment);
+    } finally {
+      if (mounted) setState(() => _isBuyNowLoading = false);
     }
   }
 
-  // ============================================
-  // UI HELPERS
-  // ============================================
-
-  String _formatPrice(double amount) {
-    return FormatHelper.formatPrice(amount);
+  Future<void> _likeComment(int commentId) async {
+    if (!is_logged_in.$) return _showLoginRequired();
+    try {
+      final response = await _productRepository.likeProductComment(commentId);
+      if (response['success'] == true) {
+        setState(() {
+          final i = _comments.indexWhere((c) => c.id == commentId);
+          if (i != -1) {
+            _comments[i].likes = response['data']['likes'].toString();
+          }
+        });
+      }
+    } catch (_) {}
   }
 
-  String _formatTimeLeft() {
-    if (_timeLeft.isNegative) return '00:00:00';
-
-    final days = _timeLeft.inDays;
-    final hours = _timeLeft.inHours.remainder(24);
-    final minutes = _timeLeft.inMinutes.remainder(60);
-    final seconds = _timeLeft.inSeconds.remainder(60);
-
-    if (days > 0) {
-      return '${days}d ${hours}h ${minutes}m';
-    } else {
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    }
-  }
-
-  Map<String, dynamic> _getTimeComponents() {
-    final days = _timeLeft.inDays;
-    final hours = _timeLeft.inHours.remainder(24);
-    final minutes = _timeLeft.inMinutes.remainder(60);
-    final seconds = _timeLeft.inSeconds.remainder(60);
-
-    bool showDays = days > 0;
-    bool showSeconds = !showDays;
-
-    return {
-      'days': days.toString().padLeft(2, '0'),
-      'hours': hours.toString().padLeft(2, '0'),
-      'minutes': minutes.toString().padLeft(2, '0'),
-      'seconds': seconds.toString().padLeft(2, '0'),
-      'showDays': showDays,
-      'showSeconds': showSeconds,
-    };
-  }
-
-  String _formatUpcomingTimeLeft() {
-    if (_timeUntilStart.isNegative) return '00:00:00';
-
-    final days = _timeUntilStart.inDays;
-    final hours = _timeUntilStart.inHours.remainder(24);
-    final minutes = _timeUntilStart.inMinutes.remainder(60);
-    final seconds = _timeUntilStart.inSeconds.remainder(60);
-
-    if (days > 0) {
-      return '${days}d ${hours}h ${minutes}m';
-    } else {
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    }
-  }
-
-  Map<String, dynamic> _getUpcomingTimeComponents() {
-    final days = _timeUntilStart.inDays;
-    final hours = _timeUntilStart.inHours.remainder(24);
-    final minutes = _timeUntilStart.inMinutes.remainder(60);
-    final seconds = _timeUntilStart.inSeconds.remainder(60);
-
-    bool showDays = days > 0;
-    bool showSeconds = !showDays;
-
-    return {
-      'days': days.toString().padLeft(2, '0'),
-      'hours': hours.toString().padLeft(2, '0'),
-      'minutes': minutes.toString().padLeft(2, '0'),
-      'seconds': seconds.toString().padLeft(2, '0'),
-      'showDays': showDays,
-      'showSeconds': showSeconds,
-    };
+  void _replyToComment(String userName) {
+    _commentController.text = '@$userName ';
+    FocusScope.of(context).requestFocus(FocusNode());
   }
 
   void _showLoginRequired() {
-    ToastComponent.showWarning(AppLocalizations.of(context)!.please_login_to_continue);
-    Navigator.push(context, MaterialPageRoute(builder: (context) => Login()));
+    ToastComponent.showWarning(
+        AppLocalizations.of(context)!.please_login_to_continue);
+    Navigator.push(context, MaterialPageRoute(builder: (_) => Login()));
   }
 
-  Widget _buildButtonLoader() {
-    return SizedBox(
-      height: 16,
-      width: 16,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: Colors.white,
+  // ============================================================
+  // FORMATTING
+  // ============================================================
+
+  String _formatPrice(double amount) => FormatHelper.formatPrice(amount);
+
+  String _formatTimeLeft(Duration d, {bool compact = true}) {
+    if (d.isNegative) d = Duration.zero;
+    final days = d.inDays;
+    final h = d.inHours.remainder(24);
+    final m = d.inMinutes.remainder(60);
+    final s = d.inSeconds.remainder(60);
+    if (days > 0) return '${days}d ${h}h ${m}m';
+    if (compact) {
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
+    return '${h}h ${m}m ${s}s';
+  }
+
+  String _formatTime(String? dateTime) {
+    if (dateTime == null) return '';
+    try {
+      final d = DateTime.parse(dateTime);
+      final diff = DateTime.now().difference(d);
+      if (diff.inDays > 0) return '${diff.inDays}d ago';
+      if (diff.inHours > 0) return '${diff.inHours}h ago';
+      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+      return '${diff.inSeconds}s ago';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatDate(String? dateTime) {
+    if (dateTime == null) return '';
+    try {
+      final d = DateTime.parse(dateTime);
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _videoIdFromUrl(String url) {
+    try {
+      final reg = RegExp(
+          r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})');
+      final m = reg.firstMatch(url);
+      return m?.group(1) ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading || _product == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFf5f9fd),
+        body: _buildShimmer(),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFf5f9fd),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          key: _refreshKey,
+          onRefresh: _fetchAllData,
+          color: MyTheme.accent_color,
+          child: CustomScrollView(
+            controller: _mainScrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── TOP BAR ─────────────────────────────────────
+              SliverToBoxAdapter(child: _buildTopBar()),
+
+              // ── STAGE (photo + overlays) ─────────────────────
+              SliverToBoxAdapter(child: _buildStage()),
+
+              // ── PHOTO RAIL ───────────────────────────────────
+              SliverToBoxAdapter(child: _buildPhotoRail()),
+
+              // ── SUMMARY (3 metrics) ──────────────────────────
+              SliverToBoxAdapter(child: _buildSummary()),
+
+              // ── HOW IT WORKS ─────────────────────────────────
+              SliverToBoxAdapter(child: _buildHowItWorks()),
+
+              // ── BUY NOW ──────────────────────────────────────
+              if (_buyNow == 1 && _auctionStatus != "ended")
+                SliverToBoxAdapter(child: _buildBuyNowCard()),
+
+              // ── REVIEWS ROW ──────────────────────────────────
+              SliverToBoxAdapter(child: _buildReviewsRow()),
+
+              // ── COMMENTS ─────────────────────────────────────
+              SliverToBoxAdapter(child: _buildCommentsSection()),
+
+              // ── spacer so content isn't hidden by bid dock ──
+              SliverToBoxAdapter(
+                child: SizedBox(height: 110.h),
+              ),
+            ],
+          ),
+        ),
+      ),
+      // ── BID DOCK ─────────────────────────────────────────
+      bottomNavigationBar: _buildBidDock(),
+    );
+  }
+
+  // ============================================================
+  // TOP BAR
+  // ============================================================
+
+  Widget _buildTopBar() {
+    return Container(
+      height: 60.h,
+      color: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40.w,
+              height: 40.w,
+              decoration: BoxDecoration(
+                color: const Color(0xFFedf6ff),
+                borderRadius: BorderRadius.circular(13.r),
+              ),
+              child: Icon(Icons.arrow_back,
+                  size: 20.sp, color: const Color(0xFF1870d5)),
+            ),
+          ),
+          const Spacer(),
+          if (is_logged_in.$)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFecfcfa),
+                borderRadius: BorderRadius.circular(30.r),
+                border: Border.all(color: const Color(0xFFb8ecea)),
+              ),
+              child: Text(
+                '✦ ${_userInfo?.balance ?? 0} ${AppLocalizations.of(context)!.points_ucf}',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF007d7f),
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _showLoginRequired,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFedf6ff),
+                  borderRadius: BorderRadius.circular(13.r),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.login_ucf,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1870d5),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  void _shareProduct() {
-    Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
-  }
+  // ============================================================
+  // STAGE (photo + overlays + chat)
+  // ============================================================
 
-  // ============================================
-  // CUSTOM BID POPUP
-  // ============================================
+  Widget _buildStage() {
+    final isMobile = _screenWidth < 800;
+    final stageHeight = isMobile
+        ? (_screenWidth < 430 ? 470.0 : 540.0)
+        : min(_screenWidth * 0.85, 720.0);
 
-  void _showBidInputDialog() {
-    if (_auctionStatus != "live") {
-      ToastComponent.showWarning(AppLocalizations.of(context)!.auction_not_active);
-      return;
-    }
-    
-    _bidController.clear();
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 18.w),
+      height: stageHeight,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(isMobile ? 0 : 28.r),
+        color: const Color(0xFF142337),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Main image
+          Positioned.fill(
+            child: _productImages.isEmpty
+                ? Container(color: const Color(0xFF1a2a3e))
+                : Image.network(
+                    _productImages[_currentImageIndex],
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.image, color: Colors.white54, size: 60),
+                  ),
+          ),
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.enter_your_bid,
-              style: TextStyle(fontSize: _getResponsiveFontSize(14, 18), fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 4),
-            Text(
-              '${AppLocalizations.of(context)!.one_bid_equals} $_pointPerBidCustom',
-              style: TextStyle(fontSize: _getResponsiveFontSize(10, 14), color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 12),
-            TextField(
-              controller: _bidController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: '${AppLocalizations.of(context)!.min_ucf}: ${_formatPrice(_minNextBidNow)}',
-                hintStyle: TextStyle(fontSize: _getResponsiveFontSize(10, 14)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+          // Gradient overlay
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x85051C29),
+                      Colors.transparent,
+                      Colors.transparent,
+                      Color(0x94051425),
+                      Color(0xF7051121),
+                    ],
+                    stops: [0.0, 0.22, 0.4, 0.65, 1.0],
+                  ),
                 ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                filled: true,
-                fillColor: Colors.grey.shade50,
               ),
             ),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      backgroundColor: Colors.grey.shade200,
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.cancel_ucf,
-                      style: TextStyle(fontSize: _getResponsiveFontSize(11, 14), color: Colors.grey.shade600),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isProcessing
-                        ? null
-                        : () {
-                            Navigator.pop(context);
-                            _submitCustomBid();
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _isProcessing
-                        ? _buildButtonLoader()
-                        : Text(
-                            AppLocalizations.of(context)!.place_bid,
-                            style: TextStyle(
-                              fontSize: _getResponsiveFontSize(11, 14),
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+          ),
+
+          // Status badge (top-left)
+          Positioned(
+            top: 17.h,
+            left: 17.w,
+            child: _buildStatusBadge(),
+          ),
+
+          // Action circles (top-right)
+          Positioned(
+            top: 17.h,
+            right: 17.w,
+            child: _buildActionCircles(),
+          ),
+
+          // Chat overlay (bottom)
+          if (!isMobile || true)
+            Positioned(
+              left: 18.w,
+              right: 18.w,
+              bottom: 18.h,
+              child: _buildChatOverlay(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    String label;
+    Color bg;
+    Color border;
+
+    if (_auctionStatus == "ended") {
+      label = AppLocalizations.of(context)!.status_ended_ucf;
+      bg = const Color(0xB80B2038);
+      border = const Color(0x3BFFFFFF);
+    } else if (_userHasBid && _myStatus != null) {
+      final winning = _myStatus == true;
+      label = winning
+          ? AppLocalizations.of(context)!.status_winning_ucf
+          : AppLocalizations.of(context)!.status_outbid_ucf;
+      bg = winning ? const Color(0xEB047E60) : const Color(0xEDAC2848);
+      border = winning ? const Color(0xFF62F3C8) : const Color(0xFFFFB3C2);
+    } else if (_auctionStatus == "upcoming") {
+      label = AppLocalizations.of(context)!.status_upcoming_ucf;
+      bg = const Color(0xB80B2038);
+      border = const Color(0x3BFFFFFF);
+    } else {
+      label = AppLocalizations.of(context)!.status_live_ucf;
+      bg = const Color(0xB80B2038);
+      border = const Color(0x3BFFFFFF);
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(100.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8.w,
+            height: 8.w,
+            decoration: const BoxDecoration(
+              color: Color(0xFF9EFFD6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionCircles() {
+    return Column(
+      children: [
+        _actionCircle(
+          icon: Icons.more_vert,
+          onTap: () => setState(() => _showMoreMenu = !_showMoreMenu),
+        ),
+        SizedBox(height: 10.h),
+        _actionCircle(
+          icon: Icons.share_outlined,
+          onTap: () {
+            Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
+          },
+        ),
+        SizedBox(height: 10.h),
+        _actionCircle(
+          icon: Icons.play_arrow_rounded,
+          onTap: _openVideoModal,
+        ),
+        SizedBox(height: 10.h),
+        _actionCircle(
+          icon: Icons.history,
+          onTap: _openBidHistoryModal,
+        ),
+      ],
+    );
+  }
+
+  Widget _actionCircle({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44.w,
+        height: 44.w,
+        decoration: BoxDecoration(
+          color: const Color(0xB5071D35),
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0x75FFFFFF)),
+        ),
+        child: Icon(icon, color: Colors.white, size: 20.sp),
+      ),
+    );
+  }
+
+  Widget _buildChatOverlay() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Messages
+        Container(
+          height: 150.h,
+          child: _comments.isEmpty
+              ? const SizedBox.shrink()
+              : ListView.builder(
+                  controller: _commentsScrollController,
+                  itemCount: _comments.length,
+                  itemBuilder: (context, i) {
+                    final c = _comments[i];
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 6.h),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (c.userAvatar != null && c.userAvatar!.isNotEmpty)
+                            ClipOval(
+                              child: Image.network(
+                                c.userAvatar!,
+                                width: 28.w,
+                                height: 28.w,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const SizedBox(),
+                              ),
+                            ),
+                          if (c.userAvatar != null && c.userAvatar!.isNotEmpty)
+                            SizedBox(width: 6.w),
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10.w, vertical: 7.h),
+                              decoration: BoxDecoration(
+                                color: const Color(0xB507192A),
+                                borderRadius: BorderRadius.circular(13.r),
+                                border: Border.all(
+                                    color: const Color(0x18FFFFFF)),
+                              ),
+                              child: RichText(
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.white,
+                                    height: 1.4,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: '${c.userName ?? 'User'}: ',
+                                      style: const TextStyle(
+                                          color: Color(0xFF7BE8E9),
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                    TextSpan(text: c.comment ?? ''),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+        SizedBox(height: 8.h),
+        // Chat input
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
+                height: 42.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xC906172E),
+                  borderRadius: BorderRadius.circular(22.r),
+                  border: Border.all(color: const Color(0x47FFFFFF)),
+                ),
+                child: TextField(
+                  controller: _commentController,
+                  style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: AppLocalizations.of(context)!.type_in_chat_ucf,
+                    hintStyle: TextStyle(
+                        color: const Color(0xFFD1DBE6), fontSize: 13.sp),
                   ),
+                  onSubmitted: (_) => _sendComment(),
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            GestureDetector(
+              onTap: _isProcessing ? null : _sendComment,
+              child: Container(
+                width: 42.w,
+                height: 42.w,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0ABFC4),
+                  shape: BoxShape.circle,
+                ),
+                child: _isProcessing
+                    ? Padding(
+                        padding: EdgeInsets.all(10.w),
+                        child: const CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(Icons.send_rounded,
+                        color: const Color(0xFF05394B), size: 20.sp),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // PHOTO RAIL
+  // ============================================================
+
+  Widget _buildPhotoRail() {
+    if (_productImages.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 13.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFE4EDF6)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0B15365A), blurRadius: 25, offset: Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                AppLocalizations.of(context)!.product_photos_ucf,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF102C4C),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_currentImageIndex + 1} / ${_productImages.length}',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF637A92),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          SizedBox(
+            height: 70.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _productImages.length,
+              separatorBuilder: (_, __) => SizedBox(width: 10.w),
+              itemBuilder: (context, index) {
+                final active = index == _currentImageIndex;
+                return GestureDetector(
+                  onTap: () => setState(() => _currentImageIndex = index),
+                  child: Container(
+                    width: 66.w,
+                    height: 70.h,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: active
+                            ? const Color(0xFF0ABFC4)
+                            : const Color(0xFFE0EAF2),
+                        width: active ? 3 : 2,
+                      ),
+                      color: Colors.white,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      _productImages[index],
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.image_outlined,
+                          color: Colors.grey,
+                          size: 24),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // SUMMARY (3 metrics)
+  // ============================================================
+
+  Widget _buildSummary() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFE4EDF6)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0B15365A), blurRadius: 25, offset: Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _product?.name ?? '',
+            style: TextStyle(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF102C4C),
+              letterSpacing: -0.5,
+              height: 1.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Expanded(child: _metricTimer()),
+              SizedBox(width: 10.w),
+              Expanded(child: _metricPrice()),
+              SizedBox(width: 10.w),
+              Expanded(child: _metricLeader()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricBox(
+      {required String label,
+      required Widget child,
+      Color? bgColor,
+      Color? labelColor,
+      Color? valueColor}) {
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: bgColor ?? const Color(0xFFF1F7FB),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: const Color(0xFFDCEAF5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              color: labelColor ?? const Color(0xFF637A92),
+              height: 1.3,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 4.h),
+          DefaultTextStyle(
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w900,
+              color: valueColor ?? const Color(0xFF102C4C),
+              fontFeatures: const [ui.FontFeature.tabularFigures()],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricTimer() {
+    String label;
+    String value;
+    Color? valColor;
+
+    if (_auctionStatus == "upcoming") {
+      label = '⏱ ${AppLocalizations.of(context)!.starts_in_upper}';
+      value = _formatTimeLeft(_timeUntilStart);
+    } else if (_auctionStatus == "ended") {
+      label = '⏱ ${AppLocalizations.of(context)!.ended_upper}';
+      value = '—';
+    } else {
+      label =
+          '⏱ ${_isEndingSoon ? AppLocalizations.of(context)!.ending_upper : AppLocalizations.of(context)!.time_left_upper}';
+      value = _formatTimeLeft(_timeLeft);
+      if (_isEndingSoon) valColor = const Color(0xFFDC3545);
+    }
+
+    return _metricBox(
+      label: label,
+      child: Text(value, style: TextStyle(color: valColor ?? const Color(0xFF008E9D))),
+      valueColor: valColor ?? const Color(0xFF008E9D),
+    );
+  }
+
+  Widget _metricPrice() {
+    return _metricBox(
+      label: AppLocalizations.of(context)!.current_bid_upper,
+      child: Text(_formatPrice(
+          _auctionStatus == "upcoming" ? _startingBid : _currentHighestBid)),
+    );
+  }
+
+  Widget _metricLeader() {
+    final display = _highestBidder.isEmpty
+        ? '—'
+        : (_highestBidder.length > 7
+            ? '${_highestBidder.substring(0, 7)}...'
+            : _highestBidder);
+    return _metricBox(
+      label: AppLocalizations.of(context)!.latest_bid_upper,
+      child: Text(display),
+    );
+  }
+
+  // ============================================================
+  // HOW IT WORKS
+  // ============================================================
+
+  Widget _buildHowItWorks() {
+    final isMobile = _screenWidth < 700;
+    final steps = [
+      {
+        'num': '1',
+        'icon': '☝️',
+        'title': AppLocalizations.of(context)!.how_step1_title,
+        'desc': AppLocalizations.of(context)!.how_step1_desc,
+      },
+      {
+        'num': '2',
+        'icon': '⏱️',
+        'title': AppLocalizations.of(context)!.how_step2_title,
+        'desc': AppLocalizations.of(context)!.how_step2_desc,
+      },
+      {
+        'num': '3',
+        'icon': '🏆',
+        'title': AppLocalizations.of(context)!.how_step3_title,
+        'desc': AppLocalizations.of(context)!.how_step3_desc,
+      },
+    ];
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+      padding: EdgeInsets.all(22.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFE4EDF6)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0B15365A), blurRadius: 25, offset: Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.how_title,
+            style: TextStyle(
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF102C4C),
+              letterSpacing: -0.45,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            AppLocalizations.of(context)!.how_subtitle,
+            style: TextStyle(
+                fontSize: 12.5.sp, color: const Color(0xFF637A92)),
+          ),
+          SizedBox(height: 19.h),
+          if (isMobile)
+            Column(
+              children: steps.map((s) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 11.h),
+                  child: _howStep(s, showBorder: false),
+                );
+              }).toList(),
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: steps.asMap().entries.map((e) {
+                final isLast = e.key == steps.length - 1;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: isLast ? 0 : 13.w),
+                    child: _howStep(e.value, showBorder: !isLast),
+                  ),
+                );
+              }).toList(),
+            ),
+          SizedBox(height: 16.h),
+          Divider(color: const Color(0xFFE4EDF6)),
+          SizedBox(height: 12.h),
+          Text(
+            AppLocalizations.of(context)!.how_note1,
+            style: TextStyle(
+                fontSize: 12.sp, color: const Color(0xFF637A92), height: 1.5),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            AppLocalizations.of(context)!.how_note2,
+            style: TextStyle(
+                fontSize: 12.sp, color: const Color(0xFF637A92), height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _howStep(Map<String, String> s, {required bool showBorder}) {
+    return Container(
+      padding: EdgeInsets.only(right: showBorder ? 13.w : 0),
+      decoration: showBorder
+          ? const BoxDecoration(
+              border: Border(right: BorderSide(color: Color(0xFFE4EDF6))))
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 29.w,
+            height: 29.w,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [Color(0xFF1870D5), Color(0xFF0ABFC4)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              s['num']!,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w800),
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Text(s['icon']!, style: TextStyle(fontSize: 26.sp, height: 1.15)),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s['title']!,
+                  style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF102C4C),
+                      height: 1.35),
+                ),
+                SizedBox(height: 5.h),
+                Text(
+                  s['desc']!,
+                  style: TextStyle(
+                      fontSize: 12.sp,
+                      color: const Color(0xFF637A92),
+                      height: 1.48),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // BUY NOW
+  // ============================================================
+
+  Widget _buildBuyNowCard() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+      padding: EdgeInsets.all(15.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: const Color(0xFFDCECF3)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0B102C4C), blurRadius: 16, offset: Offset(0, 5)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42.w,
+            height: 42.w,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F8FA),
+              borderRadius: BorderRadius.circular(13.r),
+            ),
+            child: Icon(Icons.open_in_new_rounded,
+                color: const Color(0xFF008FA5), size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.buy_now_ucf,
+                  style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF102C4C)),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  AppLocalizations.of(context)!.buy_now_subtitle,
+                  style: TextStyle(
+                      fontSize: 11.sp, color: const Color(0xFF637A92)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 10.w),
+          GestureDetector(
+            onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
+            child: Container(
+              padding:
+                  EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE9F8FB),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: const Color(0xFFC9EDF1)),
+              ),
+              child: _isBuyNowLoading
+                  ? SizedBox(
+                      width: 14.w,
+                      height: 14.w,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: MyTheme.accent_color))
+                  : Text(
+                      AppLocalizations.of(context)!.buy_now_ucf,
+                      style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF00869C)),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // REVIEWS ROW
+  // ============================================================
+
+  Widget _buildReviewsRow() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFE4EDF6)),
+      ),
+      child: GestureDetector(
+        onTap: _showReviewsModalDialog,
+        child: Row(
+          children: [
+            ...List.generate(5, (i) {
+              return Icon(
+                i < _rating.round() ? Icons.star : Icons.star_border,
+                size: 16.sp,
+                color: Colors.amber,
+              );
+            }),
+            SizedBox(width: 6.w),
+            Text(_rating.toStringAsFixed(1),
+                style: TextStyle(
+                    fontSize: 14.sp, fontWeight: FontWeight.w800)),
+            SizedBox(width: 8.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F7FB),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Text('$_reviewsCount',
+                  style:
+                      TextStyle(fontSize: 12.sp, color: const Color(0xFF637A92))),
+            ),
+            const Spacer(),
+            Icon(Icons.arrow_forward_ios,
+                size: 14.sp, color: const Color(0xFF637A92)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // COMMENTS SECTION (below stage — reviews, description, etc.)
+  // ============================================================
+
+  Widget _buildCommentsSection() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFE4EDF6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                AppLocalizations.of(context)!.product_details,
+                style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF102C4C)),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _openDescriptionModal,
+                child: Text(
+                  AppLocalizations.of(context)!.see_more_ucf,
+                  style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: MyTheme.accent_color),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            (_product?.description ?? '')
+                .replaceAll(RegExp(r'<[^>]*>'), '')
+                .trim(),
+            style: TextStyle(
+                fontSize: 13.sp,
+                color: const Color(0xFF102C4C),
+                height: 1.6),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // BID DOCK (slide-to-bid + manual)
+  // ============================================================
+
+  Widget _buildBidDock() {
+    final isLive = _auctionStatus == "live";
+    final label = !isLive
+        ? (_auctionStatus == "upcoming"
+            ? AppLocalizations.of(context)!.starts_soon_ucf
+            : AppLocalizations.of(context)!.ended_ucf)
+        : _slideOffset > 20
+            ? AppLocalizations.of(context)!.quick_bid_ucf
+            : '${AppLocalizations.of(context)!.slide_to_bid_ucf} · − ${_pointPerBid.toInt()} ${AppLocalizations.of(context)!.points_ucf}';
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(18.w, 13.h, 18.w, 13.h),
+        decoration: const BoxDecoration(
+          color: Color(0xEDFFFFFF),
+          border: Border(top: BorderSide(color: Color(0xFFDCEAF5))),
+          boxShadow: [
+            BoxShadow(
+                color: Color(0x1715365A), blurRadius: 35, offset: Offset(0, -12)),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Slide-to-bid slider
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxOffset =
+                      (constraints.maxWidth - _thumbSize - 10).clamp(0.0, double.infinity);
+
+                  return GestureDetector(
+                    onHorizontalDragStart: isLive
+                        ? (d) {
+                            setState(() {
+                              _thumbStartX = d.localPosition.dx;
+                              _isDragging = true;
+                            });
+                          }
+                        : null,
+                    onHorizontalDragUpdate: isLive
+                        ? (d) {
+                            if (!_isDragging) return;
+                            final dx = d.localPosition.dx - _thumbStartX;
+                            setState(() => _slideOffset =
+                                dx.clamp(0.0, maxOffset));
+                          }
+                        : null,
+                    onHorizontalDragEnd: isLive
+                        ? (_) {
+                            if (!_isDragging) return;
+                            _isDragging = false;
+                            final should =
+                                _slideOffset > maxOffset * 0.75;
+                            setState(() => _slideOffset = should ? maxOffset : 0);
+                            Future.delayed(
+                                Duration(milliseconds: should ? 200 : 300),
+                                () {
+                              if (mounted) setState(() => _slideOffset = 0);
+                            });
+                            if (should) _placeBidNow();
+                          }
+                        : null,
+                    child: Opacity(
+                      opacity: isLive ? 1.0 : 0.5,
+                      child: Container(
+                        height: 58.h,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0BBDBD), Color(0xFF1870D5)],
+                          ),
+                          borderRadius: BorderRadius.circular(17.r),
+                          border:
+                              Border.all(color: const Color(0xFF65E6E1)),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Fill
+                            Positioned(
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: _slideOffset + _thumbSize,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.27),
+                                  borderRadius: BorderRadius.circular(17.r),
+                                ),
+                              ),
+                            ),
+                            // Center text
+                            Center(
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                    left: 42.w, right: 8.w),
+                                child: Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Thumb
+                            Positioned(
+                              left: 5.w + _slideOffset,
+                              top: 5.h,
+                              child: Container(
+                                width: 49.w,
+                                height: 46.h,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(13.r),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                        color: Color(0x4D123A57),
+                                        blurRadius: 14,
+                                        offset: Offset(0, 4)),
+                                  ],
+                                ),
+                                child: _isProcessing
+                                    ? Padding(
+                                        padding: EdgeInsets.all(12.w),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: MyTheme.accent_color,
+                                        ),
+                                      )
+                                    : Icon(Icons.arrow_forward_rounded,
+                                        size: 26.sp,
+                                        color: const Color(0xFF1870D5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(width: 10.w),
+            // Manual bid button
+            GestureDetector(
+              onTap: isLive ? _showBidInputDialog : null,
+              child: Opacity(
+                opacity: isLive ? 1.0 : 0.5,
+                child: Container(
+                  height: 58.h,
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xEDFFFFFF),
+                    borderRadius: BorderRadius.circular(17.r),
+                    border: Border.all(color: const Color(0x80FFFFFF)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('▦',
+                          style: TextStyle(
+                              fontSize: 19.sp,
+                              color: const Color(0xFF1163A8))),
+                      SizedBox(width: 6.w),
+                      Text(
+                        !isLive
+                            ? (_auctionStatus == "upcoming"
+                                ? AppLocalizations.of(context)!.starts_soon_ucf
+                                : AppLocalizations.of(context)!.ended_ucf)
+                            : AppLocalizations.of(context)!.manual_bid_ucf,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1163A8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -1403,147 +2120,115 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // ============================================
-  // MODAL CONTROLS
-  // ============================================
+  // ============================================================
+  // DIALOGS
+  // ============================================================
 
-  void _openTitleModal() {
-    setState(() => _showTitleModal = true);
-    _showProductDetailsModal();
-  }
+  void _showBidInputDialog() {
+    if (_auctionStatus != "live") {
+      ToastComponent.showWarning(
+          AppLocalizations.of(context)!.auction_not_active);
+      return;
+    }
+    _bidController.text = _minNextBidNow.toStringAsFixed(2);
 
-  void _openReviewsModal() {
-    setState(() => _showReviewsModal = true);
-    _showReviewsModalDialog();
-  }
-
-  void _openAddReviewModal() {
-    _selectedRating = 0;
-    _reviewController.clear();
-    setState(() => _showAddReviewModal = true);
-    _showAddReviewModalDialog();
-  }
-
-  void _openBidHistoryModal() {
-    setState(() => _showBidHistoryModal = true);
-    _showBidHistoryModalDialog();
-  }
-
-  void _closeWinnerModal() {
-    setState(() => _showWinnerModal = false);
-  }
-
-  // ============================================
-  // RESPONSIVE HELPER
-  // ============================================
-  
-  double _getResponsiveFontSize(double smallSize, double largeSize) {
-    return _screenWidth < 400 ? smallSize : largeSize;
-  }
-
-  double _getResponsivePadding(double smallSize, double largeSize) {
-    return _screenWidth < 400 ? smallSize : largeSize;
-  }
-
-  double _getResponsiveSize(double smallSize, double largeSize) {
-    return _screenWidth < 400 ? smallSize : largeSize;
-  }
-
-  // ============================================
-  // MODAL DIALOGS
-  // ============================================
-
-  void _showProductDetailsModal() {
-    final modalWidth = _screenWidth * 0.95;
-    
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: modalWidth,
-          height: MediaQuery.of(context).size.height * 0.80,
-          padding: EdgeInsets.all(_getResponsivePadding(6, 10)),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
+        child: Padding(
+          padding: EdgeInsets.all(20.w),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    AppLocalizations.of(context)!.product_details,
-                    style: TextStyle(
-                      fontSize: _getResponsiveFontSize(14, 18),
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.your_bid_ucf,
+                      style: TextStyle(
+                          fontSize: 22.sp, fontWeight: FontWeight.w800),
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, size: _getResponsiveSize(20, 24)),
-                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close, size: 22.sp),
+                    onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
               ),
-              Divider(height: 1),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _product?.name ?? '',
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(16, 20),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      // Constrain the HTML content to the dialog's width
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SizedBox(
-                            width: constraints.maxWidth,
-                            child: Html(
-                              data: _product?.description ?? '',
-                              style: {
-                                "body": Style(
-                                  margin: Margins.zero,
-                                  padding: HtmlPaddings.zero,
-                                  fontSize: FontSize(_getResponsiveFontSize(11, 14)),
-                                ),
-                                // Force images to fit within the container width
-                                "img": Style(
-                                  width: Width(100, Unit.percent),
-                                  height: Height.auto(),
-                                ),
-                                // Prevent tables and pre from overflowing
-                                "table": Style(
-                                  width: Width(100, Unit.percent),
-                                ),
-                                "pre": Style(
-                                  width: Width(100, Unit.percent),
-                                  // whiteSpace: WhiteSpace.preWrap,
-                                  whiteSpace: WhiteSpace.pre,
-                                ),
-                                // Ensure iframes/videos don't overflow either
-                                "iframe": Style(
-                                  width: Width(100, Unit.percent),
-                                ),
-                                "video": Style(
-                                  width: Width(100, Unit.percent),
-                                ),
-                              },
-                              onLinkTap: (url, attributes, element) {
-                                if (url != null) {
-                                  // Optional: handle link taps
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+              SizedBox(height: 8.h),
+              Text(
+                '${AppLocalizations.of(context)!.enter_amount_higher_ucf} ${_formatPrice(_currentHighestBid)}.',
+                style: TextStyle(
+                    fontSize: 14.sp, color: const Color(0xFF637A92)),
+              ),
+              SizedBox(height: 12.h),
+              TextField(
+                controller: _bidController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                style: TextStyle(
+                    fontSize: 20.sp, fontWeight: FontWeight.w800),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14.r)),
+                  contentPadding: EdgeInsets.symmetric(
+                      horizontal: 14.w, vertical: 14.h),
                 ),
+              ),
+              SizedBox(height: 12.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        backgroundColor: const Color(0xFFEDF4FB),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(13.r)),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.close_ucf,
+                        style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF102C4C)),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isProcessing
+                          ? null
+                          : () {
+                              Navigator.pop(ctx);
+                              _submitCustomBid();
+                            },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        backgroundColor: MyTheme.accent_color,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(13.r)),
+                      ),
+                      child: _isProcessing
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text(
+                              AppLocalizations.of(context)!.confirm_bid_ucf,
+                              style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white),
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1552,126 +2237,166 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  void _showBidHistoryModalDialog() {
-    final modalWidth = _screenWidth * 0.95;
-    
+  void _openVideoModal() {
+    final url = _product?.videoLink ?? '';
+    if (url.isEmpty) {
+      ToastComponent.showInfo(
+          AppLocalizations.of(context)!.no_video_available_ucf);
+      return;
+    }
+    final videoId = _videoIdFromUrl(url);
+    if (videoId.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(AppLocalizations.of(context)!.product_video_ucf),
+          content: Text(url),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                  if (mounted) Navigator.pop(ctx);
+                }
+              },
+              child: Text(AppLocalizations.of(context)!.open_in_browser_ucf),
+            ),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(AppLocalizations.of(context)!.close_ucf)),
+          ],
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      builder: (ctx) {
+        final controller = YoutubePlayerController.fromVideoId(
+          videoId: videoId,
+          autoPlay: true,
+          params: const YoutubePlayerParams(showFullscreenButton: true),
+        );
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.all(20.w),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              children: [
+                YoutubePlayer(controller: controller),
+                Positioned(
+                  top: 4.w,
+                  right: 4.w,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      controller.close();
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openBidHistoryModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
         child: Container(
-          width: modalWidth,
-          height: MediaQuery.of(context).size.height * 0.80,
+          constraints: BoxConstraints(maxHeight: _screenWidth * 1.4),
+          padding: EdgeInsets.all(20.w),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: EdgeInsets.all(_getResponsivePadding(6, 8)),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.bid_history,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.bid_history_ucf,
                       style: TextStyle(
-                        fontSize: _getResponsiveFontSize(12, 16),
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 20.sp, fontWeight: FontWeight.w800),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close, size: _getResponsiveSize(18, 22)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 22.sp),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 12), vertical: _getResponsivePadding(6, 8)),
-                color: Colors.grey.shade100,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        AppLocalizations.of(context)!.bidder_ucf,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: _getResponsiveFontSize(7, 10),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        AppLocalizations.of(context)!.amount_ucf,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: _getResponsiveFontSize(7, 10),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        AppLocalizations.of(context)!.date_time_ucf,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: _getResponsiveFontSize(7, 10),
-                        ),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
+              Text(
+                '$_totalBids ${_totalBids == 1 ? AppLocalizations.of(context)!.bid_singular_ucf : AppLocalizations.of(context)!.bids_plural_ucf} · ${AppLocalizations.of(context)!.newest_first_ucf}',
+                style: TextStyle(
+                    fontSize: 12.sp, color: const Color(0xFF637A92)),
               ),
-              Expanded(
+              SizedBox(height: 12.h),
+              Flexible(
                 child: _bidHistory.isEmpty
-                    ? Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.no_bids_yet,
-                          style: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(vertical: 30.h),
+                        child: Center(
+                          child: Text(
+                            AppLocalizations.of(context)!.no_bids_yet_ucf,
+                            style: TextStyle(
+                                fontSize: 14.sp,
+                                color: const Color(0xFF637A92)),
+                          ),
                         ),
                       )
-                    : ListView.builder(
+                    : ListView.separated(
+                        shrinkWrap: true,
                         itemCount: _bidHistory.length,
-                        itemBuilder: (context, index) {
-                          final bid = _bidHistory[index];
-                          return Container(
-                            padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(8, 12), vertical: _getResponsivePadding(6, 8)),
-                            decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
-                            ),
+                        separatorBuilder: (_, __) => Divider(
+                            color: const Color(0xFFE6EFF6), height: 1),
+                        itemBuilder: (_, i) {
+                          final b = _bidHistory[i];
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10.h),
                             child: Row(
                               children: [
+                                Text(
+                                  '#${(_bidHistory.length - i).toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: const Color(0xFF94A5B7)),
+                                ),
+                                SizedBox(width: 10.w),
                                 Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    bid.userName ?? AppLocalizations.of(context)!.user_ucf,
-                                    style: TextStyle(fontSize: _getResponsiveFontSize(7, 12)),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        b.userName ?? AppLocalizations.of(context)!.user_ucf,
+                                        style: TextStyle(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w700),
+                                      ),
+                                      Text(
+                                        _formatDate(b.createdAt),
+                                        style: TextStyle(
+                                            fontSize: 11.sp,
+                                            color:
+                                                const Color(0xFF637A92)),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    _formatPrice(bid.amount ?? 0),
-                                    style: TextStyle(
-                                      fontSize: _getResponsiveFontSize(7, 12),
-                                      fontWeight: FontWeight.bold,
-                                      color: MyTheme.accent_color,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    _formatDateTime(bid.createdAt),
-                                    style: TextStyle(
-                                      fontSize: _getResponsiveFontSize(5, 9),
-                                      color: Colors.grey,
-                                    ),
-                                    textAlign: TextAlign.end,
-                                  ),
+                                Text(
+                                  _formatPrice(b.amount ?? 0),
+                                  style: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF007E94)),
                                 ),
                               ],
                             ),
@@ -1687,288 +2412,266 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _showReviewsModalDialog() {
-    final modalWidth = _screenWidth * 0.95;
-    
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Container(
-              width: modalWidth,
-              height: MediaQuery.of(context).size.height * 0.90,
-              child: Column(
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: _screenWidth * 1.6),
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(_getResponsivePadding(6, 8)),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${AppLocalizations.of(context)!.all_reviews} ($_reviewsCount)',
-                          style: TextStyle(
-                            fontSize: _getResponsiveFontSize(12, 16),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close, size: _getResponsiveSize(18, 22)),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ),
                   Expanded(
-                    child: _reviews.isEmpty
-                        ? Center(
-                            child: Text(
-                              AppLocalizations.of(context)!.no_reviews_yet,
-                              style: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
-                            itemCount: _reviews.length,
-                            itemBuilder: (context, index) {
-                              final review = _reviews[index];
-                              return Container(
-                                padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(6, 8)),
-                                decoration: BoxDecoration(
-                                  border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Row(
-                                          children: List.generate(5, (starIndex) {
-                                            return Icon(
-                                              starIndex < (review.rating ?? 0)
-                                                  ? Icons.star
-                                                  : Icons.star_border,
-                                              size: _getResponsiveSize(10, 14),
-                                              color: Colors.amber,
-                                            );
-                                          }),
-                                        ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          _formatDate(review.createdAt),
-                                          style: TextStyle(
-                                            fontSize: _getResponsiveFontSize(8, 11),
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      review.comment ?? '',
-                                      style: TextStyle(
-                                        fontSize: _getResponsiveFontSize(10, 14),
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      review.userName ?? AppLocalizations.of(context)!.user_ucf,
-                                      style: TextStyle(
-                                        fontSize: _getResponsiveFontSize(9, 12),
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                    child: Text(
+                      '${AppLocalizations.of(context)!.all_reviews_ucf} ($_reviewsCount)',
+                      style: TextStyle(
+                          fontSize: 18.sp, fontWeight: FontWeight.w800),
+                    ),
                   ),
-                  Container(
-                    padding: EdgeInsets.all(_getResponsivePadding(12, 16)),
-                    decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _isProcessing
-                          ? null
-                          : () {
-                              Navigator.pop(context);
-                              _showAddReviewModalDialog();
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyTheme.accent_color,
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 14)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        minimumSize: Size(double.infinity, 0),
-                      ),
-                      child: _isProcessing
-                          ? _buildButtonLoader()
-                          : Text(
-                              AppLocalizations.of(context)!.write_a_review,
-                              style: TextStyle(
-                                fontSize: _getResponsiveFontSize(11, 14),
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 22.sp),
+                    onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
               ),
-            ),
-          );
-        },
+              Divider(),
+              Flexible(
+                child: _reviews.isEmpty
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(vertical: 30.h),
+                        child: Center(
+                            child: Text(
+                                AppLocalizations.of(context)!.no_reviews_yet_ucf)),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _reviews.length,
+                        separatorBuilder: (_, __) => Divider(),
+                        itemBuilder: (_, i) {
+                          final r = _reviews[i];
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    ...List.generate(
+                                      5,
+                                      (s) => Icon(
+                                        s < (r.rating ?? 0)
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        size: 14.sp,
+                                        color: Colors.amber,
+                                      ),
+                                    ),
+                                    SizedBox(width: 6.w),
+                                    Text(_formatDate(r.createdAt),
+                                        style: TextStyle(
+                                            fontSize: 11.sp,
+                                            color: const Color(0xFF637A92))),
+                                  ],
+                                ),
+                                SizedBox(height: 6.h),
+                                Text(r.comment ?? '',
+                                    style: TextStyle(fontSize: 13.sp)),
+                                SizedBox(height: 4.h),
+                                Text(r.userName ?? '',
+                                    style: TextStyle(
+                                        fontSize: 11.sp,
+                                        color: const Color(0xFF637A92))),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              SizedBox(height: 8.h),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showAddReviewDialog();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyTheme.accent_color,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r)),
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  minimumSize: Size(double.infinity, 0),
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.write_review_ucf,
+                  style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  void _showAddReviewModalDialog() {
-    double tempRating = 0;
-    TextEditingController tempController = TextEditingController();
-    final modalWidth = _screenWidth * 0.9;
+  void _showAddReviewDialog() {
+    double temp = 0;
+    final tempCtrl = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Container(
-              width: modalWidth,
-              height: MediaQuery.of(context).size.height * 0.8,
-              padding: EdgeInsets.all(_getResponsivePadding(16, 24)),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.write_a_review,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          child: Padding(
+            padding: EdgeInsets.all(20.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context)!.write_review_ucf,
                         style: TextStyle(
-                          fontSize: _getResponsiveFontSize(14, 18),
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 18.sp, fontWeight: FontWeight.w800),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.close, size: _getResponsiveSize(18, 22)),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: _getResponsiveSize(8, 12)),
-                  Text(
-                    AppLocalizations.of(context)!.rating_ucf,
-                    style: TextStyle(
-                      fontSize: _getResponsiveFontSize(11, 14),
-                      fontWeight: FontWeight.w500,
                     ),
+                    IconButton(
+                      icon: Icon(Icons.close, size: 22.sp),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                Text(AppLocalizations.of(context)!.rating_ucf,
+                    style: TextStyle(
+                        fontSize: 13.sp, fontWeight: FontWeight.w500)),
+                SizedBox(height: 6.h),
+                RatingBar.builder(
+                  initialRating: 0,
+                  minRating: 1,
+                  itemCount: 5,
+                  itemSize: 30.sp,
+                  itemBuilder: (_, __) =>
+                      const Icon(Icons.star, color: Colors.amber),
+                  onRatingUpdate: (v) => setSt(() => temp = v),
+                ),
+                SizedBox(height: 12.h),
+                Text(AppLocalizations.of(context)!.review_ucf,
+                    style: TextStyle(
+                        fontSize: 13.sp, fontWeight: FontWeight.w500)),
+                SizedBox(height: 6.h),
+                TextField(
+                  controller: tempCtrl,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText:
+                        AppLocalizations.of(context)!.share_experience_hint,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.r)),
                   ),
-                  SizedBox(height: _getResponsiveSize(4, 8)),
-                  RatingBar.builder(
-                    initialRating: 0,
-                    minRating: 1,
-                    direction: Axis.horizontal,
-                    allowHalfRating: false,
-                    itemCount: 5,
-                    itemSize: _getResponsiveSize(22, 30),
-                    itemBuilder: (context, _) =>
-                        Icon(Icons.star, color: Colors.amber),
-                    onRatingUpdate: (rating) {
-                      tempRating = rating;
-                      setModalState(() {});
+                ),
+                SizedBox(height: 12.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (temp == 0) {
+                        ToastComponent.showWarning(
+                            AppLocalizations.of(context)!.please_select_rating);
+                        return;
+                      }
+                      if (tempCtrl.text.trim().isEmpty) {
+                        ToastComponent.showWarning(
+                            AppLocalizations.of(context)!.please_write_review);
+                        return;
+                      }
+                      _selectedRating = temp;
+                      _reviewController.text = tempCtrl.text;
+                      Navigator.pop(ctx);
+                      _submitReview();
                     },
-                  ),
-                  SizedBox(height: _getResponsiveSize(8, 12)),
-                  Text(
-                    AppLocalizations.of(context)!.review_ucf,
-                    style: TextStyle(
-                      fontSize: _getResponsiveFontSize(11, 14),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: _getResponsiveSize(4, 8)),
-                  TextField(
-                    controller: tempController,
-                    maxLines: 4,
-                    style: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.share_experience_hint,
-                      hintStyle: TextStyle(fontSize: _getResponsiveFontSize(11, 14)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 12), vertical: _getResponsivePadding(8, 12)),
-                    ),
-                  ),
-                  SizedBox(height: _getResponsiveSize(12, 16)),
-                  ElevatedButton(
-                    onPressed: _isProcessing
-                        ? null
-                        : () async {
-                            if (tempRating == 0) {
-                              ToastComponent.showWarning(AppLocalizations.of(context)!.please_select_rating);
-                              return;
-                            }
-                            if (tempController.text.trim().isEmpty) {
-                              ToastComponent.showWarning(AppLocalizations.of(context)!.please_write_review);
-                              return;
-                            }
-                            Navigator.pop(context);
-                            setState(() => _isProcessing = true);
-
-                            try {
-                              final response =
-                                  await _productRepository.addProductReview(
-                                _product!.id ?? 0,
-                                tempRating.toInt(),
-                                tempController.text,
-                              );
-
-                              if (mounted) {
-                                setState(() => _isProcessing = false);
-                              }
-
-                              if (response.success == true) {
-                                ToastComponent.showSuccess(AppLocalizations.of(context)!.review_submitted);
-                                await _fetchReviews();
-                                await _pollData();
-                                setState(() {});
-                              } else {
-                                ToastComponent.showError(response.message ?? AppLocalizations.of(context)!.error_submitting_review);
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                setState(() => _isProcessing = false);
-                              }
-                              ToastComponent.showError(AppLocalizations.of(context)!.error_submitting_review);
-                            }
-                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyTheme.accent_color,
-                      padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(10, 14)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: Size(double.infinity, 0),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r)),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
                     ),
-                    child: _isProcessing
-                        ? _buildButtonLoader()
-                        : Text(
-                            AppLocalizations.of(context)!.submit_review,
-                            style: TextStyle(
-                              fontSize: _getResponsiveFontSize(11, 14),
-                              color: Colors.white,
-                            ),
-                          ),
+                    child: Text(
+                      AppLocalizations.of(context)!.submit_review_ucf,
+                      style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openDescriptionModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: _screenWidth * 1.6),
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.product_details,
+                      style: TextStyle(
+                          fontSize: 18.sp, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 22.sp),
+                    onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
               ),
-            ),
-          );
-        },
+              Divider(),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Html(
+                    data: _product?.description ?? '',
+                    style: {
+                      "body": Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                        fontSize: FontSize(14.sp),
+                      ),
+                      "img": Style(
+                        width: Width(100, Unit.percent),
+                        height: Height.auto(),
+                      ),
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1976,98 +2679,88 @@ class _ProductDetailsState extends State<ProductDetails>
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
-    final productId = _product?.id ?? 0;
-    final userId = _winnerData?.userId ?? 0;
-    final highestBid = _winnerData?.amount ?? 0.0;
-    
-    print('🏆 Winner - Product ID: $productId, Winner User ID: $userId, Amount: $highestBid');
-    
     if (is_logged_in.$ && _winnerData?.userId == _userInfo?.id) {
-      print('✅ Current user is the winner! Sending notification...');
-      _productRepository.sendWinnerNotification(productId, userId, highestBid);
-    } else {
-      print('❌ Current user is NOT the winner (or not logged in)');
+      _productRepository.sendWinnerNotification(
+        _product?.id ?? 0,
+        _winnerData?.userId ?? 0,
+        _winnerData?.amount ?? 0,
+      );
     }
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
+      builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          padding: EdgeInsets.all(_getResponsivePadding(16, 24)),
+          padding: EdgeInsets.all(24.w),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [Color(0xFF667eea), Color(0xFF764ba2)]),
-            borderRadius: BorderRadius.circular(32),
+            gradient: const LinearGradient(
+                colors: [Color(0xFF667EEA), Color(0xFF764BA2)]),
+            borderRadius: BorderRadius.circular(32.r),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🏆', style: TextStyle(fontSize: _getResponsiveSize(36, 48))),
-              SizedBox(height: _getResponsiveSize(4, 8)),
+              Text('🏆', style: TextStyle(fontSize: 48.sp)),
+              SizedBox(height: 8.h),
               Text(
                 AppLocalizations.of(context)!.auction_ended_exclamation,
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(18, 24),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white),
               ),
-              SizedBox(height: _getResponsiveSize(8, 12)),
+              SizedBox(height: 12.h),
               CircleAvatar(
-                radius: _getResponsiveSize(32, 50),
+                radius: 50.w,
                 backgroundImage: NetworkImage(_winnerData!.avatar ?? ''),
                 child: _winnerData!.avatar == null
-                    ? Icon(Icons.person, size: _getResponsiveSize(24, 40))
+                    ? Icon(Icons.person, size: 40.sp)
                     : null,
               ),
-              SizedBox(height: _getResponsiveSize(6, 10)),
+              SizedBox(height: 10.h),
               Text(
-                _winnerData!.userName ?? AppLocalizations.of(context)!.winner_ucf,
+                _winnerData!.userName ??
+                    AppLocalizations.of(context)!.winner_ucf,
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(14, 20),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white),
               ),
-              SizedBox(height: _getResponsiveSize(2, 4)),
+              SizedBox(height: 6.h),
               Text(
                 _formatPrice(_winnerData!.amount ?? 0),
                 style: TextStyle(
-                  fontSize: _getResponsiveFontSize(18, 24),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber,
-                ),
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.amber),
               ),
-              SizedBox(height: _getResponsiveSize(6, 10)),
+              SizedBox(height: 12.h),
               Text(
                 AppLocalizations.of(context)!.congratulations_to_winner,
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(10, 14),
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 13.sp, color: Colors.white70),
               ),
-              SizedBox(height: _getResponsiveSize(12, 16)),
+              SizedBox(height: 16.h),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _winnerModalShown = true;
-                  });
+                  Navigator.pop(ctx);
+                  setState(() => _winnerModalShown = true);
                   _pollData();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                      borderRadius: BorderRadius.circular(30.r)),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.close_ucf,
                   style: TextStyle(
-                    fontSize: _getResponsiveFontSize(10, 14),
-                    color: MyTheme.accent_color,
-                  ),
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w800,
+                      color: MyTheme.accent_color),
                 ),
               ),
             ],
@@ -2077,1622 +2770,31 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  void _showFullImage(String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          child: Stack(
-            children: [
-              PhotoView(
-                imageProvider: NetworkImage(imageUrl),
-                backgroundDecoration: BoxDecoration(color: Colors.black),
-              ),
-              Positioned(
-                top: 40,
-                right: 16,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.close, size: _getResponsiveSize(18, 24), color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // ============================================================
+  // SHIMMER
+  // ============================================================
 
-  // ============================================
-  // FULL-SCREEN IMAGE VIEWER
-  // ============================================
-
-  void _showFullImageFromThumbnail(int selectedIndex) {
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          int currentIndex = selectedIndex;
-          
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: EdgeInsets.zero,
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black,
-              child: Stack(
-                children: [
-                  CarouselSlider(
-                    carouselController: _fullScreenCarouselController,
-                    options: CarouselOptions(
-                      height: double.infinity,
-                      viewportFraction: 1.0,
-                      enableInfiniteScroll: false,
-                      initialPage: selectedIndex,
-                      autoPlay: false,
-                      enlargeCenterPage: false,
-                      scrollPhysics: const BouncingScrollPhysics(),
-                      onPageChanged: (index, reason) {
-                        currentIndex = index;
-                        setModalState(() {});
-                      },
-                    ),
-                    items: _productImages.map((image) {
-                      return Builder(
-                        builder: (context) => Center(
-                          child: PhotoView(
-                            imageProvider: NetworkImage(image),
-                            backgroundDecoration: const BoxDecoration(
-                              color: Colors.black,
-                            ),
-                            minScale: PhotoViewComputedScale.contained,
-                            maxScale: PhotoViewComputedScale.covered * 2.0,
-                            initialScale: PhotoViewComputedScale.contained,
-                            heroAttributes: PhotoViewHeroAttributes(tag: image),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
-                    right: _getResponsiveSize(11, 19),
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: _getResponsiveSize(18, 24),
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: _getResponsiveSize(30, 50),
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _getResponsivePadding(12, 18),
-                          vertical: _getResponsivePadding(4, 8),
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(_getResponsiveSize(12, 20)),
-                        ),
-                        child: Text(
-                          '${currentIndex + 1} / ${_productImages.length}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: _getResponsiveFontSize(10, 14),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_productImages.length > 1) ...[
-                    Positioned(
-                      left: _getResponsiveSize(6, 12),
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (currentIndex > 0) {
-                              _fullScreenCarouselController.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
-                            decoration: BoxDecoration(
-                              color: currentIndex > 0 
-                                  ? Colors.black54 
-                                  : Colors.black26,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.arrow_back_ios,
-                              size: _getResponsiveSize(16, 22),
-                              color: currentIndex > 0 
-                                  ? Colors.white 
-                                  : Colors.white38,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: _getResponsiveSize(6, 12),
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            if (currentIndex < _productImages.length - 1) {
-                              _fullScreenCarouselController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
-                            decoration: BoxDecoration(
-                              color: currentIndex < _productImages.length - 1 
-                                  ? Colors.black54 
-                                  : Colors.black26,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              size: _getResponsiveSize(16, 22),
-                              color: currentIndex < _productImages.length - 1 
-                                  ? Colors.white 
-                                  : Colors.white38,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ============================================
-  // GET USER INFO FOR WINNER CHECK
-  // ============================================
-  Future<void> _fetchUserInfo() async {
-    if (!is_logged_in.$) return;
-    try {
-      final response = await _profileRepository.getUserInfoResponse();
-      if (response.success == true && response.data != null && response.data!.isNotEmpty) {
-        setState(() {
-          _userInfo = response.data![0];
-        });
-      }
-    } catch (e) {
-      print('Error fetching user info: $e');
-    }
-  }
-
-  // ============================================
-  // HELPER METHODS
-  // ============================================
-
-  String _formatTime(String? dateTime) {
-    if (dateTime == null) return '';
-    try {
-      final date = DateTime.parse(dateTime);
-      final now = DateTime.now();
-      final diff = now.difference(date);
-
-      if (diff.inDays > 0) return '${diff.inDays}d ago';
-      if (diff.inHours > 0) return '${diff.inHours}h ago';
-      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-      return '${diff.inSeconds}s ago';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  String _formatDate(String? dateTime) {
-    if (dateTime == null) return '';
-    try {
-      final date = DateTime.parse(dateTime);
-      return '${date.day} ${_getMonthName(date.month)} ${date.year}';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  String _formatDateTime(String? dateTime) {
-    if (dateTime == null || dateTime.isEmpty) return '';
-    return dateTime;
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return months[month - 1];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    _screenWidth = MediaQuery.of(context).size.width;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: _isLoading
-          ? _buildShimmerLoading()
-          : RefreshIndicator(
-              key: _refreshIndicatorKey,
-              onRefresh: _fetchAllData,
-              child: _buildMobileLayout(),
-            ),
-    );
-  }
-
-  // ============================================
-  // SHIMMER LOADING
-  // ============================================
-
-  Widget _buildShimmerLoading() {
+  Widget _buildShimmer() {
     return SingleChildScrollView(
       child: Column(
         children: [
-          ShimmerHelper().buildBasicShimmer(height: 375),
-          SizedBox(height: 10),
+          ShimmerHelper().buildBasicShimmer(height: 470.h),
+          SizedBox(height: 10.h),
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.w),
             child: Column(
               children: [
-                ShimmerHelper().buildBasicShimmer(
-                    height: 30, width: double.infinity),
-                SizedBox(height: 10),
-                ShimmerHelper().buildBasicShimmer(height: 20, width: 150),
-                SizedBox(height: 10),
-                ShimmerHelper().buildBasicShimmer(height: 50),
-                SizedBox(height: 10),
-                ShimmerHelper().buildBasicShimmer(height: 50),
+                ShimmerHelper()
+                    .buildBasicShimmer(height: 30.h, width: double.infinity),
+                SizedBox(height: 10.h),
+                ShimmerHelper().buildBasicShimmer(height: 20.h, width: 150.w),
+                SizedBox(height: 10.h),
+                ShimmerHelper().buildBasicShimmer(height: 60.h),
               ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  // ============================================
-  // TIMER WIDGETS
-  // ============================================
-
-  Widget _buildTimerUnit(String value, String label, {bool isEndingSoon = false, bool showColon = false}) {
-    if (label == 's' && _timeLeft.inDays > 0) {
-      return const SizedBox.shrink(); 
-    }
-    
-    List<Widget> children = [
-      Container(
-        margin: EdgeInsets.only(right: _getResponsiveSize(3, 6)),
-        padding: EdgeInsets.symmetric(horizontal: _getResponsiveSize(5, 9), vertical: _getResponsiveSize(5, 9)),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F4F8),
-          borderRadius: BorderRadius.circular(_getResponsiveSize(8, 16)),
-          border: Border.all(
-            color: MyTheme.accent_color,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: _getResponsiveFontSize(14, 19),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(width: _getResponsiveSize(1.5, 3)),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: _getResponsiveFontSize(7, 11),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ];
-    
-    if (showColon) {
-      children.add(
-        Padding(
-          padding: EdgeInsets.only(right: _getResponsiveSize(1.5, 3)),
-          child: Text(
-            ':',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: _getResponsiveFontSize(12, 19),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      );
-    }
-    
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: children,
-    );
-  }
-
-  // ============================================
-  // TIMER ROW
-  // ============================================
-
-  Widget _buildTimerRow() {
-    if (_auctionStatus == "upcoming") {
-      return _buildUpcomingTimerRow();
-    } else if (_auctionStatus == "ended") {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context)!.auction_ended,
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: _getResponsiveFontSize(10, 14),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 2),
-          Text(
-            AppLocalizations.of(context)!.no_bids_available,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: _getResponsiveFontSize(8, 11),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return _buildEndingTimerRow();
-    }
-  }
-
-  Widget _buildUpcomingTimerRow() {
-    final components = _getUpcomingTimeComponents();
-    final days = components['days'] as String;
-    final hours = components['hours'] as String;
-    final minutes = components['minutes'] as String;
-    final seconds = components['seconds'] as String;
-    final showDays = components['showDays'] as bool;
-    final showSeconds = components['showSeconds'] as bool;
-
-    List<Widget> timerUnits = [];
-
-    if (showDays) {
-      timerUnits.add(_buildTimerUnit(days, 'd', showColon: true));
-    }
-    timerUnits.add(_buildTimerUnit(hours, 'h', showColon: true));
-    timerUnits.add(_buildTimerUnit(minutes, 'm', showColon: showSeconds));
-    if (showSeconds) {
-      timerUnits.add(_buildTimerUnit(seconds, 's', showColon: false));
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.starts_in,
-          style: TextStyle(
-            color: Colors.orange,
-            fontSize: _getResponsiveFontSize(8, 11),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Row(
-          children: timerUnits,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEndingTimerRow() {
-    final components = _getTimeComponents();
-    final days = components['days'] as String;
-    final hours = components['hours'] as String;
-    final minutes = components['minutes'] as String;
-    final seconds = components['seconds'] as String;
-    final showDays = components['showDays'] as bool;
-    final showSeconds = components['showSeconds'] as bool;
-
-    List<Widget> timerUnits = [];
-
-    if (showDays) {
-      timerUnits.add(_buildTimerUnit(days, 'd', isEndingSoon: _isEndingSoon, showColon: true));
-    }
-    timerUnits.add(_buildTimerUnit(hours, 'h', isEndingSoon: _isEndingSoon, showColon: true));
-    timerUnits.add(_buildTimerUnit(minutes, 'm', isEndingSoon: _isEndingSoon, showColon: showSeconds));
-    if (showSeconds) {
-      timerUnits.add(_buildTimerUnit(seconds, 's', isEndingSoon: _isEndingSoon, showColon: false));
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _isEndingSoon 
-              ? AppLocalizations.of(context)!.ending_soon_ucf
-              : AppLocalizations.of(context)!.time_left,
-          style: TextStyle(
-            color: _isEndingSoon ? Colors.red : Colors.white70,
-            fontSize: _getResponsiveFontSize(8, 11),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Row(
-          children: timerUnits,
-        ),
-      ],
-    );
-  }
-
-  // ============================================
-  // Icon Circle with Custom Image
-  // ============================================
-
-  Widget _buildIconCircleWithImage({
-    required String imagePath,
-    required VoidCallback onTap,
-    bool isLoading = false,
-    IconData? fallbackIcon,
-  }) {
-    final size = _getResponsiveSize(45, 56);
-    final iconSize = _getResponsiveSize(22, 28);
-    
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: isLoading
-            ? SizedBox(
-                height: _getResponsiveSize(14, 18),
-                width: _getResponsiveSize(14, 18),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: MyTheme.accent_color,
-                ),
-              )
-            : Padding(
-                padding: EdgeInsets.all(_getResponsiveSize(8, 12)),
-                child: Image.asset(
-                  imagePath,
-                  height: iconSize,
-                  width: iconSize,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    if (imagePath.contains('product_details')) {
-                      return Icon(
-                        Icons.info_outline,
-                        size: iconSize,
-                        color: Colors.black87,
-                      );
-                    } else if (imagePath.contains('bid_history')) {
-                      return Icon(
-                        Icons.history,
-                        size: iconSize,
-                        color: Colors.black87,
-                      );
-                    }
-                    return Icon(
-                      Icons.image_not_supported,
-                      size: iconSize,
-                      color: Colors.black87,
-                    );
-                  },
-                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                    if (wasSynchronouslyLoaded) {
-                      return child;
-                    }
-                    return frame == null
-                        ? SizedBox(
-                            height: iconSize,
-                            width: iconSize,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: MyTheme.accent_color,
-                              ),
-                            ),
-                          )
-                        : child;
-                  },
-                ),
-              ),
-      ),
-    );
-  }
-
-  // ============================================
-  // MOBILE WIDGETS
-  // ============================================
-
-  Widget _buildIconCircle({
-    required IconData icon,
-    bool isActive = false,
-    required VoidCallback onTap,
-    bool isLoading = false,
-  }) {
-    final size = _getResponsiveSize(45, 56);
-    final iconSize = _getResponsiveSize(22, 28);
-    
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: isLoading
-            ? SizedBox(
-                height: _getResponsiveSize(14, 18),
-                width: _getResponsiveSize(14, 18),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: MyTheme.accent_color,
-                ),
-              )
-            : Icon(
-                icon,
-                color: isActive ? MyTheme.accent_color : Colors.black87,
-                size: iconSize,
-              ),
-      ),
-    );
-  }
-
-  Widget _buildMoreMenuItem({
-    required IconData icon,
-    required String text,
-    required VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(13, 18), vertical: _getResponsivePadding(13, 18)),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 1)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: _getResponsiveSize(17, 21), color: Colors.grey.shade700),
-            SizedBox(width: _getResponsiveSize(8, 12)),
-            Text(text,
-                style: TextStyle(
-                  fontSize: _getResponsiveFontSize(10, 13),
-                  color: Colors.grey.shade800,
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value) {
-    return Container(
-      padding: EdgeInsets.all(_getResponsivePadding(6, 10)),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label,
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(9, 12),
-                color: Colors.grey.shade600,
-              )),
-          SizedBox(height: 1),
-          Text(value,
-              style: TextStyle(
-                fontSize: _getResponsiveFontSize(12, 16),
-                fontWeight: FontWeight.bold,
-              )),
-        ],
-      ),
-    );
-  }
-
-  // ============================================
-  // MOBILE LAYOUT
-  // ============================================
-
-  Widget _buildMobileLayout() {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.75;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            color: MyTheme.accent_color,
-            backgroundColor: Colors.white,
-            onRefresh: _fetchAllData,
-            child: SingleChildScrollView(
-              controller: _mainScrollController,
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(bottom: _getResponsiveSize(60, 80)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Stack(
-                    children: [
-                      CarouselSlider(
-                        options: CarouselOptions(
-                          height: imageHeight,
-                          viewportFraction: 1,
-                          autoPlay: true,
-                          onPageChanged: (index, reason) {
-                            setState(() => _currentImageIndex = index);
-                          },
-                        ),
-                        items: _productImages.map((image) {
-                          return Builder(
-                            builder: (context) => GestureDetector(
-                              onTap: () => _showFullImage(image),
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  image: DecorationImage(
-                                    image: NetworkImage(image),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      Container(
-                        height: imageHeight,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            stops: const [0.0, 0.15, 0.30, 0.50, 0.70, 0.85, 1.0],
-                            colors: [
-                              Colors.black.withOpacity(0.9),
-                              Colors.black.withOpacity(0.5),
-                              Colors.black.withOpacity(0.2),
-                              Colors.black.withOpacity(0.1),
-                              Colors.black.withOpacity(0.3),
-                              Colors.black.withOpacity(0.7),
-                              Colors.black.withOpacity(0.95),
-                            ],
-                          ),
-                        ),
-                      ),
-                      _buildCircularCountdown(),
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
-                        right: _getResponsiveSize(10, 18),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Builder(
-                              builder: (context) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _showMoreMenu = !_showMoreMenu;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: _getResponsiveSize(45, 57),
-                                    height: _getResponsiveSize(45, 57),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: _isProcessing
-                                        ? SizedBox(
-                                            height: _getResponsiveSize(14, 18),
-                                            width: _getResponsiveSize(14, 18),
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: MyTheme.accent_color,
-                                            ),
-                                          )
-                                        : Icon(
-                                            Icons.more_vert,
-                                            color: Colors.black87,
-                                            size: _getResponsiveSize(20, 28),
-                                          ),
-                                  ),
-                                );
-                              },
-                            ),
-                            SizedBox(height: _getResponsiveSize(6, 10)),
-                            _buildIconCircleWithImage(
-                              imagePath: 'assets/bid_history.png',
-                              onTap: _openBidHistoryModal,
-                              isLoading: _isProcessing,
-                              fallbackIcon: Icons.history,
-                            ),
-                            SizedBox(height: _getResponsiveSize(6, 10)),
-                            _buildIconCircleWithImage(
-                              imagePath: 'assets/product_details.png',
-                              onTap: _openTitleModal,
-                              isLoading: _isProcessing,
-                              fallbackIcon: Icons.info_outline,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + _getResponsiveSize(6, 10),
-                        left: _getResponsiveSize(11, 19),
-                        child: _buildIconCircle(
-                          icon: Icons.arrow_back,
-                          onTap: () => Navigator.pop(context),
-                          isLoading: false,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: _getResponsiveSize(135, 175),
-                        left: _getResponsiveSize(10, 16),
-                        child: Container(
-                          width: _screenWidth * 0.74,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.025),
-                            borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.015), width: 1),
-                          ),
-                          padding: EdgeInsets.all(_getResponsiveSize(6, 10)),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height: _getResponsiveSize(200, 280),
-                                child: _comments.isEmpty
-                                    ? Center(
-                                        child: Text(
-                                          AppLocalizations.of(context)!.no_comments_yet,
-                                          style: TextStyle(
-                                            color: Colors.white54,
-                                            fontSize: _getResponsiveFontSize(9, 12),
-                                          ),
-                                        ),
-                                      )
-                                    : ListView.builder(
-                                        controller: _commentsScrollController,
-                                        physics: const ClampingScrollPhysics(),
-                                        itemCount: _comments.length,
-                                        itemBuilder: (context, index) {
-                                          final comment = _comments[index];
-                                          return Padding(
-                                            padding: EdgeInsets.only(bottom: _getResponsiveSize(3, 5)),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: _getResponsiveSize(11, 17),
-                                                  backgroundImage:
-                                                      NetworkImage(comment
-                                                              .userAvatar ??
-                                                          ''),
-                                                  child: comment
-                                                          .userAvatar ==
-                                                      null
-                                                      ? Icon(Icons.person,
-                                                          size: _getResponsiveSize(8, 14),
-                                                          color: Colors
-                                                              .white54)
-                                                      : null,
-                                                ),
-                                                SizedBox(width: _getResponsiveSize(4, 8)),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        comment.userName ??
-                                                            AppLocalizations.of(context)!.user_ucf,
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .white,
-                                                          fontSize: _getResponsiveFontSize(8, 10),
-                                                          fontWeight:
-                                                              FontWeight
-                                                                  .w600,
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        comment.comment ??
-                                                            '',
-                                                        style: TextStyle(
-                                                          color: Colors
-                                                              .white70,
-                                                          fontSize: _getResponsiveFontSize(7, 10),
-                                                        ),
-                                                      ),
-                                                      Row(
-                                                        children: [
-                                                          GestureDetector(
-                                                            onTap: () =>
-                                                                _likeComment(
-                                                                    comment
-                                                                        .id ??
-                                                                        0),
-                                                            child: Text(
-                                                              '${comment.likesCount} ${AppLocalizations.of(context)!.likes_ucf}',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white54,
-                                                                fontSize: _getResponsiveFontSize(6, 9),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          SizedBox(width: _getResponsiveSize(6, 9)),
-                                                          GestureDetector(
-                                                            onTap: () =>
-                                                                _replyToComment(
-                                                                    comment
-                                                                        .userName ??
-                                                                    AppLocalizations.of(context)!.user_ucf),
-                                                            child: Text(
-                                                              AppLocalizations.of(context)!.reply_ucf,
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white54,
-                                                                fontSize: _getResponsiveFontSize(6, 9),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                              ),
-                              SizedBox(height: _getResponsiveSize(4, 6)),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: _getResponsiveSize(30, 38),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(_getResponsiveSize(8, 12)),
-                                      ),
-                                      child: TextField(
-                                        controller: _commentController,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: _getResponsiveFontSize(9, 12),
-                                        ),
-                                        decoration: InputDecoration(
-                                          hintText: AppLocalizations.of(context)!.add_comment_hint,
-                                          hintStyle: TextStyle(
-                                            color: Colors.white54,
-                                            fontSize: _getResponsiveFontSize(9, 12),
-                                          ),
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: _getResponsiveSize(12, 16),
-                                            vertical: _getResponsiveSize(6, 10),
-                                          ),
-                                          isDense: true,
-                                        ),
-                                        onSubmitted: (value) => _sendComment(),
-                                        textAlignVertical: TextAlignVertical.center,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: _getResponsiveSize(4, 6)),
-                                  GestureDetector(
-                                    onTap: _isProcessing ? null : _sendComment,
-                                    child: Container(
-                                      width: _getResponsiveSize(32, 40),
-                                      height: _getResponsiveSize(32, 40),
-                                      decoration: BoxDecoration(
-                                        color: MyTheme.accent_color,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: _isProcessing
-                                          ? SizedBox(
-                                              height: _getResponsiveSize(8, 12),
-                                              width: _getResponsiveSize(8, 12),
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Icon(
-                                              Icons.send,
-                                              size: _getResponsiveSize(12, 16),
-                                              color: Colors.white,
-                                            ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: _getResponsiveSize(87, 117),
-                        left: _getResponsiveSize(10, 16),
-                        right: _getResponsiveSize(10, 16),
-                        child: GestureDetector(
-                          onTap: _openTitleModal,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(_product?.name ?? '',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(18, 25),
-                                      fontWeight: FontWeight.bold)),
-                              SizedBox(height: _getResponsiveSize(2, 4)),
-                              Text(
-                                  _product?.description
-                                          ?.replaceAll(RegExp(r'<[^>]*>'), '') ??
-                                      '',
-                                  style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(9, 12)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
-                              
-                              if (_auctionStatus == "live" && _userHasBid == true)
-                                Padding(
-                                  padding: EdgeInsets.only(top: _getResponsiveSize(4, 8)),
-                                  child: _buildBlinkingStatusText(),
-                                ),
-                              
-                              SizedBox(height: _getResponsiveSize(1, 2)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: _getResponsiveSize(22, 27),
-                        left: _getResponsiveSize(10, 10),
-                        right: _getResponsiveSize(10, 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(
-                                left: _getResponsiveSize(1, 3),
-                                right: _getResponsiveSize(1, 3),
-                                top: _getResponsiveSize(1, 1),
-                              ),
-                              child: _buildTimerRow(),
-                            ),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: _getResponsivePadding(18, 28), 
-                                vertical: _getResponsivePadding(17, 26)
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    _auctionStatus == "upcoming"
-                                        ? AppLocalizations.of(context)!.starting_bid
-                                        : (_auctionStatus == "ended"
-                                            ? AppLocalizations.of(context)!.final_bid
-                                            : AppLocalizations.of(context)!.current_bid),
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: _getResponsiveFontSize(7, 10),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatPrice(_auctionStatus == "upcoming" 
-                                        ? _startingBid 
-                                        : _currentHighestBid),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: _getResponsiveFontSize(11, 18),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Bid Information + Buy Now Button
-                  Transform.translate(
-                    offset: Offset(0, -15),
-                    child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 18)),
-                      padding: EdgeInsets.all(_getResponsivePadding(10, 18)),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(_getResponsiveSize(10, 18)),
-                        border: Border.all(color: Colors.grey.shade200, width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: _getResponsiveSize(6, 10),
-                            offset: Offset(0, _getResponsiveSize(2, 4)),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(AppLocalizations.of(context)!.bid_information,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: _getResponsiveFontSize(12, 18))),
-                          SizedBox(height: _getResponsiveSize(8, 12)),
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            crossAxisSpacing: _getResponsiveSize(6, 12),
-                            mainAxisSpacing: _getResponsiveSize(6, 12),
-                            childAspectRatio: 3,
-                            children: [
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.starting_bid,
-                                _formatPrice(_startingBid),
-                              ),
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.total_bidders,
-                                '$_totalBids',
-                              ),
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.highest_bidder,
-                                _highestBidder.isNotEmpty
-                                    ? '${_highestBidder.substring(0, _highestBidder.length > 6 ? 6 : _highestBidder.length)}***'
-                                    : AppLocalizations.of(context)!.no_bids,
-                              ),
-                              _buildInfoItem(
-                                AppLocalizations.of(context)!.bid_now_at,
-                                '$_pointPerBid',
-                              ),
-                            ],
-                          ),
-                          
-                          // ============================================
-                          // BUY NOW BUTTON (Between Bid Information and Reviews)
-                          // ============================================
-                          if (_buyNow == 1) ...[
-                            SizedBox(height: _getResponsiveSize(12, 16)),
-                            Container(
-                              padding: EdgeInsets.all(_getResponsivePadding(10, 14)),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    MyTheme.accent_color, 
-                                    MyTheme.accent_color.withOpacity(0.85),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: MyTheme.accent_color.withOpacity(0.3),
-                                    blurRadius: _getResponsiveSize(8, 12),
-                                    offset: Offset(0, _getResponsiveSize(2, 4)),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: 1,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '🚀 ${AppLocalizations.of(context)!.buy_now_ucf}',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: _getResponsiveFontSize(12, 16),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          AppLocalizations.of(context)!.instant_purchase,
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: _getResponsiveFontSize(8, 11),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: _isBuyNowLoading ? null : _onBuyNowPressed,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: _getResponsivePadding(16, 24),
-                                        vertical: _getResponsivePadding(8, 12),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(_getResponsiveSize(20, 30)),
-                                      ),
-                                      elevation: 0,
-                                    ),
-                                    child: _isBuyNowLoading
-                                        ? SizedBox(
-                                            height: _getResponsiveSize(16, 20),
-                                            width: _getResponsiveSize(16, 20),
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: MyTheme.accent_color,
-                                            ),
-                                          )
-                                        : Text(
-                                            AppLocalizations.of(context)!.buy_now_ucf,
-                                            style: TextStyle(
-                                              color: MyTheme.accent_color,
-                                              fontSize: _getResponsiveFontSize(10, 14),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          // ============================================
-                          // END BUY NOW BUTTON
-                          // ============================================
-                          
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  // Reviews Section
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 18)),
-                    child: GestureDetector(
-                      onTap: _openReviewsModal,
-                      child: Container(
-                        padding: EdgeInsets.all(_getResponsivePadding(12, 18)),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(_getResponsiveSize(10, 18)),
-                          border: Border.all(color: Colors.grey.shade200, width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: _getResponsiveSize(2, 4),
-                                offset: Offset(0, _getResponsiveSize(1, 2)))
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Row(
-                                  children: List.generate(5, (index) {
-                                    return Icon(
-                                      index < _rating.round()
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      size: _getResponsiveSize(12, 18),
-                                      color: Colors.amber,
-                                    );
-                                  }),
-                                ),
-                                SizedBox(width: _getResponsiveSize(4, 8)),
-                                Text(_rating.toStringAsFixed(1),
-                                    style: TextStyle(
-                                        fontSize: _getResponsiveFontSize(13, 18),
-                                        fontWeight: FontWeight.bold)),
-                                SizedBox(width: _getResponsiveSize(4, 8)),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: _getResponsiveSize(4, 8), vertical: _getResponsiveSize(2, 4)),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(_getResponsiveSize(14, 22)),
-                                  ),
-                                  child: Text('$_reviewsCount',
-                                      style: TextStyle(
-                                          fontSize: _getResponsiveFontSize(9, 13),
-                                          color: Colors.grey)),
-                                ),
-                              ],
-                            ),
-                            Icon(Icons.arrow_forward_ios,
-                                size: _getResponsiveSize(14, 20), color: Colors.grey),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: _getResponsiveSize(8, 14)),
-                  
-                  Container(
-                    height: _getResponsiveSize(60, 80),
-                    margin: EdgeInsets.all(_getResponsivePadding(10, 14)),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _productImages.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () {
-                            _showFullImageFromThumbnail(index);
-                          },
-                          child: Container(
-                            width: _getResponsiveSize(48, 68),
-                            height: _getResponsiveSize(48, 68),
-                            margin: EdgeInsets.only(right: _getResponsiveSize(6, 8)),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(_getResponsiveSize(8, 12)),
-                              border: Border.all(
-                                color: _currentImageIndex == index
-                                    ? MyTheme.accent_color
-                                    : Colors.grey.shade300,
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10)),
-                              child: Image.network(
-                                _productImages[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Icon(Icons.broken_image, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: _getResponsiveSize(14, 22)),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: _getResponsivePadding(10, 14), vertical: _getResponsivePadding(8, 12)),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: _getResponsiveSize(4, 8),
-                      offset: Offset(0, -2))
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _auctionStatus == "live" ? _showBidInputDialog : null,
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: _auctionStatus == "live" ? const Color(0xFFE8F4F8) : Colors.grey.shade100,
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(12, 17)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
-                      ),
-                      child: Text(
-                        _auctionStatus == "upcoming" 
-                            ? AppLocalizations.of(context)!.starts_soon
-                            : (_auctionStatus == "ended"
-                                ? AppLocalizations.of(context)!.ended
-                                : AppLocalizations.of(context)!.custom_ucf),
-                        style: TextStyle(
-                          fontSize: _getResponsiveFontSize(11, 16), 
-                          color: _auctionStatus == "live" ? MyTheme.accent_color : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: _getResponsiveSize(8, 12)),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: _auctionStatus == "live" && !_isProcessing ? _placeBidNow : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _auctionStatus == "live" ? MyTheme.accent_color : Colors.grey,
-                        padding: EdgeInsets.symmetric(vertical: _getResponsivePadding(12, 17)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(_getResponsiveSize(6, 10))),
-                      ),
-                      child: _isProcessing
-                          ? _buildButtonLoader()
-                          : Text(
-                              _auctionStatus == "upcoming"
-                                  ? AppLocalizations.of(context)!.starts_soon
-                                  : (_auctionStatus == "ended"
-                                      ? AppLocalizations.of(context)!.auction_ended
-                                      : '${AppLocalizations.of(context)!.bid_now} - ${_formatPrice(_minNextBidNow)}'),
-                              style: TextStyle(
-                                fontSize: _getResponsiveFontSize(11, 16),
-                                color: Colors.white,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_showMoreMenu)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + _getResponsiveSize(70, 90),
-              right: _getResponsiveSize(10, 18),
-              child: Material(
-                elevation: 16,
-                borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
-                child: Container(
-                  width: _getResponsiveSize(140, 190),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F4F8),
-                    borderRadius: BorderRadius.circular(_getResponsiveSize(10, 16)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: _getResponsiveSize(8, 15),
-                        offset: Offset(0, _getResponsiveSize(2, 5)),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildMoreMenuItem(
-                        icon: Icons.share,
-                        text: AppLocalizations.of(context)!.share_ucf,
-                        onTap: () {
-                          setState(() => _showMoreMenu = false);
-                          _shareProduct();
-                        },
-                      ),
-                      _buildMoreMenuItem(
-                        icon: _isInWishlist
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        text: _isInWishlist ? AppLocalizations.of(context)!.saved_ucf : AppLocalizations.of(context)!.save_ucf,
-                        onTap: () {
-                          setState(() => _showMoreMenu = false);
-                          _toggleWishlist();
-                        },
-                      ),
-                      _buildMoreMenuItem(
-                        icon: Icons.contact_mail,
-                        text: _isProcessing ? AppLocalizations.of(context)!.contacting : AppLocalizations.of(context)!.contact_seller,
-                        onTap: _isProcessing ? null : () {
-                          setState(() => _showMoreMenu = false);
-                          _contactSeller();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================
-  // CIRCULAR COUNTDOWN
-  // ============================================
-
-  Widget _buildCircularCountdown() {
-    if (!_isEndingSoon || _timeLeft.inSeconds <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    final remaining = _timeLeft.inSeconds.clamp(0, _endingSeconds);
-    final progress = remaining / _endingSeconds;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 400;
-
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: IgnorePointer(
-        ignoring: true,
-        child: Center(
-          child: Container(
-            width: isSmallScreen ? 160 : 200,
-            height: isSmallScreen ? 160 : 200,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.75),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: isSmallScreen ? 120 : 160,
-                  height: isSmallScreen ? 120 : 160,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 12,
-                    backgroundColor: Colors.white24,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      remaining <= 5 ? Colors.red : Colors.orange,
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      remaining.toString(),
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 34 : 50,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      "sec left",
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 10 : 15,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ============================================
-  // SEND WINNER NOTIFICATION TO SERVER
-  // ============================================
-  Future<Map<String, dynamic>> sendWinnerNotification(int productId, int userId, double highestBid) async {
-    String url = "${AppConfig.RAW_BASE_URL}/winner-notification";
-    
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer ${access_token.$}",
-          "App-Language": app_language.$ ?? 'en',
-        },
-        body: json.encode({
-          'product_id': productId,
-          'user_id': userId,
-          'highest_bid': highestBid,
-        }),
-      );
-      
-      print('📤 Winner notification response: ${response.statusCode}');
-      print('📤 Winner notification body: ${response.body}');
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Failed to send winner notification: ${response.statusCode}');
-      }
-      
-    } catch (e) {
-      print("❌ Error in sendWinnerNotification: $e");
-      return {
-        'success': false,
-        'message': 'Network error occurred',
-        'status': 500,
-      };
-    }
   }
 }

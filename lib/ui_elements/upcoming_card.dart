@@ -1,15 +1,15 @@
-import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
-import 'package:active_ecommerce_flutter/helpers/system_config.dart';
-import 'package:active_ecommerce_flutter/my_theme.dart';
-import 'package:active_ecommerce_flutter/screens/login.dart';
-import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
+import 'dart:async';
+
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
+import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/my_theme.dart';
+import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
+import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
-import 'package:active_ecommerce_flutter/helpers/format_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class UpcomingCard extends StatefulWidget {
   final int id;
@@ -23,6 +23,9 @@ class UpcomingCard extends StatefulWidget {
   final dynamic startingBid;
   final bool isAuctionActive;
 
+  /// Matches HTML `$retail_value = $product->purchase_price ?? 0;`
+  final dynamic purchasePrice;
+
   const UpcomingCard({
     Key? key,
     required this.id,
@@ -35,6 +38,7 @@ class UpcomingCard extends StatefulWidget {
     this.currentBid,
     this.startingBid,
     this.isAuctionActive = false,
+    this.purchasePrice,
   }) : super(key: key);
 
   @override
@@ -42,130 +46,11 @@ class UpcomingCard extends StatefulWidget {
 }
 
 class _UpcomingCardState extends State<UpcomingCard> {
-  Timer? _timer;
-  String _timeLeft = "";
-  bool _isTimerLoading = true;
   bool _isProcessing = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _updateTimer();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updateTimer();
-    });
-  }
-
-  void _updateTimer() {
-    final localizations = AppLocalizations.of(context);
-    
-    if (widget.auctionEndDate == null) {
-      if (mounted) {
-        setState(() {
-          _timeLeft = localizations?.no_timer_ucf ?? "No Timer";
-          _isTimerLoading = false;
-        });
-      }
-      return;
-    }
-
-    if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
-      if (mounted) {
-        setState(() {
-          _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
-          _isTimerLoading = false;
-        });
-      }
-      return;
-    }
-
-    if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
-      if (mounted) {
-        setState(() {
-          _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
-          // _timeLeft = localizations?.ended_ucf ?? "Ended";
-          _isTimerLoading = false;
-        });
-      }
-      _timer?.cancel();
-      return;
-    }
-
-    int endDate;
-    if (widget.auctionEndDate is int) {
-      endDate = widget.auctionEndDate;
-    } else if (widget.auctionEndDate is String) {
-      endDate = int.tryParse(widget.auctionEndDate) ?? 0;
-    } else {
-      return;
-    }
-
-    if (endDate <= 0) {
-      if (mounted) {
-        setState(() {
-          _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
-          // _timeLeft = localizations?.ended_ucf ?? "Ended";
-          _isTimerLoading = false;
-        });
-      }
-      _timer?.cancel();
-      return;
-    }
-
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final distance = endDate - now;
-
-    if (distance < 0) {
-      if (mounted) {
-        setState(() {
-          _timeLeft = localizations?.upcoming_ucf ?? "Upcoming";
-          // _timeLeft = localizations?.ended_ucf ?? "Ended";
-          _isTimerLoading = false;
-        });
-      }
-      _timer?.cancel();
-      return;
-    }
-
-    final days = distance ~/ (24 * 3600);
-    final hours = (distance % (24 * 3600)) ~/ 3600;
-    final minutes = (distance % 3600) ~/ 60;
-    final seconds = distance % 60;
-
-    final daySuffix = localizations?.day_short_ucf ?? "d";
-    final hourSuffix = localizations?.hour_short_ucf ?? "h";
-    final minuteSuffix = localizations?.minute_short_ucf ?? "m";
-    final secondSuffix = localizations?.second_short_ucf ?? "s";
-
-    String timeString;
-    if (days > 0) {
-      timeString = "$days$daySuffix $hours$hourSuffix";
-    } else if (hours > 0) {
-      timeString = "$hours$hourSuffix $minutes$minuteSuffix";
-    } else if (minutes > 0) {
-      timeString = "$minutes$minuteSuffix $seconds$secondSuffix";
-    } else {
-      timeString = "$seconds$secondSuffix";
-    }
-
-    if (mounted) {
-      setState(() {
-        _timeLeft = timeString;
-        _isTimerLoading = false;
-      });
-    }
-  }
-
+  // ─────────────────────────────────────────────────────────────
+  // PRICE HELPERS
+  // ─────────────────────────────────────────────────────────────
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -177,102 +62,104 @@ class _UpcomingCardState extends State<UpcomingCard> {
     return 0.0;
   }
 
-  // NEW - Uses FormatHelper
   String _formatPrice(dynamic price) {
-    final doubleValue = _parsePrice(price);
-    return FormatHelper.formatPrice(doubleValue);
+    return FormatHelper.formatPrice(_parsePrice(price));
   }
 
-  double _getDisplayBid() {
-    if (widget.currentBid != null) {
-      final parsed = _parsePrice(widget.currentBid);
-      if (parsed > 0) return parsed;
-    }
+  double _getStartingBid() {
     if (widget.startingBid != null) {
       final parsed = _parsePrice(widget.startingBid);
+      if (parsed > 0) return parsed;
+    }
+    if (widget.currentBid != null) {
+      final parsed = _parsePrice(widget.currentBid);
       if (parsed > 0) return parsed;
     }
     return 0.0;
   }
 
-  void _navigateToProductDetails() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetails(slug: widget.slug),
-      ),
-    );
-  }
+  double _getRetailValue() => _parsePrice(widget.purchasePrice);
 
+  // ─────────────────────────────────────────────────────────────
+  // NOTIFY ME
+  // ─────────────────────────────────────────────────────────────
   Future<void> _notifyMe() async {
     if (_isProcessing) return;
-    
+
     if (!is_logged_in.$) {
       _showLoginDialog();
       return;
     }
-    
-    _isProcessing = true;
-    setState(() {});
-    
+
+    setState(() => _isProcessing = true);
+
     try {
-      final localizations = AppLocalizations.of(context);
+      final loc = AppLocalizations.of(context);
       final response = await ProductRepository().notifyMeForAuction(widget.id);
-      
+
       if (response['success'] == true) {
-        // ✅ Using showSuccess - Green with success sound
         ToastComponent.showSuccess(
-          response['message'] ?? (localizations?.notify_me_success_ucf ?? 'You will be notified when this auction starts!'),
+          response['message'] ??
+              (loc?.notify_me_success_ucf ??
+                  'You will be notified when this auction starts!'),
         );
       } else {
-        // ✅ Using showError - Red with error sound
         ToastComponent.showError(
-          response['message'] ?? (localizations?.failed_to_set_notification_ucf ?? 'Failed to set notification'),
+          response['message'] ??
+              (loc?.failed_to_set_notification_ucf ??
+                  'Failed to set notification'),
         );
       }
-    } catch (e) {
-      // ✅ Using showError - Red with error sound
-      final localizations = AppLocalizations.of(context);
-      ToastComponent.showError(localizations?.error_setting_notification_ucf ?? 'Error setting notification');
+    } catch (_) {
+      final loc = AppLocalizations.of(context);
+      ToastComponent.showError(
+        loc?.error_setting_notification_ucf ?? 'Error setting notification',
+      );
     } finally {
-      _isProcessing = false;
-      setState(() {});
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
+  void _navigateToProductDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProductDetails(slug: widget.slug)),
+    );
+  }
+
   void _showLoginDialog() {
-    final localizations = AppLocalizations.of(context);
-    
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
-          localizations?.login_required_ucf ?? 'Login Required',
+          loc?.login_required_ucf ?? 'Login Required',
           style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          localizations?.please_login_to_set_notification_ucf ?? 'Please login to set notification',
+          loc?.please_login_to_set_notification_ucf ??
+              'Please login to set notification',
           style: TextStyle(fontSize: 13.sp),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: Text(
-              localizations?.cancel_ucf ?? 'Cancel',
+              loc?.cancel_ucf ?? 'Cancel',
               style: TextStyle(fontSize: 14.sp, color: const Color(0xFF64748B)),
             ),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => Login()),
+                MaterialPageRoute(builder: (_) => Login()),
               );
             },
             child: Text(
-              localizations?.login_ucf ?? 'Login',
+              loc?.login_ucf ?? 'Login',
               style: TextStyle(fontSize: 14.sp, color: MyTheme.accent_color),
             ),
           ),
@@ -281,240 +168,374 @@ class _UpcomingCardState extends State<UpcomingCard> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
-    final displayBid = _getDisplayBid();
-    
-    final upcomingText = localizations?.upcoming_ucf ?? "Upcoming";
-    final noTimerText = localizations?.no_timer_ucf ?? "No Timer";
-    final showTimer = !_isTimerLoading && _timeLeft != upcomingText && _timeLeft != noTimerText;
+    final loc = AppLocalizations.of(context)!;
+    final startingBid = _getStartingBid();
+    final retailValue = _getRetailValue();
+    final points = widget.pointPerBid ?? 1;
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 320;
+        return isNarrow
+            ? _buildStackedCard(loc, startingBid, retailValue, points)
+            : _buildDesktopCard(loc, startingBid, retailValue, points);
+      },
+    );
+  }
+
+  // ── DESKTOP: photo 42% | info 58% ─────────────────────────────
+  Widget _buildDesktopCard(
+    AppLocalizations loc,
+    double startingBid,
+    double retailValue,
+    int points,
+  ) {
     return Container(
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F2F3),
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.w),
-        boxShadow: [
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
+        borderRadius: BorderRadius.circular(19.r),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 3.r,
-            offset: const Offset(0, 1),
+            color: Color(0x121b4965),
+            blurRadius: 26,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(flex: 42, child: _buildPhotoArea(loc)),
+            SizedBox(width: 18.w),
+            Expanded(
+              flex: 58,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: _navigateToProductDetails,
+                    child: Text(
+                      widget.name ?? loc.product_ucf,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF193a58),
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+
+                  // Retail value row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        loc.retail_value_ucf,
+                        style: TextStyle(
+                            fontSize: 11.sp, color: const Color(0xFF71879d)),
+                      ),
+                      Text(
+                        _formatPrice(retailValue),
+                        style: TextStyle(
+                            fontSize: 11.sp, color: const Color(0xFF71879d)),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.h),
+
+                  // "Starting soon" + points
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          loc.starting_soon_ucf,
+                          style: TextStyle(
+                            fontSize: 19.sp,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF28bfa8),
+                            letterSpacing: -0.04,
+                            height: 1,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Flexible(
+                        child: Text(
+                          _pointsLabel(loc, points),
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF177f81),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10.h),
+
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: _buildNotifyButton(loc),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── STACKED: photo on top ─────────────────────────────────────
+  Widget _buildStackedCard(
+    AppLocalizations loc,
+    double startingBid,
+    double retailValue,
+    int points,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
+        borderRadius: BorderRadius.circular(19.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x121b4965),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image with Timer
-          Stack(
+          SizedBox(
+            height: 185.h,
+            child: _buildPhotoArea(loc),
+          ),
+          SizedBox(height: 12.h),
+          GestureDetector(
+            onTap: _navigateToProductDetails,
+            child: Text(
+              widget.name ?? loc.product_ucf,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF193a58),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              GestureDetector(
-                onTap: _navigateToProductDetails,
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(10.r)),
-                    child: widget.image != null && widget.image!.isNotEmpty
-                        ? Image.network(
-                            widget.image!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[200],
-                                child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: Icon(Icons.image, size: 40.sp, color: Colors.grey),
-                          ),
+              Text(
+                loc.retail_value_ucf,
+                style: TextStyle(
+                    fontSize: 11.sp, color: const Color(0xFF71879d)),
+              ),
+              Text(
+                _formatPrice(retailValue),
+                style: TextStyle(
+                    fontSize: 11.sp, color: const Color(0xFF71879d)),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  loc.starting_soon_ucf,
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF28bfa8),
+                    letterSpacing: -0.04,
+                    height: 1,
                   ),
                 ),
               ),
-              // Timer/Status Badge
-              Positioned(
-                top: 6.h,
-                right: 6.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: _timeLeft == upcomingText 
-                        ? Colors.orange 
-                        : const Color(0xFF009572),
-                    borderRadius: BorderRadius.circular(30.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4.r,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _timeLeft == upcomingText 
-                            ? Icons.schedule 
-                            : Icons.access_time,
-                        size: 10.sp, 
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 3.w),
-                      Text(
-                        _timeLeft,
-                        style: TextStyle(
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                _pointsLabel(loc, points),
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF177f81),
                 ),
               ),
             ],
           ),
-          
-          // Product Details
-          Padding(
-            padding: EdgeInsets.all(10.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Name
-                GestureDetector(
-                  onTap: _navigateToProductDetails,
-                  child: Text(
-                    widget.name ?? (localizations?.product_ucf ?? 'Product'),
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          SizedBox(height: 10.h),
+          _buildNotifyButton(loc),
+        ],
+      ),
+    );
+  }
+
+  String _pointsLabel(AppLocalizations loc, int points) {
+    final unit = points == 1 ? loc.point_singular_ucf : loc.points_plural_ucf;
+    return '◉ $points $unit ${loc.per_bid_ucf}';
+  }
+
+  // ── PHOTO (image + COMING SOON badge + heart) ────────────────
+  Widget _buildPhotoArea(AppLocalizations loc) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(11.r),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          GestureDetector(
+            onTap: _navigateToProductDetails,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFe9f3fa), Color(0xFFf6fbff)],
                 ),
-                SizedBox(height: 2.h),
-                
-                // Description
-                GestureDetector(
-                  onTap: _navigateToProductDetails,
-                  child: Text(
-                    widget.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? '',
-                    style: TextStyle(
-                      fontSize: 9.sp,
-                      color: const Color(0xFF8F9AA7),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                
-                // Starting Bid and Points Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          localizations?.starting_bid_ucf ?? 'Starting Bid',
-                          style: TextStyle(
-                            fontSize: 7.sp,
-                            color: const Color(0xFF80818B),
-                          ),
-                        ),
-                        Text(
-                          _formatPrice(displayBid),
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB5E7F5),
-                        borderRadius: BorderRadius.circular(30.r),
+              ),
+              child: widget.image != null && widget.image!.isNotEmpty
+                  ? Image.network(
+                      widget.image!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.image,
+                        size: 40.sp,
+                        color: Colors.grey,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 9.sp,
-                            color: const Color(0xFF0092AC),
-                          ),
-                          SizedBox(width: 2.w),
-                          Text(
-                            '${localizations?.one_bid_equals_ucf ?? "1 Bid ="} ${widget.pointPerBid ?? 0}',
-                            style: TextStyle(
-                              fontSize: 6.sp,
-                              fontWeight: FontWeight.w500,
-                              color: MyTheme.accent_color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    )
+                  : Icon(Icons.image, size: 40.sp, color: Colors.grey),
+            ),
+          ),
+
+          // COMING SOON badge (top-left)
+          Positioned(
+            top: 12.h,
+            left: 12.w,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFe5f9f6),
+                border: Border.all(color: const Color(0xFF72d8cb), width: 1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Text(
+                loc.coming_soon_ucf,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.4,
+                  color: const Color(0xFF087b76),
                 ),
-                SizedBox(height: 12.h),
-                
-                // Notify Me Button
-                GestureDetector(
-                  onTap: _notifyMe,
-                  child: Container(
-                    width: double.infinity,
-                    height: 40.h,
-                    decoration: BoxDecoration(
-                      color: MyTheme.accent_color,
-                      borderRadius: BorderRadius.circular(7.r),
-                    ),
-                    child: Center(
-                      child: _isProcessing
-                          ? SizedBox(
-                              height: 16.w,
-                              width: 16.w,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.w,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  localizations?.notify_me_ucf ?? 'Notify Me',
-                                  style: TextStyle(
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 4.w),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  size: 12.sp,
-                                  color: Colors.white,
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ),
+
+          // Heart (top-right)
+          Positioned(
+            top: 12.h,
+            right: 12.w,
+            child: Container(
+              width: 30.w,
+              height: 30.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.93),
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: Color(0x18153550), blurRadius: 12),
+                ],
+              ),
+              child: Icon(
+                Icons.favorite_border,
+                size: 16.sp,
+                color: const Color(0xFF6b8499),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── NOTIFY ME BUTTON (matches .bp-upcoming-remind-btn) ────────
+  Widget _buildNotifyButton(AppLocalizations loc) {
+    return GestureDetector(
+      onTap: _isProcessing ? null : _notifyMe,
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(minHeight: 43.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [Color(0xFFeffffb), Color(0xFFddf8f2)],
+          ),
+          border: Border.all(color: const Color(0xFF41c7b5), width: 1),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        alignment: Alignment.center,
+        child: _isProcessing
+            ? SizedBox(
+                width: 18.w,
+                height: 18.w,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF075f5d),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '♧',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: const Color(0xFF075f5d),
+                      height: 1,
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  Flexible(
+                    child: Text(
+                      loc.notify_me_when_starts_ucf,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF075f5d),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
