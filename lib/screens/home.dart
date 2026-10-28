@@ -254,7 +254,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         isLoggedIn: is_logged_in.$,
         hasUnreadMessages: _shouldShowMessageBadge,
         hasUnreadNotifications: _shouldShowNotificationBadge,
-        userBalance: _userInfo?.balance ?? 0,
+        userBalance: (_userInfo?.balance ?? 0).toInt(),
         onSearchTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => Filter()),

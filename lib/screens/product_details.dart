@@ -4,7 +4,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:active_ecommerce_flutter/app_config.dart';
-import 'package:active_ecommerce_flutter/custom/common_webview_screen.dart';
+import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/data_model/product_details_response.dart';
 import 'package:active_ecommerce_flutter/helpers/format_helper.dart';

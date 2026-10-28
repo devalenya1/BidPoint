@@ -43,6 +43,7 @@ dependencies:
   timeline_list: ^0.0.3
   webview_flutter: ^4.2.0
   clipboard: ^0.1.2+8
+  youtube_player_iframe: ^5.2.1
   google_fonts: ^4.0.4
   flutter_rating_bar: ^4.0.0
   expandable: ^5.0.1
