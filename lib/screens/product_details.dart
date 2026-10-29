@@ -79,6 +79,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Duration _timeUntilStart = Duration.zero;
   String _auctionStatus = "live"; // "live" | "upcoming" | "ended"
   int _endingSeconds = 10;
+  DateTime? _auctionEndDateTime; // stored for proper countdown
 
   // =========================
   // BID
@@ -97,6 +98,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
   // Points balance (auto-refresh)
   int _pointBalance = 0;
+  bool _isPointBalanceLoading = true;
+  Timer? _balanceRefreshTimer;
 
   // Buy Now
   int _buyNow = 0;
@@ -152,10 +155,20 @@ class _ProductDetailsState extends State<ProductDetails>
 
     _commentsScrollController.addListener(_onCommentsScroll);
 
+    // Init shared value from prefs immediately so header shows correct value
+    _pointBalance = int.tryParse(points_balance.$ ?? '0') ?? 0;
+    _isPointBalanceLoading = _pointBalance == 0;
+
     _fetchAllData();
     _startPolling();
     _fetchUserInfo();
     _fetchPointBalance();
+
+    // Requirement #2: auto-refresh point balance every 15s without reload
+    _balanceRefreshTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _fetchPointBalance(silent: true),
+    );
   }
 
   @override
@@ -166,6 +179,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
     _bellTimer?.cancel();
+    _balanceRefreshTimer?.cancel();
     _commentController.dispose();
     _bidController.dispose();
     _reviewController.dispose();
@@ -250,8 +264,9 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     _auctionStatus = "live";
-    if (_product!.getAuctionEndDateTime() != null) {
-      final endTime = _product!.getAuctionEndDateTime()!;
+    final endTime = _product!.getAuctionEndDateTime();
+    if (endTime != null) {
+      _auctionEndDateTime = endTime;
       _timeLeft = endTime.difference(DateTime.now());
       if (_timeLeft.isNegative) _timeLeft = Duration.zero;
       _startCountdown(endTime);
@@ -329,19 +344,33 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // Requirement #1: Auto-pull point balance like profile/footer nav
-  Future<void> _fetchPointBalance() async {
-    if (!is_logged_in.$) return;
+  // Requirement #2: Auto-pull point balance and update shared value immediately
+  Future<void> _fetchPointBalance({bool silent = false}) async {
+    if (!is_logged_in.$) {
+      if (mounted) setState(() => _isPointBalanceLoading = false);
+      return;
+    }
     try {
       final response = await _profileRepository.getUserInfoResponse();
       if (response.success == true &&
           response.data != null &&
           response.data!.isNotEmpty) {
         final balance = response.data![0].balance ?? 0;
-        setState(() => _pointBalance = balance);
+        if (mounted) {
+          setState(() {
+            _pointBalance = balance;
+            _isPointBalanceLoading = false;
+          });
+        }
+        // Sync with shared prefs so Main.dart's points item updates
+        points_balance.$ = balance.toString();
+        points_balance.save();
+      } else {
+        if (mounted) setState(() => _isPointBalanceLoading = false);
       }
     } catch (e) {
       print('Error fetching point balance: $e');
+      if (mounted) setState(() => _isPointBalanceLoading = false);
     }
   }
 
@@ -401,6 +430,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
         _minNextBidNow = _currentHighestBid + 0.01;
 
+        // Requirement #7: Handle status + restart countdown correctly
         if (response.upcomingStatus != null) {
           final newStatus = response.upcomingStatus!;
           if (_auctionStatus != newStatus) {
@@ -413,19 +443,28 @@ class _ProductDetailsState extends State<ProductDetails>
               _upcomingTimer?.cancel();
               try {
                 final endTime = DateTime.parse(response.auctionEndDate!);
+                _auctionEndDateTime = endTime;
+                _timeLeft = endTime.difference(DateTime.now());
+                if (_timeLeft.isNegative) _timeLeft = Duration.zero;
                 _startCountdown(endTime);
               } catch (_) {}
             }
           }
         }
 
+        // Requirement #7: Always restart the countdown if the end date changes
         if (response.auctionEndDate != null && _auctionStatus == "live") {
           try {
             final newEnd = DateTime.parse(response.auctionEndDate!);
             final newLeft = newEnd.difference(DateTime.now());
-            if (_timeLeft != newLeft && !newLeft.isNegative) {
-              _timeLeft = newLeft;
-              _startCountdown(newEnd);
+            // Restart countdown if end time has changed by more than 2 sec
+            if (_auctionEndDateTime == null ||
+                newEnd.difference(_auctionEndDateTime!).inSeconds.abs() > 2) {
+              _auctionEndDateTime = newEnd;
+              if (!newLeft.isNegative) {
+                _timeLeft = newLeft;
+                _startCountdown(newEnd);
+              }
             }
           } catch (_) {}
         }
@@ -433,6 +472,7 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.auctionEnded == true) {
           _auctionStatus = "ended";
           _timeLeft = Duration.zero;
+          _auctionEndDateTime = null;
           _isEndingSoon = false;
           _bellSoundPlayed = false;
           _countdownTimer?.cancel();
@@ -466,8 +506,8 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       });
 
-      // Requirement #1: refresh point balance while polling
-      await _fetchPointBalance();
+      // Requirement #2: refresh point balance silently during poll
+      await _fetchPointBalance(silent: true);
 
       if (response.auctionEnded == true &&
           response.winner != null &&
@@ -487,7 +527,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // TIMERS
   // ============================================================
 
-  // Requirement #9: Proper countdown timer
+  // Requirement #7: Proper countdown timer that actually ticks every second
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -518,7 +558,10 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       }
 
-      setState(() => _timeLeft = remaining);
+      // Always set state so the timer text updates every second
+      if (mounted) {
+        setState(() => _timeLeft = remaining);
+      }
     });
   }
 
@@ -542,12 +585,14 @@ class _ProductDetailsState extends State<ProductDetails>
         _timeUntilStart = Duration.zero;
         _auctionStatus = "live";
       });
-      if (_product!.getAuctionEndDateTime() != null) {
-        _startCountdown(_product!.getAuctionEndDateTime()!);
+      final endTime = _product!.getAuctionEndDateTime();
+      if (endTime != null) {
+        _auctionEndDateTime = endTime;
+        _startCountdown(endTime);
       }
       return;
     }
-    setState(() => _timeUntilStart = remaining);
+    if (mounted) setState(() => _timeUntilStart = remaining);
   }
 
   Future<void> _playBell() async {
@@ -623,7 +668,9 @@ class _ProductDetailsState extends State<ProductDetails>
           ToastComponent.showSuccess(
               response.message ?? AppLocalizations.of(context)!.auction_time_extended);
           try {
-            _startCountdown(DateTime.parse(response.newEndDate!));
+            final newEnd = DateTime.parse(response.newEndDate!);
+            _auctionEndDateTime = newEnd;
+            _startCountdown(newEnd);
           } catch (_) {}
         } else {
           ToastComponent.showSuccess(
@@ -631,7 +678,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   '${AppLocalizations.of(context)!.bid_placed} ${_formatPrice(amount)}');
         }
         await _pollData();
-        await _fetchPointBalance();
+        await _fetchPointBalance(silent: true);
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.something_went_wrong);
@@ -674,7 +721,7 @@ class _ProductDetailsState extends State<ProductDetails>
         ToastComponent.showSuccess(
             response.message ?? AppLocalizations.of(context)!.bid_placed);
         await _pollData();
-        await _fetchPointBalance();
+        await _fetchPointBalance(silent: true);
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.error_placing_bid);
@@ -954,7 +1001,7 @@ class _ProductDetailsState extends State<ProductDetails>
               // ── TOP BAR (logo + points + exit) ───────────────
               SliverToBoxAdapter(child: _buildTopBar()),
 
-              // ── STAGE (photo + overlays) ─────────────────────
+              // ── STAGE (photo + overlays) — Req #1, #5: no margin, no radius, 530h
               SliverToBoxAdapter(child: _buildStage()),
 
               // ── PHOTO RAIL ───────────────────────────────────
@@ -982,7 +1029,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // TOP BAR (Req #6: logo + points + exit)
+  // TOP BAR (Req #2: live points from shared value)
   // ============================================================
 
   Widget _buildTopBar() {
@@ -995,7 +1042,6 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
       child: Row(
         children: [
-          // Logo
           Image.asset(
             'assets/app_logo.png',
             height: 36.h,
@@ -1009,7 +1055,7 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           const Spacer(),
-          // Points
+          // Requirement #2: Points pill updates automatically
           if (is_logged_in.$)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
@@ -1018,17 +1064,23 @@ class _ProductDetailsState extends State<ProductDetails>
                 borderRadius: BorderRadius.circular(30.r),
                 border: Border.all(color: const Color(0xFFb8ecea)),
               ),
-              child: Text(
-                '✦ $_pointBalance ${AppLocalizations.of(context)!.points_ucf}',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF007d7f),
-                ),
-              ),
+              child: _isPointBalanceLoading
+                  ? SizedBox(
+                      width: 12.w,
+                      height: 12.w,
+                      child: const CircularProgressIndicator(
+                          strokeWidth: 1.5, color: Color(0xFF007d7f)),
+                    )
+                  : Text(
+                      '✦ $_pointBalance ${AppLocalizations.of(context)!.points_ucf}',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF007d7f),
+                      ),
+                    ),
             ),
           SizedBox(width: 6.w),
-          // Exit / Login
           GestureDetector(
             onTap: () => is_logged_in.$
                 ? Navigator.pop(context)
@@ -1068,26 +1120,37 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // STAGE (photo + overlays + chat)
+  // STAGE — Req #1, #3, #4, #5
+  //   • no outer margin
+  //   • no border-radius
+  //   • min height 530 in mobile
+  //   • icons (top-right) & chat (bottom) must NEVER overlap each other
+  //   • floating icons always on top of chat (z-order via Stack order)
+  //   • more menu opens on top of everything
   // ============================================================
 
   Widget _buildStage() {
     final isMobile = _screenWidth < 800;
-    final stageHeight = isMobile
-        ? (_screenWidth < 430 ? 470.0 : 520.0)
+    // Requirement #5: larger stage — min 530 on mobile
+    final double stageHeight = isMobile
+        ? max(530.0, _screenWidth * 1.15)
         : min(_screenWidth * 0.85, 720.0);
 
+    // Chat area reserved height so floating icons never collide with chat
+    const double chatHeight = 220.0; // messages 150 + input row 42 + gaps
+    const double iconRailHeight = 4 * 43.0 + 3 * 9.0; // 4 buttons + gaps
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 9.w),
+      // Requirement #1 & #5: no margins, no radius
+      margin: EdgeInsets.zero,
       height: stageHeight,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
-        color: const Color(0xFF142337),
+      decoration: const BoxDecoration(
+        color: Color(0xFF142337),
       ),
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // Main image
+          // ── 1. Main image ──
           Positioned.fill(
             child: _productImages.isEmpty
                 ? Container(color: const Color(0xFF1a2a3e))
@@ -1099,7 +1162,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
           ),
 
-          // Gradient overlay
+          // ── 2. Gradient overlay ──
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
@@ -1121,35 +1184,42 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
 
-          // Status badge (top-left)
+          // ── 3. Chat overlay — placed BEFORE icons so icons are on top ──
           Positioned(
-            top: 13.h,
             left: 13.w,
-            child: _buildStatusBadge(),
+            // Leave room for icon rail on the right
+            right: 13.w + 43.w + 13.w,
+            bottom: 13.h,
+            height: chatHeight,
+            child: _buildChatOverlay(),
           ),
 
-          // Action circles (top-right)
+          // ── 4. Floating action icons — Req #3: always on top of chat ──
           Positioned(
             top: 13.h,
             right: 13.w,
             child: _buildActionCircles(),
           ),
 
-          // More menu overlay (Req #2)
+          // ── 5. Status badge (top-left) ──
+          Positioned(
+            top: 13.h,
+            left: 13.w,
+            child: _buildStatusBadge(),
+          ),
+
+          // ── 6. More menu — Req #4: highest z-index (placed LAST in Stack) ──
           if (_showMoreMenu)
             Positioned(
               top: 60.h,
               right: 9.w,
-              child: _buildMoreMenu(),
+              child: Material(
+                color: Colors.transparent,
+                elevation: 24,
+                shadowColor: Colors.black54,
+                child: _buildMoreMenu(),
+              ),
             ),
-
-          // Chat overlay (bottom)
-          Positioned(
-            left: 13.w,
-            right: 13.w,
-            bottom: 13.h,
-            child: _buildChatOverlay(),
-          ),
         ],
       ),
     );
@@ -1258,7 +1328,6 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // Req #2: More menu with Information, Add to Wishlist, Contact Seller
   Widget _buildMoreMenu() {
     return Container(
       width: 236.w,
@@ -1269,7 +1338,7 @@ class _ProductDetailsState extends State<ProductDetails>
         border: Border.all(color: const Color(0xFFE0EDF7)),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x44000000), blurRadius: 44, offset: Offset(0, 16)),
+              color: Color(0x66000000), blurRadius: 44, offset: Offset(0, 16)),
         ],
       ),
       child: Column(
@@ -1487,7 +1556,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // PHOTO RAIL (Req #4: 9px margins, Req #8: View photos button)
+  // PHOTO RAIL
   // ============================================================
 
   Widget _buildPhotoRail() {
@@ -1507,7 +1576,6 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
       child: Row(
         children: [
-          // Heading
           Text(
             AppLocalizations.of(context)!.product_photos_ucf,
             style: TextStyle(
@@ -1517,7 +1585,6 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           SizedBox(width: 9.w),
-          // View photos button (Req #8)
           GestureDetector(
             onTap: () => _openPhotoViewer(_currentImageIndex),
             child: Container(
@@ -1545,7 +1612,6 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           SizedBox(width: 9.w),
-          // Thumbnails
           Expanded(
             child: SizedBox(
               height: 58.h,
@@ -1586,7 +1652,6 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           SizedBox(width: 6.w),
-          // Photo count
           Text(
             '${_currentImageIndex + 1} / ${_productImages.length}',
             style: TextStyle(
@@ -1661,7 +1726,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // SUMMARY (3 metrics) — Req #4: 9px margins, edited font sizes
+  // SUMMARY
   // ============================================================
 
   Widget _buildSummary() {
@@ -1720,12 +1785,14 @@ class _ProductDetailsState extends State<ProductDetails>
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: const Color(0xFFDCEAF5)),
       ),
+      // ← All content CENTERED
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 9.sp,
               fontWeight: FontWeight.w600,
@@ -1745,6 +1812,7 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             child: child,
           ),
         ],
@@ -1772,8 +1840,11 @@ class _ProductDetailsState extends State<ProductDetails>
 
     return _metricBox(
       label: label,
-      child: Text(value,
-          style: TextStyle(color: valColor ?? const Color(0xFF008E9D))),
+      child: Text(
+        value,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: valColor ?? const Color(0xFF008E9D)),
+      ),
       valueColor: valColor ?? const Color(0xFF008E9D),
     );
   }
@@ -1781,8 +1852,11 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _metricPrice() {
     return _metricBox(
       label: AppLocalizations.of(context)!.current_bid_upper,
-      child: Text(_formatPrice(
-          _auctionStatus == "upcoming" ? _startingBid : _currentHighestBid)),
+      child: Text(
+        _formatPrice(
+            _auctionStatus == "upcoming" ? _startingBid : _currentHighestBid),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 
@@ -1794,12 +1868,12 @@ class _ProductDetailsState extends State<ProductDetails>
             : _highestBidder);
     return _metricBox(
       label: AppLocalizations.of(context)!.latest_bid_upper,
-      child: Text(display),
+      child: Text(display, textAlign: TextAlign.center),
     );
   }
 
   // ============================================================
-  // HOW IT WORKS — Req #4: 9px margins
+  // HOW IT WORKS
   // ============================================================
 
   Widget _buildHowItWorks() {
@@ -1959,13 +2033,13 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // BUY NOW (Req #7: match HTML layout)
+  // BUY NOW
   // ============================================================
 
   Widget _buildBuyNowCard() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
-      padding: EdgeInsets.all(15.w),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18.r),
@@ -1975,9 +2049,11 @@ class _ProductDetailsState extends State<ProductDetails>
               color: Color(0x0B102C4C), blurRadius: 16, offset: Offset(0, 5)),
         ],
       ),
+      // HTML: grid-template-columns: 44px minmax(0,1fr) auto; gap:12px
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Icon
+          // Icon (42x42 rounded 13)
           Container(
             width: 42.w,
             height: 42.w,
@@ -1985,6 +2061,7 @@ class _ProductDetailsState extends State<ProductDetails>
               color: const Color(0xFFE8F8FA),
               borderRadius: BorderRadius.circular(13.r),
             ),
+            alignment: Alignment.center,
             child: Icon(Icons.open_in_new_rounded,
                 color: const Color(0xFF008FA5), size: 22.sp),
           ),
@@ -1993,13 +2070,15 @@ class _ProductDetailsState extends State<ProductDetails>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   AppLocalizations.of(context)!.buy_now_ucf,
                   style: TextStyle(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF102C4C)),
+                      color: const Color(0xFF102C4C),
+                      height: 1.25),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2007,37 +2086,42 @@ class _ProductDetailsState extends State<ProductDetails>
                 Text(
                   AppLocalizations.of(context)!.buy_now_subtitle,
                   style: TextStyle(
-                      fontSize: 11.sp, color: const Color(0xFF637A92)),
+                      fontSize: 11.sp,
+                      color: const Color(0xFF637A92),
+                      height: 1.35),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          SizedBox(width: 10.w),
-          // Button
+          SizedBox(width: 12.w),
+          // Button — HTML: min-height 43, padding 12px 14px, radius 12
           GestureDetector(
             onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
             child: Container(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              constraints: BoxConstraints(minHeight: 43.h),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
               decoration: BoxDecoration(
                 color: const Color(0xFFE9F8FB),
                 borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(color: const Color(0xFFC9EDF1)),
               ),
+              alignment: Alignment.center,
               child: _isBuyNowLoading
                   ? SizedBox(
                       width: 14.w,
                       height: 14.w,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: MyTheme.accent_color))
+                          strokeWidth: 2, color: const Color(0xFF00869C)),
+                    )
                   : Text(
                       AppLocalizations.of(context)!.buy_now_ucf,
                       style: TextStyle(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF00869C)),
+                          color: const Color(0xFF00869C),
+                          height: 1),
                     ),
             ),
           ),
@@ -2047,7 +2131,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // BID DOCK (Req #5: 9px padding/margin, slide icon+text together)
+  // BID DOCK — Req #6: Slide text centered in remaining space
   // ============================================================
 
   Widget _buildBidDock() {
@@ -2067,14 +2151,13 @@ class _ProductDetailsState extends State<ProductDetails>
         ),
         child: Row(
           children: [
-            // Slide-to-bid slider
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final maxOffset = (constraints.maxWidth - _thumbSize - 10)
                       .clamp(0.0, double.infinity);
 
-                  // Req #5: icon and text slide together
+                  // Requirement #6: text centered in remaining space after thumb
                   return GestureDetector(
                     onHorizontalDragStart: isLive
                         ? (d) {
@@ -2121,7 +2204,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                         child: Stack(
                           children: [
-                            // Fill
+                            // Fill behind thumb
                             Positioned(
                               left: 0,
                               top: 0,
@@ -2134,14 +2217,14 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                               ),
                             ),
-                            // Text — moves with thumb
+                            // Requirement #6: text centered between thumb+gap and right edge
                             Positioned(
-                              left: 5.w + _thumbSize + 6.w + _slideOffset,
+                              // Start after the thumb + gap
+                              left: 5.w + _thumbSize + 6.w,
                               right: 8.w,
                               top: 0,
                               bottom: 0,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
+                              child: Center(
                                 child: Text(
                                   !isLive
                                       ? (_auctionStatus == "upcoming"
@@ -2152,6 +2235,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                       : 'Slide to bid · − ${_pointPerBid.toInt()} pts',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 12.sp,
@@ -2199,7 +2283,6 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
             SizedBox(width: 8.w),
-            // Manual bid button
             GestureDetector(
               onTap: isLive ? _showBidInputDialog : null,
               child: Opacity(
@@ -2252,7 +2335,8 @@ class _ProductDetailsState extends State<ProductDetails>
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
         child: Container(
           constraints: BoxConstraints(maxHeight: _screenWidth * 1.5),
           padding: EdgeInsets.all(20.w),
@@ -2260,6 +2344,7 @@ class _ProductDetailsState extends State<ProductDetails>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Header ──
               Row(
                 children: [
                   Expanded(
@@ -2281,90 +2366,204 @@ class _ProductDetailsState extends State<ProductDetails>
                     fontSize: 13.sp, color: const Color(0xFF637A92)),
               ),
               SizedBox(height: 12.h),
-              // Info grid
-              Row(
-                children: [
-                  Expanded(
-                      child: _infoTile(
-                          'Starting bid', _formatPrice(_startingBid))),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                      child: _infoTile('Bidders', '$_totalBids')),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                children: [
-                  Expanded(child: _infoTile('Highest bidder', _highestBidder)),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                      child: _infoTile(
-                          'Next bid', _formatPrice(_minNextBidNow))),
-                ],
-              ),
-              SizedBox(height: 12.h),
-              // Product description
+
+              // ── Scrollable body ──
               Flexible(
                 child: SingleChildScrollView(
-                  child: Container(
-                    padding: EdgeInsets.all(15.w),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F8FC),
-                      borderRadius: BorderRadius.circular(15.r),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Product description',
-                          style: TextStyle(
-                              fontSize: 14.sp, fontWeight: FontWeight.w800),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Info grid — 2x2
+                      Row(
+                        children: [
+                          Expanded(
+                              child: _infoTile(
+                                  'Starting bid', _formatPrice(_startingBid))),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                              child: _infoTile('Bidders', '$_totalBids')),
+                        ],
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
+                        children: [
+                          Expanded(
+                              child:
+                                  _infoTile('Highest bidder', _highestBidder)),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                              child: _infoTile(
+                                  'Next bid', _formatPrice(_minNextBidNow))),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+
+                      // Product description
+                      Container(
+                        padding: EdgeInsets.all(15.w),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F8FC),
+                          borderRadius: BorderRadius.circular(15.r),
                         ),
-                        SizedBox(height: 8.h),
-                        Html(
-                          data: _product?.description ?? '',
-                          style: {
-                            "body": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(13.sp),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Product description',
+                              style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w800),
                             ),
-                          },
+                            SizedBox(height: 8.h),
+                            Html(
+                              data: _product?.description ?? '',
+                              style: {
+                                "body": Style(
+                                  margin: Margins.zero,
+                                  padding: HtmlPaddings.zero,
+                                  fontSize: FontSize(13.sp),
+                                ),
+                              },
+                            ),
+                            SizedBox(height: 8.h),
+                            Text(
+                              'Materials, dimensions, condition, and exact package contents must be confirmed by the seller.',
+                              style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: const Color(0xFF637A92)),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          'Materials, dimensions, condition, and exact package contents must be confirmed by the seller.',
-                          style: TextStyle(
-                              fontSize: 11.sp, color: const Color(0xFF637A92)),
+                      ),
+
+                      // Buy Now card — same style as the main buy-now card (HTML)
+                      if (_buyNow == 1 && _auctionStatus != "ended") ...[
+                        SizedBox(height: 12.h),
+                        Container(
+                          padding: EdgeInsets.all(15.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18.r),
+                            border:
+                                Border.all(color: const Color(0xFFDCECF3)),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Color(0x0B102C4C),
+                                  blurRadius: 16,
+                                  offset: Offset(0, 5)),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 42.w,
+                                height: 42.w,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F8FA),
+                                  borderRadius: BorderRadius.circular(13.r),
+                                ),
+                                child: Icon(Icons.open_in_new_rounded,
+                                    color: const Color(0xFF008FA5),
+                                    size: 22.sp),
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .buy_now_ucf,
+                                      style: TextStyle(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF102C4C)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .buy_now_subtitle,
+                                      style: TextStyle(
+                                          fontSize: 11.sp,
+                                          color: const Color(0xFF637A92)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              GestureDetector(
+                                onTap: _isBuyNowLoading
+                                    ? null
+                                    : _onBuyNowPressed,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 14.w, vertical: 12.h),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE9F8FB),
+                                    borderRadius: BorderRadius.circular(12.r),
+                                    border: Border.all(
+                                        color: const Color(0xFFC9EDF1)),
+                                  ),
+                                  child: _isBuyNowLoading
+                                      ? SizedBox(
+                                          width: 14.w,
+                                          height: 14.w,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: MyTheme.accent_color))
+                                      : Text(
+                                          AppLocalizations.of(context)!
+                                              .buy_now_ucf,
+                                          style: TextStyle(
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.w800,
+                                              color:
+                                                  const Color(0xFF00869C)),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
+                    ],
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 12.h),
+
+              // ── Close button (HTML parity) ──
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.only(top: 12.h),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Color(0xFFE4EDF6))),
+                ),
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDF4FB),
+                      borderRadius: BorderRadius.circular(13.r),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      AppLocalizations.of(context)!.close_ucf,
+                      style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF102C4C)),
                     ),
                   ),
                 ),
               ),
-              if (_buyNow == 1 && _auctionStatus != "ended") ...[
-                SizedBox(height: 12.h),
-                GestureDetector(
-                  onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
-                  child: Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE9F8FB),
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: const Color(0xFFC9EDF1)),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.buy_now_ucf,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF00869C)),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -2791,7 +2990,7 @@ class _ProductDetailsState extends State<ProductDetails>
     return SingleChildScrollView(
       child: Column(
         children: [
-          ShimmerHelper().buildBasicShimmer(height: 470.h),
+          ShimmerHelper().buildBasicShimmer(height: 530.h),
           SizedBox(height: 10.h),
           Padding(
             padding: EdgeInsets.all(16.w),

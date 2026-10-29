@@ -25,7 +25,6 @@ class ProductCard extends StatefulWidget {
   final bool isAuctionActive;
   final dynamic purchasePrice;
 
-  // Kept for backward compat — not rendered
   final String? main_price;
   final String? stroked_price;
   final bool? has_discount;
@@ -61,16 +60,15 @@ class _ProductCardState extends State<ProductCard> {
   Timer? _timer;
   String _timeLeft = "";
   bool _isTimerLoading = true;
-  String _auctionStatus = "active"; // "active" | "upcoming" | "ended"
+  String _auctionStatus = "active";
   bool _isProcessing = false;
   bool _isWishlisted = false;
   bool _isWishlistLoading = false;
 
-  // Slide-to-bid state (only used when status == active)
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
-  static const double _thumbSize = 34;
+  static const double _thumbSize = 28;
 
   final ProductRepository _productRepository = ProductRepository();
 
@@ -92,9 +90,6 @@ class _ProductCardState extends State<ProductCard> {
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // WISHLIST
-  // ─────────────────────────────────────────────────────────────
   Future<void> _fetchWishlistStatus() async {
     if (!is_logged_in.$) return;
     try {
@@ -142,9 +137,6 @@ class _ProductCardState extends State<ProductCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // STATUS / TIMER
-  // ─────────────────────────────────────────────────────────────
   void _determineAuctionStatus() {
     final loc = AppLocalizations.of(context);
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -313,9 +305,6 @@ class _ProductCardState extends State<ProductCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // PRICE HELPERS
-  // ─────────────────────────────────────────────────────────────
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -344,9 +333,6 @@ class _ProductCardState extends State<ProductCard> {
 
   double _getRetailValue() => _parsePrice(widget.purchasePrice);
 
-  // ─────────────────────────────────────────────────────────────
-  // ACTIONS
-  // ─────────────────────────────────────────────────────────────
   void _navigateToProduct() {
     Navigator.push(
       context,
@@ -471,9 +457,6 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // SLIDE HELPERS
-  // ─────────────────────────────────────────────────────────────
   void _onSlideStart(DragStartDetails d) {
     _thumbStartX = d.localPosition.dx;
     _isDragging = true;
@@ -496,188 +479,99 @@ class _ProductCardState extends State<ProductCard> {
     if (shouldBid) _quickBid();
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // HTML switches to stacked at 850px. For Flutter mobile/tablet,
-        // we stacked at <700 to keep parity with the rest of the home page,
-        // and also stack when the actual card width is below 260 (very
-        // narrow column inside an expanded row).
-        final isMobile = MediaQuery.of(context).size.width < 700;
-        final isVeryNarrow = constraints.maxWidth < 260;
-
-        if (isMobile || isVeryNarrow) {
-          return _buildMobileCard();
-        }
-        return _buildDesktopCard();
-      },
-    );
-  }
-
-  // ── DESKTOP — photo 42% | info 58% (matches .bp-complete-card) ──
-  Widget _buildDesktopCard() {
     final loc = AppLocalizations.of(context)!;
-    return Container(
-      padding: EdgeInsets.all(9.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(17.r),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x121b4965),
-            blurRadius: 26,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(flex: 42, child: _buildPhotoArea(loc)),
-            SizedBox(width: 18.w),
-            Expanded(
-              flex: 58,
-              child: _buildInfoColumn(loc, isDesktop: true),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── MOBILE — photo on top, fixed 185h (matches @media max-width:850) ──
-  Widget _buildMobileCard() {
-    final loc = AppLocalizations.of(context)!;
-    return Container(
-      padding: EdgeInsets.all(9.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(17.r),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x121b4965),
-            blurRadius: 26,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 185.h,
-            child: _buildPhotoArea(loc),
-          ),
-          SizedBox(height: 9.h),
-          _buildInfoColumn(loc, isDesktop: false),
-        ],
-      ),
-    );
-  }
-
-  // ── INFO COLUMN (name / retail / price / CTA) ─────────────────
-  Widget _buildInfoColumn(AppLocalizations loc, {required bool isDesktop}) {
     final isEnded = _auctionStatus == "ended";
     final isUpcoming = _auctionStatus == "upcoming";
     final retailValue = _getRetailValue();
     final displayBid = _getDisplayBid();
     final points = widget.pointPerBid ?? 1;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Name — matches .bp-complete-name
-        GestureDetector(
-          onTap: _navigateToProduct,
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: isDesktop ? 27.h : 0,
-            ),
+    return Container(
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
+        borderRadius: BorderRadius.circular(15.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x121b4965),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AspectRatio(
+            aspectRatio: 1.05,
+            child: _buildPhotoArea(loc),
+          ),
+          SizedBox(height: 7.h),
+          GestureDetector(
+            onTap: _navigateToProduct,
             child: Text(
               widget.name ?? loc.product_ucf,
               style: TextStyle(
-                fontSize: 15.sp,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF193a58),
                 height: 1.2,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-        ),
-        SizedBox(height: 6.h),
-
-        // Retail — matches .bp-complete-retail
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              loc.retail_value_ucf,
-              style: TextStyle(
-                  fontSize: 11.sp, color: const Color(0xFF71879d)),
-            ),
-            Text(
-              _formatPrice(retailValue),
-              style: TextStyle(
-                  fontSize: 11.sp, color: const Color(0xFF71879d)),
-            ),
-          ],
-        ),
-        SizedBox(height: 6.h),
-
-        // Price row — varies by status
-        if (isEnded)
-          _buildEndedPriceRow(displayBid)
-        else if (isUpcoming)
-          _buildUpcomingPriceRow(loc, points)
-        else
-          _buildActivePriceRow(displayBid, points),
-
-        SizedBox(height: 6.h),
-
-        // CTA area — differs by status; always pinned to bottom on desktop
-        if (isDesktop)
-          Expanded(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: _buildCta(loc),
-            ),
-          )
-        else
-          Padding(
-            padding: EdgeInsets.only(top: 2.h),
-            child: _buildCta(loc),
+          SizedBox(height: 4.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                loc.retail_value_ucf,
+                style: TextStyle(
+                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+              ),
+              Text(
+                _formatPrice(retailValue),
+                style: TextStyle(
+                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+              ),
+            ],
           ),
-      ],
+          SizedBox(height: 4.h),
+          // Price row — reduced font size
+          if (isEnded)
+            _buildEndedPriceRow(displayBid)
+          else if (isUpcoming)
+            _buildUpcomingPriceRow(loc, points)
+          else
+            _buildActivePriceRow(displayBid, points),
+          SizedBox(height: 6.h),
+          _buildCta(loc),
+        ],
+      ),
     );
   }
 
-  // ── Ended price — matches .bp-complete-price ─────────────────
   Widget _buildEndedPriceRow(double displayBid) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         _formatPrice(displayBid),
         style: TextStyle(
-          fontSize: 25.sp,
+          fontSize: 14.sp,
           fontWeight: FontWeight.w900,
           color: const Color(0xFF0d806f),
-          letterSpacing: -0.4,
+          letterSpacing: -0.3,
           height: 1,
         ),
       ),
     );
   }
 
-  // ── Upcoming price — matches .bp-upcoming-price ("Starting soon") ──
   Widget _buildUpcomingPriceRow(AppLocalizations loc, int points) {
     final unit = points == 1 ? loc.point_singular_ucf : loc.points_plural_ucf;
     return Row(
@@ -687,22 +581,22 @@ class _ProductCardState extends State<ProductCard> {
           child: Text(
             loc.starting_soon_ucf,
             style: TextStyle(
-              fontSize: 19.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w900,
               color: const Color(0xFF28bfa8),
-              letterSpacing: -0.4,
+              letterSpacing: -0.3,
               height: 1,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 5.w),
+        SizedBox(width: 3.w),
         Flexible(
           child: Text(
             '◉ $points $unit ${loc.per_bid_ucf}',
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: 8.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF177f81),
             ),
@@ -715,7 +609,6 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ── Active price — matches .bp-hot-price / .bp-soon-price ────
   Widget _buildActivePriceRow(double displayBid, int points) {
     final loc = AppLocalizations.of(context)!;
     return Row(
@@ -725,22 +618,22 @@ class _ProductCardState extends State<ProductCard> {
           child: Text(
             _formatPrice(displayBid),
             style: TextStyle(
-              fontSize: 25.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w900,
               color: const Color(0xFF00a98d),
-              letterSpacing: -0.4,
+              letterSpacing: -0.3,
               height: 1,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 5.w),
+        SizedBox(width: 3.w),
         Flexible(
           child: Text(
             '◉ $points ${loc.point_per_bid_ucf}',
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: 8.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF177f81),
             ),
@@ -753,7 +646,6 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ── CTA dispatcher ───────────────────────────────────────────
   Widget _buildCta(AppLocalizations loc) {
     switch (_auctionStatus) {
       case "ended":
@@ -765,38 +657,40 @@ class _ProductCardState extends State<ProductCard> {
     }
   }
 
-  // ── View product — matches .bp-complete-detail ──────────────
   Widget _buildViewProductButton(AppLocalizations loc) {
+    // Requirement #6: ALL buttons same fixed height (36.h)
     return GestureDetector(
       onTap: _navigateToProduct,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 11.h, horizontal: 13.w),
+        height: 36.h,
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
         decoration: BoxDecoration(
           color: const Color(0xFFe8f8f4),
-          borderRadius: BorderRadius.circular(11.r),
+          borderRadius: BorderRadius.circular(999),
         ),
         alignment: Alignment.center,
         child: Text(
           loc.view_product_ucf,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: 9.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF0c7b73),
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
   }
 
-  // ── Notify me — matches .bp-upcoming-remind-btn ─────────────
   Widget _buildNotifyButton(AppLocalizations loc) {
     return GestureDetector(
       onTap: _isProcessing ? null : _notifyMe,
       child: Container(
         width: double.infinity,
-        constraints: BoxConstraints(minHeight: 43.h),
-        padding: EdgeInsets.symmetric(horizontal: 14.w),
+        height: 36.h,
+        padding: EdgeInsets.symmetric(horizontal: 6.w),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.centerLeft,
@@ -804,7 +698,7 @@ class _ProductCardState extends State<ProductCard> {
             colors: [Color(0xFFeffffb), Color(0xFFddf8f2)],
           ),
           border: Border.all(color: const Color(0xFF41c7b5), width: 1),
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(999),
         ),
         alignment: Alignment.center,
         child: _isProcessing
@@ -823,17 +717,17 @@ class _ProductCardState extends State<ProductCard> {
                   Text(
                     '♧',
                     style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 9.sp,
                       color: const Color(0xFF075f5d),
                       height: 1,
                     ),
                   ),
-                  SizedBox(width: 6.w),
+                  SizedBox(width: 4.w),
                   Flexible(
                     child: Text(
                       loc.notify_me_when_starts_ucf,
                       style: TextStyle(
-                        fontSize: 12.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF075f5d),
                       ),
@@ -848,7 +742,6 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ── Slide to bid — matches .es-auction-bid-now-btn-full ─────
   Widget _buildSlideToBid(AppLocalizations loc) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -862,7 +755,7 @@ class _ProductCardState extends State<ProductCard> {
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
-            height: 49.h,
+            height: 36.h,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -874,16 +767,16 @@ class _ProductCardState extends State<ProductCard> {
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x351597ba),
-                  blurRadius: 14,
-                  offset: Offset(0, 5),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
             child: _isProcessing
                 ? Center(
                     child: SizedBox(
-                      width: 16.w,
-                      height: 16.w,
+                      width: 14.w,
+                      height: 14.w,
                       child: const CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -892,7 +785,6 @@ class _ProductCardState extends State<ProductCard> {
                   )
                 : Stack(
                     children: [
-                      // White circular thumb
                       Positioned(
                         left: 4.w + _slideOffset,
                         top: 4.h,
@@ -906,28 +798,27 @@ class _ProductCardState extends State<ProductCard> {
                             boxShadow: [
                               BoxShadow(
                                 color: Color(0x70063e62),
-                                blurRadius: 9,
+                                blurRadius: 7,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Icon(
                             Icons.chevron_right,
-                            size: 19.sp,
+                            size: 16.sp,
                             color: const Color(0xFF078c9f),
                           ),
                         ),
                       ),
-                      // Center text
                       Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 22.w),
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
                           child: Text(
                             _slideOffset > 20
                                 ? loc.quick_bid_ucf
                                 : loc.swipe_to_bid_ucf,
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.01,
                               color: Colors.white,
@@ -937,18 +828,17 @@ class _ProductCardState extends State<ProductCard> {
                           ),
                         ),
                       ),
-                      // Trailing chevrons
                       Positioned(
-                        right: 14.w,
+                        right: 8.w,
                         top: 0,
                         bottom: 0,
                         child: Center(
                           child: Text(
                             '››',
                             style: TextStyle(
-                              fontSize: 14.sp,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
+                              letterSpacing: 2,
                               color: const Color(0xB3E5FFFF),
                               height: 1,
                             ),
@@ -963,67 +853,55 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 
-  // ── PHOTO AREA (image + status badge + heart) ───────────────
   Widget _buildPhotoArea(AppLocalizations loc) {
     final isEnded = _auctionStatus == "ended";
     final isUpcoming = _auctionStatus == "upcoming";
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(11.r),
+      borderRadius: BorderRadius.circular(10.r),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Image
           GestureDetector(
             onTap: _navigateToProduct,
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFe9f3fa), Color(0xFFf6fbff)],
-                ),
-              ),
+              color: const Color(0xFFf5fafd),
               child: widget.image != null && widget.image!.isNotEmpty
                   ? Image.network(
                       widget.image!,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain, // Full image shows
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.image,
-                        size: 28.sp,
+                        size: 24.sp,
                         color: Colors.grey,
                       ),
                     )
-                  : Icon(Icons.image, size: 28.sp, color: Colors.grey),
+                  : Icon(Icons.image, size: 24.sp, color: Colors.grey),
             ),
           ),
-
-          // Status badge — top-left (matches .bp-complete-badge / .bp-upcoming-badge / .bp-hot-timer)
           Positioned(
-            top: 9.h,
-            left: 9.w,
+            top: 6.h,
+            left: 6.w,
             child: _buildStatusBadge(loc, isEnded, isUpcoming),
           ),
-
-          // Heart — top-right (matches .bp-complete-heart / .bp-upcoming-heart / .bp-hot-heart)
           Positioned(
-            top: 9.h,
-            right: 9.w,
+            top: 6.h,
+            right: 6.w,
             child: GestureDetector(
               onTap: _toggleWishlist,
               child: Container(
-                width: 30.w,
-                height: 30.w,
+                width: 22.w,
+                height: 22.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.93),
                   shape: BoxShape.circle,
                   boxShadow: const [
-                    BoxShadow(color: Color(0x18153550), blurRadius: 12),
+                    BoxShadow(color: Color(0x18153550), blurRadius: 8),
                   ],
                 ),
                 child: _isWishlistLoading
                     ? Padding(
-                        padding: EdgeInsets.all(6.w),
+                        padding: EdgeInsets.all(4.w),
                         child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
                           color: Color(0xFFf06979),
@@ -1033,7 +911,7 @@ class _ProductCardState extends State<ProductCard> {
                         _isWishlisted
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 16.sp,
+                        size: 12.sp,
                         color: _isWishlisted
                             ? const Color(0xFFf06979)
                             : const Color(0xFF6b8499),
@@ -1049,64 +927,61 @@ class _ProductCardState extends State<ProductCard> {
   Widget _buildStatusBadge(
       AppLocalizations loc, bool isEnded, bool isUpcoming) {
     if (isEnded) {
-      // .bp-complete-badge
       return Container(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
         decoration: BoxDecoration(
           color: const Color(0xFFe8f1f8),
           border: Border.all(color: const Color(0xFFbbd1e3), width: 1),
-          borderRadius: BorderRadius.circular(8.r),
+          borderRadius: BorderRadius.circular(5.r),
         ),
         child: Text(
           loc.completed_ucf,
           style: TextStyle(
-            fontSize: 11.sp,
+            fontSize: 7.sp,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.4,
+            letterSpacing: 0.3,
             color: const Color(0xFF3b5a75),
           ),
         ),
       );
     }
     if (isUpcoming) {
-      // .bp-upcoming-badge
       return Container(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
         decoration: BoxDecoration(
           color: const Color(0xFFe5f9f6),
           border: Border.all(color: const Color(0xFF72d8cb), width: 1),
-          borderRadius: BorderRadius.circular(8.r),
+          borderRadius: BorderRadius.circular(5.r),
         ),
         child: Text(
           loc.coming_soon_ucf,
           style: TextStyle(
-            fontSize: 11.sp,
+            fontSize: 7.sp,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.4,
+            letterSpacing: 0.3,
             color: const Color(0xFF087b76),
           ),
         ),
       );
     }
-    // Active — .bp-hot-timer / .bp-soon-timer
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 3.h),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFff8d75), Color(0xFFffbd82)],
         ),
-        borderRadius: BorderRadius.circular(7.r),
+        borderRadius: BorderRadius.circular(5.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.access_time,
-              size: 12.sp, color: const Color(0xFF573024)),
-          SizedBox(width: 3.w),
+              size: 8.sp, color: const Color(0xFF573024)),
+          SizedBox(width: 2.w),
           Text(
             _isTimerLoading ? '' : _timeLeft,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: 7.sp,
               fontWeight: FontWeight.w900,
               color: const Color(0xFF573024),
             ),

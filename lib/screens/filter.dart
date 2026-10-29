@@ -487,64 +487,68 @@ class _FilterState extends State<Filter> {
         backgroundColor: const Color(0xFFF5F9FD),
         body: SafeArea(
           bottom: false,
-          child: Column(
+          child: Stack(
             children: [
-              // ── NEW BidPoints header (identical to Home) ─────
-              _buildBpUtilityHeader(),
+              // ── MAIN COLUMN: header + tools + list ──────────
+              Column(
+                children: [
+                  _buildBpUtilityHeader(),
+                  _buildToolsBar(),
+                  Expanded(child: _buildProductList()),
+                ],
+              ),
 
-              // ── Products count + Sort + Filter ───────────────
-              _buildToolsBar(),
+              // ── FLOATING PAGINATION INDICATOR ──────────────
+              if (_showProductLoadingContainer)
+                Positioned(
+                  bottom: 12.h,
+                  right: 12.w,
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20.r),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x22173A5A),
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14.w,
+                          height: 14.w,
+                          child:
+                              const CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          _totalProductData == _productList.length
+                              ? AppLocalizations.of(context)!
+                                  .no_more_products_ucf
+                              : AppLocalizations.of(context)!
+                                  .loading_more_products_ucf,
+                          style: TextStyle(fontSize: 12.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
-              // ── Product grid (shimmer / list / empty) ────────
-              Expanded(child: _buildProductList()),
+              // ── FILTER BOTTOM SHEET OVERLAY ─────────────────
+              // (restored from original — this is the fix)
+              if (_isFilterDrawerOpen) _buildFilterBottomSheet(),
             ],
           ),
         ),
 
-        // Floating pagination indicator
-        floatingActionButton: _showProductLoadingContainer
-            ? Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20.r),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x22173A5A),
-                      blurRadius: 12,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 14.w,
-                      height: 14.w,
-                      child:
-                          const CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      _totalProductData == _productList.length
-                          ? AppLocalizations.of(context)!
-                              .no_more_products_ucf
-                          : AppLocalizations.of(context)!
-                              .loading_more_products_ucf,
-                      style: TextStyle(fontSize: 12.sp),
-                    ),
-                  ],
-                ),
-              )
-            : null,
-
-        // ── NEW BidPoints bottom bar (identical to main.dart) ─
+        // ── NEW BidPoints mobile bottom bar ─────────────────
         bottomNavigationBar: _buildBpMobileBar(context),
-
-        // Filter drawer overlay
-        endDrawer: null,
       ),
     );
   }
@@ -577,7 +581,6 @@ class _FilterState extends State<Filter> {
             ),
             child: Row(
               children: [
-                // Logo
                 Image.asset(
                   'assets/app_logo.png',
                   width: isMobile ? 37.w : 48.w,
@@ -590,10 +593,8 @@ class _FilterState extends State<Filter> {
                   ),
                 ),
                 SizedBox(width: isMobile ? 9.w : 15.w),
-                // Search box (opens nothing — already on search)
                 Expanded(child: _buildSearchHeader()),
                 SizedBox(width: isMobile ? 5.w : 9.w),
-                // Action buttons: messages, notifications, rewards
                 _headerIconBtn(
                   icon: Icons.chat_bubble_outline_rounded,
                   isMobile: isMobile,
@@ -602,8 +603,7 @@ class _FilterState extends State<Filter> {
                     if (is_logged_in.$) {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => MessengerList()),
+                        MaterialPageRoute(builder: (_) => MessengerList()),
                       );
                     } else {
                       _redirectToLogin();
@@ -658,10 +658,7 @@ class _FilterState extends State<Filter> {
     final loc = AppLocalizations.of(context)!;
 
     return GestureDetector(
-      onTap: () {
-        // Already on the filter/search screen — focus the input
-        FocusScope.of(context).requestFocus(FocusNode());
-      },
+      onTap: () {},
       child: Container(
         height: isMobile ? 36.h : 40.h,
         padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.w : 13.w),
@@ -772,7 +769,6 @@ class _FilterState extends State<Filter> {
             ),
           ),
           SizedBox(width: 9.w),
-          // Sort button
           GestureDetector(
             onTap: _showSortDialog,
             child: Container(
@@ -806,7 +802,6 @@ class _FilterState extends State<Filter> {
             ),
           ),
           SizedBox(width: 9.w),
-          // Filter button
           GestureDetector(
             onTap: _openFilterDrawer,
             child: Container(
@@ -889,7 +884,6 @@ class _FilterState extends State<Filter> {
     required String label,
     required IconData icon,
   }) {
-    // Filter was opened from Home, so highlight Home.
     final isActive = index == 0;
     final color =
         isActive ? MyTheme.accent_color : const Color(0xFF28516e);
@@ -1054,9 +1048,6 @@ class _FilterState extends State<Filter> {
       return;
     }
 
-    // Pop back to Main and let Main switch to the chosen tab.
-    // Main's initState ordering: 0=Home, 1=Activity, 2=Categories,
-    // 3=Points, 4=Profile — exactly what we pass in initialIndex.
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => Main(initialIndex: index),
@@ -1066,7 +1057,7 @@ class _FilterState extends State<Filter> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // FILTER BOTTOM SHEET (unchanged behavior)
+  // FILTER BOTTOM SHEET — restored from original design
   // ═══════════════════════════════════════════════════════════
   Widget _buildFilterBottomSheet() {
     return GestureDetector(
@@ -1088,7 +1079,6 @@ class _FilterState extends State<Filter> {
                 ),
                 child: Column(
                   children: [
-                    // Drag Handle
                     Container(
                       margin: EdgeInsets.only(top: 12.h),
                       width: 40.w,
@@ -1098,7 +1088,6 @@ class _FilterState extends State<Filter> {
                         borderRadius: BorderRadius.circular(2.r),
                       ),
                     ),
-                    // Header
                     Padding(
                       padding: EdgeInsets.symmetric(
                           horizontal: 20.w, vertical: 16.h),
@@ -1126,7 +1115,6 @@ class _FilterState extends State<Filter> {
                       ),
                     ),
                     Divider(height: 1.h),
-                    // Content
                     Expanded(
                       child: SingleChildScrollView(
                         controller: scrollController,
@@ -1134,7 +1122,6 @@ class _FilterState extends State<Filter> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Categories Section
                             Text(
                               AppLocalizations.of(context)!.categories_ucf,
                               style: TextStyle(
@@ -1192,10 +1179,7 @@ class _FilterState extends State<Filter> {
                                     ),
                                   ),
                                 )),
-
                             SizedBox(height: 24.h),
-
-                            // Price Range Section
                             Text(
                               AppLocalizations.of(context)!.price_range_ucf,
                               style: TextStyle(
@@ -1203,8 +1187,6 @@ class _FilterState extends State<Filter> {
                                   fontWeight: FontWeight.bold),
                             ),
                             SizedBox(height: 12.h),
-
-                            // Price Range Slider
                             RangeSlider(
                               values: _priceRange,
                               min: _minPossiblePrice,
@@ -1222,8 +1204,6 @@ class _FilterState extends State<Filter> {
                                 '\$${_priceRange.end.toStringAsFixed(0)}',
                               ),
                             ),
-
-                            // Min/Max Labels
                             Padding(
                               padding: EdgeInsets.only(top: 8.h),
                               child: Row(
@@ -1249,7 +1229,6 @@ class _FilterState extends State<Filter> {
                         ),
                       ),
                     ),
-                    // Action Buttons
                     Container(
                       padding: EdgeInsets.all(20.w),
                       decoration: BoxDecoration(
@@ -1319,7 +1298,7 @@ class _FilterState extends State<Filter> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // PRODUCT LIST (unchanged, but padding fixed)
+  // PRODUCT LIST
   // ═══════════════════════════════════════════════════════════
   Widget _buildProductList() {
     if (_isProductInitial && _productList.isEmpty) {
@@ -1380,13 +1359,5 @@ class _FilterState extends State<Filter> {
         ),
       );
     }
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // Overlay for filter bottom sheet
-  // ═══════════════════════════════════════════════════════════
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
   }
 }

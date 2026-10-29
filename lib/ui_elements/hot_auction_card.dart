@@ -54,7 +54,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
-  static const double _thumbSize = 30;
+  static const double _thumbSize = 28;
 
   final ProductRepository _productRepository = ProductRepository();
 
@@ -353,28 +353,10 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // BUILD — matches HTML .bp-hot-card dimensions
-  //   photo 42% | info 58%
-  //   padding 9 (was 16 in HTML, but user requested 9 everywhere)
-  //   border-radius 17 (kept from HTML)
+  // BUILD — single compact vertical card (fits 2-column mobile grid)
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = MediaQuery.of(context).size.width < 700;
-        final isVeryNarrow = constraints.maxWidth < 260;
-
-        // On mobile, stacked (photo on top). On desktop, side by side.
-        if (isMobile || isVeryNarrow) {
-          return _buildMobileCard();
-        }
-        return _buildDesktopCard();
-      },
-    );
-  }
-
-  Widget _buildDesktopCard() {
     final loc = AppLocalizations.of(context)!;
     final displayBid = _getDisplayBid();
     final retailValue = _getRetailValue();
@@ -386,175 +368,63 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         _timeLeft != noTimerText;
 
     return Container(
-      padding: EdgeInsets.all(9.w),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(17.r),
+        borderRadius: BorderRadius.circular(15.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 26,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(flex: 42, child: _buildPhotoArea(showTimer)),
-            SizedBox(width: 9.w),
-            Expanded(
-              flex: 58,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: _navigateToProductDetails,
-                    child: Text(
-                      widget.name ?? loc.product_ucf,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF193a58),
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        loc.retail_value_ucf,
-                        style: TextStyle(
-                            fontSize: 9.sp,
-                            color: const Color(0xFF71879d)),
-                      ),
-                      Text(
-                        _formatPrice(retailValue),
-                        style: TextStyle(
-                            fontSize: 9.sp,
-                            color: const Color(0xFF71879d)),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _formatPrice(displayBid),
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF00a98d),
-                            letterSpacing: -0.4,
-                            height: 1,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      SizedBox(width: 4.w),
-                      Flexible(
-                        child: Text(
-                          '◉ $points ${loc.point_per_bid_ucf}',
-                          style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF177f81),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 6.h),
-                  _buildProgressBar(),
-                  SizedBox(height: 7.h),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: _buildSlideToBid(loc),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileCard() {
-    final loc = AppLocalizations.of(context)!;
-    final displayBid = _getDisplayBid();
-    final retailValue = _getRetailValue();
-    final points = widget.pointPerBid ?? 0;
-    final endedText = loc.ended_ucf;
-    final noTimerText = loc.no_timer_ucf;
-    final showTimer = !_isTimerLoading &&
-        _timeLeft != endedText &&
-        _timeLeft != noTimerText;
-
-    return Container(
-      padding: EdgeInsets.all(9.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(17.r),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x121b4965),
-            blurRadius: 26,
-            offset: Offset(0, 10),
+            blurRadius: 20,
+            offset: Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: 128.h, child: _buildPhotoArea(showTimer)),
-          SizedBox(height: 9.h),
+          // ── Photo area — fixed proportional height, contain fit ──
+          AspectRatio(
+            aspectRatio: 1.05,
+            child: _buildPhotoArea(showTimer),
+          ),
+          SizedBox(height: 7.h),
+          // ── Product name ──
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
               widget.name ?? loc.product_ucf,
               style: TextStyle(
-                fontSize: 13.sp,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF193a58),
                 height: 1.2,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(height: 5.h),
+          SizedBox(height: 4.h),
+          // ── Retail value ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 loc.retail_value_ucf,
                 style: TextStyle(
-                    fontSize: 10.sp, color: const Color(0xFF71879d)),
+                    fontSize: 8.sp, color: const Color(0xFF71879d)),
               ),
               Text(
                 _formatPrice(retailValue),
                 style: TextStyle(
-                    fontSize: 10.sp, color: const Color(0xFF71879d)),
+                    fontSize: 8.sp, color: const Color(0xFF71879d)),
               ),
             ],
           ),
-          SizedBox(height: 5.h),
+          SizedBox(height: 4.h),
+          // ── Price + points (REDUCED font size) ──
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -562,27 +432,35 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 child: Text(
                   _formatPrice(displayBid),
                   style: TextStyle(
-                    fontSize: 21.sp,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF00a98d),
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.3,
                     height: 1,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                '◉ $points ${loc.point_per_bid_ucf}',
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF177f81),
+              SizedBox(width: 3.w),
+              Flexible(
+                child: Text(
+                  '◉ $points ${loc.point_per_bid_ucf}',
+                  style: TextStyle(
+                    fontSize: 8.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF177f81),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 5.h),
           _buildProgressBar(),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
           _buildSlideToBid(loc),
         ],
       ),
@@ -591,56 +469,50 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
 
   Widget _buildPhotoArea(bool showTimer) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(11.r),
+      borderRadius: BorderRadius.circular(10.r),
       child: Stack(
         fit: StackFit.expand,
         children: [
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFe9f3fa), Color(0xFFf6fbff)],
-                ),
-              ),
+              color: const Color(0xFFf5fafd),
               child: widget.image != null && widget.image!.isNotEmpty
                   ? Image.network(
                       widget.image!,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain, // Requirement #5: full image shows
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.image,
-                        size: 28.sp,
+                        size: 24.sp,
                         color: Colors.grey,
                       ),
                     )
-                  : Icon(Icons.image, size: 28.sp, color: Colors.grey),
+                  : Icon(Icons.image, size: 24.sp, color: Colors.grey),
             ),
           ),
           if (showTimer)
             Positioned(
-              top: 9.h,
-              left: 9.w,
+              top: 6.h,
+              left: 6.w,
               child: Container(
                 padding:
-                    EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
+                    EdgeInsets.symmetric(horizontal: 5.w, vertical: 3.h),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFff8d75), Color(0xFFffbd82)],
                   ),
-                  borderRadius: BorderRadius.circular(7.r),
+                  borderRadius: BorderRadius.circular(5.r),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.access_time,
-                        size: 10.sp, color: const Color(0xFF573024)),
-                    SizedBox(width: 3.w),
+                        size: 8.sp, color: const Color(0xFF573024)),
+                    SizedBox(width: 2.w),
                     Text(
                       _timeLeft,
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize: 7.sp,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF573024),
                       ),
@@ -650,23 +522,23 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               ),
             ),
           Positioned(
-            top: 9.h,
-            right: 9.w,
+            top: 6.h,
+            right: 6.w,
             child: GestureDetector(
               onTap: _toggleWishlist,
               child: Container(
-                width: 26.w,
-                height: 26.w,
+                width: 22.w,
+                height: 22.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.93),
                   shape: BoxShape.circle,
                   boxShadow: const [
-                    BoxShadow(color: Color(0x18153550), blurRadius: 10),
+                    BoxShadow(color: Color(0x18153550), blurRadius: 8),
                   ],
                 ),
                 child: _isWishlistLoading
                     ? Padding(
-                        padding: EdgeInsets.all(5.w),
+                        padding: EdgeInsets.all(4.w),
                         child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
                           color: Color(0xFFf06979),
@@ -676,7 +548,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         _isWishlisted
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 14.sp,
+                        size: 12.sp,
                         color: _isWishlisted
                             ? const Color(0xFFf06979)
                             : const Color(0xFF6b8499),
@@ -691,7 +563,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
 
   Widget _buildProgressBar() {
     return Container(
-      height: 4.h,
+      height: 3.h,
       decoration: BoxDecoration(
         color: const Color(0xFFe8f0f6),
         borderRadius: BorderRadius.circular(5.r),
@@ -712,9 +584,10 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   Widget _buildSlideToBid(AppLocalizations loc) {
+    // Requirement #6: ALL buttons same fixed height (36.h everywhere)
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxOffset = (constraints.maxWidth - _thumbSize - 8).clamp(
+        final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(
           0.0,
           double.infinity,
         );
@@ -724,7 +597,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
-            height: 40.h,
+            height: 36.h,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -736,8 +609,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x351597ba),
-                  blurRadius: 14,
-                  offset: Offset(0, 5),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
@@ -767,27 +640,27 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                             boxShadow: [
                               BoxShadow(
                                 color: Color(0x70063e62),
-                                blurRadius: 9,
+                                blurRadius: 7,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Icon(
                             Icons.chevron_right,
-                            size: 18.sp,
+                            size: 16.sp,
                             color: const Color(0xFF078c9f),
                           ),
                         ),
                       ),
                       Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 22.w),
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
                           child: Text(
                             _slideOffset > 20
                                 ? loc.quick_bid_ucf
                                 : loc.swipe_to_bid_ucf,
                             style: TextStyle(
-                              fontSize: 10.sp,
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.01,
                               color: Colors.white,
@@ -798,16 +671,16 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                         ),
                       ),
                       Positioned(
-                        right: 10.w,
+                        right: 8.w,
                         top: 0,
                         bottom: 0,
                         child: Center(
                           child: Text(
                             '››',
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
+                              letterSpacing: 2,
                               color: const Color(0xB3E5FFFF),
                               height: 1,
                             ),

@@ -215,186 +215,64 @@ class _UpcomingCardState extends State<UpcomingCard> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = MediaQuery.of(context).size.width < 700;
-        final isVeryNarrow = constraints.maxWidth < 260;
-
-        if (isMobile || isVeryNarrow) {
-          return _buildMobileCard();
-        }
-        return _buildDesktopCard();
-      },
-    );
-  }
-
-  Widget _buildDesktopCard() {
     final loc = AppLocalizations.of(context)!;
     final retailValue = _getRetailValue();
     final points = widget.pointPerBid ?? 1;
 
     return Container(
-      padding: EdgeInsets.all(9.w),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(17.r),
+        borderRadius: BorderRadius.circular(15.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 26,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(flex: 42, child: _buildPhotoArea(loc)),
-            SizedBox(width: 9.w),
-            Expanded(
-              flex: 58,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: _navigateToProductDetails,
-                    child: Text(
-                      widget.name ?? loc.product_ucf,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF193a58),
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        loc.retail_value_ucf,
-                        style: TextStyle(
-                            fontSize: 9.sp,
-                            color: const Color(0xFF71879d)),
-                      ),
-                      Text(
-                        _formatPrice(retailValue),
-                        style: TextStyle(
-                            fontSize: 9.sp,
-                            color: const Color(0xFF71879d)),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          loc.starting_soon_ucf,
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF28bfa8),
-                            letterSpacing: -0.4,
-                            height: 1,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      SizedBox(width: 4.w),
-                      Flexible(
-                        child: Text(
-                          '◉ $points ${loc.point_per_bid_ucf}',
-                          style: TextStyle(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF177f81),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8.h),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: _buildNotifyButton(loc),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileCard() {
-    final loc = AppLocalizations.of(context)!;
-    final retailValue = _getRetailValue();
-    final points = widget.pointPerBid ?? 1;
-
-    return Container(
-      padding: EdgeInsets.all(9.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(17.r),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x121b4965),
-            blurRadius: 26,
-            offset: Offset(0, 10),
+            blurRadius: 20,
+            offset: Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: 128.h, child: _buildPhotoArea(loc)),
-          SizedBox(height: 9.h),
+          AspectRatio(
+            aspectRatio: 1.05,
+            child: _buildPhotoArea(loc),
+          ),
+          SizedBox(height: 7.h),
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
               widget.name ?? loc.product_ucf,
               style: TextStyle(
-                fontSize: 13.sp,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF193a58),
                 height: 1.2,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(height: 5.h),
+          SizedBox(height: 4.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 loc.retail_value_ucf,
                 style: TextStyle(
-                    fontSize: 10.sp, color: const Color(0xFF71879d)),
+                    fontSize: 8.sp, color: const Color(0xFF71879d)),
               ),
               Text(
                 _formatPrice(retailValue),
                 style: TextStyle(
-                    fontSize: 10.sp, color: const Color(0xFF71879d)),
+                    fontSize: 8.sp, color: const Color(0xFF71879d)),
               ),
             ],
           ),
-          SizedBox(height: 5.h),
+          SizedBox(height: 4.h),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -402,25 +280,33 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 child: Text(
                   loc.starting_soon_ucf,
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF28bfa8),
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.3,
                     height: 1,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                '◉ $points ${loc.point_per_bid_ucf}',
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF177f81),
+              SizedBox(width: 3.w),
+              Flexible(
+                child: Text(
+                  '◉ $points ${loc.point_per_bid_ucf}',
+                  style: TextStyle(
+                    fontSize: 8.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF177f81),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
           _buildNotifyButton(loc),
         ],
       ),
@@ -429,47 +315,41 @@ class _UpcomingCardState extends State<UpcomingCard> {
 
   Widget _buildPhotoArea(AppLocalizations loc) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(11.r),
+      borderRadius: BorderRadius.circular(10.r),
       child: Stack(
         fit: StackFit.expand,
         children: [
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFe9f3fa), Color(0xFFf6fbff)],
-                ),
-              ),
+              color: const Color(0xFFf5fafd),
               child: widget.image != null && widget.image!.isNotEmpty
                   ? Image.network(
                       widget.image!,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.image,
-                        size: 28.sp,
+                        size: 24.sp,
                         color: Colors.grey,
                       ),
                     )
-                  : Icon(Icons.image, size: 28.sp, color: Colors.grey),
+                  : Icon(Icons.image, size: 24.sp, color: Colors.grey),
             ),
           ),
           Positioned(
-            top: 9.h,
-            left: 9.w,
+            top: 6.h,
+            left: 6.w,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
+              padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 3.h),
               decoration: BoxDecoration(
                 color: const Color(0xFFe5f9f6),
                 border: Border.all(color: const Color(0xFF72d8cb), width: 1),
-                borderRadius: BorderRadius.circular(7.r),
+                borderRadius: BorderRadius.circular(5.r),
               ),
               child: Text(
                 loc.coming_soon_ucf,
                 style: TextStyle(
-                  fontSize: 9.sp,
+                  fontSize: 7.sp,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.3,
                   color: const Color(0xFF087b76),
@@ -478,23 +358,23 @@ class _UpcomingCardState extends State<UpcomingCard> {
             ),
           ),
           Positioned(
-            top: 9.h,
-            right: 9.w,
+            top: 6.h,
+            right: 6.w,
             child: GestureDetector(
               onTap: _toggleWishlist,
               child: Container(
-                width: 26.w,
-                height: 26.w,
+                width: 22.w,
+                height: 22.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.93),
                   shape: BoxShape.circle,
                   boxShadow: const [
-                    BoxShadow(color: Color(0x18153550), blurRadius: 10),
+                    BoxShadow(color: Color(0x18153550), blurRadius: 8),
                   ],
                 ),
                 child: _isWishlistLoading
                     ? Padding(
-                        padding: EdgeInsets.all(5.w),
+                        padding: EdgeInsets.all(4.w),
                         child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
                           color: Color(0xFFf06979),
@@ -504,7 +384,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
                         _isWishlisted
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 14.sp,
+                        size: 12.sp,
                         color: _isWishlisted
                             ? const Color(0xFFf06979)
                             : const Color(0xFF6b8499),
@@ -518,12 +398,13 @@ class _UpcomingCardState extends State<UpcomingCard> {
   }
 
   Widget _buildNotifyButton(AppLocalizations loc) {
+    // Requirement #6: ALL buttons same fixed height (36.h)
     return GestureDetector(
       onTap: _isProcessing ? null : _notifyMe,
       child: Container(
         width: double.infinity,
-        constraints: BoxConstraints(minHeight: 36.h),
-        padding: EdgeInsets.symmetric(horizontal: 9.w),
+        height: 36.h,
+        padding: EdgeInsets.symmetric(horizontal: 6.w),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.centerLeft,
@@ -531,7 +412,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
             colors: [Color(0xFFeffffb), Color(0xFFddf8f2)],
           ),
           border: Border.all(color: const Color(0xFF41c7b5), width: 1),
-          borderRadius: BorderRadius.circular(11.r),
+          borderRadius: BorderRadius.circular(999),
         ),
         alignment: Alignment.center,
         child: _isProcessing
@@ -550,17 +431,17 @@ class _UpcomingCardState extends State<UpcomingCard> {
                   Text(
                     '♧',
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 9.sp,
                       color: const Color(0xFF075f5d),
                       height: 1,
                     ),
                   ),
-                  SizedBox(width: 5.w),
+                  SizedBox(width: 4.w),
                   Flexible(
                     child: Text(
                       loc.notify_me_when_starts_ucf,
                       style: TextStyle(
-                        fontSize: 10.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF075f5d),
                       ),

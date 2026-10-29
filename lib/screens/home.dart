@@ -957,9 +957,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  /// ⚠️ Requirement #2: every section is a 2-column grid.
-  /// Requirement #5: equal image sizes, equal card sizes — enforced by
-  ///   IntrinsicHeight + fixed photo height on mobile / flex on desktop.
+  // Replace the _buildTwoColumnGrid method in home.dart with this:
+  /// Requirement: every section shows 2 columns side-by-side on mobile too.
+  /// Equal image sizes, equal card sizes enforced by IntrinsicHeight.
   Widget _buildTwoColumnGrid({
     required List<dynamic> products,
     required bool isMobile,
@@ -967,26 +967,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }) {
     final limited = products.take(2).toList();
 
-    if (isMobile) {
-      return Column(
-        children: limited.asMap().entries.map((entry) {
-          final i = entry.key;
-          final product = entry.value;
-          return Padding(
-            padding: EdgeInsets.only(
-                bottom: i < limited.length - 1 ? 9.h : 0),
-            child: cardBuilder(context, product),
-          );
-        }).toList(),
-      );
-    }
+    if (limited.isEmpty) return const SizedBox.shrink();
 
+    // ALWAYS 2 columns side by side — on mobile AND desktop.
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: cardBuilder(context, limited[0])),
-          SizedBox(width: 18.w),
+          SizedBox(width: isMobile ? 8.w : 18.w),
           Expanded(
             child: limited.length > 1
                 ? cardBuilder(context, limited[1])
@@ -1326,30 +1315,33 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
+  // Replace _buildPromoBannerMobile in home.dart with this:
+
   Widget _buildPromoBannerMobile(bool isTightMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
     final titleSize =
-        isTightMobile ? 17.0 : (screenWidth * 0.045).clamp(17.0, 19.0);
+        isTightMobile ? 15.0 : (screenWidth * 0.038).clamp(15.0, 18.0);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Requirement #7: button and text MUST be on the same line.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              '🏆',
-              style: TextStyle(fontSize: (isTightMobile ? 36 : 43).sp),
-            ),
-            SizedBox(width: 8.w),
-            Expanded(child: _buildPromoTitle(titleSize)),
-          ],
+        Text(
+          '🏆',
+          style: TextStyle(fontSize: (isTightMobile ? 28 : 34).sp),
         ),
-        SizedBox(height: 12.h),
-        Align(
-          alignment: Alignment.centerRight,
+        SizedBox(width: 6.w),
+        Expanded(
+          flex: 3,
+          child: _buildPromoTitle(titleSize),
+        ),
+        SizedBox(width: 6.w),
+        Flexible(
+          flex: 2,
           child: _buildPromoCtaButton(
-              isMobile: true, isTightMobile: isTightMobile),
+            isMobile: true,
+            isTightMobile: isTightMobile,
+          ),
         ),
       ],
     );
