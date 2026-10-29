@@ -54,12 +54,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   bool _isRefreshingCounts = false;
   UserInformation? _userInfo;
 
-  // Used to scroll promo banner CTA → how-it-works section
   final GlobalKey _howItWorksKey = GlobalKey();
 
-  // ============================================================
-  // RECENT WINNERS
-  // ============================================================
   final List<Map<String, dynamic>> _recentWinners = [];
 
   // ============ BADGE LOGIC ============
@@ -83,18 +79,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     if (!is_logged_in.$) return false;
     if (_isLoadingCounts) return false;
     return _unreadMessageCount > 0;
-  }
-
-  String get _notificationBadgeText {
-    if (_isLoadingCounts) return '';
-    if (_unreadNotificationCount > 99) return '99+';
-    return '$_unreadNotificationCount';
-  }
-
-  String get _messageBadgeText {
-    if (_isLoadingCounts) return '';
-    if (_unreadMessageCount > 99) return '99+';
-    return '$_unreadMessageCount';
   }
 
   @override
@@ -191,7 +175,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // BUILD — ALL SECTIONS ENABLED
+  // BUILD
   // ============================================================
   @override
   Widget build(BuildContext context) {
@@ -222,17 +206,18 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverToBoxAdapter(child: buildBidPointsHeroSection()),
                       SliverToBoxAdapter(
                           child: buildBidPointsCategoriesSection()),
-                      SliverToBoxAdapter(child: SizedBox(height: 16.h)),
+                      SliverToBoxAdapter(child: SizedBox(height: 14.h)),
                       SliverToBoxAdapter(child: _buildHotAuctionSection()),
                       SliverToBoxAdapter(child: _buildEndingSoonSection()),
-                      SliverToBoxAdapter(child: _buildAllAuctionsSection()),
+                      // ── All Auctions: DISABLED per request ──
+                      // SliverToBoxAdapter(child: _buildAllAuctionsSection()),
                       SliverToBoxAdapter(child: _buildUpcomingSection()),
                       SliverToBoxAdapter(child: _buildEndedAuctionsSection()),
                       SliverToBoxAdapter(child: buildPromoBanner()),
                       SliverToBoxAdapter(child: buildHowItWorks()),
                       SliverToBoxAdapter(child: buildRecentWinners()),
                       SliverToBoxAdapter(child: buildTrustBenefits()),
-                      SliverToBoxAdapter(child: SizedBox(height: 30.h)),
+                      SliverToBoxAdapter(child: SizedBox(height: 26.h)),
                     ],
                   ),
                 );
@@ -245,7 +230,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // HEADER — HTML-MATCHED (BidPoints utility)
+  // HEADER
   // ============================================================
   PreferredSizeWidget buildAppBar() {
     return PreferredSize(
@@ -290,8 +275,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           }
         },
         onAccountTap: () {
-          // Replace with your actual account screen route
-          // Example: Navigator.pushNamed(context, '/dashboard');
+          // Wire to your account screen
         },
         onLoginTap: () => _redirectToLogin(),
       ),
@@ -299,7 +283,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 1. BIDPOINTS HERO
+  // HERO — "A" and "UNBELIEVABLE PRICES" on separate lines
   // ============================================================
   Widget buildBidPointsHeroSection() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -307,7 +291,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.only(bottom: 16.h),
+        margin: EdgeInsets.only(bottom: 14.h),
         decoration: BoxDecoration(
           gradient: const RadialGradient(
             center: Alignment(0.58, -0.16),
@@ -345,7 +329,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildHeroDesktopContent() {
     return Container(
-      constraints: BoxConstraints(minHeight: 425.h),
+      constraints: BoxConstraints(minHeight: 400.h),
       padding: EdgeInsets.symmetric(horizontal: 28.w),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -373,8 +357,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Widget _buildHeroCopy({required bool isMobile}) {
     final screenWidth = MediaQuery.of(context).size.width;
     final double headlineSize = isMobile
-        ? (screenWidth * 0.08).clamp(32.0, 54.0)
-        : (screenWidth * 0.05).clamp(40.0, 76.0);
+        ? (screenWidth * 0.07).clamp(28.0, 46.0)
+        : (screenWidth * 0.043).clamp(34.0, 62.0);
     final headlineStyle = TextStyle(
       fontSize: headlineSize,
       fontWeight: FontWeight.w900,
@@ -385,8 +369,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
     return Padding(
       padding: isMobile
-          ? EdgeInsets.fromLTRB(5.w, 30.h, 14.w, 5.h)
-          : EdgeInsets.fromLTRB(0, 34.h, 22.w, 46.h),
+          ? EdgeInsets.fromLTRB(5.w, 24.h, 14.w, 5.h)
+          : EdgeInsets.fromLTRB(0, 28.h, 22.w, 38.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -395,59 +379,54 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             AppLocalizations.of(context)!.bp_hero_eyebrow,
             style: TextStyle(
               color: const Color(0xFF72eadc),
-              fontSize: isMobile ? 13.sp : 15.sp,
+              fontSize: isMobile ? 11.sp : 12.sp,
               fontWeight: FontWeight.w900,
               letterSpacing: isMobile ? 2 : 2.5,
               height: 1,
             ),
           ),
-          SizedBox(height: 14.h),
+          SizedBox(height: 12.h),
           Text(AppLocalizations.of(context)!.bp_hero_line1,
               style: headlineStyle),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${AppLocalizations.of(context)!.bp_hero_letter_a} ',
-                style: headlineStyle,
-              ),
-              Flexible(
-                child: ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color(0xFF5ee7e1),
-                      Color(0xFF19d3be),
-                      Color(0xFF75b8ff),
-                    ],
-                  ).createShader(bounds),
-                  child: Text(
-                    AppLocalizations.of(context)!.bp_hero_line2,
-                    style: headlineStyle.copyWith(color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
+          // ── "A" on its own line ──
+          Text(
+            '${AppLocalizations.of(context)!.bp_hero_letter_a} ',
+            style: headlineStyle,
           ),
-          SizedBox(height: 18.h),
+          // ── "UNBELIEVABLE PRICES" on its own line ──
+          ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [
+                Color(0xFF5ee7e1),
+                Color(0xFF19d3be),
+                Color(0xFF75b8ff),
+              ],
+            ).createShader(bounds),
+            child: Text(
+              AppLocalizations.of(context)!.bp_hero_line2,
+              style: headlineStyle.copyWith(color: Colors.white),
+            ),
+          ),
+          SizedBox(height: 14.h),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 470),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Text(
               AppLocalizations.of(context)!.bp_hero_description,
               style: TextStyle(
-                fontSize: isMobile ? 14.sp : 17.sp,
+                fontSize: isMobile ? 12.sp : 14.sp,
                 color: const Color(0xFFd4e7f7),
                 height: 1.6,
               ),
             ),
           ),
-          SizedBox(height: 22.h),
+          SizedBox(height: 18.h),
           GestureDetector(
             onTap: _showBidPointsVideoPopup,
             child: Container(
               padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 17.w : 28.w,
-                vertical: isMobile ? 13.h : 15.h,
+                horizontal: isMobile ? 14.w : 22.w,
+                vertical: isMobile ? 10.h : 12.h,
               ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
@@ -459,8 +438,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x3F03bfa1),
-                    blurRadius: 27,
-                    offset: Offset(0, 9),
+                    blurRadius: 24,
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
@@ -469,13 +448,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 style: TextStyle(
                   color: const Color(0xFF07304d),
                   fontWeight: FontWeight.w900,
-                  fontSize: isMobile ? 12.sp : 13.sp,
+                  fontSize: isMobile ? 10.sp : 11.sp,
                   height: 1.4,
                 ),
               ),
             ),
           ),
-          SizedBox(height: 29.h),
+          SizedBox(height: 22.h),
           _buildHeroTrustRow(isMobile: isMobile),
         ],
       ),
@@ -490,8 +469,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     ];
 
     return Wrap(
-      spacing: isMobile ? 11.w : 26.w,
-      runSpacing: 8.h,
+      spacing: isMobile ? 10.w : 22.w,
+      runSpacing: 6.h,
       children: items.map((item) {
         return Row(
           mainAxisSize: MainAxisSize.min,
@@ -501,15 +480,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               item[0],
               style: TextStyle(
                 color: const Color(0xFFffcc38),
-                fontSize: isMobile ? 18.sp : 23.sp,
+                fontSize: isMobile ? 15.sp : 18.sp,
                 height: 1,
               ),
             ),
-            SizedBox(width: 7.w),
+            SizedBox(width: 6.w),
             Text(
               item[1],
               style: TextStyle(
-                fontSize: isMobile ? 10.sp : 12.sp,
+                fontSize: isMobile ? 9.sp : 10.sp,
                 color: const Color(0xFFe5f1fc),
                 height: 1.2,
               ),
@@ -521,7 +500,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildHeroArt({required bool isMobile}) {
-    final artHeight = isMobile ? 280.h : 410.h;
+    final artHeight = isMobile ? 240.h : 360.h;
 
     return SizedBox(
       height: artHeight,
@@ -603,13 +582,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildHeroSticker() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 17.w, vertical: 15.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: const Color(0xEC073457),
         border: Border.all(color: const Color(0xFF20d8c0), width: 2),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(13.r),
         boxShadow: const [
-          BoxShadow(color: Color(0x550be7cc), blurRadius: 24),
+          BoxShadow(color: Color(0x550be7cc), blurRadius: 20),
         ],
       ),
       child: Column(
@@ -619,19 +598,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             AppLocalizations.of(context)!.bp_sticker_top,
             style: TextStyle(
               color: const Color(0xFFe3fcff),
-              fontSize: 10.sp,
+              fontSize: 8.sp,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
             ),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 3.h),
           Text(
             AppLocalizations.of(context)!.bp_sticker_main,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: const Color(0xFF71f8e3),
               fontWeight: FontWeight.w900,
-              fontSize: 17.sp,
+              fontSize: 13.sp,
               height: 1.15,
             ),
           ),
@@ -647,15 +626,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       builder: (ctx) {
         return Center(
           child: Padding(
-            padding: EdgeInsets.all(20.w),
+            padding: EdgeInsets.all(18.w),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 520),
-              padding: EdgeInsets.fromLTRB(28.w, 35.h, 28.w, 28.h),
+              constraints: const BoxConstraints(maxWidth: 480),
+              padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 22.h),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(22.r),
+                borderRadius: BorderRadius.circular(20.r),
                 boxShadow: const [
-                  BoxShadow(color: Color(0x88000000), blurRadius: 80),
+                  BoxShadow(color: Color(0x88000000), blurRadius: 60),
                 ],
               ),
               child: Stack(
@@ -668,38 +647,38 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         AppLocalizations.of(context)!.bp_video_title,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 22.sp,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF143957),
                         ),
                       ),
-                      SizedBox(height: 12.h),
+                      SizedBox(height: 10.h),
                       Text(
                         AppLocalizations.of(context)!.bp_video_subtitle,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 12.sp,
                           color: const Color(0xFF59738b),
                           height: 1.6,
                         ),
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 16.h),
                       Container(
-                        height: 180.h,
+                        height: 150.h,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [Color(0xFF0c365d), Color(0xFF0c8e9c)],
                           ),
-                          borderRadius: BorderRadius.circular(15.r),
+                          borderRadius: BorderRadius.circular(13.r),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           AppLocalizations.of(context)!.bp_video_placeholder,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 24.sp,
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
                           ),
@@ -708,10 +687,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     ],
                   ),
                   Positioned(
-                    right: -14.w,
-                    top: -10.h,
+                    right: -12.w,
+                    top: -8.h,
                     child: IconButton(
-                      icon: const Icon(Icons.close, size: 26),
+                      icon: const Icon(Icons.close, size: 22),
                       color: const Color(0xFF31516b),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
@@ -726,7 +705,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 2. BIDPOINTS CATEGORIES
+  // CATEGORIES — Renders exactly what's in featuredCategoryList
   // ============================================================
   Widget buildBidPointsCategoriesSection() {
     if (homeData.featuredCategoryList.isEmpty) {
@@ -738,7 +717,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: isMobile ? 22.h : 28.h),
+        margin: EdgeInsets.symmetric(vertical: isMobile ? 18.h : 22.h),
         child: isMobile
             ? _buildCategoriesMobile()
             : _buildCategoriesDesktop(constraints.maxWidth),
@@ -747,7 +726,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildCategoriesDesktop(double availableWidth) {
-    final gridWidth = math.min(1380.0, availableWidth - 56.w);
+    final gridWidth = math.min(1380.0, availableWidth - 44.w);
     final categories = homeData.featuredCategoryList;
     final rows = <Widget>[];
 
@@ -756,7 +735,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       final chunk = categories.sublist(i, end);
       rows.add(_buildCategoryRow(chunk, gridWidth));
       if (end < categories.length) {
-        rows.add(SizedBox(height: 9.h));
+        rows.add(SizedBox(height: 8.h));
       }
     }
 
@@ -769,13 +748,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildCategoryRow(List chunk, double gridWidth) {
-    final colWidth = (gridWidth - 8 * 9) / 9;
+    final colWidth = (gridWidth - 8 * 8) / 9;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (int i = 0; i < 9; i++) ...[
-          if (i > 0) const SizedBox(width: 9),
+          if (i > 0) const SizedBox(width: 8),
           SizedBox(
             width: colWidth,
             child: i < chunk.length
@@ -799,9 +778,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: homeData.featuredCategoryList.map((category) {
               return Padding(
-                padding: EdgeInsets.only(right: 9.w),
+                padding: EdgeInsets.only(right: 8.w),
                 child: SizedBox(
-                  width: 100.w,
+                  width: 82.w,
                   child: _buildCategoryPill(category, isMobile: true),
                 ),
               );
@@ -813,8 +792,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildCategoryPill(dynamic category, {required bool isMobile}) {
-    const isActive = false;
-
     return InkWell(
       onTap: () {
         if (category.slug != null) {
@@ -826,27 +803,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           );
         }
       },
-      borderRadius: BorderRadius.circular(40.r),
+      borderRadius: BorderRadius.circular(34.r),
       child: Container(
         padding: isMobile
-            ? EdgeInsets.symmetric(horizontal: 6.w, vertical: 10.h)
-            : EdgeInsets.symmetric(horizontal: 6.w, vertical: 12.h),
+            ? EdgeInsets.symmetric(horizontal: 5.w, vertical: 8.h)
+            : EdgeInsets.symmetric(horizontal: 5.w, vertical: 10.h),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF123c64) : Colors.white,
-          border: Border.all(
-            color:
-                isActive ? const Color(0xFF123c64) : const Color(0xFFdbe7f1),
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(40.r),
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFdbe7f1), width: 1),
+          borderRadius: BorderRadius.circular(34.r),
           boxShadow: isMobile
               ? null
               : const [
                   BoxShadow(
                     color: Color(0x10143c64),
-                    blurRadius: 16,
-                    offset: Offset(0, 5),
+                    blurRadius: 13,
+                    offset: Offset(0, 4),
                   ),
                 ],
         ),
@@ -855,16 +828,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: isMobile ? 26.w : 30.w,
-              height: isMobile ? 26.w : 30.w,
+              width: isMobile ? 22.w : 24.w,
+              height: isMobile ? 22.w : 24.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color:
-                    isActive ? const Color(0xFF0f3357) : const Color(0xFFf0f7fb),
+                color: const Color(0xFFf0f7fb),
                 border: Border.all(
-                  color: isActive
-                      ? const Color(0xFF53e3d5)
-                      : const Color(0xFFdceaf3),
+                  color: const Color(0xFFdceaf3),
                   width: 1,
                 ),
               ),
@@ -875,26 +845,26 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.category,
-                        size: isMobile ? 16.sp : 18.sp,
+                        size: isMobile ? 13.sp : 14.sp,
                         color: const Color(0xFF34526c),
                       ),
                     )
                   : Icon(
                       Icons.category,
-                      size: isMobile ? 16.sp : 18.sp,
+                      size: isMobile ? 13.sp : 14.sp,
                       color: const Color(0xFF34526c),
                     ),
             ),
-            SizedBox(height: 4.h),
+            SizedBox(height: 3.h),
             Text(
               category.name ?? '',
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: isMobile ? 11.sp : 12.sp,
+                fontSize: isMobile ? 9.sp : 10.sp,
                 fontWeight: FontWeight.w500,
-                color: isActive ? Colors.white : const Color(0xFF34526c),
+                color: const Color(0xFF34526c),
                 height: 1.3,
               ),
             ),
@@ -905,11 +875,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // SHARED HELPERS
+  // SHARED — Section head, empty state
   // ============================================================
   Widget _buildSectionHead({
     required String title,
-    String? subtitle,
     required VoidCallback onViewAll,
   }) {
     final loc = AppLocalizations.of(context)!;
@@ -921,51 +890,35 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: isMobile ? 21.sp : 24.sp,
-                    color: const Color(0xFF103451),
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.05,
-                    height: 1.25,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  SizedBox(height: 4.h),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: const Color(0xFF687e91),
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ],
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: isMobile ? 17.sp : 19.sp,
+                color: const Color(0xFF103451),
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.4,
+                height: 1.25,
+              ),
             ),
           ),
-          SizedBox(width: 15.w),
+          SizedBox(width: 12.w),
           GestureDetector(
             onTap: onViewAll,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+              padding:
+                  EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(
                   color: const Color(0xFFd4e3ef),
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(22.r),
+                borderRadius: BorderRadius.circular(18.r),
               ),
               child: Text(
                 loc.view_all,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 10.sp,
                   color: const Color(0xFF144164),
                   fontWeight: FontWeight.w500,
                 ),
@@ -979,62 +932,53 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildEmptyState(String message) {
     return Container(
-      height: 60.h,
+      height: 50.h,
       alignment: Alignment.center,
       child: Text(
         message,
-        style: TextStyle(fontSize: 14.sp, color: MyTheme.font_grey),
+        style: TextStyle(fontSize: 12.sp, color: MyTheme.font_grey),
       ),
     );
   }
 
+  // ── 2-column grid, max 2 products ──
   Widget _buildTwoColumnGrid({
     required List<dynamic> products,
     required bool isMobile,
     required Widget Function(BuildContext, dynamic) cardBuilder,
   }) {
+    final limited = products.take(2).toList();
+
     if (isMobile) {
       return Column(
-        children: products.asMap().entries.map((entry) {
+        children: limited.asMap().entries.map((entry) {
           final i = entry.key;
           final product = entry.value;
           return Padding(
-            padding:
-                EdgeInsets.only(bottom: i < products.length - 1 ? 18.h : 0),
+            padding: EdgeInsets.only(
+                bottom: i < limited.length - 1 ? 12.h : 0),
             child: cardBuilder(context, product),
           );
         }).toList(),
       );
     }
 
-    final rows = <Widget>[];
-    for (int i = 0; i < products.length; i += 2) {
-      final left = products[i];
-      final right = (i + 1 < products.length) ? products[i + 1] : null;
-
-      rows.add(Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: cardBuilder(context, left)),
-          SizedBox(width: 18.w),
-          Expanded(
-            child: right != null
-                ? cardBuilder(context, right)
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ));
-
-      if (i + 2 < products.length) {
-        rows.add(SizedBox(height: 18.h));
-      }
-    }
-
-    return Column(children: rows);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: cardBuilder(context, limited[0])),
+        SizedBox(width: 14.w),
+        Expanded(
+          child: limited.length > 1
+              ? cardBuilder(context, limited[1])
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
   }
 
   // ============================================================
-  // 3. HOT AUCTIONS
+  // LIVE & TRENDING AUCTIONS (HTML title)
   // ============================================================
   Widget _buildHotAuctionSection() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -1043,7 +987,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: 28.h),
+        margin: EdgeInsets.symmetric(vertical: 22.h),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
@@ -1054,9 +998,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 children: [
                   _buildSectionHead(
                     title: '🔥 ${loc.hot_auctions_ucf}',
-                    subtitle: isMobile
-                        ? null
-                        : '🟢 ${loc.hot_online_over} 1,200 ${loc.hot_users_bidding_now}',
                     onViewAll: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) {
@@ -1064,7 +1005,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 19.h),
+                  SizedBox(height: 14.h),
                   if (homeData.hotAuctionProductList.isEmpty)
                     _buildEmptyState(loc.no_hot_auctions_available)
                   else
@@ -1102,7 +1043,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 4. ENDING SOON
+  // ENDING SOON
   // ============================================================
   Widget _buildEndingSoonSection() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -1111,7 +1052,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: 28.h),
+        margin: EdgeInsets.symmetric(vertical: 22.h),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
@@ -1129,7 +1070,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 19.h),
+                  SizedBox(height: 14.h),
                   if (homeData.endingSoonProductList.isEmpty)
                     _buildEmptyState(loc.no_ending_soon_auctions)
                   else
@@ -1163,14 +1104,14 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 5. ALL AUCTIONS
+  // ALL AUCTIONS — DISABLED (kept in code, not in build())
   // ============================================================
   Widget _buildAllAuctionsSection() {
     final loc = AppLocalizations.of(context)!;
 
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.symmetric(vertical: 28.h),
+      margin: EdgeInsets.symmetric(vertical: 22.h),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1380),
@@ -1191,14 +1132,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 19.h),
+                  SizedBox(height: 14.h),
                   if (homeData.isAllAuctionsInitial &&
                       homeData.allAuctionsList.isEmpty)
                     ShimmerHelper().buildProductGridShimmer(
                       scontroller: homeData.allAuctionsScrollController,
                     )
                   else if (homeData.allAuctionsList.isNotEmpty)
-                    _buildAllAuctionsGrid()
+                    _buildTwoColumnGrid(
+                      products: homeData.allAuctionsList,
+                      isMobile: isMobile,
+                      cardBuilder: (context, product) =>
+                          _buildAllAuctionCard(product),
+                    )
                   else if (homeData.totalAllAuctionsData == 0)
                     _buildEmptyState(loc.no_auctions_available)
                   else
@@ -1208,61 +1154,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             );
           }),
         ),
-      ),
-    );
-  }
-
-  Widget _buildAllAuctionsGrid() {
-    if (homeData.allAuctionsList.isEmpty) return const SizedBox.shrink();
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels >=
-            scrollInfo.metrics.maxScrollExtent - 50) {
-          if (!homeData.showAllAuctionsLoadingContainer &&
-              homeData.allAuctionsList.length <
-                  (homeData.totalAllAuctionsData ?? 0)) {
-            homeData.allAuctionsPage++;
-            homeData.showAllAuctionsLoadingContainer = true;
-            homeData.fetchAllAuctions();
-          }
-        }
-        return false;
-      },
-      child: MasonryGridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        mainAxisSpacing: 18.w,
-        crossAxisSpacing: 18.w,
-        padding: EdgeInsets.zero,
-        itemCount: homeData.allAuctionsList.length +
-            (homeData.showAllAuctionsLoadingContainer ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == homeData.allAuctionsList.length &&
-              homeData.showAllAuctionsLoadingContainer) {
-            return _buildAllAuctionsLoadingContainer();
-          }
-          final product = homeData.allAuctionsList[index];
-          return _buildAllAuctionCard(product);
-        },
-      ),
-    );
-  }
-
-  Widget _buildAllAuctionsLoadingContainer() {
-    if (!homeData.showAllAuctionsLoadingContainer) {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      height: 36.h,
-      color: Colors.white,
-      alignment: Alignment.center,
-      child: Text(
-        homeData.totalAllAuctionsData == homeData.allAuctionsList.length
-            ? AppLocalizations.of(context)!.no_more_products_ucf
-            : AppLocalizations.of(context)!.loading_more_products_ucf,
-        style: TextStyle(fontSize: 12.sp),
       ),
     );
   }
@@ -1342,7 +1233,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 6. UPCOMING
+  // UPCOMING
   // ============================================================
   Widget _buildUpcomingSection() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -1351,7 +1242,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: 28.h),
+        margin: EdgeInsets.symmetric(vertical: 22.h),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
@@ -1369,7 +1260,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 19.h),
+                  SizedBox(height: 14.h),
                   if (homeData.upcomingProductList.isEmpty)
                     _buildEmptyState(loc.no_upcoming_auctions)
                   else
@@ -1412,7 +1303,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 7. ENDED / COMPLETED
+  // COMPLETED
   // ============================================================
   Widget _buildEndedAuctionsSection() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -1421,7 +1312,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: 28.h),
+        margin: EdgeInsets.symmetric(vertical: 22.h),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
@@ -1439,7 +1330,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 19.h),
+                  SizedBox(height: 14.h),
                   if (homeData.endedProductList.isEmpty)
                     _buildEmptyState(loc.no_ended_auctions)
                   else
@@ -1470,7 +1361,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 8. PROMO BANNER
+  // PROMO BANNER
   // ============================================================
   Widget buildPromoBanner() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -1481,8 +1372,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         padding: EdgeInsets.only(
           left: isMobile ? 15.w : 28.w,
           right: isMobile ? 15.w : 28.w,
-          top: 24.h,
-          bottom: 24.h,
+          top: 20.h,
+          bottom: 20.h,
         ),
         child: Center(
           child: ConstrainedBox(
@@ -1490,8 +1381,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
-                horizontal: isTightMobile ? 16.w : (isMobile ? 18.w : 35.w),
-                vertical: isTightMobile ? 16.h : (isMobile ? 18.h : 28.h),
+                horizontal: isTightMobile ? 14.w : (isMobile ? 16.w : 28.w),
+                vertical: isTightMobile ? 14.h : (isMobile ? 16.h : 24.h),
               ),
               decoration: BoxDecoration(
                 gradient: const RadialGradient(
@@ -1505,12 +1396,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   stops: [0.0, 0.35, 0.80],
                 ),
                 borderRadius:
-                    BorderRadius.circular(isTightMobile ? 16.r : 20.r),
+                    BorderRadius.circular(isTightMobile ? 14.r : 18.r),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x20173f62),
-                    blurRadius: 25,
-                    offset: Offset(0, 14),
+                    blurRadius: 22,
+                    offset: Offset(0, 12),
                   ),
                 ],
               ),
@@ -1526,7 +1417,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildPromoBannerDesktop(bool isTightMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final titleSize = (screenWidth * 0.024).clamp(19.0, 31.0);
+    final titleSize = (screenWidth * 0.019).clamp(16.0, 25.0);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1534,15 +1425,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         Text(
           '🏆',
           style: TextStyle(
-            fontSize: 75.sp,
+            fontSize: 60.sp,
             shadows: const [
-              Shadow(color: Color(0xFFFFac36), blurRadius: 15),
+              Shadow(color: Color(0xFFFFac36), blurRadius: 12),
             ],
           ),
         ),
-        SizedBox(width: 22.w),
+        SizedBox(width: 18.w),
         Expanded(child: _buildPromoTitle(titleSize)),
-        SizedBox(width: 22.w),
+        SizedBox(width: 18.w),
         _buildPromoCtaButton(isMobile: false, isTightMobile: false),
       ],
     );
@@ -1551,7 +1442,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Widget _buildPromoBannerMobile(bool isTightMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
     final titleSize =
-        isTightMobile ? 17.0 : (screenWidth * 0.05).clamp(19.0, 24.0);
+        isTightMobile ? 14.0 : (screenWidth * 0.04).clamp(15.0, 19.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1561,13 +1452,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           children: [
             Text(
               '🏆',
-              style: TextStyle(fontSize: (isTightMobile ? 36 : 43).sp),
+              style: TextStyle(fontSize: (isTightMobile ? 30 : 36).sp),
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: 6.w),
             Expanded(child: _buildPromoTitle(titleSize)),
           ],
         ),
-        SizedBox(height: 12.h),
+        SizedBox(height: 10.h),
         Align(
           alignment: Alignment.centerRight,
           child: _buildPromoCtaButton(
@@ -1622,19 +1513,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       },
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isTightMobile ? 16.w : (isMobile ? 18.w : 24.w),
-          vertical: isTightMobile ? 9.h : (isMobile ? 10.h : 14.h),
+          horizontal: isTightMobile ? 13.w : (isMobile ? 14.w : 20.w),
+          vertical: isTightMobile ? 8.h : (isMobile ? 9.h : 11.h),
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(25.r),
+          borderRadius: BorderRadius.circular(22.r),
         ),
         child: Text(
           '${AppLocalizations.of(context)!.bp_promo_cta}  ➜',
           style: TextStyle(
             color: const Color(0xFF0d4462),
             fontWeight: FontWeight.w900,
-            fontSize: isTightMobile ? 11.sp : (isMobile ? 12.sp : 13.sp),
+            fontSize: isTightMobile ? 9.sp : (isMobile ? 10.sp : 11.sp),
           ),
         ),
       ),
@@ -1642,7 +1533,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 9. HOW DOES IT WORK
+  // HOW DOES IT WORK
   // ============================================================
   Widget buildHowItWorks() {
     return KeyedSubtree(
@@ -1655,8 +1546,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           padding: EdgeInsets.only(
             left: isMobile ? 15.w : 28.w,
             right: isMobile ? 15.w : 28.w,
-            top: 12.h,
-            bottom: 56.h,
+            top: 10.h,
+            bottom: 44.h,
           ),
           child: Center(
             child: ConstrainedBox(
@@ -1667,22 +1558,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   Text(
                     AppLocalizations.of(context)!.bp_how_title,
                     style: TextStyle(
-                      fontSize:
-                          isTightMobile ? 20.sp : (isMobile ? 22.sp : 26.sp),
+                      fontSize: isTightMobile
+                          ? 16.sp
+                          : (isMobile ? 18.sp : 21.sp),
                       color: const Color(0xFF103451),
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.02,
                     ),
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 3.h),
                   Text(
                     AppLocalizations.of(context)!.bp_how_subtitle,
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: 11.sp,
                       color: const Color(0xFF71879d),
                     ),
                   ),
-                  SizedBox(height: 22.h),
+                  SizedBox(height: 18.h),
                   isMobile
                       ? _buildHowWorksMobileSteps(isTightMobile)
                       : _buildHowWorksDesktopSteps(),
@@ -1736,7 +1628,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         return Expanded(
           child: Container(
             padding:
-                EdgeInsets.fromLTRB(i == 0 ? 0 : 19.w, 12.h, 19.w, 12.h),
+                EdgeInsets.fromLTRB(i == 0 ? 0 : 15.w, 10.h, 15.w, 10.h),
             decoration: i < 3
                 ? const BoxDecoration(
                     border: Border(
@@ -1751,12 +1643,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildStepNumBadge(step['num']!),
-                SizedBox(width: 12.w),
+                SizedBox(width: 10.w),
                 Text(
                   step['icon']!,
-                  style: TextStyle(fontSize: 40.sp, height: 1),
+                  style: TextStyle(fontSize: 32.sp, height: 1),
                 ),
-                SizedBox(width: 12.w),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1764,19 +1656,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       Text(
                         step['title']!,
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: 11.sp,
                           color: const Color(0xFF103451),
                           fontWeight: FontWeight.w700,
                           height: 1.2,
                         ),
                       ),
-                      SizedBox(height: 5.h),
+                      SizedBox(height: 4.h),
                       Text(
                         step['desc']!,
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontSize: 10.sp,
                           color: const Color(0xFF698099),
-                          height: 1.6,
+                          height: 1.55,
                         ),
                       ),
                     ],
@@ -1797,16 +1689,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: _buildMobileStep(0, isTightMobile)),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
             Expanded(child: _buildMobileStep(1, isTightMobile)),
           ],
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 8.h),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: _buildMobileStep(2, isTightMobile)),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
             Expanded(child: _buildMobileStep(3, isTightMobile)),
           ],
         ),
@@ -1818,18 +1710,18 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final step = _howWorksSteps(context)[index];
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 10.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStepNumBadge(step['num']!, small: true),
-          SizedBox(width: 8.w),
+          SizedBox(width: 6.w),
           Text(
             step['icon']!,
             style:
-                TextStyle(fontSize: isTightMobile ? 24.sp : 27.sp, height: 1),
+                TextStyle(fontSize: isTightMobile ? 20.sp : 22.sp, height: 1),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 6.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1837,19 +1729,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 Text(
                   step['title']!,
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize: 11.sp,
                     color: const Color(0xFF103451),
                     fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 3.h),
                 Text(
                   step['desc']!,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 10.sp,
                     color: const Color(0xFF698099),
-                    height: 1.5,
+                    height: 1.45,
                   ),
                 ),
               ],
@@ -1862,8 +1754,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildStepNumBadge(String num, {bool small = false}) {
     return Container(
-      width: small ? 26.w : 31.w,
-      height: small ? 26.w : 31.w,
+      width: small ? 22.w : 26.w,
+      height: small ? 22.w : 26.w,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -1878,7 +1770,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w900,
-          fontSize: small ? 12.sp : 13.sp,
+          fontSize: small ? 10.sp : 11.sp,
           height: 1,
         ),
       ),
@@ -1886,7 +1778,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 10. RECENT WINNERS
+  // RECENT WINNERS
   // ============================================================
   Widget buildRecentWinners() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -1897,8 +1789,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         padding: EdgeInsets.only(
           left: isMobile ? 15.w : 28.w,
           right: isMobile ? 15.w : 28.w,
-          top: 8.h,
-          bottom: 28.h,
+          top: 6.h,
+          bottom: 22.h,
         ),
         child: Center(
           child: ConstrainedBox(
@@ -1909,20 +1801,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 Text(
                   '🏆  ${AppLocalizations.of(context)!.bp_winners_title}',
                   style: TextStyle(
-                    fontSize: 17.sp,
+                    fontSize: 14.sp,
                     color: const Color(0xFF103451),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 3.h),
                 Text(
                   AppLocalizations.of(context)!.bp_winners_subtitle,
                   style: TextStyle(
-                    fontSize: 11.sp,
+                    fontSize: 9.sp,
                     color: const Color(0xFF71879d),
                   ),
                 ),
-                SizedBox(height: 15.h),
+                SizedBox(height: 12.h),
                 _buildWinnersList(isMobile, isTightMobile),
               ],
             ),
@@ -1935,12 +1827,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Widget _buildWinnersList(bool isMobile, bool isTightMobile) {
     if (_recentWinners.isEmpty) {
       return Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+        padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
         alignment: Alignment.center,
         child: Text(
           AppLocalizations.of(context)!.bp_winners_empty,
           style: TextStyle(
-            fontSize: 12.sp,
+            fontSize: 10.sp,
             color: const Color(0xFF71879d),
           ),
         ),
@@ -1950,7 +1842,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final columns = isMobile ? 2 : 5;
 
     return LayoutBuilder(builder: (context, constraints) {
-      final spacing = 8.0;
+      final spacing = 6.0;
       final itemWidth =
           (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -1969,22 +1861,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildWinnerCard(Map<String, dynamic> w, bool isTightMobile) {
     final hasImage = (w['image'] as String? ?? '').isNotEmpty;
-    final iconSize = isTightMobile ? 22.w : 30.w;
-    final emojiSize = isTightMobile ? 14.sp : 18.sp;
-    final textSize = isTightMobile ? 10.sp : 11.sp;
-    final subSize = isTightMobile ? 9.sp : 11.sp;
+    final iconSize = isTightMobile ? 18.w : 24.w;
+    final emojiSize = isTightMobile ? 11.sp : 14.sp;
+    final textSize = isTightMobile ? 8.sp : 9.sp;
+    final subSize = isTightMobile ? 7.sp : 9.sp;
 
     return Container(
-      padding: EdgeInsets.all(isTightMobile ? 8.w : 12.w),
+      padding: EdgeInsets.all(isTightMobile ? 6.w : 9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(10.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x10123e58),
-            blurRadius: 15,
-            offset: Offset(0, 6),
+            blurRadius: 12,
+            offset: Offset(0, 5),
           ),
         ],
       ),
@@ -1996,7 +1888,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             height: iconSize,
             decoration: BoxDecoration(
               color: const Color(0xFFf0f7fb),
-              borderRadius: BorderRadius.circular(7.r),
+              borderRadius: BorderRadius.circular(6.r),
             ),
             clipBehavior: Clip.antiAlias,
             child: hasImage
@@ -2011,7 +1903,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     child: Text('🏆', style: TextStyle(fontSize: emojiSize)),
                   ),
           ),
-          SizedBox(width: (isTightMobile ? 7 : 9).w),
+          SizedBox(width: (isTightMobile ? 5 : 7).w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2065,7 +1957,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   // ============================================================
-  // 11. TRUST BENEFITS
+  // TRUST BENEFITS
   // ============================================================
   Widget buildTrustBenefits() {
     return LayoutBuilder(builder: (context, constraints) {
@@ -2073,16 +1965,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       final isTightMobile = constraints.maxWidth < 520;
 
       final innerPad = isTightMobile
-          ? EdgeInsets.all(12.w)
+          ? EdgeInsets.all(10.w)
           : (isMobile
-              ? EdgeInsets.all(14.w)
-              : EdgeInsets.symmetric(horizontal: 28.w, vertical: 19.h));
+              ? EdgeInsets.all(11.w)
+              : EdgeInsets.symmetric(horizontal: 22.w, vertical: 15.h));
 
       return Padding(
         padding: EdgeInsets.only(
           left: isMobile ? 15.w : 28.w,
           right: isMobile ? 15.w : 28.w,
-          bottom: 12.h,
+          bottom: 10.h,
         ),
         child: Center(
           child: ConstrainedBox(
@@ -2092,7 +1984,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 color: const Color(0xFFe9f8f7),
                 border: Border.all(color: const Color(0xFFcfece8), width: 1),
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: BorderRadius.circular(10.r),
               ),
               child: _buildTrustBenefitsGrid(isMobile, isTightMobile),
             ),
@@ -2114,7 +2006,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final columns = isMobile ? 2 : 4;
 
     return LayoutBuilder(builder: (context, constraints) {
-      final spacing = isMobile ? 14.0 : 16.0;
+      final spacing = isMobile ? 11.0 : 13.0;
       final itemWidth =
           (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -2133,15 +2025,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildTrustBenefit(
       Map<String, String> b, bool isMobile, bool isTightMobile) {
-    final iconSize = isTightMobile ? 20.sp : (isMobile ? 22.sp : 24.sp);
-    final titleSize = isTightMobile ? 10.sp : (isMobile ? 11.sp : 12.sp);
-    final subSize = isTightMobile ? 9.sp : (isMobile ? 10.sp : 11.sp);
+    final iconSize = isTightMobile ? 16.sp : (isMobile ? 18.sp : 19.sp);
+    final titleSize = isTightMobile ? 8.sp : (isMobile ? 9.sp : 10.sp);
+    final subSize = isTightMobile ? 7.sp : (isMobile ? 8.sp : 9.sp);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(b['icon']!, style: TextStyle(fontSize: iconSize, height: 1)),
-        SizedBox(width: 10.w),
+        SizedBox(width: 8.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2170,7 +2062,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 }
 
 // ============================================================
-// BIDPOINTS UTILITY HEADER — Matches HTML .bp-utility
+// BIDPOINTS UTILITY HEADER
 // ============================================================
 class _BpUtilityHeader extends StatefulWidget {
   final bool isLoggedIn;
@@ -2305,7 +2197,6 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
     );
   }
 
-  // ── LOGO
   Widget _buildLogo(bool isMobile) {
     final size = isMobile ? 42.0 : 51.0;
     return Container(
@@ -2326,34 +2217,33 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
     );
   }
 
-  // ── SEARCH
   Widget _buildSearch(bool isMobile) {
     final loc = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: widget.onSearchTap,
       child: Container(
-        height: isMobile ? 38.h : 42.h,
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.w : 14.w),
+        height: isMobile ? 36.h : 40.h,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.w : 13.w),
         decoration: BoxDecoration(
           color: const Color(0xFFf0f7fb),
           border: Border.all(color: const Color(0xFFd8e8f2)),
-          borderRadius: BorderRadius.circular(isMobile ? 12.r : 15.r),
+          borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
         ),
         child: Row(
           children: [
             Icon(
               Icons.search_rounded,
-              size: isMobile ? 18.sp : 20.sp,
+              size: isMobile ? 17.sp : 19.sp,
               color: const Color(0xFF2d7894),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 9.w),
             Expanded(
               child: Text(
                 loc.search_products_brands_ucf,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: isMobile ? 12.sp : 14.sp,
+                  fontSize: isMobile ? 11.sp : 13.sp,
                   color: const Color(0xFF6b8a9e),
                 ),
               ),
@@ -2364,7 +2254,6 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
     );
   }
 
-  // ── ACTIONS
   Widget _buildActions(bool isMobile) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -2401,8 +2290,8 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
     bool showDot = false,
     bool isGift = false,
   }) {
-    final size = isMobile ? 35.w : 43.w;
-    final iconSize = isMobile ? 18.sp : 20.sp;
+    final size = isMobile ? 33.w : 41.w;
+    final iconSize = isMobile ? 17.sp : 19.sp;
 
     return GestureDetector(
       onTap: onTap,
@@ -2411,10 +2300,10 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
         children: [
           Container(
             width: size,
-            height: isMobile ? 37.h : 43.h,
+            height: isMobile ? 35.h : 41.h,
             decoration: BoxDecoration(
               color: isGift ? const Color(0xFFe8f9f5) : Colors.white,
-              borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
+              borderRadius: BorderRadius.circular(isMobile ? 10.r : 13.r),
               border: Border.all(
                 color: isGift
                     ? const Color(0xFFbfeae2)
@@ -2430,7 +2319,7 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
           ),
           if (showDot)
             Positioned(
-              right: isMobile ? 5.w : 8.w,
+              right: isMobile ? 5.w : 7.w,
               top: isMobile ? 5.h : 7.h,
               child: Container(
                 width: isMobile ? 6.w : 7.w,
@@ -2447,17 +2336,16 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
     );
   }
 
-  // ── HAMBURGER
   Widget _buildHamburger(bool isMobile) {
     return GestureDetector(
       key: _menuBtnKey,
       onTap: _toggleMenu,
       child: Container(
-        width: 44.w,
-        height: 44.h,
+        width: 41.w,
+        height: 41.h,
         decoration: BoxDecoration(
           color: _menuOpen ? const Color(0xFFe7f9f5) : Colors.white,
-          borderRadius: BorderRadius.circular(13.r),
+          borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: _menuOpen
                 ? const Color(0xFF19bbaa)
@@ -2466,26 +2354,25 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
         ),
         child: Icon(
           Icons.menu_rounded,
-          size: 24.sp,
+          size: 22.sp,
           color: const Color(0xFF174b70),
         ),
       ),
     );
   }
 
-  // ── MENU PANEL
   Widget _buildMenuPanel(AppLocalizations loc) {
     return Container(
-      padding: EdgeInsets.all(17.w),
+      padding: EdgeInsets.all(15.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFd7e8f1)),
-        borderRadius: BorderRadius.circular(17.r),
+        borderRadius: BorderRadius.circular(15.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x310c3553),
-            blurRadius: 48,
-            offset: Offset(0, 18),
+            blurRadius: 40,
+            offset: Offset(0, 15),
           ),
         ],
       ),
@@ -2494,11 +2381,11 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.only(bottom: 10.h),
+            padding: EdgeInsets.only(bottom: 9.h),
             child: Text(
               loc.my_menu_ucf,
               style: TextStyle(
-                fontSize: 16.sp,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w900,
                 color: const Color(0xFF143957),
               ),
@@ -2523,23 +2410,23 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
             _closeMenu();
             widget.onRewardsTap();
           }),
-          SizedBox(height: 12.h),
+          SizedBox(height: 10.h),
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
             decoration: BoxDecoration(
               color: const Color(0xFFe7f8f4),
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(10.r),
             ),
             child: Row(
               children: [
-                Text('🪙', style: TextStyle(fontSize: 20.sp, height: 1)),
-                SizedBox(width: 8.w),
+                Text('🪙', style: TextStyle(fontSize: 17.sp, height: 1)),
+                SizedBox(width: 7.w),
                 Text(
                   widget.isLoggedIn ? '${widget.userBalance}' : '0',
                   style: TextStyle(
                     color: const Color(0xFF154763),
-                    fontSize: 19.sp,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -2548,14 +2435,14 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
                   loc.points_ucf,
                   style: TextStyle(
                     color: const Color(0xFF154763),
-                    fontSize: 13.sp,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 5.h),
           if (widget.isLoggedIn)
             _accountRow(
               label: loc.my_account_ucf,
@@ -2583,15 +2470,15 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
         margin: EdgeInsets.only(bottom: 3.h),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(9.r),
+          borderRadius: BorderRadius.circular(8.r),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize: 12.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF244766),
           ),
@@ -2605,12 +2492,12 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
         child: Row(
           children: [
             Container(
-              width: 32.w,
-              height: 32.w,
+              width: 28.w,
+              height: 28.w,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -2621,15 +2508,15 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
               ),
               child: Icon(
                 Icons.person_rounded,
-                size: 18.sp,
+                size: 15.sp,
                 color: Colors.white,
               ),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
             Text(
               label,
               style: TextStyle(
-                fontSize: 14.sp,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF143957),
               ),
