@@ -989,6 +989,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   // ═══════════════════════════════════════════════════════════
   // HOT AUCTIONS
   // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
+  // HOT AUCTIONS — with new title + subtitle matching HTML
+  // ═══════════════════════════════════════════════════════════
   Widget _buildHotAuctionSection() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
@@ -1001,19 +1004,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 9.w : 9.w),
+              padding: EdgeInsets.symmetric(horizontal: 9.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHead(
-                    title: '🔥 ${loc.hot_auctions_ucf}',
-                    onViewAll: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
-                        return CategoryProducts(slug: 'hot-auctions');
-                      }));
-                    },
-                  ),
+                  _buildHotHead(onViewAll: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return CategoryProducts(slug: 'hot-auctions');
+                    }));
+                  }),
                   SizedBox(height: 18.h),
                   if (homeData.hotAuctionProductList.isEmpty)
                     _buildEmptyState(loc.no_hot_auctions_available)
@@ -1051,6 +1051,169 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       );
     });
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // HOT AUCTION HEADER — new localized title + subtitle
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildHotHead({required VoidCallback onViewAll}) {
+    final loc = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final isMobile = constraints.maxWidth < 700;
+
+      final title = '🔥 ${loc.hot_live_trending_auctions}';
+      final onlinePrefix = '🟢 ${loc.hot_online_over} ';
+      final onlineCount = loc.hot_online_count;
+      final onlineSuffix = ' ${loc.hot_users_bidding_now}';
+
+      if (isMobile) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 21.sp,
+                      color: const Color(0xFF103451),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.05 * 21,
+                      height: 1.25,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: onlinePrefix),
+                        TextSpan(
+                          text: onlineCount,
+                          style: const TextStyle(
+                            color: Color(0xFF00AD91),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(text: onlineSuffix),
+                      ],
+                    ),
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: const Color(0xFF687E91),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 10.w),
+            GestureDetector(
+              onTap: onViewAll,
+              child: Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(
+                    color: const Color(0xFFd4e3ef),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(22.r),
+                ),
+                child: Text(
+                  loc.view_all,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: const Color(0xFF144164),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: title),
+                  const TextSpan(text: '  '),
+                  TextSpan(
+                    text: onlinePrefix,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: const Color(0xFF687E91),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  TextSpan(
+                    text: onlineCount,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: const Color(0xFF00AD91),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  TextSpan(
+                    text: onlineSuffix,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: const Color(0xFF687E91),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+              style: TextStyle(
+                fontSize: 24.sp,
+                color: const Color(0xFF103451),
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.05 * 24,
+                height: 1.25,
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          GestureDetector(
+            onTap: onViewAll,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(
+                  color: const Color(0xFFd4e3ef),
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(22.r),
+              ),
+              child: Text(
+                loc.view_all,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: const Color(0xFF144164),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+  
 
   // ═══════════════════════════════════════════════════════════
   // ENDING SOON
@@ -1400,11 +1563,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(25.r),
         ),
         child: Text(
-          '${AppLocalizations.of(context)!.bp_promo_cta}  ➜',
+          '${AppLocalizations.of(context)!.bp_promo_cta} ➜',
           style: TextStyle(
             color: const Color(0xFF0d4462),
             fontWeight: FontWeight.w800,
-            fontSize: isTightMobile ? 11.sp : (isMobile ? 12.sp : 13.sp),
+            fontSize: isTightMobile ? 10.sp : (isMobile ? 11.sp : 12.sp),
           ),
         ),
       ),

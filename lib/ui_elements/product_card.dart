@@ -502,9 +502,10 @@ class _ProductCardState extends State<ProductCard> {
           ),
         ],
       ),
+      // ── MainAxisSize.max fills the IntrinsicHeight-stretched parent ──
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           AspectRatio(
             aspectRatio: 1.05,
@@ -542,15 +543,23 @@ class _ProductCardState extends State<ProductCard> {
             ],
           ),
           SizedBox(height: 4.h),
-          // Price row — reduced font size
           if (isEnded)
             _buildEndedPriceRow(displayBid)
           else if (isUpcoming)
             _buildUpcomingPriceRow(loc, points)
           else
             _buildActivePriceRow(displayBid, points),
-          SizedBox(height: 6.h),
-          _buildCta(loc),
+
+          // ═══ FIX #4: expand remaining space, pin the CTA to the bottom ═══
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(top: 6.h),
+                child: _buildCta(loc),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -658,7 +667,6 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   Widget _buildViewProductButton(AppLocalizations loc) {
-    // Requirement #6: ALL buttons same fixed height (36.h)
     return GestureDetector(
       onTap: _navigateToProduct,
       child: Container(
@@ -869,7 +877,7 @@ class _ProductCardState extends State<ProductCard> {
               child: widget.image != null && widget.image!.isNotEmpty
                   ? Image.network(
                       widget.image!,
-                      fit: BoxFit.contain, // Full image shows
+                      fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.image,
                         size: 24.sp,
@@ -926,6 +934,7 @@ class _ProductCardState extends State<ProductCard> {
 
   Widget _buildStatusBadge(
       AppLocalizations loc, bool isEnded, bool isUpcoming) {
+    // ═══ FIX #2: hardcoded uppercase to match HTML exactly ═══
     if (isEnded) {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
@@ -935,7 +944,7 @@ class _ProductCardState extends State<ProductCard> {
           borderRadius: BorderRadius.circular(5.r),
         ),
         child: Text(
-          loc.completed_ucf,
+          'COMPLETED',
           style: TextStyle(
             fontSize: 7.sp,
             fontWeight: FontWeight.w900,
@@ -954,7 +963,7 @@ class _ProductCardState extends State<ProductCard> {
           borderRadius: BorderRadius.circular(5.r),
         ),
         child: Text(
-          loc.coming_soon_ucf,
+          'COMING SOON',
           style: TextStyle(
             fontSize: 7.sp,
             fontWeight: FontWeight.w900,

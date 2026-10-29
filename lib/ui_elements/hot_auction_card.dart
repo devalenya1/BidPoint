@@ -353,7 +353,9 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // BUILD — single compact vertical card (fits 2-column mobile grid)
+  // BUILD — column uses MainAxisSize.max with Spacer before the button
+  //   so the slide-to-bid is pinned at the bottom of the card
+  //   (inside the white rounded container, matching HTML grid-row).
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
@@ -381,17 +383,19 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
         ],
       ),
+      // ── MainAxisSize.max fills the IntrinsicHeight-stretched parent ──
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
-          // ── Photo area — fixed proportional height, contain fit ──
+          // Photo
           AspectRatio(
             aspectRatio: 1.05,
             child: _buildPhotoArea(showTimer),
           ),
           SizedBox(height: 7.h),
-          // ── Product name ──
+
+          // Product name
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
@@ -407,7 +411,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             ),
           ),
           SizedBox(height: 4.h),
-          // ── Retail value ──
+
+          // Retail value
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -424,7 +429,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             ],
           ),
           SizedBox(height: 4.h),
-          // ── Price + points (REDUCED font size) ──
+
+          // Price + points
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -459,9 +465,20 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             ],
           ),
           SizedBox(height: 5.h),
+
+          // Progress bar
           _buildProgressBar(),
-          SizedBox(height: 6.h),
-          _buildSlideToBid(loc),
+
+          // ═══ FIX #3: expand remaining space, pin the button to the bottom ═══
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(top: 6.h),
+                child: _buildSlideToBid(loc),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -480,7 +497,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               child: widget.image != null && widget.image!.isNotEmpty
                   ? Image.network(
                       widget.image!,
-                      fit: BoxFit.contain, // Requirement #5: full image shows
+                      fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Icon(
                         Icons.image,
                         size: 24.sp,
@@ -584,7 +601,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   Widget _buildSlideToBid(AppLocalizations loc) {
-    // Requirement #6: ALL buttons same fixed height (36.h everywhere)
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(

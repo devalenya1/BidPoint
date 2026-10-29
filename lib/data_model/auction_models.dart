@@ -358,9 +358,11 @@ class WishlistResponse {
 // 8. POLL DATA RESPONSE (MAIN AUCTION DATA)
 // ============================================
 
-PollDataResponse pollDataResponseFromJson(String str) => PollDataResponse.fromJson(json.decode(str));
+PollDataResponse pollDataResponseFromJson(String str) =>
+    PollDataResponse.fromJson(json.decode(str));
 
-String pollDataResponseToJson(PollDataResponse data) => json.encode(data.toJson());
+String pollDataResponseToJson(PollDataResponse data) =>
+    json.encode(data.toJson());
 
 class PollDataResponse {
   bool? success;
@@ -383,9 +385,13 @@ class PollDataResponse {
   String? upcomingStatus;
   bool? myStatus;
   bool? userHasBid;
-  int? buyNow;  // ADDED: 0 or 1
-  String? payLink;  // ADDED: payment link or empty
+  int? buyNow;
+  String? payLink;
   String? buyNowLink;
+
+  // ═══ FIX: points balance comes back on every poll ═══
+  int? balance;
+
   Winner? winner;
   List<Comment>? comments;
   List<Review>? reviews;
@@ -412,9 +418,10 @@ class PollDataResponse {
     this.upcomingStatus,
     this.myStatus,
     this.userHasBid,
-    this.buyNow,  // ADDED
-    this.payLink,  // ADDED
+    this.buyNow,
+    this.payLink,
     this.buyNowLink,
+    this.balance, // ═══ FIX ═══
     this.winner,
     this.comments,
     this.reviews,
@@ -422,15 +429,24 @@ class PollDataResponse {
   });
 
   factory PollDataResponse.fromJson(Map<String, dynamic> json) {
-    // Get the data inside the 'data' key or use json itself
     final data = json['data'] ?? json;
-    
+
+    // ═══ FIX: read balance from either root or data ═══
+    int? readBalance(dynamic raw) {
+      if (raw == null) return null;
+      if (raw is int) return raw;
+      if (raw is double) return raw.toInt();
+      if (raw is num) return raw.toInt();
+      return int.tryParse(raw.toString());
+    }
+
     return PollDataResponse(
       success: json['success'],
       auctionEndDate: data['auction_end_date'],
       startingBid: (data['starting_bid'] ?? data['startingBid'])?.toDouble(),
       pointPerBid: (data['point_per_bid'] ?? data['pointPerBid'])?.toDouble(),
-      pointPerBidCustom: (data['point_per_bid_custom'] ?? data['pointPerBidCustom'])?.toDouble(),
+      pointPerBidCustom:
+          (data['point_per_bid_custom'] ?? data['pointPerBidCustom'])?.toDouble(),
       auctionEnded: data['auction_ended'],
       isEndingSoon: data['is_ending_soon'],
       remainingSeconds: data['remaining_seconds'],
@@ -441,56 +457,72 @@ class PollDataResponse {
       highestBidFormatted: data['highest_bid_formatted'],
       totalBids: data['total_bids'],
       lastBidderName: data['last_bidder_name'],
-      lastBidAmount: (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
+      lastBidAmount:
+          (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
       isAuctionUpcoming: data['is_auction_upcoming'] ?? false,
       upcomingStatus: data['upcoming_status'],
       userHasBid: json['user_has_bid'] ?? false,
       myStatus: data['my_status'],
-      buyNow: data['buy_now'],  // ADDED: handles 0 or 1
-      payLink: data['pay_link'],  // ADDED: handles link or empty
+      buyNow: data['buy_now'],
+      payLink: data['pay_link'],
       buyNowLink: json["buy_now_link"],
+
+      // ═══ FIX: balance can be on data OR on the root json ═══
+      balance: readBalance(
+        data['balance'] ??
+            data['user_balance'] ??
+            data['points_balance'] ??
+            data['points'] ??
+            json['balance'] ??
+            json['user_balance'] ??
+            json['points_balance'] ??
+            json['points'],
+      ),
+
       winner: data['winner'] != null ? Winner.fromJson(data['winner']) : null,
-      comments: data['comments'] != null 
+      comments: data['comments'] != null
           ? List<Comment>.from(data['comments'].map((x) => Comment.fromJson(x)))
           : [],
-      reviews: data['reviews'] != null 
+      reviews: data['reviews'] != null
           ? List<Review>.from(data['reviews'].map((x) => Review.fromJson(x)))
           : [],
-      bidHistory: data['bid_history'] != null 
-          ? List<BidHistoryItem>.from(data['bid_history'].map((x) => BidHistoryItem.fromJson(x)))
+      bidHistory: data['bid_history'] != null
+          ? List<BidHistoryItem>.from(
+              data['bid_history'].map((x) => BidHistoryItem.fromJson(x)))
           : [],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'success': success,
-    'auction_end_date': auctionEndDate,
-    'starting_bid': startingBid,
-    'point_per_bid': pointPerBid,
-    'point_per_bid_custom': pointPerBidCustom,
-    'auction_ended': auctionEnded,
-    'is_ending_soon': isEndingSoon,
-    'remaining_seconds': remainingSeconds,
-    'rating': rating,
-    'reviews_count': reviewsCount,
-    'is_in_wishlist': isInWishlist,
-    'highest_bid': highestBid,
-    'highest_bid_formatted': highestBidFormatted,
-    'total_bids': totalBids,
-    'last_bidder_name': lastBidderName,
-    'last_bid_amount': lastBidAmount,
-    'is_auction_upcoming': isAuctionUpcoming,
-    'upcoming_status': upcomingStatus,
-    'my_status': myStatus,
-    'user_has_bid': userHasBid,
-    'buy_now': buyNow,  // ADDED
-    'pay_link': payLink,  // ADDED
-    "buy_now_link": buyNowLink,
-    'winner': winner?.toJson(),
-    'comments': comments?.map((x) => x.toJson()).toList(),
-    'reviews': reviews?.map((x) => x.toJson()).toList(),
-    'bid_history': bidHistory?.map((x) => x.toJson()).toList(),
-  };
+        'success': success,
+        'auction_end_date': auctionEndDate,
+        'starting_bid': startingBid,
+        'point_per_bid': pointPerBid,
+        'point_per_bid_custom': pointPerBidCustom,
+        'auction_ended': auctionEnded,
+        'is_ending_soon': isEndingSoon,
+        'remaining_seconds': remainingSeconds,
+        'rating': rating,
+        'reviews_count': reviewsCount,
+        'is_in_wishlist': isInWishlist,
+        'highest_bid': highestBid,
+        'highest_bid_formatted': highestBidFormatted,
+        'total_bids': totalBids,
+        'last_bidder_name': lastBidderName,
+        'last_bid_amount': lastBidAmount,
+        'is_auction_upcoming': isAuctionUpcoming,
+        'upcoming_status': upcomingStatus,
+        'my_status': myStatus,
+        'user_has_bid': userHasBid,
+        'buy_now': buyNow,
+        'pay_link': payLink,
+        'buy_now_link': buyNowLink,
+        'balance': balance, // ═══ FIX ═══
+        'winner': winner?.toJson(),
+        'comments': comments?.map((x) => x.toJson()).toList(),
+        'reviews': reviews?.map((x) => x.toJson()).toList(),
+        'bid_history': bidHistory?.map((x) => x.toJson()).toList(),
+      };
 
   // ============ SNAKE_CASE GETTERS ============
   String? get auction_end_date => auctionEndDate;
@@ -504,10 +536,10 @@ class PollDataResponse {
   bool? get is_in_wishlist => isInWishlist;
   String? get upcoming_status => upcomingStatus;
   bool? get my_status => myStatus;
-  int? get buy_now => buyNow;  // ADDED SNAKE_CASE GETTER
-  String? get pay_link => payLink;  // ADDED SNAKE_CASE GETTER
-  
-  // ============ HELPER METHODS ============
+  int? get buy_now => buyNow;
+  String? get pay_link => payLink;
+
+  // ============ HELPERS ============
   bool get isAuctionEnded => auctionEnded ?? false;
   bool get isEndingSoonValue => isEndingSoon ?? false;
   double get highestBidValue => highestBid ?? 0.0;
@@ -522,8 +554,8 @@ class PollDataResponse {
   bool get isLive => upcomingStatus == 'Live' || upcomingStatus == null;
   bool get isEnded => upcomingStatus == 'Ended';
   bool get isUserWinning => myStatus ?? false;
-  bool get isBuyNowAvailable => buyNow == 1;  // ADDED HELPER
-  bool get hasPaymentLink => payLink != null && payLink!.isNotEmpty;  // ADDED HELPER
+  bool get isBuyNowAvailable => buyNow == 1;
+  bool get hasPaymentLink => payLink != null && payLink!.isNotEmpty;
 }
 
 // ============================================

@@ -305,7 +305,14 @@
           "search_products_brands_ucf": "Search products, brands...",
           "my_menu_ucf": "My menu",
           "rewards_ucf": "Rewards",
-
+          "hot_live_trending_auctions": "Live & Trending Auctions",
+          "@hot_live_trending_auctions": {
+            "description": "Hot auctions section headline"
+          },
+          "hot_online_count": "1,200",
+          "@hot_online_count": {
+            "description": "Hardcoded live user count displayed in the hot auctions header"
+          },
         
           "exit_ucf": "Exit",
           "view_photos_ucf": "View",

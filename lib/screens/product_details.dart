@@ -79,7 +79,7 @@ class _ProductDetailsState extends State<ProductDetails>
   Duration _timeUntilStart = Duration.zero;
   String _auctionStatus = "live"; // "live" | "upcoming" | "ended"
   int _endingSeconds = 10;
-  DateTime? _auctionEndDateTime; // stored for proper countdown
+  DateTime? _auctionEndDateTime;
 
   // =========================
   // BID
@@ -96,7 +96,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool? _myStatus;
   bool _userHasBid = false;
 
-  // Points balance (auto-refresh)
+  // ═══ FIX: points balance now updates from polling AND profile ═══
   int _pointBalance = 0;
   bool _isPointBalanceLoading = true;
   Timer? _balanceRefreshTimer;
@@ -125,7 +125,7 @@ class _ProductDetailsState extends State<ProductDetails>
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
-  static const double _thumbSize = 43; // matches 43.w thumb
+  static const double _thumbSize = 43;
 
   // Audio
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -155,16 +155,19 @@ class _ProductDetailsState extends State<ProductDetails>
 
     _commentsScrollController.addListener(_onCommentsScroll);
 
-    // Init shared value from prefs immediately so header shows correct value
-    _pointBalance = int.tryParse(points_balance.$ ?? '0') ?? 0;
-    _isPointBalanceLoading = _pointBalance == 0;
+    // ═══ FIX: read prefs immediately, never block UI ═══
+    final prefsBalance =
+        int.tryParse(points_balance.$ ?? '0') ??
+        double.tryParse(points_balance.$ ?? '0')?.toInt() ??
+        0;
+    _pointBalance = prefsBalance;
+    _isPointBalanceLoading = false;
 
     _fetchAllData();
     _startPolling();
     _fetchUserInfo();
     _fetchPointBalance();
 
-    // Requirement #2: auto-refresh point balance every 15s without reload
     _balanceRefreshTimer = Timer.periodic(
       const Duration(seconds: 15),
       (_) => _fetchPointBalance(silent: true),
@@ -195,6 +198,44 @@ class _ProductDetailsState extends State<ProductDetails>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _screenWidth = MediaQuery.of(context).size.width;
+  }
+
+  // ============================================================
+  // ROBUST SERVER DATE PARSER
+  // ============================================================
+  /// Accepts unix seconds, unix millis, ISO strings, and
+  /// "YYYY-MM-DD HH:mm:ss". Always returns LOCAL time.
+  DateTime? _parseServerDate(dynamic raw) {
+    if (raw == null) return null;
+    try {
+      if (raw is int) {
+        final v = raw < 1000000000000 ? raw * 1000 : raw;
+        return DateTime.fromMillisecondsSinceEpoch(v);
+      }
+      if (raw is num) {
+        final v = raw.toInt() < 1000000000000
+            ? raw.toInt() * 1000
+            : raw.toInt();
+        return DateTime.fromMillisecondsSinceEpoch(v);
+      }
+      if (raw is DateTime) return raw.toLocal();
+
+      final s = raw.toString().trim();
+      if (s.isEmpty) return null;
+
+      if (RegExp(r'^\d+$').hasMatch(s)) {
+        final n = int.tryParse(s);
+        if (n == null) return null;
+        final v = n < 1000000000000 ? n * 1000 : n;
+        return DateTime.fromMillisecondsSinceEpoch(v);
+      }
+
+      final normalized =
+          s.contains(' ') && !s.contains('T') ? s.replaceFirst(' ', 'T') : s;
+      return DateTime.parse(normalized).toLocal();
+    } catch (_) {
+      return null;
+    }
   }
 
   // ============================================================
@@ -344,7 +385,7 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  // Requirement #2: Auto-pull point balance and update shared value immediately
+  /// Fallback endpoint to refresh balance when polling does not return it.
   Future<void> _fetchPointBalance({bool silent = false}) async {
     if (!is_logged_in.$) {
       if (mounted) setState(() => _isPointBalanceLoading = false);
@@ -352,26 +393,56 @@ class _ProductDetailsState extends State<ProductDetails>
     }
     try {
       final response = await _profileRepository.getUserInfoResponse();
+      int? newBalance;
+
       if (response.success == true &&
           response.data != null &&
           response.data!.isNotEmpty) {
-        final balance = response.data![0].balance ?? 0;
-        if (mounted) {
-          setState(() {
-            _pointBalance = balance;
-            _isPointBalanceLoading = false;
-          });
+        final u = response.data![0];
+        _userInfo = u;
+        final bal = u.balance;
+        if (bal != null) {
+          newBalance = (bal is num) ? bal.toInt() : int.tryParse('$bal');
         }
-        // Sync with shared prefs so Main.dart's points item updates
-        points_balance.$ = balance.toString();
-        points_balance.save();
-      } else {
-        if (mounted) setState(() => _isPointBalanceLoading = false);
       }
+
+      if (newBalance == null) {
+        try {
+          final dyn = response as dynamic;
+          final raw = dyn.balance;
+          if (raw != null) {
+            newBalance = (raw is num) ? raw.toInt() : int.tryParse('$raw');
+          }
+        } catch (_) {}
+      }
+
+      if (newBalance == null) {
+        newBalance = int.tryParse(points_balance.$ ?? '0') ?? 0;
+      }
+
+      if (mounted) {
+        setState(() {
+          _pointBalance = newBalance!;
+          _isPointBalanceLoading = false;
+        });
+      }
+      points_balance.$ = newBalance.toString();
+      points_balance.save();
     } catch (e) {
       print('Error fetching point balance: $e');
       if (mounted) setState(() => _isPointBalanceLoading = false);
     }
+  }
+
+  /// ═══ FIX: apply balance that came back from the poll response ═══
+  void _applyBalanceFromPoll(PollDataResponse response) {
+    final b = response.balance;
+    if (b == null) return;
+    if (b == _pointBalance) return;
+    _pointBalance = b;
+    _isPointBalanceLoading = false;
+    points_balance.$ = b.toString();
+    points_balance.save();
   }
 
   // ============================================================
@@ -392,10 +463,12 @@ class _ProductDetailsState extends State<ProductDetails>
     try {
       final response =
           await _productRepository.pollProductData(_product!.id ?? 0);
-
       if (response.success != true) return;
 
       setState(() {
+        // ═══ FIX: balance from poll response ═══
+        _applyBalanceFromPoll(response);
+
         if (response.myStatus != null) {
           _myStatus = response.myStatus;
           _userHasBid = true;
@@ -430,7 +503,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
         _minNextBidNow = _currentHighestBid + 0.01;
 
-        // Requirement #7: Handle status + restart countdown correctly
+        // Status change handling
         if (response.upcomingStatus != null) {
           final newStatus = response.upcomingStatus!;
           if (_auctionStatus != newStatus) {
@@ -441,23 +514,22 @@ class _ProductDetailsState extends State<ProductDetails>
             } else if (newStatus == "live" &&
                 response.auctionEndDate != null) {
               _upcomingTimer?.cancel();
-              try {
-                final endTime = DateTime.parse(response.auctionEndDate!);
+              final endTime = _parseServerDate(response.auctionEndDate);
+              if (endTime != null) {
                 _auctionEndDateTime = endTime;
                 _timeLeft = endTime.difference(DateTime.now());
                 if (_timeLeft.isNegative) _timeLeft = Duration.zero;
                 _startCountdown(endTime);
-              } catch (_) {}
+              }
             }
           }
         }
 
-        // Requirement #7: Always restart the countdown if the end date changes
+        // End date changed — restart countdown
         if (response.auctionEndDate != null && _auctionStatus == "live") {
-          try {
-            final newEnd = DateTime.parse(response.auctionEndDate!);
+          final newEnd = _parseServerDate(response.auctionEndDate);
+          if (newEnd != null) {
             final newLeft = newEnd.difference(DateTime.now());
-            // Restart countdown if end time has changed by more than 2 sec
             if (_auctionEndDateTime == null ||
                 newEnd.difference(_auctionEndDateTime!).inSeconds.abs() > 2) {
               _auctionEndDateTime = newEnd;
@@ -466,7 +538,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 _startCountdown(newEnd);
               }
             }
-          } catch (_) {}
+          }
         }
 
         if (response.auctionEnded == true) {
@@ -485,7 +557,8 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.comments != null && response.comments!.isNotEmpty) {
           _comments = response.comments!.reversed.toList();
           if (_isAtBottom && !_userInteractedWithComments) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _scrollToBottom());
           }
         }
 
@@ -506,8 +579,10 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       });
 
-      // Requirement #2: refresh point balance silently during poll
-      await _fetchPointBalance(silent: true);
+      // Fallback refresh only if polling did not return balance
+      if (response.balance == null) {
+        await _fetchPointBalance(silent: true);
+      }
 
       if (response.auctionEnded == true &&
           response.winner != null &&
@@ -526,8 +601,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // TIMERS
   // ============================================================
-
-  // Requirement #7: Proper countdown timer that actually ticks every second
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -558,7 +631,6 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       }
 
-      // Always set state so the timer text updates every second
       if (mounted) {
         setState(() => _timeLeft = remaining);
       }
@@ -611,7 +683,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // COMMENTS SCROLL
   // ============================================================
-
   void _onCommentsScroll() {
     if (!_commentsScrollController.hasClients) return;
     final max = _commentsScrollController.position.maxScrollExtent;
@@ -640,7 +711,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // ACTIONS
   // ============================================================
-
   Future<void> _placeBidNow() async {
     if (!is_logged_in.$) return _showLoginRequired();
     if (_isProcessing) return;
@@ -665,13 +735,13 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (response.success == true) {
         if (response.timeExtended == true && response.newEndDate != null) {
-          ToastComponent.showSuccess(
-              response.message ?? AppLocalizations.of(context)!.auction_time_extended);
-          try {
-            final newEnd = DateTime.parse(response.newEndDate!);
+          ToastComponent.showSuccess(response.message ??
+              AppLocalizations.of(context)!.auction_time_extended);
+          final newEnd = _parseServerDate(response.newEndDate);
+          if (newEnd != null) {
             _auctionEndDateTime = newEnd;
             _startCountdown(newEnd);
-          } catch (_) {}
+          }
         } else {
           ToastComponent.showSuccess(
               response.message ??
@@ -820,7 +890,8 @@ class _ProductDetailsState extends State<ProductDetails>
     try {
       WishlistResponse response;
       if (wasIn) {
-        response = await _productRepository.removeFromWishlist(_product!.id ?? 0);
+        response =
+            await _productRepository.removeFromWishlist(_product!.id ?? 0);
       } else {
         response = await _productRepository.addToWishlist(_product!.id ?? 0);
       }
@@ -867,9 +938,10 @@ class _ProductDetailsState extends State<ProductDetails>
               MaterialPageRoute(
                 builder: (context) => Chat(
                   conversation_id: response['conversation_id'],
-                  messenger_name:
-                      data['seller_name'] ?? AppLocalizations.of(context)!.seller,
-                  messenger_title: data['product_name'] ?? _product?.name ?? '',
+                  messenger_name: data['seller_name'] ??
+                      AppLocalizations.of(context)!.seller,
+                  messenger_title:
+                      data['product_name'] ?? _product?.name ?? '',
                   messenger_image: data['seller_avatar'] ?? '',
                 ),
               ),
@@ -925,7 +997,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // FORMATTING
   // ============================================================
-
   String _formatPrice(double amount) => FormatHelper.formatPrice(amount);
 
   String _formatTimeLeft(Duration d, {bool compact = true}) {
@@ -934,21 +1005,12 @@ class _ProductDetailsState extends State<ProductDetails>
     final h = d.inHours.remainder(24);
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
-    if (days > 0) return '${days}d ${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+    if (days > 0)
+      return '${days}d ${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
     if (compact) {
       return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
     return '${h}h ${m}m ${s}s';
-  }
-
-  String _formatDate(String? dateTime) {
-    if (dateTime == null) return '';
-    try {
-      final d = DateTime.parse(dateTime);
-      return '${d.day}/${d.month}/${d.year}';
-    } catch (_) {
-      return '';
-    }
   }
 
   String _formatDateTime(String? dateTime) {
@@ -976,7 +1038,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // BUILD
   // ============================================================
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _product == null) {
@@ -998,40 +1059,25 @@ class _ProductDetailsState extends State<ProductDetails>
             controller: _mainScrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── TOP BAR (logo + points + exit) ───────────────
               SliverToBoxAdapter(child: _buildTopBar()),
-
-              // ── STAGE (photo + overlays) — Req #1, #5: no margin, no radius, 530h
               SliverToBoxAdapter(child: _buildStage()),
-
-              // ── PHOTO RAIL ───────────────────────────────────
               SliverToBoxAdapter(child: _buildPhotoRail()),
-
-              // ── SUMMARY (3 metrics) ──────────────────────────
               SliverToBoxAdapter(child: _buildSummary()),
-
-              // ── HOW IT WORKS ─────────────────────────────────
               SliverToBoxAdapter(child: _buildHowItWorks()),
-
-              // ── BUY NOW (like HTML) ──────────────────────────
               if (_buyNow == 1 && _auctionStatus != "ended")
                 SliverToBoxAdapter(child: _buildBuyNowCard()),
-
-              // spacer so content isn't hidden by bid dock
               SliverToBoxAdapter(child: SizedBox(height: 110.h)),
             ],
           ),
         ),
       ),
-      // ── BID DOCK ─────────────────────────────────────────
       bottomNavigationBar: _buildBidDock(),
     );
   }
 
   // ============================================================
-  // TOP BAR (Req #2: live points from shared value)
+  // TOP BAR
   // ============================================================
-
   Widget _buildTopBar() {
     return Container(
       height: 60.h,
@@ -1055,7 +1101,6 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           const Spacer(),
-          // Requirement #2: Points pill updates automatically
           if (is_logged_in.$)
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
@@ -1082,9 +1127,8 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           SizedBox(width: 6.w),
           GestureDetector(
-            onTap: () => is_logged_in.$
-                ? Navigator.pop(context)
-                : _showLoginRequired(),
+            onTap: () =>
+                is_logged_in.$ ? Navigator.pop(context) : _showLoginRequired(),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
               decoration: BoxDecoration(
@@ -1120,49 +1164,36 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // STAGE — Req #1, #3, #4, #5
-  //   • no outer margin
-  //   • no border-radius
-  //   • min height 530 in mobile
-  //   • icons (top-right) & chat (bottom) must NEVER overlap each other
-  //   • floating icons always on top of chat (z-order via Stack order)
-  //   • more menu opens on top of everything
+  // STAGE
   // ============================================================
-
   Widget _buildStage() {
     final isMobile = _screenWidth < 800;
-    // Requirement #5: larger stage — min 530 on mobile
     final double stageHeight = isMobile
-        ? max(530.0, _screenWidth * 1.15)
-        : min(_screenWidth * 0.85, 720.0);
+        ? max(600.0, _screenWidth * 1.15)
+        : min(_screenWidth * 0.85, 780.0);
 
-    // Chat area reserved height so floating icons never collide with chat
-    const double chatHeight = 220.0; // messages 150 + input row 42 + gaps
-    const double iconRailHeight = 4 * 43.0 + 3 * 9.0; // 4 buttons + gaps
+    final bottomPad = 13.h + MediaQuery.of(context).padding.bottom;
 
     return Container(
-      // Requirement #1 & #5: no margins, no radius
       margin: EdgeInsets.zero,
       height: stageHeight,
-      decoration: const BoxDecoration(
-        color: Color(0xFF142337),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFF142337)),
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // ── 1. Main image ──
+          // ── Main image — cover
           Positioned.fill(
             child: _productImages.isEmpty
                 ? Container(color: const Color(0xFF1a2a3e))
                 : Image.network(
                     _productImages[_currentImageIndex],
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
                         const Icon(Icons.image, color: Colors.white54, size: 60),
                   ),
           ),
 
-          // ── 2. Gradient overlay ──
+          // ── Gradient overlay
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
@@ -1184,31 +1215,30 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
 
-          // ── 3. Chat overlay — placed BEFORE icons so icons are on top ──
+          // ── Chat overlay (full width with padding, safe-area aware)
           Positioned(
             left: 13.w,
-            // Leave room for icon rail on the right
-            right: 13.w + 43.w + 13.w,
-            bottom: 13.h,
-            height: chatHeight,
+            right: 13.w,
+            bottom: bottomPad,
+            height: 220.0,
             child: _buildChatOverlay(),
           ),
 
-          // ── 4. Floating action icons — Req #3: always on top of chat ──
+          // ── Floating icons (top-right)
           Positioned(
             top: 13.h,
             right: 13.w,
             child: _buildActionCircles(),
           ),
 
-          // ── 5. Status badge (top-left) ──
+          // ── Status badge (top-left)
           Positioned(
             top: 13.h,
             left: 13.w,
             child: _buildStatusBadge(),
           ),
 
-          // ── 6. More menu — Req #4: highest z-index (placed LAST in Stack) ──
+          // ── More menu (highest z)
           if (_showMoreMenu)
             Positioned(
               top: 60.h,
@@ -1387,9 +1417,8 @@ class _ProductDetailsState extends State<ProductDetails>
           ),
           _moreMenuItem(
             icon: _isInWishlist ? Icons.favorite : Icons.favorite_border,
-            label: _isInWishlist
-                ? 'Remove from favorites'
-                : 'Add to favorites',
+            label:
+                _isInWishlist ? 'Remove from favorites' : 'Add to favorites',
             onTap: () {
               setState(() => _showMoreMenu = false);
               _toggleWishlist();
@@ -1434,18 +1463,20 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================================
+  // CHAT OVERLAY (full width + safe area)
+  // ============================================================
   Widget _buildChatOverlay() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       children: [
-        // Messages
-        Container(
-          height: 150.h,
+        Expanded(
           child: _comments.isEmpty
               ? const SizedBox.shrink()
               : ListView.builder(
                   controller: _commentsScrollController,
+                  padding: EdgeInsets.zero,
                   itemCount: _comments.length,
                   itemBuilder: (context, i) {
                     final c = _comments[i];
@@ -1474,8 +1505,8 @@ class _ProductDetailsState extends State<ProductDetails>
                               decoration: BoxDecoration(
                                 color: const Color(0xB507192A),
                                 borderRadius: BorderRadius.circular(13.r),
-                                border: Border.all(
-                                    color: const Color(0x18FFFFFF)),
+                                border:
+                                    Border.all(color: const Color(0x18FFFFFF)),
                               ),
                               child: RichText(
                                 text: TextSpan(
@@ -1504,52 +1535,56 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
         ),
         SizedBox(height: 8.h),
-        // Chat input
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 14.w),
-                height: 42.h,
-                decoration: BoxDecoration(
-                  color: const Color(0xC906172E),
-                  borderRadius: BorderRadius.circular(22.r),
-                  border: Border.all(color: const Color(0x47FFFFFF)),
-                ),
-                child: TextField(
-                  controller: _commentController,
-                  style: TextStyle(color: Colors.white, fontSize: 13.sp),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: AppLocalizations.of(context)!.type_in_chat_ucf,
-                    hintStyle: TextStyle(
-                        color: const Color(0xFFD1DBE6), fontSize: 13.sp),
+        Padding(
+          padding: EdgeInsets.only(bottom: 4.h),
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  height: 44.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xC906172E),
+                    borderRadius: BorderRadius.circular(22.r),
+                    border: Border.all(color: const Color(0x47FFFFFF)),
                   ),
-                  onSubmitted: (_) => _sendComment(),
+                  child: TextField(
+                    controller: _commentController,
+                    style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      isCollapsed: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12.h),
+                      hintText: AppLocalizations.of(context)!.type_in_chat_ucf,
+                      hintStyle: TextStyle(
+                          color: const Color(0xFFD1DBE6), fontSize: 13.sp),
+                    ),
+                    onSubmitted: (_) => _sendComment(),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(width: 8.w),
-            GestureDetector(
-              onTap: _isProcessing ? null : _sendComment,
-              child: Container(
-                width: 42.w,
-                height: 42.w,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0ABFC4),
-                  shape: BoxShape.circle,
+              SizedBox(width: 8.w),
+              GestureDetector(
+                onTap: _isProcessing ? null : _sendComment,
+                child: Container(
+                  width: 44.w,
+                  height: 44.w,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0ABFC4),
+                    shape: BoxShape.circle,
+                  ),
+                  child: _isProcessing
+                      ? Padding(
+                          padding: EdgeInsets.all(10.w),
+                          child: const CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Icon(Icons.send_rounded,
+                          color: const Color(0xFF05394B), size: 20.sp),
                 ),
-                child: _isProcessing
-                    ? Padding(
-                        padding: EdgeInsets.all(10.w),
-                        child: const CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Icon(Icons.send_rounded,
-                        color: const Color(0xFF05394B), size: 20.sp),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -1558,7 +1593,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // PHOTO RAIL
   // ============================================================
-
   Widget _buildPhotoRail() {
     if (_productImages.isEmpty) return const SizedBox.shrink();
 
@@ -1601,7 +1635,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       size: 13.sp, color: const Color(0xFF087E99)),
                   SizedBox(width: 4.w),
                   Text(
-                    AppLocalizations.of(context)!.view_photos_ucf ?? 'View photos',
+                    AppLocalizations.of(context)!.view_photos_ucf ??
+                        'View photos',
                     style: TextStyle(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w800,
@@ -1679,8 +1714,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   height: 56.h,
                   padding: EdgeInsets.symmetric(horizontal: 16.w),
                   decoration: const BoxDecoration(
-                    border: Border(
-                        bottom: BorderSide(color: Color(0xFFE4EDF6))),
+                    border: Border(bottom: BorderSide(color: Color(0xFFE4EDF6))),
                   ),
                   child: Row(
                     children: [
@@ -1726,9 +1760,8 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // SUMMARY
+  // SUMMARY — timer / price / leader
   // ============================================================
-
   Widget _buildSummary() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
@@ -1772,12 +1805,14 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  Widget _metricBox(
-      {required String label,
-      required Widget child,
-      Color? bgColor,
-      Color? labelColor,
-      Color? valueColor}) {
+  // ═══ FIX: fully centered metrics — label AND value perfectly centered ═══
+  Widget _metricBox({
+    required String label,
+    required Widget child,
+    Color? bgColor,
+    Color? labelColor,
+    Color? valueColor,
+  }) {
     return Container(
       padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
@@ -1785,35 +1820,40 @@ class _ProductDetailsState extends State<ProductDetails>
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: const Color(0xFFDCEAF5)),
       ),
-      // ← All content CENTERED
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 9.sp,
-              fontWeight: FontWeight.w600,
-              color: labelColor ?? const Color(0xFF637A92),
-              height: 1.3,
+          SizedBox(
+            width: double.infinity,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w600,
+                color: labelColor ?? const Color(0xFF637A92),
+                height: 1.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: 2.h),
-          DefaultTextStyle(
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w900,
-              color: valueColor ?? const Color(0xFF102C4C),
-              fontFeatures: const [ui.FontFeature.tabularFigures()],
+          SizedBox(
+            width: double.infinity,
+            child: DefaultTextStyle(
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w900,
+                color: valueColor ?? const Color(0xFF102C4C),
+                fontFeatures: const [ui.FontFeature.tabularFigures()],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              child: child,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            child: child,
           ),
         ],
       ),
@@ -1875,7 +1915,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // HOW IT WORKS
   // ============================================================
-
   Widget _buildHowItWorks() {
     final isMobile = _screenWidth < 700;
     final steps = [
@@ -1926,8 +1965,7 @@ class _ProductDetailsState extends State<ProductDetails>
           SizedBox(height: 4.h),
           Text(
             AppLocalizations.of(context)!.how_subtitle,
-            style: TextStyle(
-                fontSize: 10.5.sp, color: const Color(0xFF637A92)),
+            style: TextStyle(fontSize: 10.5.sp, color: const Color(0xFF637A92)),
           ),
           SizedBox(height: 19.h),
           if (isMobile)
@@ -2033,9 +2071,8 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // BUY NOW
+  // BUY NOW — subtitle now wraps to full text (no ellipsis)
   // ============================================================
-
   Widget _buildBuyNowCard() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
@@ -2049,11 +2086,9 @@ class _ProductDetailsState extends State<ProductDetails>
               color: Color(0x0B102C4C), blurRadius: 16, offset: Offset(0, 5)),
         ],
       ),
-      // HTML: grid-template-columns: 44px minmax(0,1fr) auto; gap:12px
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Icon (42x42 rounded 13)
           Container(
             width: 42.w,
             height: 42.w,
@@ -2066,7 +2101,6 @@ class _ProductDetailsState extends State<ProductDetails>
                 color: const Color(0xFF008FA5), size: 22.sp),
           ),
           SizedBox(width: 12.w),
-          // Copy
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2085,18 +2119,17 @@ class _ProductDetailsState extends State<ProductDetails>
                 SizedBox(height: 4.h),
                 Text(
                   AppLocalizations.of(context)!.buy_now_subtitle,
+                  // ═══ FIX: full text — no truncation ═══
                   style: TextStyle(
                       fontSize: 11.sp,
                       color: const Color(0xFF637A92),
                       height: 1.35),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                 ),
               ],
             ),
           ),
           SizedBox(width: 12.w),
-          // Button — HTML: min-height 43, padding 12px 14px, radius 12
           GestureDetector(
             onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
             child: Container(
@@ -2131,9 +2164,8 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // BID DOCK — Req #6: Slide text centered in remaining space
+  // BID DOCK
   // ============================================================
-
   Widget _buildBidDock() {
     final isLive = _auctionStatus == "live";
 
@@ -2146,7 +2178,9 @@ class _ProductDetailsState extends State<ProductDetails>
           border: Border(top: BorderSide(color: Color(0xFFDCEAF5))),
           boxShadow: [
             BoxShadow(
-                color: Color(0x1715365A), blurRadius: 35, offset: Offset(0, -12)),
+                color: Color(0x1715365A),
+                blurRadius: 35,
+                offset: Offset(0, -12)),
           ],
         ),
         child: Row(
@@ -2157,7 +2191,6 @@ class _ProductDetailsState extends State<ProductDetails>
                   final maxOffset = (constraints.maxWidth - _thumbSize - 10)
                       .clamp(0.0, double.infinity);
 
-                  // Requirement #6: text centered in remaining space after thumb
                   return GestureDetector(
                     onHorizontalDragStart: isLive
                         ? (d) {
@@ -2171,8 +2204,8 @@ class _ProductDetailsState extends State<ProductDetails>
                         ? (d) {
                             if (!_isDragging) return;
                             final dx = d.localPosition.dx - _thumbStartX;
-                            setState(() =>
-                                _slideOffset = dx.clamp(0.0, maxOffset));
+                            setState(
+                                () => _slideOffset = dx.clamp(0.0, maxOffset));
                           }
                         : null,
                     onHorizontalDragEnd: isLive
@@ -2183,8 +2216,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             setState(
                                 () => _slideOffset = should ? maxOffset : 0);
                             Future.delayed(
-                                Duration(milliseconds: should ? 200 : 300),
-                                () {
+                                Duration(milliseconds: should ? 200 : 300), () {
                               if (mounted) setState(() => _slideOffset = 0);
                             });
                             if (should) _placeBidNow();
@@ -2199,12 +2231,10 @@ class _ProductDetailsState extends State<ProductDetails>
                             colors: [Color(0xFF0BBDBD), Color(0xFF1870D5)],
                           ),
                           borderRadius: BorderRadius.circular(17.r),
-                          border:
-                              Border.all(color: const Color(0xFF65E6E1)),
+                          border: Border.all(color: const Color(0xFF65E6E1)),
                         ),
                         child: Stack(
                           children: [
-                            // Fill behind thumb
                             Positioned(
                               left: 0,
                               top: 0,
@@ -2217,9 +2247,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                               ),
                             ),
-                            // Requirement #6: text centered between thumb+gap and right edge
                             Positioned(
-                              // Start after the thumb + gap
                               left: 5.w + _thumbSize + 6.w,
                               right: 8.w,
                               top: 0,
@@ -2244,7 +2272,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                               ),
                             ),
-                            // Thumb
                             Positioned(
                               left: 5.w + _slideOffset,
                               top: 5.h,
@@ -2306,8 +2333,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       Text(
                         !isLive
                             ? (_auctionStatus == "upcoming"
-                                ? AppLocalizations.of(context)!
-                                    .starts_soon_ucf
+                                ? AppLocalizations.of(context)!.starts_soon_ucf
                                 : AppLocalizations.of(context)!.ended_ucf)
                             : AppLocalizations.of(context)!.manual_bid_ucf,
                         style: TextStyle(
@@ -2328,15 +2354,13 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // DIALOGS
+  // INFORMATION MODAL
   // ============================================================
-
   void _showInformationModal() {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
         child: Container(
           constraints: BoxConstraints(maxHeight: _screenWidth * 1.5),
           padding: EdgeInsets.all(20.w),
@@ -2344,7 +2368,6 @@ class _ProductDetailsState extends State<ProductDetails>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ──
               Row(
                 children: [
                   Expanded(
@@ -2362,34 +2385,30 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
               Text(
                 'Auction details, product description, and direct purchase.',
-                style: TextStyle(
-                    fontSize: 13.sp, color: const Color(0xFF637A92)),
+                style:
+                    TextStyle(fontSize: 13.sp, color: const Color(0xFF637A92)),
               ),
               SizedBox(height: 12.h),
-
-              // ── Scrollable body ──
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Info grid — 2x2
                       Row(
                         children: [
                           Expanded(
                               child: _infoTile(
                                   'Starting bid', _formatPrice(_startingBid))),
                           SizedBox(width: 8.w),
-                          Expanded(
-                              child: _infoTile('Bidders', '$_totalBids')),
+                          Expanded(child: _infoTile('Bidders', '$_totalBids')),
                         ],
                       ),
                       SizedBox(height: 8.h),
                       Row(
                         children: [
                           Expanded(
-                              child:
-                                  _infoTile('Highest bidder', _highestBidder)),
+                              child: _infoTile(
+                                  'Highest bidder', _highestBidder)),
                           SizedBox(width: 8.w),
                           Expanded(
                               child: _infoTile(
@@ -2397,8 +2416,6 @@ class _ProductDetailsState extends State<ProductDetails>
                         ],
                       ),
                       SizedBox(height: 12.h),
-
-                      // Product description
                       Container(
                         padding: EdgeInsets.all(15.w),
                         decoration: BoxDecoration(
@@ -2411,8 +2428,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             Text(
                               'Product description',
                               style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w800),
+                                  fontSize: 14.sp, fontWeight: FontWeight.w800),
                             ),
                             SizedBox(height: 8.h),
                             Html(
@@ -2435,8 +2451,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           ],
                         ),
                       ),
-
-                      // Buy Now card — same style as the main buy-now card (HTML)
                       if (_buyNow == 1 && _auctionStatus != "ended") ...[
                         SizedBox(height: 12.h),
                         Container(
@@ -2479,18 +2493,16 @@ class _ProductDetailsState extends State<ProductDetails>
                                           fontSize: 15.sp,
                                           fontWeight: FontWeight.w800,
                                           color: const Color(0xFF102C4C)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     SizedBox(height: 4.h),
                                     Text(
                                       AppLocalizations.of(context)!
                                           .buy_now_subtitle,
+                                      // ═══ FIX: full text ═══
                                       style: TextStyle(
                                           fontSize: 11.sp,
                                           color: const Color(0xFF637A92)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
                                     ),
                                   ],
                                 ),
@@ -2535,10 +2547,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                 ),
               ),
-
               SizedBox(height: 12.h),
-
-              // ── Close button (HTML parity) ──
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.only(top: 12.h),
@@ -2601,6 +2610,9 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================================
+  // BID INPUT DIALOG
+  // ============================================================
   void _showBidInputDialog() {
     if (_auctionStatus != "live") {
       ToastComponent.showWarning(
@@ -2637,21 +2649,21 @@ class _ProductDetailsState extends State<ProductDetails>
               SizedBox(height: 8.h),
               Text(
                 '${AppLocalizations.of(context)!.enter_amount_higher_ucf} ${_formatPrice(_currentHighestBid)}.',
-                style: TextStyle(
-                    fontSize: 14.sp, color: const Color(0xFF637A92)),
+                style:
+                    TextStyle(fontSize: 14.sp, color: const Color(0xFF637A92)),
               ),
               SizedBox(height: 12.h),
               TextField(
                 controller: _bidController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(
-                    fontSize: 20.sp, fontWeight: FontWeight.w800),
+                style:
+                    TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14.r)),
-                  contentPadding: EdgeInsets.symmetric(
-                      horizontal: 14.w, vertical: 14.h),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
                 ),
               ),
               SizedBox(height: 12.h),
@@ -2714,6 +2726,9 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================================
+  // VIDEO
+  // ============================================================
   void _openVideoModal() {
     final url = _product?.videoLink ?? '';
     if (url.isEmpty) {
@@ -2783,6 +2798,9 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================================
+  // BID HISTORY
+  // ============================================================
   void _openBidHistoryModal() {
     showDialog(
       context: context,
@@ -2812,8 +2830,8 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
               Text(
                 '$_totalBids ${_totalBids == 1 ? AppLocalizations.of(context)!.bid_singular_ucf : AppLocalizations.of(context)!.bids_plural_ucf} · ${AppLocalizations.of(context)!.newest_first_ucf}',
-                style: TextStyle(
-                    fontSize: 12.sp, color: const Color(0xFF637A92)),
+                style:
+                    TextStyle(fontSize: 12.sp, color: const Color(0xFF637A92)),
               ),
               SizedBox(height: 12.h),
               Flexible(
@@ -2832,8 +2850,8 @@ class _ProductDetailsState extends State<ProductDetails>
                     : ListView.separated(
                         shrinkWrap: true,
                         itemCount: _bidHistory.length,
-                        separatorBuilder: (_, __) => Divider(
-                            color: const Color(0xFFE6EFF6), height: 1),
+                        separatorBuilder: (_, __) =>
+                            Divider(color: const Color(0xFFE6EFF6), height: 1),
                         itemBuilder: (_, i) {
                           final b = _bidHistory[i];
                           return Padding(
@@ -2853,7 +2871,9 @@ class _ProductDetailsState extends State<ProductDetails>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        b.userName ?? AppLocalizations.of(context)!.user_ucf,
+                                        b.userName ??
+                                            AppLocalizations.of(context)!
+                                                .user_ucf,
                                         style: TextStyle(
                                             fontSize: 14.sp,
                                             fontWeight: FontWeight.w700),
@@ -2862,8 +2882,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         _formatDateTime(b.createdAt),
                                         style: TextStyle(
                                             fontSize: 11.sp,
-                                            color:
-                                                const Color(0xFF637A92)),
+                                            color: const Color(0xFF637A92)),
                                       ),
                                     ],
                                   ),
@@ -2888,6 +2907,9 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  // ============================================================
+  // WINNER
+  // ============================================================
   void _showWinnerModalDialog() {
     if (_winnerData == null) return;
 
@@ -2985,12 +3007,11 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // SHIMMER
   // ============================================================
-
   Widget _buildShimmer() {
     return SingleChildScrollView(
       child: Column(
         children: [
-          ShimmerHelper().buildBasicShimmer(height: 530.h),
+          ShimmerHelper().buildBasicShimmer(height: 600.h),
           SizedBox(height: 10.h),
           Padding(
             padding: EdgeInsets.all(16.w),

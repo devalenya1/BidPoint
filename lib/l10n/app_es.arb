@@ -1266,6 +1266,14 @@
           "please_login_to_continue_ucf": "Por favor inicia sesión para continuar",
           "exit_ucf": "Salir",
           "view_photos_ucf": "Ver",
+          "hot_live_trending_auctions": "Subastas en Vivo y Tendencias",
+          "@hot_live_trending_auctions": {
+            "description": "Hot auctions section headline"
+          },
+          "hot_online_count": "1,200",
+          "@hot_online_count": {
+            "description": "Hardcoded live user count displayed in the hot auctions header"
+          },
 
 
             "status_live_ucf": "En vivo",
