@@ -140,15 +140,21 @@ class _MainState extends State<Main> {
   }
 
   void initState() {
+    // ⚠️ IMPORTANT: order MUST match _buildBpMobileBar:
+    //   0 = Home       → _bpBarItem(index: 0)
+    //   1 = Activity   → _bpBarItem(index: 1)
+    //   2 = Categories → _bpBarItem(index: 2)
+    //   3 = Points     → _bpPointsItem (onTapped(3))
+    //   4 = Profile    → _bpProfileItem (onTapped(4))
     _children = [
-      Home(),
-      CategoryList(
+      Home(),                       // 0
+      ActivityPage(),               // 1
+      CategoryList(                 // 2
         slug: "",
         is_base_category: true,
       ),
-      PointsPage(),
-      ActivityPage(),
-      Profile(),
+      PointsPage(),                 // 3
+      Profile(),                    // 4
     ];
 
     _currentIndex = widget.initialIndex;
