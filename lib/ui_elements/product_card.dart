@@ -502,7 +502,6 @@ class _ProductCardState extends State<ProductCard> {
           ),
         ],
       ),
-      // ── MainAxisSize.max fills the IntrinsicHeight-stretched parent ──
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.max,
@@ -543,22 +542,25 @@ class _ProductCardState extends State<ProductCard> {
             ],
           ),
           SizedBox(height: 4.h),
-          if (isEnded)
-            _buildEndedPriceRow(displayBid)
-          else if (isUpcoming)
-            _buildUpcomingPriceRow(loc, points)
-          else
-            _buildActivePriceRow(displayBid, points),
 
-          // ═══ FIX #4: expand remaining space, pin the CTA to the bottom ═══
+          // ═══ FIX #4: Expanded now wraps the PRICE ROW (not the CTA). ═══
+          //   Any extra height from IntrinsicHeight/stretch is absorbed
+          //   HERE, so the CTA button always sits tightly under the price.
           Expanded(
             child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.only(top: 6.h),
-                child: _buildCta(loc),
-              ),
+              alignment: Alignment.topLeft,
+              child: isEnded
+                  ? _buildEndedPriceRow(displayBid)
+                  : isUpcoming
+                      ? _buildUpcomingPriceRow(loc, points)
+                      : _buildActivePriceRow(displayBid, points),
             ),
+          ),
+
+          // ═══ CTA — fixed size, right under the price row. ═══
+          Padding(
+            padding: EdgeInsets.only(top: 6.h),
+            child: _buildCta(loc),
           ),
         ],
       ),

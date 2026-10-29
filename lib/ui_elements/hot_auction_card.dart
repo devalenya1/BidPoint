@@ -352,10 +352,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // BUILD — mirrors product_card.dart exactly. The slide-to-bid
-  //   CTA is pinned to the bottom via Expanded+Align(bottomCenter)
-  //   so it is ALWAYS visible.
+   // ═══════════════════════════════════════════════════════════
+  // BUILD
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
@@ -429,50 +427,52 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
           SizedBox(height: 4.h),
 
-          // ── Price + points ──
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text(
-                  _formatPrice(displayBid),
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF00a98d),
-                    letterSpacing: -0.3,
-                    height: 1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(width: 3.w),
-              Flexible(
-                child: Text(
-                  '◉ $points ${loc.point_per_bid_ucf}',
-                  style: TextStyle(
-                    fontSize: 8.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF177f81),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                ),
-              ),
-            ],
-          ),
-
-          // ═══ CTA pinned to bottom — always visible ═══
+          // ═══ FIX: Expanded is on the PRICE row, NOT the CTA. ═══
+          //   Any extra height from IntrinsicHeight/stretch is absorbed
+          //   HERE (above the button), so the CTA always ends the card.
           Expanded(
             child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: EdgeInsets.only(top: 6.h),
-                child: _buildSlideToBid(loc),
+              alignment: Alignment.topLeft,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _formatPrice(displayBid),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF00a98d),
+                        letterSpacing: -0.3,
+                        height: 1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: 3.w),
+                  Flexible(
+                    child: Text(
+                      '◉ $points ${loc.point_per_bid_ucf}',
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF177f81),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+
+          // ═══ CTA — fixed size, right under the price row. ═══
+          Padding(
+            padding: EdgeInsets.only(top: 6.h),
+            child: _buildSlideToBid(loc),
           ),
         ],
       ),
