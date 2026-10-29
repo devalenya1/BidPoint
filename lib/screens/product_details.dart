@@ -996,8 +996,8 @@ class _ProductDetailsState extends State<ProductDetails>
       child: Row(
         children: [
           // Logo
-          Image.network(
-            AppConfig.RAW_BASE_URL + '/public/assets/img/logo.png',
+          Image.asset(
+            'assets/app_logo.png',
             height: 36.h,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => Text(

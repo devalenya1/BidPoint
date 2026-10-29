@@ -2107,7 +2107,7 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
       height: isMobile ? 43.h : 54.h,
       alignment: Alignment.center,
       child: Image.asset(
-        'assets/logo.png',
+        'assets/app_logo.png',
         width: isMobile ? 37.w : 48.w,
         height: size.h,
         fit: BoxFit.contain,
