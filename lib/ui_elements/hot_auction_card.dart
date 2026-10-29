@@ -353,9 +353,9 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // BUILD — column uses MainAxisSize.max with Spacer before the button
-  //   so the slide-to-bid is pinned at the bottom of the card
-  //   (inside the white rounded container, matching HTML grid-row).
+  // BUILD — mirrors product_card.dart exactly. The slide-to-bid
+  //   CTA is pinned to the bottom via Expanded+Align(bottomCenter)
+  //   so it is ALWAYS visible.
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
@@ -383,19 +383,18 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
         ],
       ),
-      // ── MainAxisSize.max fills the IntrinsicHeight-stretched parent ──
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.max,
         children: [
-          // Photo
+          // ── Photo (with timer + heart overlays) ──
           AspectRatio(
             aspectRatio: 1.05,
             child: _buildPhotoArea(showTimer),
           ),
           SizedBox(height: 7.h),
 
-          // Product name
+          // ── Product name ──
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
@@ -412,7 +411,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
           SizedBox(height: 4.h),
 
-          // Retail value
+          // ── Retail value ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -430,7 +429,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
           SizedBox(height: 4.h),
 
-          // Price + points
+          // ── Price + points ──
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -438,7 +437,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 child: Text(
                   _formatPrice(displayBid),
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF00a98d),
                     letterSpacing: -0.3,
@@ -464,12 +463,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               ),
             ],
           ),
-          SizedBox(height: 5.h),
 
-          // Progress bar
-          _buildProgressBar(),
-
-          // ═══ FIX #3: expand remaining space, pin the button to the bottom ═══
+          // ═══ CTA pinned to bottom — always visible ═══
           Expanded(
             child: Align(
               alignment: Alignment.bottomCenter,
@@ -574,28 +569,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    return Container(
-      height: 3.h,
-      decoration: BoxDecoration(
-        color: const Color(0xFFe8f0f6),
-        borderRadius: BorderRadius.circular(5.r),
-      ),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: 0.2,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF18c6b1), Color(0xFF48aee4)],
-            ),
-            borderRadius: BorderRadius.circular(5.r),
-          ),
-        ),
       ),
     );
   }

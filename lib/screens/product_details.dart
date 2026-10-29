@@ -96,7 +96,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool? _myStatus;
   bool _userHasBid = false;
 
-  // ═══ FIX: points balance now updates from polling AND profile ═══
+  // points balance
   int _pointBalance = 0;
   bool _isPointBalanceLoading = true;
   Timer? _balanceRefreshTimer;
@@ -155,7 +155,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
     _commentsScrollController.addListener(_onCommentsScroll);
 
-    // ═══ FIX: read prefs immediately, never block UI ═══
     final prefsBalance =
         int.tryParse(points_balance.$ ?? '0') ??
         double.tryParse(points_balance.$ ?? '0')?.toInt() ??
@@ -203,36 +202,52 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // ROBUST SERVER DATE PARSER
   // ============================================================
-  /// Accepts unix seconds, unix millis, ISO strings, and
-  /// "YYYY-MM-DD HH:mm:ss". Always returns LOCAL time.
+  /// Accepts unix seconds, unix millis, unix micros, unix nanos,
+  /// ISO strings, and "YYYY-MM-DD HH:mm:ss".
+  /// Always returns LOCAL time.
   DateTime? _parseServerDate(dynamic raw) {
     if (raw == null) return null;
     try {
-      if (raw is int) {
-        final v = raw < 1000000000000 ? raw * 1000 : raw;
-        return DateTime.fromMillisecondsSinceEpoch(v);
-      }
-      if (raw is num) {
-        final v = raw.toInt() < 1000000000000
-            ? raw.toInt() * 1000
-            : raw.toInt();
-        return DateTime.fromMillisecondsSinceEpoch(v);
-      }
       if (raw is DateTime) return raw.toLocal();
 
-      final s = raw.toString().trim();
-      if (s.isEmpty) return null;
-
-      if (RegExp(r'^\d+$').hasMatch(s)) {
-        final n = int.tryParse(s);
-        if (n == null) return null;
-        final v = n < 1000000000000 ? n * 1000 : n;
-        return DateTime.fromMillisecondsSinceEpoch(v);
+      int? n;
+      if (raw is int) {
+        n = raw;
+      } else if (raw is num) {
+        n = raw.toInt();
+      } else {
+        final s = raw.toString().trim();
+        if (s.isEmpty) return null;
+        if (RegExp(r'^\d+$').hasMatch(s)) {
+          n = int.tryParse(s);
+          if (n == null) return null;
+        } else {
+          final normalized = s.contains(' ') && !s.contains('T')
+              ? s.replaceFirst(' ', 'T')
+              : s;
+          return DateTime.parse(normalized).toLocal();
+        }
       }
 
-      final normalized =
-          s.contains(' ') && !s.contains('T') ? s.replaceFirst(' ', 'T') : s;
-      return DateTime.parse(normalized).toLocal();
+      if (n == null || n <= 0) return null;
+
+      // Detect precision by magnitude:
+      //   seconds ~ 1e9    -> *1000
+      //   millis  ~ 1e12
+      //   micros  ~ 1e15   -> /1000
+      //   nanos   ~ 1e18   -> /1e6
+      int millis;
+      if (n < 100000000000) {
+        millis = n * 1000;
+      } else if (n < 100000000000000) {
+        millis = n;
+      } else if (n < 100000000000000000) {
+        millis = n ~/ 1000;
+      } else {
+        millis = n ~/ 1000000;
+      }
+
+      return DateTime.fromMillisecondsSinceEpoch(millis).toLocal();
     } catch (_) {
       return null;
     }
@@ -305,12 +320,27 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     _auctionStatus = "live";
-    final endTime = _product!.getAuctionEndDateTime();
+
+    // Prefer our own parser on the raw end date, because the server
+    // sends epoch seconds (e.g. 1790488740) and the data-model parser
+    // may not handle that format.
+    DateTime? endTime;
+    try {
+      final dyn = _product as dynamic;
+      endTime = _parseServerDate(dyn.auctionEndDate);
+    } catch (_) {}
+    endTime ??= _product!.getAuctionEndDateTime();
+
     if (endTime != null) {
       _auctionEndDateTime = endTime;
-      _timeLeft = endTime.difference(DateTime.now());
-      if (_timeLeft.isNegative) _timeLeft = Duration.zero;
-      _startCountdown(endTime);
+      final left = endTime.difference(DateTime.now());
+      if (left.isNegative) {
+        _auctionStatus = "ended";
+        _timeLeft = Duration.zero;
+      } else {
+        _timeLeft = left;
+        _startCountdown(endTime);
+      }
     }
   }
 
@@ -385,7 +415,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  /// Fallback endpoint to refresh balance when polling does not return it.
   Future<void> _fetchPointBalance({bool silent = false}) async {
     if (!is_logged_in.$) {
       if (mounted) setState(() => _isPointBalanceLoading = false);
@@ -407,40 +436,42 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (newBalance == null) {
-        try {
-          final dyn = response as dynamic;
-          final raw = dyn.balance;
-          if (raw != null) {
-            newBalance = (raw is num) ? raw.toInt() : int.tryParse('$raw');
-          }
-        } catch (_) {}
+        final stored = int.tryParse(points_balance.$ ?? '');
+        if (stored != null) newBalance = stored;
       }
 
-      if (newBalance == null) {
-        newBalance = int.tryParse(points_balance.$ ?? '0') ?? 0;
+      if (newBalance != null && newBalance >= 0) {
+        if (mounted) {
+          setState(() {
+            _pointBalance = newBalance!;
+            _isPointBalanceLoading = false;
+          });
+        }
+        final fromServer = response.success == true &&
+            response.data != null &&
+            response.data!.isNotEmpty &&
+            response.data![0].balance != null;
+        if (fromServer) {
+          points_balance.$ = newBalance.toString();
+          points_balance.save();
+        }
+      } else if (mounted) {
+        setState(() => _isPointBalanceLoading = false);
       }
-
-      if (mounted) {
-        setState(() {
-          _pointBalance = newBalance!;
-          _isPointBalanceLoading = false;
-        });
-      }
-      points_balance.$ = newBalance.toString();
-      points_balance.save();
     } catch (e) {
       print('Error fetching point balance: $e');
       if (mounted) setState(() => _isPointBalanceLoading = false);
     }
   }
 
-  /// ═══ FIX: apply balance that came back from the poll response ═══
   void _applyBalanceFromPoll(PollDataResponse response) {
     final b = response.balance;
-    if (b == null) return;
+    if (b == null || b <= 0) return;
     if (b == _pointBalance) return;
-    _pointBalance = b;
-    _isPointBalanceLoading = false;
+    setState(() {
+      _pointBalance = b;
+      _isPointBalanceLoading = false;
+    });
     points_balance.$ = b.toString();
     points_balance.save();
   }
@@ -466,7 +497,6 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success != true) return;
 
       setState(() {
-        // ═══ FIX: balance from poll response ═══
         _applyBalanceFromPoll(response);
 
         if (response.myStatus != null) {
@@ -517,24 +547,40 @@ class _ProductDetailsState extends State<ProductDetails>
               final endTime = _parseServerDate(response.auctionEndDate);
               if (endTime != null) {
                 _auctionEndDateTime = endTime;
-                _timeLeft = endTime.difference(DateTime.now());
-                if (_timeLeft.isNegative) _timeLeft = Duration.zero;
-                _startCountdown(endTime);
+                final left = endTime.difference(DateTime.now());
+                if (left.isNegative) {
+                  _auctionStatus = "ended";
+                  _timeLeft = Duration.zero;
+                } else {
+                  _timeLeft = left;
+                  _startCountdown(endTime);
+                }
               }
             }
           }
         }
 
-        // End date changed — restart countdown
+        // End date changed — restart countdown ONLY if the server
+        // actually moved the end time (>5s tolerance), otherwise we
+        // kill and re-create the timer every 2s and it looks frozen.
         if (response.auctionEndDate != null && _auctionStatus == "live") {
           final newEnd = _parseServerDate(response.auctionEndDate);
           if (newEnd != null) {
-            final newLeft = newEnd.difference(DateTime.now());
-            if (_auctionEndDateTime == null ||
-                newEnd.difference(_auctionEndDateTime!).inSeconds.abs() > 2) {
+            final changed = _auctionEndDateTime == null ||
+                newEnd
+                        .difference(_auctionEndDateTime!)
+                        .inSeconds
+                        .abs() >
+                    5;
+            if (changed) {
               _auctionEndDateTime = newEnd;
-              if (!newLeft.isNegative) {
-                _timeLeft = newLeft;
+              final left = newEnd.difference(DateTime.now());
+              if (left.isNegative) {
+                _auctionStatus = "ended";
+                _timeLeft = Duration.zero;
+                _countdownTimer?.cancel();
+              } else {
+                _timeLeft = left;
                 _startCountdown(newEnd);
               }
             }
@@ -579,8 +625,7 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       });
 
-      // Fallback refresh only if polling did not return balance
-      if (response.balance == null) {
+      if (response.balance == null || response.balance! <= 0) {
         await _fetchPointBalance(silent: true);
       }
 
@@ -999,18 +1044,23 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   String _formatPrice(double amount) => FormatHelper.formatPrice(amount);
 
-  String _formatTimeLeft(Duration d, {bool compact = true}) {
+  /// Always renders "Xd HH:MM:SS" — days, hours, minutes and seconds.
+  /// This is what the summary card shows, so it always ticks (seconds
+  /// change every 1s).
+  String _formatTimeLeft(Duration d) {
     if (d.isNegative) d = Duration.zero;
+
     final days = d.inDays;
     final h = d.inHours.remainder(24);
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
-    if (days > 0)
-      return '${days}d ${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-    if (compact) {
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    }
-    return '${h}h ${m}m ${s}s';
+
+    final hh = h.toString().padLeft(2, '0');
+    final mm = m.toString().padLeft(2, '0');
+    final ss = s.toString().padLeft(2, '0');
+
+    if (days > 0) return '${days}d $hh:$mm:$ss';
+    return '$hh:$mm:$ss';
   }
 
   String _formatDateTime(String? dateTime) {
@@ -1215,12 +1265,12 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
 
-          // ── Chat overlay (full width with padding, safe-area aware)
+          // ── Chat overlay
           Positioned(
             left: 13.w,
             right: 13.w,
             bottom: bottomPad,
-            height: 220.0,
+            height: min(stageHeight * 0.42, 320.0),
             child: _buildChatOverlay(),
           ),
 
@@ -1805,7 +1855,7 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  // ═══ FIX: fully centered metrics — label AND value perfectly centered ═══
+  // ═══ Left-aligned metric box — label AND value start at the left ═══
   Widget _metricBox({
     required String label,
     required Widget child,
@@ -1822,38 +1872,32 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 9.sp,
-                fontWeight: FontWeight.w600,
-                color: labelColor ?? const Color(0xFF637A92),
-                height: 1.3,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            label,
+            textAlign: TextAlign.left,
+            style: TextStyle(
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w600,
+              color: labelColor ?? const Color(0xFF637A92),
+              height: 1.3,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: 2.h),
-          SizedBox(
-            width: double.infinity,
-            child: DefaultTextStyle(
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w900,
-                color: valueColor ?? const Color(0xFF102C4C),
-                fontFeatures: const [ui.FontFeature.tabularFigures()],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              child: child,
+          DefaultTextStyle(
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w900,
+              color: valueColor ?? const Color(0xFF102C4C),
+              fontFeatures: const [ui.FontFeature.tabularFigures()],
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.left,
+            child: child,
           ),
         ],
       ),
@@ -1882,7 +1926,7 @@ class _ProductDetailsState extends State<ProductDetails>
       label: label,
       child: Text(
         value,
-        textAlign: TextAlign.center,
+        textAlign: TextAlign.left,
         style: TextStyle(color: valColor ?? const Color(0xFF008E9D)),
       ),
       valueColor: valColor ?? const Color(0xFF008E9D),
@@ -1895,7 +1939,7 @@ class _ProductDetailsState extends State<ProductDetails>
       child: Text(
         _formatPrice(
             _auctionStatus == "upcoming" ? _startingBid : _currentHighestBid),
-        textAlign: TextAlign.center,
+        textAlign: TextAlign.left,
       ),
     );
   }
@@ -1908,7 +1952,7 @@ class _ProductDetailsState extends State<ProductDetails>
             : _highestBidder);
     return _metricBox(
       label: AppLocalizations.of(context)!.latest_bid_upper,
-      child: Text(display, textAlign: TextAlign.center),
+      child: Text(display, textAlign: TextAlign.left),
     );
   }
 
@@ -2071,7 +2115,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // BUY NOW — subtitle now wraps to full text (no ellipsis)
+  // BUY NOW
   // ============================================================
   Widget _buildBuyNowCard() {
     return Container(
@@ -2119,7 +2163,6 @@ class _ProductDetailsState extends State<ProductDetails>
                 SizedBox(height: 4.h),
                 Text(
                   AppLocalizations.of(context)!.buy_now_subtitle,
-                  // ═══ FIX: full text — no truncation ═══
                   style: TextStyle(
                       fontSize: 11.sp,
                       color: const Color(0xFF637A92),
@@ -2498,7 +2541,6 @@ class _ProductDetailsState extends State<ProductDetails>
                                     Text(
                                       AppLocalizations.of(context)!
                                           .buy_now_subtitle,
-                                      // ═══ FIX: full text ═══
                                       style: TextStyle(
                                           fontSize: 11.sp,
                                           color: const Color(0xFF637A92)),

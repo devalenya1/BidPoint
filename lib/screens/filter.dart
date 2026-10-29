@@ -1333,19 +1333,30 @@ class _FilterState extends State<Filter> {
                     DateTime.now().millisecondsSinceEpoch ~/ 1000;
               }
 
-              return ProductCard(
-                id: product.id ?? 0,
-                slug: product.slug ?? '',
-                image: product.thumbnail_image,
-                name: product.name,
-                description: product.name ?? '',
-                pointPerBid: product.pointPerBid,
-                auctionEndDate: product.auctionEndDate,
-                currentBid: product.highestBid,
-                startingBid: product.startingBid,
-                main_price: product.main_price,
-                stroked_price: product.stroked_price,
-                isAuctionActive: isActive,
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  // Card image is square-ish (aspect 1.05), plus ~140px of text/CTA content.
+                  // This mirrors what category_products does.
+                  final cardWidth = constraints.maxWidth;
+                  final cardHeight = cardWidth + 140;
+                  return SizedBox(
+                    height: cardHeight,
+                    child: ProductCard(
+                      id: product.id ?? 0,
+                      slug: product.slug ?? '',
+                      image: product.thumbnail_image,
+                      name: product.name,
+                      description: product.name ?? '',
+                      pointPerBid: product.pointPerBid,
+                      auctionEndDate: product.auctionEndDate,
+                      currentBid: product.highestBid,
+                      startingBid: product.startingBid,
+                      main_price: product.main_price,
+                      stroked_price: product.stroked_price,
+                      isAuctionActive: isActive,
+                    ),
+                  );
+                },
               );
             },
           ),

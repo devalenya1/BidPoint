@@ -922,21 +922,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             onTap: onViewAll,
             child: Container(
               padding:
-                  EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+                  EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(
                   color: const Color(0xFFd4e3ef),
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(22.r),
+                borderRadius: BorderRadius.circular(18.r),
               ),
               child: Text(
                 loc.view_all,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 10.sp,
                   color: const Color(0xFF144164),
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -1116,21 +1116,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               onTap: onViewAll,
               child: Container(
                 padding:
-                    EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+                    EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(
                     color: const Color(0xFFd4e3ef),
                     width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(22.r),
+                  borderRadius: BorderRadius.circular(18.r),
                 ),
                 child: Text(
                   loc.view_all,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 10.sp,
                     color: const Color(0xFF144164),
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1190,21 +1190,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           GestureDetector(
             onTap: onViewAll,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(
                   color: const Color(0xFFd4e3ef),
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(22.r),
+                borderRadius: BorderRadius.circular(18.r),
               ),
               child: Text(
                 loc.view_all,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 10.sp,
                   color: const Color(0xFF144164),
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
