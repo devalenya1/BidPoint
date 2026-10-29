@@ -23,7 +23,6 @@ class EndingSoonCard extends StatefulWidget {
   final dynamic startingBid;
   final bool isAuctionActive;
   final dynamic purchasePrice;
-  final String? cardType;
 
   const EndingSoonCard({
     Key? key,
@@ -37,7 +36,6 @@ class EndingSoonCard extends StatefulWidget {
     this.currentBid,
     this.startingBid,
     this.isAuctionActive = true,
-    this.cardType,
     this.purchasePrice,
   }) : super(key: key);
 
@@ -53,11 +51,10 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   bool _isWishlisted = false;
   bool _isWishlistLoading = false;
 
-  // Slide state
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
-  static const double _thumbSize = 34;
+  static const double _thumbSize = 30;
 
   final ProductRepository _productRepository = ProductRepository();
 
@@ -74,9 +71,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // WISHLIST — same flow as product_details.dart
-  // ─────────────────────────────────────────────────────────────
   Future<void> _fetchWishlistStatus() async {
     if (!is_logged_in.$) return;
     try {
@@ -124,9 +118,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // TIMER
-  // ─────────────────────────────────────────────────────────────
   void _startTimer() {
     _updateTimer();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTimer());
@@ -134,7 +125,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
 
   void _updateTimer() {
     final loc = AppLocalizations.of(context);
-
     if (widget.auctionEndDate == null) {
       if (mounted) {
         setState(() {
@@ -144,7 +134,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       }
       return;
     }
-
     if (widget.auctionEndDate is String && widget.auctionEndDate == "Ended") {
       if (mounted) {
         setState(() {
@@ -156,16 +145,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       return;
     }
 
-    if (widget.auctionEndDate is String && widget.auctionEndDate == "Upcoming") {
-      if (mounted) {
-        setState(() {
-          _timeLeft = loc?.upcoming_ucf ?? "Upcoming";
-          _isTimerLoading = false;
-        });
-      }
-      return;
-    }
-
     int endDate;
     if (widget.auctionEndDate is int) {
       endDate = widget.auctionEndDate;
@@ -174,7 +153,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     } else {
       return;
     }
-
     if (endDate <= 0) {
       if (mounted) {
         setState(() {
@@ -188,7 +166,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
 
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final distance = endDate - now;
-
     if (distance < 0) {
       if (mounted) {
         setState(() {
@@ -229,9 +206,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // PRICE HELPERS
-  // ─────────────────────────────────────────────────────────────
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -260,9 +234,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
 
   double _getRetailValue() => _parsePrice(widget.purchasePrice);
 
-  // ─────────────────────────────────────────────────────────────
-  // SLIDE-TO-BID
-  // ─────────────────────────────────────────────────────────────
   void _onSlideStart(DragStartDetails d) {
     _thumbStartX = d.localPosition.dx;
     _isDragging = true;
@@ -278,12 +249,10 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     if (!_isDragging) return;
     _isDragging = false;
     final shouldBid = _slideOffset > maxOffset * 0.75;
-
     setState(() => _slideOffset = shouldBid ? maxOffset : 0);
     Future.delayed(Duration(milliseconds: shouldBid ? 200 : 300), () {
       if (mounted) setState(() => _slideOffset = 0);
     });
-
     if (shouldBid) _quickBid();
   }
 
@@ -293,9 +262,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       _showLoginDialog();
       return;
     }
-
     setState(() => _isProcessing = true);
-
     try {
       final currentBid = _getDisplayBid();
       final minBid = currentBid + 0.01;
@@ -379,20 +346,21 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 320;
-        return isNarrow ? _buildStackedCard() : _buildDesktopCard();
+        final isMobile = MediaQuery.of(context).size.width < 700;
+        final isVeryNarrow = constraints.maxWidth < 260;
+
+        if (isMobile || isVeryNarrow) {
+          return _buildMobileCard();
+        }
+        return _buildDesktopCard();
       },
     );
   }
 
-  // ── DESKTOP CARD (photo 42% left, info 58% right) ─────────────
   Widget _buildDesktopCard() {
     final loc = AppLocalizations.of(context)!;
     final displayBid = _getDisplayBid();
@@ -400,23 +368,21 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     final points = widget.pointPerBid ?? 1;
     final endedText = loc.ended_ucf;
     final noTimerText = loc.no_timer_ucf;
-    final upcomingText = loc.upcoming_ucf;
-    final isEnded = _timeLeft == endedText;
     final showTimer = !_isTimerLoading &&
-        _timeLeft != noTimerText &&
-        _timeLeft != upcomingText;
+        _timeLeft != endedText &&
+        _timeLeft != noTimerText;
 
     return Container(
-      padding: EdgeInsets.all(11.w),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(17.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -424,11 +390,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              flex: 42,
-              child: _buildPhotoArea(isEnded, showTimer),
-            ),
-            SizedBox(width: 11.w),
+            Expanded(flex: 42, child: _buildPhotoArea(showTimer)),
+            SizedBox(width: 9.w),
             Expanded(
               flex: 58,
               child: Column(
@@ -477,14 +440,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                             fontSize: 18.sp,
                             fontWeight: FontWeight.w900,
                             color: const Color(0xFF00a98d),
-                            letterSpacing: -0.04,
+                            letterSpacing: -0.4,
                             height: 1,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      SizedBox(width: 5.w),
+                      SizedBox(width: 4.w),
                       Flexible(
                         child: Text(
                           '◉ $points ${loc.point_per_bid_ucf}',
@@ -518,68 +481,63 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     );
   }
 
-  // ── STACKED CARD (narrow) ─────────────────────────────────────
-  Widget _buildStackedCard() {
+  Widget _buildMobileCard() {
     final loc = AppLocalizations.of(context)!;
     final displayBid = _getDisplayBid();
     final retailValue = _getRetailValue();
     final points = widget.pointPerBid ?? 1;
     final endedText = loc.ended_ucf;
     final noTimerText = loc.no_timer_ucf;
-    final upcomingText = loc.upcoming_ucf;
-    final isEnded = _timeLeft == endedText;
     final showTimer = !_isTimerLoading &&
-        _timeLeft != noTimerText &&
-        _timeLeft != upcomingText;
+        _timeLeft != endedText &&
+        _timeLeft != noTimerText;
 
     return Container(
       padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(17.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 130.h,
-            child: _buildPhotoArea(isEnded, showTimer),
-          ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 128.h, child: _buildPhotoArea(showTimer)),
+          SizedBox(height: 9.h),
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
               widget.name ?? loc.product_ucf,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF193a58),
+                height: 1.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 5.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 loc.retail_value_ucf,
                 style: TextStyle(
-                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+                    fontSize: 10.sp, color: const Color(0xFF71879d)),
               ),
               Text(
                 _formatPrice(retailValue),
                 style: TextStyle(
-                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+                    fontSize: 10.sp, color: const Color(0xFF71879d)),
               ),
             ],
           ),
@@ -591,10 +549,10 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 child: Text(
                   _formatPrice(displayBid),
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: 21.sp,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF00a98d),
-                    letterSpacing: -0.04,
+                    letterSpacing: -0.4,
                     height: 1,
                   ),
                 ),
@@ -602,7 +560,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               Text(
                 '◉ $points ${loc.point_per_bid_ucf}',
                 style: TextStyle(
-                  fontSize: 8.sp,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF177f81),
                 ),
@@ -611,17 +569,16 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           ),
           SizedBox(height: 6.h),
           _buildProgressBar(),
-          SizedBox(height: 6.h),
+          SizedBox(height: 8.h),
           _buildSlideToBid(loc),
         ],
       ),
     );
   }
 
-  // ── PHOTO (image + timer top-left + heart top-right) ──────────
-  Widget _buildPhotoArea(bool isEnded, bool showTimer) {
+  Widget _buildPhotoArea(bool showTimer) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(9.r),
+      borderRadius: BorderRadius.circular(11.r),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -648,34 +605,29 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                   : Icon(Icons.image, size: 28.sp, color: Colors.grey),
             ),
           ),
-
-          // Timer top-left
           if (showTimer)
             Positioned(
-              top: 6.h,
-              left: 6.w,
+              top: 9.h,
+              left: 9.w,
               child: Container(
                 padding:
-                    EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+                    EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
                 decoration: BoxDecoration(
-                  gradient: isEnded
-                      ? null
-                      : const LinearGradient(
-                          colors: [Color(0xFFff8d75), Color(0xFFffbd82)],
-                        ),
-                  color: isEnded ? const Color(0xFFdc3545) : null,
-                  borderRadius: BorderRadius.circular(5.r),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFff8d75), Color(0xFFffbd82)],
+                  ),
+                  borderRadius: BorderRadius.circular(7.r),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.access_time,
-                        size: 9.sp, color: const Color(0xFF573024)),
-                    SizedBox(width: 2.w),
+                        size: 10.sp, color: const Color(0xFF573024)),
+                    SizedBox(width: 3.w),
                     Text(
                       _timeLeft,
                       style: TextStyle(
-                        fontSize: 8.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF573024),
                       ),
@@ -684,16 +636,14 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 ),
               ),
             ),
-
-          // Heart top-right — real wishlist toggle
           Positioned(
-            top: 6.h,
-            right: 6.w,
+            top: 9.h,
+            right: 9.w,
             child: GestureDetector(
               onTap: _toggleWishlist,
               child: Container(
-                width: 22.w,
-                height: 22.w,
+                width: 26.w,
+                height: 26.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.93),
                   shape: BoxShape.circle,
@@ -704,16 +654,16 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 child: _isWishlistLoading
                     ? Padding(
                         padding: EdgeInsets.all(5.w),
-                        child: CircularProgressIndicator(
+                        child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          color: const Color(0xFFf06979),
+                          color: Color(0xFFf06979),
                         ),
                       )
                     : Icon(
                         _isWishlisted
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 12.sp,
+                        size: 14.sp,
                         color: _isWishlisted
                             ? const Color(0xFFf06979)
                             : const Color(0xFF6b8499),
@@ -726,13 +676,12 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     );
   }
 
-  // ── PROGRESS BAR ──────────────────────────────────────────────
   Widget _buildProgressBar() {
     return Container(
-      height: 3.h,
+      height: 4.h,
       decoration: BoxDecoration(
         color: const Color(0xFFe8f0f6),
-        borderRadius: BorderRadius.circular(4.r),
+        borderRadius: BorderRadius.circular(5.r),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -742,18 +691,17 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
             gradient: const LinearGradient(
               colors: [Color(0xFF18c6b1), Color(0xFF48aee4)],
             ),
-            borderRadius: BorderRadius.circular(4.r),
+            borderRadius: BorderRadius.circular(5.r),
           ),
         ),
       ),
     );
   }
 
-  // ── SLIDE-TO-BID PILL ─────────────────────────────────────────
   Widget _buildSlideToBid(AppLocalizations loc) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(
+        final maxOffset = (constraints.maxWidth - _thumbSize - 8).clamp(
           0.0,
           double.infinity,
         );
@@ -763,7 +711,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
-            height: 34.h,
+            height: 40.h,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -775,8 +723,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x351597ba),
-                  blurRadius: 10,
-                  offset: Offset(0, 3),
+                  blurRadius: 14,
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
@@ -794,26 +742,26 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 : Stack(
                     children: [
                       Positioned(
-                        left: 3.w + _slideOffset,
-                        top: 3.h,
-                        bottom: 3.h,
+                        left: 4.w + _slideOffset,
+                        top: 4.h,
+                        bottom: 4.h,
                         child: Container(
-                          width: _thumbSize - 6,
-                          height: _thumbSize - 6,
+                          width: _thumbSize,
+                          height: _thumbSize,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
                             boxShadow: [
                               BoxShadow(
                                 color: Color(0x70063e62),
-                                blurRadius: 6,
+                                blurRadius: 9,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Icon(
                             Icons.chevron_right,
-                            size: 15.sp,
+                            size: 18.sp,
                             color: const Color(0xFF078c9f),
                           ),
                         ),
@@ -826,7 +774,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                                 ? loc.quick_bid_ucf
                                 : loc.swipe_to_bid_ucf,
                             style: TextStyle(
-                              fontSize: 9.sp,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.01,
                               color: Colors.white,
@@ -837,16 +785,16 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                         ),
                       ),
                       Positioned(
-                        right: 9.w,
+                        right: 10.w,
                         top: 0,
                         bottom: 0,
                         child: Center(
                           child: Text(
                             '››',
                             style: TextStyle(
-                              fontSize: 10.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
+                              letterSpacing: 3,
                               color: const Color(0xB3E5FFFF),
                               height: 1,
                             ),

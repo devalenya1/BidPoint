@@ -22,6 +22,7 @@ class HotAuctionCard extends StatefulWidget {
   final dynamic currentBid;
   final dynamic startingBid;
   final bool isAuctionActive;
+  final dynamic purchasePrice;
 
   const HotAuctionCard({
     Key? key,
@@ -35,6 +36,7 @@ class HotAuctionCard extends StatefulWidget {
     this.currentBid,
     this.startingBid,
     this.isAuctionActive = true,
+    this.purchasePrice,
   }) : super(key: key);
 
   @override
@@ -49,11 +51,10 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   bool _isWishlisted = false;
   bool _isWishlistLoading = false;
 
-  // Slide-to-bid state
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
-  static const double _thumbSize = 34;
+  static const double _thumbSize = 30;
 
   final ProductRepository _productRepository = ProductRepository();
 
@@ -70,9 +71,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // WISHLIST — same flow as product_details.dart
-  // ─────────────────────────────────────────────────────────────
   Future<void> _fetchWishlistStatus() async {
     if (!is_logged_in.$) return;
     try {
@@ -120,9 +118,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // TIMER
-  // ─────────────────────────────────────────────────────────────
   void _startTimer() {
     _updateTimer();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTimer());
@@ -211,9 +206,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // PRICE HELPERS
-  // ─────────────────────────────────────────────────────────────
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -240,11 +232,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     return 0.0;
   }
 
-  double _getRetailValue() => _getDisplayBid() * 100;
+  double _getRetailValue() {
+    if (widget.purchasePrice != null) {
+      final parsed = _parsePrice(widget.purchasePrice);
+      if (parsed > 0) return parsed;
+    }
+    return _getDisplayBid() * 100;
+  }
 
-  // ─────────────────────────────────────────────────────────────
-  // SLIDE-TO-BID
-  // ─────────────────────────────────────────────────────────────
   void _onSlideStart(DragStartDetails d) {
     _thumbStartX = d.localPosition.dx;
     _isDragging = true;
@@ -260,12 +255,10 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     if (!_isDragging) return;
     _isDragging = false;
     final shouldBid = _slideOffset > maxOffset * 0.75;
-
     setState(() => _slideOffset = shouldBid ? maxOffset : 0);
     Future.delayed(Duration(milliseconds: shouldBid ? 200 : 300), () {
       if (mounted) setState(() => _slideOffset = 0);
     });
-
     if (shouldBid) _quickBid();
   }
 
@@ -359,24 +352,28 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════
+  // BUILD — matches HTML .bp-hot-card dimensions
+  //   photo 42% | info 58%
+  //   padding 9 (was 16 in HTML, but user requested 9 everywhere)
+  //   border-radius 17 (kept from HTML)
+  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Stacked mode only when very narrow (matches HTML @media 850px)
-        final isNarrow = constraints.maxWidth < 320;
+        final isMobile = MediaQuery.of(context).size.width < 700;
+        final isVeryNarrow = constraints.maxWidth < 260;
 
-        if (isNarrow) return _buildStackedCard();
-
+        // On mobile, stacked (photo on top). On desktop, side by side.
+        if (isMobile || isVeryNarrow) {
+          return _buildMobileCard();
+        }
         return _buildDesktopCard();
       },
     );
   }
 
-  // ── DESKTOP CARD (photo 42% left, info 58% right) ─────────────
   Widget _buildDesktopCard() {
     final loc = AppLocalizations.of(context)!;
     final displayBid = _getDisplayBid();
@@ -389,16 +386,16 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         _timeLeft != noTimerText;
 
     return Container(
-      padding: EdgeInsets.all(11.w),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(17.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -406,19 +403,13 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // PHOTO
-            Expanded(
-              flex: 42,
-              child: _buildPhotoArea(showTimer),
-            ),
-            SizedBox(width: 11.w),
-            // INFO
+            Expanded(flex: 42, child: _buildPhotoArea(showTimer)),
+            SizedBox(width: 9.w),
             Expanded(
               flex: 58,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name
                   GestureDetector(
                     onTap: _navigateToProductDetails,
                     child: Text(
@@ -434,8 +425,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                     ),
                   ),
                   SizedBox(height: 4.h),
-
-                  // Retail
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -454,8 +443,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                     ],
                   ),
                   SizedBox(height: 4.h),
-
-                  // Current bid + points
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -466,14 +453,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                             fontSize: 18.sp,
                             fontWeight: FontWeight.w900,
                             color: const Color(0xFF00a98d),
-                            letterSpacing: -0.04,
+                            letterSpacing: -0.4,
                             height: 1,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      SizedBox(width: 5.w),
+                      SizedBox(width: 4.w),
                       Flexible(
                         child: Text(
                           '◉ $points ${loc.point_per_bid_ucf}',
@@ -490,12 +477,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                     ],
                   ),
                   SizedBox(height: 6.h),
-
-                  // Progress bar
                   _buildProgressBar(),
                   SizedBox(height: 7.h),
-
-                  // Slide-to-bid
                   Expanded(
                     child: Align(
                       alignment: Alignment.bottomCenter,
@@ -511,8 +494,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     );
   }
 
-  // ── STACKED CARD (narrow mobile) ──────────────────────────────
-  Widget _buildStackedCard() {
+  Widget _buildMobileCard() {
     final loc = AppLocalizations.of(context)!;
     final displayBid = _getDisplayBid();
     final retailValue = _getRetailValue();
@@ -528,46 +510,47 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(17.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 130.h, child: _buildPhotoArea(showTimer)),
-          SizedBox(height: 8.h),
+          SizedBox(height: 128.h, child: _buildPhotoArea(showTimer)),
+          SizedBox(height: 9.h),
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
               widget.name ?? loc.product_ucf,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF193a58),
+                height: 1.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 5.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 loc.retail_value_ucf,
                 style: TextStyle(
-                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+                    fontSize: 10.sp, color: const Color(0xFF71879d)),
               ),
               Text(
                 _formatPrice(retailValue),
                 style: TextStyle(
-                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+                    fontSize: 10.sp, color: const Color(0xFF71879d)),
               ),
             ],
           ),
@@ -579,10 +562,10 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 child: Text(
                   _formatPrice(displayBid),
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: 21.sp,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF00a98d),
-                    letterSpacing: -0.04,
+                    letterSpacing: -0.4,
                     height: 1,
                   ),
                 ),
@@ -590,7 +573,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               Text(
                 '◉ $points ${loc.point_per_bid_ucf}',
                 style: TextStyle(
-                  fontSize: 8.sp,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF177f81),
                 ),
@@ -599,17 +582,16 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
           SizedBox(height: 6.h),
           _buildProgressBar(),
-          SizedBox(height: 6.h),
+          SizedBox(height: 8.h),
           _buildSlideToBid(loc),
         ],
       ),
     );
   }
 
-  // ── PHOTO (image + timer + heart) ────────────────────────────
   Widget _buildPhotoArea(bool showTimer) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(9.r),
+      borderRadius: BorderRadius.circular(11.r),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -636,31 +618,29 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   : Icon(Icons.image, size: 28.sp, color: Colors.grey),
             ),
           ),
-
-          // Timer (top-left)
           if (showTimer)
             Positioned(
-              top: 6.h,
-              left: 6.w,
+              top: 9.h,
+              left: 9.w,
               child: Container(
                 padding:
-                    EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+                    EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFff8d75), Color(0xFFffbd82)],
                   ),
-                  borderRadius: BorderRadius.circular(5.r),
+                  borderRadius: BorderRadius.circular(7.r),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.access_time,
-                        size: 9.sp, color: const Color(0xFF573024)),
-                    SizedBox(width: 2.w),
+                        size: 10.sp, color: const Color(0xFF573024)),
+                    SizedBox(width: 3.w),
                     Text(
                       _timeLeft,
                       style: TextStyle(
-                        fontSize: 8.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF573024),
                       ),
@@ -669,16 +649,14 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 ),
               ),
             ),
-
-          // Heart (top-right) — real wishlist toggle
           Positioned(
-            top: 6.h,
-            right: 6.w,
+            top: 9.h,
+            right: 9.w,
             child: GestureDetector(
               onTap: _toggleWishlist,
               child: Container(
-                width: 22.w,
-                height: 22.w,
+                width: 26.w,
+                height: 26.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.93),
                   shape: BoxShape.circle,
@@ -689,16 +667,16 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                 child: _isWishlistLoading
                     ? Padding(
                         padding: EdgeInsets.all(5.w),
-                        child: CircularProgressIndicator(
+                        child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          color: const Color(0xFFf06979),
+                          color: Color(0xFFf06979),
                         ),
                       )
                     : Icon(
                         _isWishlisted
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 12.sp,
+                        size: 14.sp,
                         color: _isWishlisted
                             ? const Color(0xFFf06979)
                             : const Color(0xFF6b8499),
@@ -711,13 +689,12 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
     );
   }
 
-  // ── PROGRESS BAR ─────────────────────────────────────────────
   Widget _buildProgressBar() {
     return Container(
-      height: 3.h,
+      height: 4.h,
       decoration: BoxDecoration(
         color: const Color(0xFFe8f0f6),
-        borderRadius: BorderRadius.circular(4.r),
+        borderRadius: BorderRadius.circular(5.r),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -727,18 +704,17 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
             gradient: const LinearGradient(
               colors: [Color(0xFF18c6b1), Color(0xFF48aee4)],
             ),
-            borderRadius: BorderRadius.circular(4.r),
+            borderRadius: BorderRadius.circular(5.r),
           ),
         ),
       ),
     );
   }
 
-  // ── SLIDE-TO-BID PILL ────────────────────────────────────────
   Widget _buildSlideToBid(AppLocalizations loc) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(
+        final maxOffset = (constraints.maxWidth - _thumbSize - 8).clamp(
           0.0,
           double.infinity,
         );
@@ -748,7 +724,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
-            height: 34.h,
+            height: 40.h,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -760,8 +736,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x351597ba),
-                  blurRadius: 10,
-                  offset: Offset(0, 3),
+                  blurRadius: 14,
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
@@ -778,33 +754,31 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                   )
                 : Stack(
                     children: [
-                      // White circle thumb
                       Positioned(
-                        left: 3.w + _slideOffset,
-                        top: 3.h,
-                        bottom: 3.h,
+                        left: 4.w + _slideOffset,
+                        top: 4.h,
+                        bottom: 4.h,
                         child: Container(
-                          width: _thumbSize - 6,
-                          height: _thumbSize - 6,
+                          width: _thumbSize,
+                          height: _thumbSize,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
                             boxShadow: [
                               BoxShadow(
                                 color: Color(0x70063e62),
-                                blurRadius: 6,
+                                blurRadius: 9,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Icon(
                             Icons.chevron_right,
-                            size: 15.sp,
+                            size: 18.sp,
                             color: const Color(0xFF078c9f),
                           ),
                         ),
                       ),
-                      // Center text
                       Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 22.w),
@@ -813,7 +787,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                                 ? loc.quick_bid_ucf
                                 : loc.swipe_to_bid_ucf,
                             style: TextStyle(
-                              fontSize: 9.sp,
+                              fontSize: 10.sp,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.01,
                               color: Colors.white,
@@ -823,18 +797,17 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                           ),
                         ),
                       ),
-                      // Right-side chevrons
                       Positioned(
-                        right: 9.w,
+                        right: 10.w,
                         top: 0,
                         bottom: 0,
                         child: Center(
                           child: Text(
                             '››',
                             style: TextStyle(
-                              fontSize: 10.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
+                              letterSpacing: 3,
                               color: const Color(0xB3E5FFFF),
                               height: 1,
                             ),

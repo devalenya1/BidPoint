@@ -1,13 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:active_ecommerce_flutter/app_config.dart';
-import 'package:active_ecommerce_flutter/custom/aiz_image.dart';
 import 'package:active_ecommerce_flutter/custom/box_decorations.dart';
 import 'package:active_ecommerce_flutter/custom/toast_component.dart';
+import 'package:active_ecommerce_flutter/data_model/category_response.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/presenter/home_presenter.dart';
+import 'package:active_ecommerce_flutter/repositories/category_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/category_products.dart';
 import 'package:active_ecommerce_flutter/screens/all_products.dart';
@@ -26,7 +27,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../data_model/user_info_response.dart';
 
@@ -49,16 +49,17 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> with TickerProviderStateMixin {
   HomePresenter homeData = HomePresenter();
 
-  // ============ LOCAL STATE ============
   bool _isLoadingCounts = true;
   bool _isRefreshingCounts = false;
   UserInformation? _userInfo;
 
   final GlobalKey _howItWorksKey = GlobalKey();
 
-  final List<Map<String, dynamic>> _recentWinners = [];
+  // ── Recent winners loaded from CategoryResponse
+  List<RecentWinner> _recentWinners = [];
+  bool _isLoadingWinners = true;
+  final CategoryRepository _categoryRepository = CategoryRepository();
 
-  // ============ BADGE LOGIC ============
   int get _unreadNotificationCount {
     if (is_logged_in.$ != true) return 0;
     return _userInfo?.unreadNotificationsCount ?? 0;
@@ -85,7 +86,26 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _fetchCounts();
+    _fetchRecentWinners();
     Future.delayed(Duration.zero).then((value) => change());
+  }
+
+  Future<void> _fetchRecentWinners() async {
+    try {
+      setState(() => _isLoadingWinners = true);
+      final response = await _categoryRepository.getCategories();
+      if (response.success == true) {
+        setState(() {
+          _recentWinners = response.recentWinners ?? [];
+          _isLoadingWinners = false;
+        });
+      } else {
+        setState(() => _isLoadingWinners = false);
+      }
+    } catch (e) {
+      print('❌ Recent winners fetch error: $e');
+      setState(() => _isLoadingWinners = false);
+    }
   }
 
   Future<void> _fetchCounts() async {
@@ -115,6 +135,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Future<void> _refreshCounts() async {
     setState(() => _isRefreshingCounts = true);
     await _fetchCounts();
+    await _fetchRecentWinners();
     setState(() => _isRefreshingCounts = false);
   }
 
@@ -174,9 +195,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // BUILD
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -206,11 +227,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       SliverToBoxAdapter(child: buildBidPointsHeroSection()),
                       SliverToBoxAdapter(
                           child: buildBidPointsCategoriesSection()),
-                      SliverToBoxAdapter(child: SizedBox(height: 14.h)),
+                      SliverToBoxAdapter(child: SizedBox(height: 9.h)),
                       SliverToBoxAdapter(child: _buildHotAuctionSection()),
                       SliverToBoxAdapter(child: _buildEndingSoonSection()),
-                      // ── All Auctions: DISABLED per request ──
-                      // SliverToBoxAdapter(child: _buildAllAuctionsSection()),
                       SliverToBoxAdapter(child: _buildUpcomingSection()),
                       SliverToBoxAdapter(child: _buildEndedAuctionsSection()),
                       SliverToBoxAdapter(child: buildPromoBanner()),
@@ -229,9 +248,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // HEADER
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   PreferredSizeWidget buildAppBar() {
     return PreferredSize(
       preferredSize: Size.fromHeight(66.h),
@@ -274,24 +293,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             _redirectToLogin();
           }
         },
-        onAccountTap: () {
-          // Wire to your account screen
-        },
+        onAccountTap: () {},
         onLoginTap: () => _redirectToLogin(),
       ),
     );
   }
 
-  // ============================================================
-  // HERO — "A" and "UNBELIEVABLE PRICES" on separate lines
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // HERO (unchanged — already matched)
+  // ═══════════════════════════════════════════════════════════
   Widget buildBidPointsHeroSection() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.only(bottom: 14.h),
+        margin: EdgeInsets.only(bottom: 9.h),
         decoration: BoxDecoration(
           gradient: const RadialGradient(
             center: Alignment(0.58, -0.16),
@@ -388,12 +405,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           SizedBox(height: 12.h),
           Text(AppLocalizations.of(context)!.bp_hero_line1,
               style: headlineStyle),
-          // ── "A" on its own line ──
           Text(
             '${AppLocalizations.of(context)!.bp_hero_letter_a} ',
             style: headlineStyle,
           ),
-          // ── "UNBELIEVABLE PRICES" on its own line ──
           ShaderMask(
             blendMode: BlendMode.srcIn,
             shaderCallback: (bounds) => const LinearGradient(
@@ -552,14 +567,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           child: SizedBox(
                             width: double.infinity,
                             height: artHeight,
-                            child: (item.photo != null && item.photo!.isNotEmpty)
-                                ? Image.network(
-                                    item.photo!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox.shrink(),
-                                  )
-                                : const SizedBox.shrink(),
+                            child:
+                                (item.photo != null && item.photo!.isNotEmpty)
+                                    ? Image.network(
+                                        item.photo!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const SizedBox.shrink(),
+                                      )
+                                    : const SizedBox.shrink(),
                           ),
                         );
                       }).toList(),
@@ -704,9 +720,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============================================================
-  // CATEGORIES — Renders exactly what's in featuredCategoryList
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // CATEGORIES
+  // ═══════════════════════════════════════════════════════════
   Widget buildBidPointsCategoriesSection() {
     if (homeData.featuredCategoryList.isEmpty) {
       return const SizedBox.shrink();
@@ -874,9 +890,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============================================================
-  // SHARED — Section head, empty state
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // SHARED
+  // ═══════════════════════════════════════════════════════════
   Widget _buildSectionHead({
     required String title,
     required VoidCallback onViewAll,
@@ -893,10 +909,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             child: Text(
               title,
               style: TextStyle(
-                fontSize: isMobile ? 17.sp : 19.sp,
+                fontSize: isMobile ? 21.sp : 24.sp,
                 color: const Color(0xFF103451),
                 fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
+                letterSpacing: -0.05 * (isMobile ? 21 : 24),
                 height: 1.25,
               ),
             ),
@@ -906,21 +922,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             onTap: onViewAll,
             child: Container(
               padding:
-                  EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+                  EdgeInsets.symmetric(horizontal: 18.w, vertical: 9.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(
                   color: const Color(0xFFd4e3ef),
                   width: 1,
                 ),
-                borderRadius: BorderRadius.circular(18.r),
+                borderRadius: BorderRadius.circular(22.r),
               ),
               child: Text(
                 loc.view_all,
                 style: TextStyle(
-                  fontSize: 10.sp,
+                  fontSize: 12.sp,
                   color: const Color(0xFF144164),
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
@@ -941,7 +957,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ── 2-column grid, max 2 products ──
+  /// ⚠️ Requirement #2: every section is a 2-column grid.
+  /// Requirement #5: equal image sizes, equal card sizes — enforced by
+  ///   IntrinsicHeight + fixed photo height on mobile / flex on desktop.
   Widget _buildTwoColumnGrid({
     required List<dynamic> products,
     required bool isMobile,
@@ -956,30 +974,32 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           final product = entry.value;
           return Padding(
             padding: EdgeInsets.only(
-                bottom: i < limited.length - 1 ? 12.h : 0),
+                bottom: i < limited.length - 1 ? 9.h : 0),
             child: cardBuilder(context, product),
           );
         }).toList(),
       );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(child: cardBuilder(context, limited[0])),
-        SizedBox(width: 14.w),
-        Expanded(
-          child: limited.length > 1
-              ? cardBuilder(context, limited[1])
-              : const SizedBox.shrink(),
-        ),
-      ],
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: cardBuilder(context, limited[0])),
+          SizedBox(width: 18.w),
+          Expanded(
+            child: limited.length > 1
+                ? cardBuilder(context, limited[1])
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 
-  // ============================================================
-  // LIVE & TRENDING AUCTIONS (HTML title)
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // HOT AUCTIONS
+  // ═══════════════════════════════════════════════════════════
   Widget _buildHotAuctionSection() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
@@ -992,7 +1012,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 9.w : 9.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1005,7 +1025,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 18.h),
                   if (homeData.hotAuctionProductList.isEmpty)
                     _buildEmptyState(loc.no_hot_auctions_available)
                   else
@@ -1029,6 +1049,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           auctionEndDate: product.auctionEndDate,
                           currentBid: product.highestBid,
                           startingBid: product.startingBid,
+                          purchasePrice: product.purchasePrice,
                           isAuctionActive: isActive,
                         );
                       },
@@ -1042,9 +1063,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // ENDING SOON
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   Widget _buildEndingSoonSection() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
@@ -1057,7 +1078,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              padding: EdgeInsets.symmetric(horizontal: 9.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1070,7 +1091,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 18.h),
                   if (homeData.endingSoonProductList.isEmpty)
                     _buildEmptyState(loc.no_ending_soon_auctions)
                   else
@@ -1103,138 +1124,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  // ============================================================
-  // ALL AUCTIONS — DISABLED (kept in code, not in build())
-  // ============================================================
-  Widget _buildAllAuctionsSection() {
-    final loc = AppLocalizations.of(context)!;
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(vertical: 22.h),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1380),
-          child: LayoutBuilder(builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 700;
-
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHead(
-                    title: '🔨 ${loc.all_auctions_ucf}',
-                    onViewAll: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
-                        return AllProducts(slug: 'all-auctions');
-                      }));
-                    },
-                  ),
-                  SizedBox(height: 14.h),
-                  if (homeData.isAllAuctionsInitial &&
-                      homeData.allAuctionsList.isEmpty)
-                    ShimmerHelper().buildProductGridShimmer(
-                      scontroller: homeData.allAuctionsScrollController,
-                    )
-                  else if (homeData.allAuctionsList.isNotEmpty)
-                    _buildTwoColumnGrid(
-                      products: homeData.allAuctionsList,
-                      isMobile: isMobile,
-                      cardBuilder: (context, product) =>
-                          _buildAllAuctionCard(product),
-                    )
-                  else if (homeData.totalAllAuctionsData == 0)
-                    _buildEmptyState(loc.no_auctions_available)
-                  else
-                    Container(),
-                ],
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAllAuctionCard(dynamic product) {
-    bool isActive = false;
-    bool isUpcoming = false;
-    bool isEnded = false;
-    dynamic displayEndDate = product.auctionEndDate;
-
-    if (product.auctionEndDate != null) {
-      if (product.auctionEndDate is int) {
-        final endDate = product.auctionEndDate as int;
-        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        if (endDate > now) {
-          isActive = true;
-        } else {
-          isEnded = true;
-          displayEndDate = 'Ended';
-        }
-      } else if (product.auctionEndDate is String) {
-        if (product.auctionEndDate == 'Ended') {
-          isEnded = true;
-          displayEndDate = 'Ended';
-        } else if (product.auctionEndDate == 'Upcoming') {
-          isUpcoming = true;
-          displayEndDate = 'Upcoming';
-        } else {
-          final parsed = int.tryParse(product.auctionEndDate);
-          if (parsed != null) {
-            final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-            if (parsed > now) {
-              isActive = true;
-              displayEndDate = parsed;
-            } else {
-              isEnded = true;
-              displayEndDate = 'Ended';
-            }
-          }
-        }
-      }
-    }
-
-    if (!isActive && !isEnded && product.auctionStartDate != null) {
-      if (product.auctionStartDate is int) {
-        final startDate = product.auctionStartDate as int;
-        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        if (startDate > now) {
-          isUpcoming = true;
-          displayEndDate = 'Upcoming';
-        }
-      } else if (product.auctionStartDate is String &&
-          product.auctionStartDate == 'Upcoming') {
-        isUpcoming = true;
-        displayEndDate = 'Upcoming';
-      }
-    }
-
-    if (isActive && displayEndDate is! int) {
-      displayEndDate = product.auctionEndDate;
-    }
-
-    return ProductCard(
-      id: product.id ?? 0,
-      slug: product.slug ?? '',
-      image: product.thumbnailImage,
-      name: product.name,
-      description: product.description,
-      pointPerBid: product.pointPerBid ?? 0,
-      auctionEndDate: displayEndDate,
-      auctionStartDate: isUpcoming ? product.auctionStartDate : null,
-      currentBid: product.highestBid ?? product.startingBid,
-      startingBid: product.startingBid,
-      purchasePrice: product.purchasePrice,
-      isAuctionActive: isActive,
-    );
-  }
-
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   // UPCOMING
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
   Widget _buildUpcomingSection() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
@@ -1247,7 +1139,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              padding: EdgeInsets.symmetric(horizontal: 9.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1260,7 +1152,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 18.h),
                   if (homeData.upcomingProductList.isEmpty)
                     _buildEmptyState(loc.no_upcoming_auctions)
                   else
@@ -1302,9 +1194,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  // ============================================================
-  // COMPLETED
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // COMPLETED AUCTIONS
+  // ═══════════════════════════════════════════════════════════
   Widget _buildEndedAuctionsSection() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
@@ -1317,7 +1209,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 15.w : 28.w),
+              padding: EdgeInsets.symmetric(horizontal: 9.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1330,7 +1222,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }));
                     },
                   ),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 18.h),
                   if (homeData.endedProductList.isEmpty)
                     _buildEmptyState(loc.no_ended_auctions)
                   else
@@ -1360,21 +1252,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  // ============================================================
-  // PROMO BANNER
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // PROMO BANNER (matches HTML .bp-promo-banner)
+  // ═══════════════════════════════════════════════════════════
   Widget buildPromoBanner() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
       final isTightMobile = constraints.maxWidth < 520;
 
       return Padding(
-        padding: EdgeInsets.only(
-          left: isMobile ? 15.w : 28.w,
-          right: isMobile ? 15.w : 28.w,
-          top: 20.h,
-          bottom: 20.h,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 24.h),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1380),
@@ -1396,7 +1283,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   stops: [0.0, 0.35, 0.80],
                 ),
                 borderRadius:
-                    BorderRadius.circular(isTightMobile ? 14.r : 18.r),
+                    BorderRadius.circular(isTightMobile ? 14.r : 20.r),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x20173f62),
@@ -1417,7 +1304,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildPromoBannerDesktop(bool isTightMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final titleSize = (screenWidth * 0.019).clamp(16.0, 25.0);
+    final titleSize = (screenWidth * 0.024).clamp(19.0, 31.0);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1425,15 +1312,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         Text(
           '🏆',
           style: TextStyle(
-            fontSize: 60.sp,
+            fontSize: 75.sp,
             shadows: const [
-              Shadow(color: Color(0xFFFFac36), blurRadius: 12),
+              Shadow(color: Color(0xFFFFac36), blurRadius: 15),
             ],
           ),
         ),
-        SizedBox(width: 18.w),
+        SizedBox(width: 22.w),
         Expanded(child: _buildPromoTitle(titleSize)),
-        SizedBox(width: 18.w),
+        SizedBox(width: 22.w),
         _buildPromoCtaButton(isMobile: false, isTightMobile: false),
       ],
     );
@@ -1442,7 +1329,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Widget _buildPromoBannerMobile(bool isTightMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
     final titleSize =
-        isTightMobile ? 14.0 : (screenWidth * 0.04).clamp(15.0, 19.0);
+        isTightMobile ? 17.0 : (screenWidth * 0.045).clamp(17.0, 19.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1452,13 +1339,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           children: [
             Text(
               '🏆',
-              style: TextStyle(fontSize: (isTightMobile ? 30 : 36).sp),
+              style: TextStyle(fontSize: (isTightMobile ? 36 : 43).sp),
             ),
-            SizedBox(width: 6.w),
+            SizedBox(width: 8.w),
             Expanded(child: _buildPromoTitle(titleSize)),
           ],
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 12.h),
         Align(
           alignment: Alignment.centerRight,
           child: _buildPromoCtaButton(
@@ -1479,7 +1366,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               fontSize: titleSize,
               fontWeight: FontWeight.w700,
               height: 1.25,
-              letterSpacing: -0.04,
+              letterSpacing: -0.04 * titleSize,
             ),
           ),
           TextSpan(
@@ -1490,7 +1377,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               fontSize: titleSize,
               fontWeight: FontWeight.w700,
               height: 1.25,
-              letterSpacing: -0.04,
+              letterSpacing: -0.04 * titleSize,
             ),
           ),
         ],
@@ -1513,28 +1400,28 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       },
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isTightMobile ? 13.w : (isMobile ? 14.w : 20.w),
-          vertical: isTightMobile ? 8.h : (isMobile ? 9.h : 11.h),
+          horizontal: isTightMobile ? 16.w : (isMobile ? 18.w : 24.w),
+          vertical: isTightMobile ? 10.h : (isMobile ? 12.h : 14.h),
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22.r),
+          borderRadius: BorderRadius.circular(25.r),
         ),
         child: Text(
           '${AppLocalizations.of(context)!.bp_promo_cta}  ➜',
           style: TextStyle(
             color: const Color(0xFF0d4462),
-            fontWeight: FontWeight.w900,
-            fontSize: isTightMobile ? 9.sp : (isMobile ? 10.sp : 11.sp),
+            fontWeight: FontWeight.w800,
+            fontSize: isTightMobile ? 11.sp : (isMobile ? 12.sp : 13.sp),
           ),
         ),
       ),
     );
   }
 
-  // ============================================================
-  // HOW DOES IT WORK
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // HOW IT WORKS — Requirement #6: same width/height/font as HTML
+  // ═══════════════════════════════════════════════════════════
   Widget buildHowItWorks() {
     return KeyedSubtree(
       key: _howItWorksKey,
@@ -1544,10 +1431,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
         return Padding(
           padding: EdgeInsets.only(
-            left: isMobile ? 15.w : 28.w,
-            right: isMobile ? 15.w : 28.w,
-            top: 10.h,
-            bottom: 44.h,
+            left: 9.w,
+            right: 9.w,
+            top: 12.h,
+            bottom: 28.h,
           ),
           child: Center(
             child: ConstrainedBox(
@@ -1559,22 +1446,22 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     AppLocalizations.of(context)!.bp_how_title,
                     style: TextStyle(
                       fontSize: isTightMobile
-                          ? 16.sp
-                          : (isMobile ? 18.sp : 21.sp),
+                          ? 22.sp
+                          : (isMobile ? 22.sp : 26.sp),
                       color: const Color(0xFF103451),
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.02,
                     ),
                   ),
-                  SizedBox(height: 3.h),
+                  SizedBox(height: 4.h),
                   Text(
                     AppLocalizations.of(context)!.bp_how_subtitle,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 13.sp,
                       color: const Color(0xFF71879d),
                     ),
                   ),
-                  SizedBox(height: 18.h),
+                  SizedBox(height: 22.h),
                   isMobile
                       ? _buildHowWorksMobileSteps(isTightMobile)
                       : _buildHowWorksDesktopSteps(),
@@ -1628,7 +1515,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         return Expanded(
           child: Container(
             padding:
-                EdgeInsets.fromLTRB(i == 0 ? 0 : 15.w, 10.h, 15.w, 10.h),
+                EdgeInsets.fromLTRB(i == 0 ? 0 : 19.w, 12.h, 19.w, 12.h),
             decoration: i < 3
                 ? const BoxDecoration(
                     border: Border(
@@ -1643,12 +1530,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildStepNumBadge(step['num']!),
-                SizedBox(width: 10.w),
+                SizedBox(width: 12.w),
                 Text(
                   step['icon']!,
-                  style: TextStyle(fontSize: 32.sp, height: 1),
+                  style: TextStyle(fontSize: 40.sp, height: 1),
                 ),
-                SizedBox(width: 10.w),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1656,19 +1543,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       Text(
                         step['title']!,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 13.sp,
                           color: const Color(0xFF103451),
                           fontWeight: FontWeight.w700,
                           height: 1.2,
                         ),
                       ),
-                      SizedBox(height: 4.h),
+                      SizedBox(height: 5.h),
                       Text(
                         step['desc']!,
                         style: TextStyle(
-                          fontSize: 10.sp,
+                          fontSize: 12.sp,
                           color: const Color(0xFF698099),
-                          height: 1.55,
+                          height: 1.6,
                         ),
                       ),
                     ],
@@ -1689,16 +1576,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: _buildMobileStep(0, isTightMobile)),
-            SizedBox(width: 8.w),
+            SizedBox(width: 10.w),
             Expanded(child: _buildMobileStep(1, isTightMobile)),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 10.h),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: _buildMobileStep(2, isTightMobile)),
-            SizedBox(width: 8.w),
+            SizedBox(width: 10.w),
             Expanded(child: _buildMobileStep(3, isTightMobile)),
           ],
         ),
@@ -1710,7 +1597,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final step = _howWorksSteps(context)[index];
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 12.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1719,7 +1606,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           Text(
             step['icon']!,
             style:
-                TextStyle(fontSize: isTightMobile ? 20.sp : 22.sp, height: 1),
+                TextStyle(fontSize: isTightMobile ? 24.sp : 27.sp, height: 1),
           ),
           SizedBox(width: 6.w),
           Expanded(
@@ -1729,19 +1616,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 Text(
                   step['title']!,
                   style: TextStyle(
-                    fontSize: 11.sp,
+                    fontSize: 13.sp,
                     color: const Color(0xFF103451),
                     fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
                 ),
-                SizedBox(height: 3.h),
+                SizedBox(height: 4.h),
                 Text(
                   step['desc']!,
                   style: TextStyle(
-                    fontSize: 10.sp,
+                    fontSize: 12.sp,
                     color: const Color(0xFF698099),
-                    height: 1.45,
+                    height: 1.5,
                   ),
                 ),
               ],
@@ -1754,8 +1641,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildStepNumBadge(String num, {bool small = false}) {
     return Container(
-      width: small ? 22.w : 26.w,
-      height: small ? 22.w : 26.w,
+      width: small ? 26.w : 31.w,
+      height: small ? 26.w : 31.w,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -1770,16 +1657,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w900,
-          fontSize: small ? 10.sp : 11.sp,
+          fontSize: small ? 12.sp : 13.sp,
           height: 1,
         ),
       ),
     );
   }
 
-  // ============================================================
-  // RECENT WINNERS
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // RECENT WINNERS — Requirement #1: real data, Requirement #8: readable fonts
+  // ═══════════════════════════════════════════════════════════
   Widget buildRecentWinners() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
@@ -1787,10 +1674,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       return Padding(
         padding: EdgeInsets.only(
-          left: isMobile ? 15.w : 28.w,
-          right: isMobile ? 15.w : 28.w,
-          top: 6.h,
-          bottom: 22.h,
+          left: 9.w,
+          right: 9.w,
+          top: 8.h,
+          bottom: 14.h,
         ),
         child: Center(
           child: ConstrainedBox(
@@ -1801,20 +1688,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 Text(
                   '🏆  ${AppLocalizations.of(context)!.bp_winners_title}',
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 17.sp,
                     color: const Color(0xFF103451),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 3.h),
+                SizedBox(height: 4.h),
                 Text(
                   AppLocalizations.of(context)!.bp_winners_subtitle,
                   style: TextStyle(
-                    fontSize: 9.sp,
+                    fontSize: 11.sp,
                     color: const Color(0xFF71879d),
                   ),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 15.h),
                 _buildWinnersList(isMobile, isTightMobile),
               ],
             ),
@@ -1825,14 +1712,26 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildWinnersList(bool isMobile, bool isTightMobile) {
+    if (_isLoadingWinners) {
+      return Container(
+        height: 60.h,
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 20.w,
+          height: 20.w,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
     if (_recentWinners.isEmpty) {
       return Container(
-        padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
         alignment: Alignment.center,
         child: Text(
           AppLocalizations.of(context)!.bp_winners_empty,
           style: TextStyle(
-            fontSize: 10.sp,
+            fontSize: 12.sp,
             color: const Color(0xFF71879d),
           ),
         ),
@@ -1842,7 +1741,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final columns = isMobile ? 2 : 5;
 
     return LayoutBuilder(builder: (context, constraints) {
-      final spacing = 6.0;
+      final spacing = 8.0;
       final itemWidth =
           (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -1859,24 +1758,24 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  Widget _buildWinnerCard(Map<String, dynamic> w, bool isTightMobile) {
-    final hasImage = (w['image'] as String? ?? '').isNotEmpty;
-    final iconSize = isTightMobile ? 18.w : 24.w;
-    final emojiSize = isTightMobile ? 11.sp : 14.sp;
-    final textSize = isTightMobile ? 8.sp : 9.sp;
-    final subSize = isTightMobile ? 7.sp : 9.sp;
+  Widget _buildWinnerCard(RecentWinner w, bool isTightMobile) {
+    final hasImage = (w.thumbnail ?? '').isNotEmpty;
+    final iconSize = isTightMobile ? 30.w : 30.w;
+    final emojiSize = isTightMobile ? 14.sp : 16.sp;
+    final titleSize = isTightMobile ? 11.sp : 11.sp;
+    final subSize = isTightMobile ? 10.sp : 11.sp;
 
     return Container(
-      padding: EdgeInsets.all(isTightMobile ? 6.w : 9.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(10.r),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x10123e58),
-            blurRadius: 12,
-            offset: Offset(0, 5),
+            blurRadius: 15,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -1888,38 +1787,41 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             height: iconSize,
             decoration: BoxDecoration(
               color: const Color(0xFFf0f7fb),
-              borderRadius: BorderRadius.circular(6.r),
+              borderRadius: BorderRadius.circular(7.r),
             ),
             clipBehavior: Clip.antiAlias,
             child: hasImage
                 ? Image.network(
-                    w['image'],
+                    w.thumbnail!,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Center(
-                      child: Text('🏆', style: TextStyle(fontSize: emojiSize)),
+                      child: Text('🏆',
+                          style: TextStyle(fontSize: emojiSize)),
                     ),
                   )
                 : Center(
-                    child: Text('🏆', style: TextStyle(fontSize: emojiSize)),
+                    child:
+                        Text('🏆', style: TextStyle(fontSize: emojiSize)),
                   ),
           ),
-          SizedBox(width: (isTightMobile ? 5 : 7).w),
+          SizedBox(width: 9.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  w['name']?.toString() ?? '',
+                  w.winnerName ?? '',
                   style: TextStyle(
-                    fontSize: textSize,
+                    fontSize: titleSize,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF173c59),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                SizedBox(height: 2.h),
                 Text(
-                  '${AppLocalizations.of(context)!.bp_winners_won} ${w['product'] ?? ''}',
+                  '${AppLocalizations.of(context)!.bp_winners_won} ${w.productName ?? ''}',
                   style: TextStyle(
                     fontSize: subSize,
                     color: const Color(0xFF71879d),
@@ -1927,6 +1829,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                SizedBox(height: 2.h),
                 RichText(
                   text: TextSpan(
                     style: TextStyle(
@@ -1939,7 +1842,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               '${AppLocalizations.of(context)!.bp_winners_for} '),
                       TextSpan(
                         text:
-                            '\$${(w['price'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                            '\$${(w.highestBid ?? 0).toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Color(0xFF00b7a1),
                           fontWeight: FontWeight.w800,
@@ -1956,25 +1859,25 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ============================================================
-  // TRUST BENEFITS
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // TRUST BENEFITS — Requirement #8: fonts no longer tiny
+  // ═══════════════════════════════════════════════════════════
   Widget buildTrustBenefits() {
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
       final isTightMobile = constraints.maxWidth < 520;
 
       final innerPad = isTightMobile
-          ? EdgeInsets.all(10.w)
+          ? EdgeInsets.all(14.w)
           : (isMobile
-              ? EdgeInsets.all(11.w)
-              : EdgeInsets.symmetric(horizontal: 22.w, vertical: 15.h));
+              ? EdgeInsets.all(16.w)
+              : EdgeInsets.symmetric(horizontal: 28.w, vertical: 19.h));
 
       return Padding(
         padding: EdgeInsets.only(
-          left: isMobile ? 15.w : 28.w,
-          right: isMobile ? 15.w : 28.w,
-          bottom: 10.h,
+          left: 9.w,
+          right: 9.w,
+          bottom: 12.h,
         ),
         child: Center(
           child: ConstrainedBox(
@@ -1984,7 +1887,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 color: const Color(0xFFe9f8f7),
                 border: Border.all(color: const Color(0xFFcfece8), width: 1),
-                borderRadius: BorderRadius.circular(10.r),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: _buildTrustBenefitsGrid(isMobile, isTightMobile),
             ),
@@ -2006,7 +1909,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     final columns = isMobile ? 2 : 4;
 
     return LayoutBuilder(builder: (context, constraints) {
-      final spacing = isMobile ? 11.0 : 13.0;
+      final spacing = isMobile ? 14.0 : 16.0;
       final itemWidth =
           (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -2025,15 +1928,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Widget _buildTrustBenefit(
       Map<String, String> b, bool isMobile, bool isTightMobile) {
-    final iconSize = isTightMobile ? 16.sp : (isMobile ? 18.sp : 19.sp);
-    final titleSize = isTightMobile ? 8.sp : (isMobile ? 9.sp : 10.sp);
-    final subSize = isTightMobile ? 7.sp : (isMobile ? 8.sp : 9.sp);
+    final iconSize = isTightMobile ? 22.sp : (isMobile ? 22.sp : 24.sp);
+    final titleSize = isTightMobile ? 12.sp : (isMobile ? 12.sp : 12.sp);
+    final subSize = isTightMobile ? 10.sp : (isMobile ? 10.sp : 11.sp);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(b['icon']!, style: TextStyle(fontSize: iconSize, height: 1)),
-        SizedBox(width: 8.w),
+        SizedBox(width: 10.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2061,9 +1964,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 }
 
-// ============================================================
-// BIDPOINTS UTILITY HEADER
-// ============================================================
+// ═══════════════════════════════════════════════════════════
+// BIDPOINTS UTILITY HEADER (unchanged from your version)
+// ═══════════════════════════════════════════════════════════
 class _BpUtilityHeader extends StatefulWidget {
   final bool isLoggedIn;
   final bool hasUnreadMessages;

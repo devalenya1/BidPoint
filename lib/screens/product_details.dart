@@ -15,7 +15,6 @@ import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/chat.dart';
-import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -96,6 +95,9 @@ class _ProductDetailsState extends State<ProductDetails>
   bool? _myStatus;
   bool _userHasBid = false;
 
+  // Points balance (auto-refresh)
+  int _pointBalance = 0;
+
   // Buy Now
   int _buyNow = 0;
   String _buyNowLink = '';
@@ -120,7 +122,7 @@ class _ProductDetailsState extends State<ProductDetails>
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
-  static const double _thumbSize = 49;
+  static const double _thumbSize = 43; // matches 43.w thumb
 
   // Audio
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -153,6 +155,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _fetchAllData();
     _startPolling();
     _fetchUserInfo();
+    _fetchPointBalance();
   }
 
   @override
@@ -222,6 +225,7 @@ class _ProductDetailsState extends State<ProductDetails>
       await _fetchReviews();
       await _fetchBidHistory();
       await _fetchWishlistStatus();
+      await _fetchPointBalance();
 
       setState(() => _isLoading = false);
     } catch (e) {
@@ -322,6 +326,22 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       print('Error fetching user info: $e');
+    }
+  }
+
+  // Requirement #1: Auto-pull point balance like profile/footer nav
+  Future<void> _fetchPointBalance() async {
+    if (!is_logged_in.$) return;
+    try {
+      final response = await _profileRepository.getUserInfoResponse();
+      if (response.success == true &&
+          response.data != null &&
+          response.data!.isNotEmpty) {
+        final balance = response.data![0].balance ?? 0;
+        setState(() => _pointBalance = balance);
+      }
+    } catch (e) {
+      print('Error fetching point balance: $e');
     }
   }
 
@@ -446,6 +466,9 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       });
 
+      // Requirement #1: refresh point balance while polling
+      await _fetchPointBalance();
+
       if (response.auctionEnded == true &&
           response.winner != null &&
           !_winnerModalShown) {
@@ -464,6 +487,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // TIMERS
   // ============================================================
 
+  // Requirement #9: Proper countdown timer
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -607,6 +631,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   '${AppLocalizations.of(context)!.bid_placed} ${_formatPrice(amount)}');
         }
         await _pollData();
+        await _fetchPointBalance();
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.something_went_wrong);
@@ -649,6 +674,7 @@ class _ProductDetailsState extends State<ProductDetails>
         ToastComponent.showSuccess(
             response.message ?? AppLocalizations.of(context)!.bid_placed);
         await _pollData();
+        await _fetchPointBalance();
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.error_placing_bid);
@@ -843,26 +869,6 @@ class _ProductDetailsState extends State<ProductDetails>
     }
   }
 
-  Future<void> _likeComment(int commentId) async {
-    if (!is_logged_in.$) return _showLoginRequired();
-    try {
-      final response = await _productRepository.likeProductComment(commentId);
-      if (response['success'] == true) {
-        setState(() {
-          final i = _comments.indexWhere((c) => c.id == commentId);
-          if (i != -1) {
-            _comments[i].likes = response['data']['likes'].toString();
-          }
-        });
-      }
-    } catch (_) {}
-  }
-
-  void _replyToComment(String userName) {
-    _commentController.text = '@$userName ';
-    FocusScope.of(context).requestFocus(FocusNode());
-  }
-
   void _showLoginRequired() {
     ToastComponent.showWarning(
         AppLocalizations.of(context)!.please_login_to_continue);
@@ -881,25 +887,11 @@ class _ProductDetailsState extends State<ProductDetails>
     final h = d.inHours.remainder(24);
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
-    if (days > 0) return '${days}d ${h}h ${m}m';
+    if (days > 0) return '${days}d ${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
     if (compact) {
       return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
     return '${h}h ${m}m ${s}s';
-  }
-
-  String _formatTime(String? dateTime) {
-    if (dateTime == null) return '';
-    try {
-      final d = DateTime.parse(dateTime);
-      final diff = DateTime.now().difference(d);
-      if (diff.inDays > 0) return '${diff.inDays}d ago';
-      if (diff.inHours > 0) return '${diff.inHours}h ago';
-      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-      return '${diff.inSeconds}s ago';
-    } catch (_) {
-      return '';
-    }
   }
 
   String _formatDate(String? dateTime) {
@@ -907,6 +899,17 @@ class _ProductDetailsState extends State<ProductDetails>
     try {
       final d = DateTime.parse(dateTime);
       return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatDateTime(String? dateTime) {
+    if (dateTime == null) return '';
+    try {
+      final d = DateTime.parse(dateTime);
+      return '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}/${d.year} · '
+          '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}:${d.second.toString().padLeft(2, '0')}';
     } catch (_) {
       return '';
     }
@@ -948,7 +951,7 @@ class _ProductDetailsState extends State<ProductDetails>
             controller: _mainScrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── TOP BAR ─────────────────────────────────────
+              // ── TOP BAR (logo + points + exit) ───────────────
               SliverToBoxAdapter(child: _buildTopBar()),
 
               // ── STAGE (photo + overlays) ─────────────────────
@@ -963,20 +966,12 @@ class _ProductDetailsState extends State<ProductDetails>
               // ── HOW IT WORKS ─────────────────────────────────
               SliverToBoxAdapter(child: _buildHowItWorks()),
 
-              // ── BUY NOW ──────────────────────────────────────
+              // ── BUY NOW (like HTML) ──────────────────────────
               if (_buyNow == 1 && _auctionStatus != "ended")
                 SliverToBoxAdapter(child: _buildBuyNowCard()),
 
-              // ── REVIEWS ROW ──────────────────────────────────
-              SliverToBoxAdapter(child: _buildReviewsRow()),
-
-              // ── COMMENTS ─────────────────────────────────────
-              SliverToBoxAdapter(child: _buildCommentsSection()),
-
-              // ── spacer so content isn't hidden by bid dock ──
-              SliverToBoxAdapter(
-                child: SizedBox(height: 110.h),
-              ),
+              // spacer so content isn't hidden by bid dock
+              SliverToBoxAdapter(child: SizedBox(height: 110.h)),
             ],
           ),
         ),
@@ -987,66 +982,86 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // TOP BAR
+  // TOP BAR (Req #6: logo + points + exit)
   // ============================================================
 
   Widget _buildTopBar() {
     return Container(
       height: 60.h,
       color: Colors.white,
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      padding: EdgeInsets.symmetric(horizontal: 9.w),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE4EDF6))),
+      ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40.w,
-              height: 40.w,
-              decoration: BoxDecoration(
-                color: const Color(0xFFedf6ff),
-                borderRadius: BorderRadius.circular(13.r),
-              ),
-              child: Icon(Icons.arrow_back,
-                  size: 20.sp, color: const Color(0xFF1870d5)),
+          // Logo
+          Image.network(
+            AppConfig.RAW_BASE_URL + '/public/assets/img/logo.png',
+            height: 36.h,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Text(
+              'Logo',
+              style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1),
             ),
           ),
           const Spacer(),
+          // Points
           if (is_logged_in.$)
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
               decoration: BoxDecoration(
                 color: const Color(0xFFecfcfa),
                 borderRadius: BorderRadius.circular(30.r),
                 border: Border.all(color: const Color(0xFFb8ecea)),
               ),
               child: Text(
-                '✦ ${_userInfo?.balance ?? 0} ${AppLocalizations.of(context)!.points_ucf}',
+                '✦ $_pointBalance ${AppLocalizations.of(context)!.points_ucf}',
                 style: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF007d7f),
                 ),
               ),
-            )
-          else
-            GestureDetector(
-              onTap: _showLoginRequired,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFedf6ff),
-                  borderRadius: BorderRadius.circular(13.r),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.login_ucf,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
+            ),
+          SizedBox(width: 6.w),
+          // Exit / Login
+          GestureDetector(
+            onTap: () => is_logged_in.$
+                ? Navigator.pop(context)
+                : _showLoginRequired(),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFedf6ff),
+                borderRadius: BorderRadius.circular(13.r),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    is_logged_in.$ ? Icons.arrow_back : Icons.login,
+                    size: 14.sp,
                     color: const Color(0xFF1870d5),
                   ),
-                ),
+                  SizedBox(width: 3.w),
+                  Text(
+                    is_logged_in.$
+                        ? AppLocalizations.of(context)!.exit_ucf ?? 'Exit'
+                        : AppLocalizations.of(context)!.login_ucf,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1870d5),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
         ],
       ),
     );
@@ -1059,14 +1074,14 @@ class _ProductDetailsState extends State<ProductDetails>
   Widget _buildStage() {
     final isMobile = _screenWidth < 800;
     final stageHeight = isMobile
-        ? (_screenWidth < 430 ? 470.0 : 540.0)
+        ? (_screenWidth < 430 ? 470.0 : 520.0)
         : min(_screenWidth * 0.85, 720.0);
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 18.w),
+      margin: EdgeInsets.symmetric(horizontal: 9.w),
       height: stageHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(isMobile ? 0 : 28.r),
+        borderRadius: BorderRadius.circular(20.r),
         color: const Color(0xFF142337),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1108,26 +1123,33 @@ class _ProductDetailsState extends State<ProductDetails>
 
           // Status badge (top-left)
           Positioned(
-            top: 17.h,
-            left: 17.w,
+            top: 13.h,
+            left: 13.w,
             child: _buildStatusBadge(),
           ),
 
           // Action circles (top-right)
           Positioned(
-            top: 17.h,
-            right: 17.w,
+            top: 13.h,
+            right: 13.w,
             child: _buildActionCircles(),
           ),
 
-          // Chat overlay (bottom)
-          if (!isMobile || true)
+          // More menu overlay (Req #2)
+          if (_showMoreMenu)
             Positioned(
-              left: 18.w,
-              right: 18.w,
-              bottom: 18.h,
-              child: _buildChatOverlay(),
+              top: 60.h,
+              right: 9.w,
+              child: _buildMoreMenu(),
             ),
+
+          // Chat overlay (bottom)
+          Positioned(
+            left: 13.w,
+            right: 13.w,
+            bottom: 13.h,
+            child: _buildChatOverlay(),
+          ),
         ],
       ),
     );
@@ -1160,7 +1182,7 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(color: border),
@@ -1170,8 +1192,8 @@ class _ProductDetailsState extends State<ProductDetails>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8.w,
-            height: 8.w,
+            width: 7.w,
+            height: 7.w,
             decoration: const BoxDecoration(
               color: Color(0xFF9EFFD6),
               shape: BoxShape.circle,
@@ -1182,9 +1204,9 @@ class _ProductDetailsState extends State<ProductDetails>
             label,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 12.sp,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w800,
-              height: 1,
+              height: 1.2,
             ),
           ),
         ],
@@ -1199,19 +1221,19 @@ class _ProductDetailsState extends State<ProductDetails>
           icon: Icons.more_vert,
           onTap: () => setState(() => _showMoreMenu = !_showMoreMenu),
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 9.h),
         _actionCircle(
           icon: Icons.share_outlined,
           onTap: () {
             Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
           },
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 9.h),
         _actionCircle(
           icon: Icons.play_arrow_rounded,
           onTap: _openVideoModal,
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 9.h),
         _actionCircle(
           icon: Icons.history,
           onTap: _openBidHistoryModal,
@@ -1224,14 +1246,121 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44.w,
-        height: 44.w,
+        width: 43.w,
+        height: 43.w,
         decoration: BoxDecoration(
           color: const Color(0xB5071D35),
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0x75FFFFFF)),
         ),
-        child: Icon(icon, color: Colors.white, size: 20.sp),
+        child: Icon(icon, color: Colors.white, size: 18.sp),
+      ),
+    );
+  }
+
+  // Req #2: More menu with Information, Add to Wishlist, Contact Seller
+  Widget _buildMoreMenu() {
+    return Container(
+      width: 236.w,
+      padding: EdgeInsets.all(7.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17.r),
+        border: Border.all(color: const Color(0xFFE0EDF7)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x44000000), blurRadius: 44, offset: Offset(0, 16)),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _showMoreMenu = false),
+            child: Container(
+              margin: EdgeInsets.only(bottom: 5.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDF7FC),
+                borderRadius: BorderRadius.circular(11.r),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Options',
+                    style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF102C4C)),
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: 28.w,
+                    height: 28.w,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(9.r),
+                    ),
+                    child: Icon(Icons.close,
+                        size: 18.sp, color: const Color(0xFF102C4C)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _moreMenuItem(
+            icon: Icons.info_outline,
+            label: 'Information',
+            onTap: () {
+              setState(() => _showMoreMenu = false);
+              _showInformationModal();
+            },
+          ),
+          _moreMenuItem(
+            icon: _isInWishlist ? Icons.favorite : Icons.favorite_border,
+            label: _isInWishlist
+                ? 'Remove from favorites'
+                : 'Add to favorites',
+            onTap: () {
+              setState(() => _showMoreMenu = false);
+              _toggleWishlist();
+            },
+          ),
+          _moreMenuItem(
+            icon: Icons.mail_outline,
+            label: 'Contact seller',
+            onTap: () {
+              setState(() => _showMoreMenu = false);
+              _contactSeller();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _moreMenuItem(
+      {required IconData icon,
+      required String label,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 13.h),
+        child: Row(
+          children: [
+            Icon(icon, size: 18.sp, color: const Color(0xFF102C4C)),
+            SizedBox(width: 10.w),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF102C4C)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1358,15 +1487,15 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // PHOTO RAIL
+  // PHOTO RAIL (Req #4: 9px margins, Req #8: View photos button)
   // ============================================================
 
   Widget _buildPhotoRail() {
     if (_productImages.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 13.h),
+      margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
@@ -1376,66 +1505,94 @@ class _ProductDetailsState extends State<ProductDetails>
               color: Color(0x0B15365A), blurRadius: 25, offset: Offset(0, 8)),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(
-                AppLocalizations.of(context)!.product_photos_ucf,
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF102C4C),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${_currentImageIndex + 1} / ${_productImages.length}',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF637A92),
-                ),
-              ),
-            ],
+          // Heading
+          Text(
+            AppLocalizations.of(context)!.product_photos_ucf,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF102C4C),
+            ),
           ),
-          SizedBox(height: 10.h),
-          SizedBox(
-            height: 70.h,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _productImages.length,
-              separatorBuilder: (_, __) => SizedBox(width: 10.w),
-              itemBuilder: (context, index) {
-                final active = index == _currentImageIndex;
-                return GestureDetector(
-                  onTap: () => setState(() => _currentImageIndex = index),
-                  child: Container(
-                    width: 66.w,
-                    height: 70.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(
-                        color: active
-                            ? const Color(0xFF0ABFC4)
-                            : const Color(0xFFE0EAF2),
-                        width: active ? 3 : 2,
-                      ),
-                      color: Colors.white,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.network(
-                      _productImages[index],
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.image_outlined,
-                          color: Colors.grey,
-                          size: 24),
-                    ),
+          SizedBox(width: 9.w),
+          // View photos button (Req #8)
+          GestureDetector(
+            onTap: () => _openPhotoViewer(_currentImageIndex),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF7FB),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: const Color(0xFFC8E6F1)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search,
+                      size: 13.sp, color: const Color(0xFF087E99)),
+                  SizedBox(width: 4.w),
+                  Text(
+                    AppLocalizations.of(context)!.view_photos_ucf ?? 'View photos',
+                    style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF087E99)),
                   ),
-                );
-              },
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: 9.w),
+          // Thumbnails
+          Expanded(
+            child: SizedBox(
+              height: 58.h,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _productImages.length,
+                separatorBuilder: (_, __) => SizedBox(width: 9.w),
+                itemBuilder: (context, index) {
+                  final active = index == _currentImageIndex;
+                  return GestureDetector(
+                    onTap: () => setState(() => _currentImageIndex = index),
+                    child: Container(
+                      width: 53.w,
+                      height: 58.h,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: active
+                              ? const Color(0xFF0ABFC4)
+                              : const Color(0xFFE0EAF2),
+                          width: active ? 3 : 2,
+                        ),
+                        color: Colors.white,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.network(
+                        _productImages[index],
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.image_outlined,
+                            color: Colors.grey,
+                            size: 22),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          SizedBox(width: 6.w),
+          // Photo count
+          Text(
+            '${_currentImageIndex + 1} / ${_productImages.length}',
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF637A92),
             ),
           ),
         ],
@@ -1443,14 +1600,74 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
+  void _openPhotoViewer(int index) {
+    if (_productImages.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  height: 56.h,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                        bottom: BorderSide(color: Color(0xFFE4EDF6))),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${index + 1} / ${_productImages.length}',
+                        style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF102C4C)),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          width: 40.w,
+                          height: 40.w,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEDF4FB),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.close,
+                              size: 23.sp, color: const Color(0xFF102C4C)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: PageController(initialPage: index),
+                    itemCount: _productImages.length,
+                    itemBuilder: (_, i) => PhotoView(
+                      imageProvider: NetworkImage(_productImages[i]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ============================================================
-  // SUMMARY (3 metrics)
+  // SUMMARY (3 metrics) — Req #4: 9px margins, edited font sizes
   // ============================================================
 
   Widget _buildSummary() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
-      padding: EdgeInsets.all(16.w),
+      margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
@@ -1466,8 +1683,8 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             _product?.name ?? '',
             style: TextStyle(
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w800,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w900,
               color: const Color(0xFF102C4C),
               letterSpacing: -0.5,
               height: 1.2,
@@ -1475,13 +1692,13 @@ class _ProductDetailsState extends State<ProductDetails>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: 14.h),
+          SizedBox(height: 9.h),
           Row(
             children: [
               Expanded(child: _metricTimer()),
-              SizedBox(width: 10.w),
+              SizedBox(width: 6.w),
               Expanded(child: _metricPrice()),
-              SizedBox(width: 10.w),
+              SizedBox(width: 6.w),
               Expanded(child: _metricLeader()),
             ],
           ),
@@ -1497,10 +1714,10 @@ class _ProductDetailsState extends State<ProductDetails>
       Color? labelColor,
       Color? valueColor}) {
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: bgColor ?? const Color(0xFFF1F7FB),
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: const Color(0xFFDCEAF5)),
       ),
       child: Column(
@@ -1510,7 +1727,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             label,
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: 9.sp,
               fontWeight: FontWeight.w600,
               color: labelColor ?? const Color(0xFF637A92),
               height: 1.3,
@@ -1518,10 +1735,10 @@ class _ProductDetailsState extends State<ProductDetails>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 2.h),
           DefaultTextStyle(
             style: TextStyle(
-              fontSize: 16.sp,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w900,
               color: valueColor ?? const Color(0xFF102C4C),
               fontFeatures: const [ui.FontFeature.tabularFigures()],
@@ -1555,7 +1772,8 @@ class _ProductDetailsState extends State<ProductDetails>
 
     return _metricBox(
       label: label,
-      child: Text(value, style: TextStyle(color: valColor ?? const Color(0xFF008E9D))),
+      child: Text(value,
+          style: TextStyle(color: valColor ?? const Color(0xFF008E9D))),
       valueColor: valColor ?? const Color(0xFF008E9D),
     );
   }
@@ -1581,7 +1799,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // HOW IT WORKS
+  // HOW IT WORKS — Req #4: 9px margins
   // ============================================================
 
   Widget _buildHowItWorks() {
@@ -1608,8 +1826,8 @@ class _ProductDetailsState extends State<ProductDetails>
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
-      padding: EdgeInsets.all(22.w),
+      margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.r),
@@ -1625,7 +1843,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             AppLocalizations.of(context)!.how_title,
             style: TextStyle(
-              fontSize: 22.sp,
+              fontSize: 21.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF102C4C),
               letterSpacing: -0.45,
@@ -1635,7 +1853,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             AppLocalizations.of(context)!.how_subtitle,
             style: TextStyle(
-                fontSize: 12.5.sp, color: const Color(0xFF637A92)),
+                fontSize: 10.5.sp, color: const Color(0xFF637A92)),
           ),
           SizedBox(height: 19.h),
           if (isMobile)
@@ -1681,7 +1899,7 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Widget _howStep(Map<String, String> s, {required bool showBorder}) {
     return Container(
-      padding: EdgeInsets.only(right: showBorder ? 13.w : 0),
+      padding: EdgeInsets.only(right: showBorder ? 9.w : 0),
       decoration: showBorder
           ? const BoxDecoration(
               border: Border(right: BorderSide(color: Color(0xFFE4EDF6))))
@@ -1690,8 +1908,8 @@ class _ProductDetailsState extends State<ProductDetails>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 29.w,
-            height: 29.w,
+            width: 25.w,
+            height: 25.w,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -1705,13 +1923,13 @@ class _ProductDetailsState extends State<ProductDetails>
               s['num']!,
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 13.sp,
+                  fontSize: 12.5.sp,
                   fontWeight: FontWeight.w800),
             ),
           ),
-          SizedBox(width: 10.w),
-          Text(s['icon']!, style: TextStyle(fontSize: 26.sp, height: 1.15)),
-          SizedBox(width: 10.w),
+          SizedBox(width: 9.w),
+          Text(s['icon']!, style: TextStyle(fontSize: 23.sp, height: 1.15)),
+          SizedBox(width: 9.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1719,7 +1937,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 Text(
                   s['title']!,
                   style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF102C4C),
                       height: 1.35),
@@ -1728,7 +1946,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 Text(
                   s['desc']!,
                   style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 11.sp,
                       color: const Color(0xFF637A92),
                       height: 1.48),
                 ),
@@ -1741,12 +1959,12 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // BUY NOW
+  // BUY NOW (Req #7: match HTML layout)
   // ============================================================
 
   Widget _buildBuyNowCard() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 12.h),
+      margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
       padding: EdgeInsets.all(15.w),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1759,6 +1977,7 @@ class _ProductDetailsState extends State<ProductDetails>
       ),
       child: Row(
         children: [
+          // Icon
           Container(
             width: 42.w,
             height: 42.w,
@@ -1770,6 +1989,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 color: const Color(0xFF008FA5), size: 22.sp),
           ),
           SizedBox(width: 12.w),
+          // Copy
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1780,6 +2000,8 @@ class _ProductDetailsState extends State<ProductDetails>
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF102C4C)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 4.h),
                 Text(
@@ -1793,6 +2015,7 @@ class _ProductDetailsState extends State<ProductDetails>
             ),
           ),
           SizedBox(width: 10.w),
+          // Button
           GestureDetector(
             onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
             child: Container(
@@ -1824,126 +2047,16 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // REVIEWS ROW
-  // ============================================================
-
-  Widget _buildReviewsRow() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: const Color(0xFFE4EDF6)),
-      ),
-      child: GestureDetector(
-        onTap: _showReviewsModalDialog,
-        child: Row(
-          children: [
-            ...List.generate(5, (i) {
-              return Icon(
-                i < _rating.round() ? Icons.star : Icons.star_border,
-                size: 16.sp,
-                color: Colors.amber,
-              );
-            }),
-            SizedBox(width: 6.w),
-            Text(_rating.toStringAsFixed(1),
-                style: TextStyle(
-                    fontSize: 14.sp, fontWeight: FontWeight.w800)),
-            SizedBox(width: 8.w),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F7FB),
-                borderRadius: BorderRadius.circular(20.r),
-              ),
-              child: Text('$_reviewsCount',
-                  style:
-                      TextStyle(fontSize: 12.sp, color: const Color(0xFF637A92))),
-            ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_ios,
-                size: 14.sp, color: const Color(0xFF637A92)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // COMMENTS SECTION (below stage — reviews, description, etc.)
-  // ============================================================
-
-  Widget _buildCommentsSection() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: const Color(0xFFE4EDF6)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                AppLocalizations.of(context)!.product_details,
-                style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF102C4C)),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: _openDescriptionModal,
-                child: Text(
-                  AppLocalizations.of(context)!.see_more_ucf,
-                  style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: MyTheme.accent_color),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Text(
-            (_product?.description ?? '')
-                .replaceAll(RegExp(r'<[^>]*>'), '')
-                .trim(),
-            style: TextStyle(
-                fontSize: 13.sp,
-                color: const Color(0xFF102C4C),
-                height: 1.6),
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // BID DOCK (slide-to-bid + manual)
+  // BID DOCK (Req #5: 9px padding/margin, slide icon+text together)
   // ============================================================
 
   Widget _buildBidDock() {
     final isLive = _auctionStatus == "live";
-    final label = !isLive
-        ? (_auctionStatus == "upcoming"
-            ? AppLocalizations.of(context)!.starts_soon_ucf
-            : AppLocalizations.of(context)!.ended_ucf)
-        : _slideOffset > 20
-            ? AppLocalizations.of(context)!.quick_bid_ucf
-            : '${AppLocalizations.of(context)!.slide_to_bid_ucf} · − ${_pointPerBid.toInt()} ${AppLocalizations.of(context)!.points_ucf}';
 
     return SafeArea(
       top: false,
       child: Container(
-        padding: EdgeInsets.fromLTRB(18.w, 13.h, 18.w, 13.h),
+        padding: EdgeInsets.fromLTRB(9.w, 9.h, 9.w, 9.h),
         decoration: const BoxDecoration(
           color: Color(0xEDFFFFFF),
           border: Border(top: BorderSide(color: Color(0xFFDCEAF5))),
@@ -1958,9 +2071,10 @@ class _ProductDetailsState extends State<ProductDetails>
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final maxOffset =
-                      (constraints.maxWidth - _thumbSize - 10).clamp(0.0, double.infinity);
+                  final maxOffset = (constraints.maxWidth - _thumbSize - 10)
+                      .clamp(0.0, double.infinity);
 
+                  // Req #5: icon and text slide together
                   return GestureDetector(
                     onHorizontalDragStart: isLive
                         ? (d) {
@@ -1974,17 +2088,17 @@ class _ProductDetailsState extends State<ProductDetails>
                         ? (d) {
                             if (!_isDragging) return;
                             final dx = d.localPosition.dx - _thumbStartX;
-                            setState(() => _slideOffset =
-                                dx.clamp(0.0, maxOffset));
+                            setState(() =>
+                                _slideOffset = dx.clamp(0.0, maxOffset));
                           }
                         : null,
                     onHorizontalDragEnd: isLive
                         ? (_) {
                             if (!_isDragging) return;
                             _isDragging = false;
-                            final should =
-                                _slideOffset > maxOffset * 0.75;
-                            setState(() => _slideOffset = should ? maxOffset : 0);
+                            final should = _slideOffset > maxOffset * 0.75;
+                            setState(
+                                () => _slideOffset = should ? maxOffset : 0);
                             Future.delayed(
                                 Duration(milliseconds: should ? 200 : 300),
                                 () {
@@ -1996,7 +2110,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: Opacity(
                       opacity: isLive ? 1.0 : 0.5,
                       child: Container(
-                        height: 58.h,
+                        height: 56.h,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF0BBDBD), Color(0xFF1870D5)],
@@ -2020,18 +2134,27 @@ class _ProductDetailsState extends State<ProductDetails>
                                 ),
                               ),
                             ),
-                            // Center text
-                            Center(
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                    left: 42.w, right: 8.w),
+                            // Text — moves with thumb
+                            Positioned(
+                              left: 5.w + _thumbSize + 6.w + _slideOffset,
+                              right: 8.w,
+                              top: 0,
+                              bottom: 0,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
                                 child: Text(
-                                  label,
+                                  !isLive
+                                      ? (_auctionStatus == "upcoming"
+                                          ? AppLocalizations.of(context)!
+                                              .starts_soon_ucf
+                                          : AppLocalizations.of(context)!
+                                              .ended_ucf)
+                                      : 'Slide to bid · − ${_pointPerBid.toInt()} pts',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14.sp,
+                                    fontSize: 12.sp,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
@@ -2042,8 +2165,8 @@ class _ProductDetailsState extends State<ProductDetails>
                               left: 5.w + _slideOffset,
                               top: 5.h,
                               child: Container(
-                                width: 49.w,
-                                height: 46.h,
+                                width: 43.w,
+                                height: 43.h,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(13.r),
@@ -2063,7 +2186,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         ),
                                       )
                                     : Icon(Icons.arrow_forward_rounded,
-                                        size: 26.sp,
+                                        size: 23.sp,
                                         color: const Color(0xFF1870D5)),
                               ),
                             ),
@@ -2075,15 +2198,15 @@ class _ProductDetailsState extends State<ProductDetails>
                 },
               ),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
             // Manual bid button
             GestureDetector(
               onTap: isLive ? _showBidInputDialog : null,
               child: Opacity(
                 opacity: isLive ? 1.0 : 0.5,
                 child: Container(
-                  height: 58.h,
-                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  height: 56.h,
+                  padding: EdgeInsets.symmetric(horizontal: 10.w),
                   decoration: BoxDecoration(
                     color: const Color(0xEDFFFFFF),
                     borderRadius: BorderRadius.circular(17.r),
@@ -2094,17 +2217,18 @@ class _ProductDetailsState extends State<ProductDetails>
                     children: [
                       Text('▦',
                           style: TextStyle(
-                              fontSize: 19.sp,
+                              fontSize: 17.sp,
                               color: const Color(0xFF1163A8))),
-                      SizedBox(width: 6.w),
+                      SizedBox(width: 5.w),
                       Text(
                         !isLive
                             ? (_auctionStatus == "upcoming"
-                                ? AppLocalizations.of(context)!.starts_soon_ucf
+                                ? AppLocalizations.of(context)!
+                                    .starts_soon_ucf
                                 : AppLocalizations.of(context)!.ended_ucf)
                             : AppLocalizations.of(context)!.manual_bid_ucf,
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF1163A8),
                         ),
@@ -2123,6 +2247,160 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // DIALOGS
   // ============================================================
+
+  void _showInformationModal() {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: _screenWidth * 1.5),
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Auction information',
+                      style: TextStyle(
+                          fontSize: 20.sp, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 22.sp),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              Text(
+                'Auction details, product description, and direct purchase.',
+                style: TextStyle(
+                    fontSize: 13.sp, color: const Color(0xFF637A92)),
+              ),
+              SizedBox(height: 12.h),
+              // Info grid
+              Row(
+                children: [
+                  Expanded(
+                      child: _infoTile(
+                          'Starting bid', _formatPrice(_startingBid))),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                      child: _infoTile('Bidders', '$_totalBids')),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Expanded(child: _infoTile('Highest bidder', _highestBidder)),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                      child: _infoTile(
+                          'Next bid', _formatPrice(_minNextBidNow))),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              // Product description
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: EdgeInsets.all(15.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F8FC),
+                      borderRadius: BorderRadius.circular(15.r),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Product description',
+                          style: TextStyle(
+                              fontSize: 14.sp, fontWeight: FontWeight.w800),
+                        ),
+                        SizedBox(height: 8.h),
+                        Html(
+                          data: _product?.description ?? '',
+                          style: {
+                            "body": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(13.sp),
+                            ),
+                          },
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'Materials, dimensions, condition, and exact package contents must be confirmed by the seller.',
+                          style: TextStyle(
+                              fontSize: 11.sp, color: const Color(0xFF637A92)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (_buyNow == 1 && _auctionStatus != "ended") ...[
+                SizedBox(height: 12.h),
+                GestureDetector(
+                  onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE9F8FB),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(color: const Color(0xFFC9EDF1)),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.buy_now_ucf,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF00869C)),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(String label, String value) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 9.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F8FC),
+        borderRadius: BorderRadius.circular(15.r),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 12.sp, color: const Color(0xFF637A92)),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            value,
+            style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF102C4C)),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showBidInputDialog() {
     if (_auctionStatus != "live") {
@@ -2382,7 +2660,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                             fontWeight: FontWeight.w700),
                                       ),
                                       Text(
-                                        _formatDate(b.createdAt),
+                                        _formatDateTime(b.createdAt),
                                         style: TextStyle(
                                             fontSize: 11.sp,
                                             color:
@@ -2403,271 +2681,6 @@ class _ProductDetailsState extends State<ProductDetails>
                           );
                         },
                       ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showReviewsModalDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        child: Container(
-          constraints: BoxConstraints(maxHeight: _screenWidth * 1.6),
-          padding: EdgeInsets.all(20.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${AppLocalizations.of(context)!.all_reviews_ucf} ($_reviewsCount)',
-                      style: TextStyle(
-                          fontSize: 18.sp, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 22.sp),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              Divider(),
-              Flexible(
-                child: _reviews.isEmpty
-                    ? Padding(
-                        padding: EdgeInsets.symmetric(vertical: 30.h),
-                        child: Center(
-                            child: Text(
-                                AppLocalizations.of(context)!.no_reviews_yet_ucf)),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _reviews.length,
-                        separatorBuilder: (_, __) => Divider(),
-                        itemBuilder: (_, i) {
-                          final r = _reviews[i];
-                          return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.h),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    ...List.generate(
-                                      5,
-                                      (s) => Icon(
-                                        s < (r.rating ?? 0)
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        size: 14.sp,
-                                        color: Colors.amber,
-                                      ),
-                                    ),
-                                    SizedBox(width: 6.w),
-                                    Text(_formatDate(r.createdAt),
-                                        style: TextStyle(
-                                            fontSize: 11.sp,
-                                            color: const Color(0xFF637A92))),
-                                  ],
-                                ),
-                                SizedBox(height: 6.h),
-                                Text(r.comment ?? '',
-                                    style: TextStyle(fontSize: 13.sp)),
-                                SizedBox(height: 4.h),
-                                Text(r.userName ?? '',
-                                    style: TextStyle(
-                                        fontSize: 11.sp,
-                                        color: const Color(0xFF637A92))),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-              SizedBox(height: 8.h),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _showAddReviewDialog();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MyTheme.accent_color,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r)),
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  minimumSize: Size(double.infinity, 0),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.write_review_ucf,
-                  style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showAddReviewDialog() {
-    double temp = 0;
-    final tempCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-          child: Padding(
-            padding: EdgeInsets.all(20.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        AppLocalizations.of(context)!.write_review_ucf,
-                        style: TextStyle(
-                            fontSize: 18.sp, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, size: 22.sp),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                Text(AppLocalizations.of(context)!.rating_ucf,
-                    style: TextStyle(
-                        fontSize: 13.sp, fontWeight: FontWeight.w500)),
-                SizedBox(height: 6.h),
-                RatingBar.builder(
-                  initialRating: 0,
-                  minRating: 1,
-                  itemCount: 5,
-                  itemSize: 30.sp,
-                  itemBuilder: (_, __) =>
-                      const Icon(Icons.star, color: Colors.amber),
-                  onRatingUpdate: (v) => setSt(() => temp = v),
-                ),
-                SizedBox(height: 12.h),
-                Text(AppLocalizations.of(context)!.review_ucf,
-                    style: TextStyle(
-                        fontSize: 13.sp, fontWeight: FontWeight.w500)),
-                SizedBox(height: 6.h),
-                TextField(
-                  controller: tempCtrl,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText:
-                        AppLocalizations.of(context)!.share_experience_hint,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.r)),
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (temp == 0) {
-                        ToastComponent.showWarning(
-                            AppLocalizations.of(context)!.please_select_rating);
-                        return;
-                      }
-                      if (tempCtrl.text.trim().isEmpty) {
-                        ToastComponent.showWarning(
-                            AppLocalizations.of(context)!.please_write_review);
-                        return;
-                      }
-                      _selectedRating = temp;
-                      _reviewController.text = tempCtrl.text;
-                      Navigator.pop(ctx);
-                      _submitReview();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: MyTheme.accent_color,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r)),
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.submit_review_ucf,
-                      style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openDescriptionModal() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        child: Container(
-          constraints: BoxConstraints(maxHeight: _screenWidth * 1.6),
-          padding: EdgeInsets.all(20.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.product_details,
-                      style: TextStyle(
-                          fontSize: 18.sp, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 22.sp),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              Divider(),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Html(
-                    data: _product?.description ?? '',
-                    style: {
-                      "body": Style(
-                        margin: Margins.zero,
-                        padding: HtmlPaddings.zero,
-                        fontSize: FontSize(14.sp),
-                      ),
-                      "img": Style(
-                        width: Width(100, Unit.percent),
-                        height: Height.auto(),
-                      ),
-                    },
-                  ),
-                ),
               ),
             ],
           ),

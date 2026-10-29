@@ -22,8 +22,6 @@ class UpcomingCard extends StatefulWidget {
   final dynamic currentBid;
   final dynamic startingBid;
   final bool isAuctionActive;
-
-  /// Matches HTML `$retail_value = $product->purchase_price ?? 0;`
   final dynamic purchasePrice;
 
   const UpcomingCard({
@@ -58,9 +56,6 @@ class _UpcomingCardState extends State<UpcomingCard> {
     _fetchWishlistStatus();
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // WISHLIST — same flow as product_details.dart
-  // ─────────────────────────────────────────────────────────────
   Future<void> _fetchWishlistStatus() async {
     if (!is_logged_in.$) return;
     try {
@@ -108,9 +103,6 @@ class _UpcomingCardState extends State<UpcomingCard> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // PRICE HELPERS
-  // ─────────────────────────────────────────────────────────────
   double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -139,22 +131,16 @@ class _UpcomingCardState extends State<UpcomingCard> {
 
   double _getRetailValue() => _parsePrice(widget.purchasePrice);
 
-  // ─────────────────────────────────────────────────────────────
-  // NOTIFY ME
-  // ─────────────────────────────────────────────────────────────
   Future<void> _notifyMe() async {
     if (_isProcessing) return;
     if (!is_logged_in.$) {
       _showLoginDialog();
       return;
     }
-
     setState(() => _isProcessing = true);
-
     try {
       final loc = AppLocalizations.of(context);
       final response = await _productRepository.notifyMeForAuction(widget.id);
-
       if (response['success'] == true) {
         ToastComponent.showSuccess(
           response['message'] ??
@@ -227,36 +213,37 @@ class _UpcomingCardState extends State<UpcomingCard> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 320;
-        return isNarrow ? _buildStackedCard() : _buildDesktopCard();
+        final isMobile = MediaQuery.of(context).size.width < 700;
+        final isVeryNarrow = constraints.maxWidth < 260;
+
+        if (isMobile || isVeryNarrow) {
+          return _buildMobileCard();
+        }
+        return _buildDesktopCard();
       },
     );
   }
 
-  // ── DESKTOP: photo 42% | info 58% ─────────────────────────────
   Widget _buildDesktopCard() {
     final loc = AppLocalizations.of(context)!;
     final retailValue = _getRetailValue();
     final points = widget.pointPerBid ?? 1;
 
     return Container(
-      padding: EdgeInsets.all(11.w),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(17.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -265,7 +252,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(flex: 42, child: _buildPhotoArea(loc)),
-            SizedBox(width: 11.w),
+            SizedBox(width: 9.w),
             Expanded(
               flex: 58,
               child: Column(
@@ -314,17 +301,17 @@ class _UpcomingCardState extends State<UpcomingCard> {
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w900,
                             color: const Color(0xFF28bfa8),
-                            letterSpacing: -0.04,
+                            letterSpacing: -0.4,
                             height: 1,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      SizedBox(width: 5.w),
+                      SizedBox(width: 4.w),
                       Flexible(
                         child: Text(
-                          _pointsLabel(loc, points),
+                          '◉ $points ${loc.point_per_bid_ucf}',
                           style: TextStyle(
                             fontSize: 9.sp,
                             fontWeight: FontWeight.w800,
@@ -353,8 +340,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
     );
   }
 
-  // ── STACKED: photo on top ─────────────────────────────────────
-  Widget _buildStackedCard() {
+  Widget _buildMobileCard() {
     final loc = AppLocalizations.of(context)!;
     final retailValue = _getRetailValue();
     final points = widget.pointPerBid ?? 1;
@@ -364,46 +350,47 @@ class _UpcomingCardState extends State<UpcomingCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFe0eaf2), width: 1),
-        borderRadius: BorderRadius.circular(15.r),
+        borderRadius: BorderRadius.circular(17.r),
         boxShadow: const [
           BoxShadow(
             color: Color(0x121b4965),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 130.h, child: _buildPhotoArea(loc)),
-          SizedBox(height: 8.h),
+          SizedBox(height: 128.h, child: _buildPhotoArea(loc)),
+          SizedBox(height: 9.h),
           GestureDetector(
             onTap: _navigateToProductDetails,
             child: Text(
               widget.name ?? loc.product_ucf,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF193a58),
+                height: 1.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 5.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 loc.retail_value_ucf,
                 style: TextStyle(
-                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+                    fontSize: 10.sp, color: const Color(0xFF71879d)),
               ),
               Text(
                 _formatPrice(retailValue),
                 style: TextStyle(
-                    fontSize: 8.sp, color: const Color(0xFF71879d)),
+                    fontSize: 10.sp, color: const Color(0xFF71879d)),
               ),
             ],
           ),
@@ -415,40 +402,34 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 child: Text(
                   loc.starting_soon_ucf,
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF28bfa8),
-                    letterSpacing: -0.04,
+                    letterSpacing: -0.4,
                     height: 1,
                   ),
                 ),
               ),
               Text(
-                _pointsLabel(loc, points),
+                '◉ $points ${loc.point_per_bid_ucf}',
                 style: TextStyle(
-                  fontSize: 8.sp,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF177f81),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 8.h),
           _buildNotifyButton(loc),
         ],
       ),
     );
   }
 
-  String _pointsLabel(AppLocalizations loc, int points) {
-    final unit = points == 1 ? loc.point_singular_ucf : loc.points_plural_ucf;
-    return '◉ $points $unit ${loc.per_bid_ucf}';
-  }
-
-  // ── PHOTO (image + COMING SOON badge + heart) ────────────────
   Widget _buildPhotoArea(AppLocalizations loc) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(9.r),
+      borderRadius: BorderRadius.circular(11.r),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -475,23 +456,20 @@ class _UpcomingCardState extends State<UpcomingCard> {
                   : Icon(Icons.image, size: 28.sp, color: Colors.grey),
             ),
           ),
-
-          // COMING SOON badge (top-left)
           Positioned(
-            top: 6.h,
-            left: 6.w,
+            top: 9.h,
+            left: 9.w,
             child: Container(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
               decoration: BoxDecoration(
                 color: const Color(0xFFe5f9f6),
                 border: Border.all(color: const Color(0xFF72d8cb), width: 1),
-                borderRadius: BorderRadius.circular(6.r),
+                borderRadius: BorderRadius.circular(7.r),
               ),
               child: Text(
                 loc.coming_soon_ucf,
                 style: TextStyle(
-                  fontSize: 8.sp,
+                  fontSize: 9.sp,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.3,
                   color: const Color(0xFF087b76),
@@ -499,16 +477,14 @@ class _UpcomingCardState extends State<UpcomingCard> {
               ),
             ),
           ),
-
-          // Heart (top-right) — real wishlist toggle
           Positioned(
-            top: 6.h,
-            right: 6.w,
+            top: 9.h,
+            right: 9.w,
             child: GestureDetector(
               onTap: _toggleWishlist,
               child: Container(
-                width: 22.w,
-                height: 22.w,
+                width: 26.w,
+                height: 26.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.93),
                   shape: BoxShape.circle,
@@ -519,16 +495,16 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 child: _isWishlistLoading
                     ? Padding(
                         padding: EdgeInsets.all(5.w),
-                        child: CircularProgressIndicator(
+                        child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          color: const Color(0xFFf06979),
+                          color: Color(0xFFf06979),
                         ),
                       )
                     : Icon(
                         _isWishlisted
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 12.sp,
+                        size: 14.sp,
                         color: _isWishlisted
                             ? const Color(0xFFf06979)
                             : const Color(0xFF6b8499),
@@ -541,14 +517,13 @@ class _UpcomingCardState extends State<UpcomingCard> {
     );
   }
 
-  // ── NOTIFY ME BUTTON (matches .bp-upcoming-remind-btn) ────────
   Widget _buildNotifyButton(AppLocalizations loc) {
     return GestureDetector(
       onTap: _isProcessing ? null : _notifyMe,
       child: Container(
         width: double.infinity,
-        constraints: BoxConstraints(minHeight: 32.h),
-        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        constraints: BoxConstraints(minHeight: 36.h),
+        padding: EdgeInsets.symmetric(horizontal: 9.w),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.centerLeft,
@@ -556,7 +531,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
             colors: [Color(0xFFeffffb), Color(0xFFddf8f2)],
           ),
           border: Border.all(color: const Color(0xFF41c7b5), width: 1),
-          borderRadius: BorderRadius.circular(10.r),
+          borderRadius: BorderRadius.circular(11.r),
         ),
         alignment: Alignment.center,
         child: _isProcessing
@@ -575,7 +550,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
                   Text(
                     '♧',
                     style: TextStyle(
-                      fontSize: 10.sp,
+                      fontSize: 11.sp,
                       color: const Color(0xFF075f5d),
                       height: 1,
                     ),
@@ -585,7 +560,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
                     child: Text(
                       loc.notify_me_when_starts_ucf,
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF075f5d),
                       ),
