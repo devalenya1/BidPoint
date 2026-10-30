@@ -314,6 +314,61 @@
             "description": "Hardcoded live user count displayed in the hot auctions header"
           },
         
+            "all": "All",
+            "@all": {
+              "description": "Label for the 'All' category filter pill"
+            },
+          
+            "featured_auctions": "Featured Auctions",
+            "@featured_auctions": {
+              "description": "Default title for the featured auctions section"
+            },
+          
+            "hot_auctions": "Hot Auctions",
+            "@hot_auctions": {
+              "description": "Title when auction status filter = Hot Auctions (id 37)"
+            },
+          
+            "ending_soon": "Ending Soon",
+            "@ending_soon": {
+              "description": "Title when auction status filter = Ending Soon (id 26)"
+            },
+          
+            "upcoming": "Upcoming",
+            "@upcoming": {
+              "description": "Title/label when auction status filter = Upcoming (id 27)"
+            },
+          
+            "auctions": "Auctions",
+            "@auctions": {
+              "description": "Generic auctions title fallback"
+            },
+          
+            "showing_all_products_in_category": "Showing all products in this category.",
+            "@showing_all_products_in_category": {
+              "description": "Description shown when a specific category is selected"
+            },
+          
+            "showing_auctions_by_status": "Showing auctions by status, from any category.",
+            "@showing_auctions_by_status": {
+              "description": "Description shown when an auction status filter is selected"
+            },
+          
+            "@view_all": {
+              "description": "Button to view all products in the selected category"
+            },
+          
+            "view_more": "View More",
+            "@view_more": {
+              "description": "Button to load more products in the grid"
+            },
+          
+            "no_products_found": "No products found.",
+            "@no_products_found": {
+              "description": "Empty state message when no products are available"
+            },
+
+
           "exit_ucf": "Exit",
           "view_photos_ucf": "View",
           "please_login_to_continue_ucf": "Please login to continue",

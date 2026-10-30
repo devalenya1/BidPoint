@@ -39,6 +39,7 @@ class CategoryRepository {
     return categoryResponseFromJson(response.body);
   }
 
+
   Future<CategoryResponse> getTopCategories() async {
     String url=("${AppConfig.BASE_URL}/categories/top");
     final response =

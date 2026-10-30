@@ -1275,6 +1275,61 @@
             "description": "Hardcoded live user count displayed in the hot auctions header"
           },
 
+            "all": "Todos",
+            "@all": {
+              "description": "Label for the 'All' category filter pill"
+            },
+          
+            "featured_auctions": "Subastas Destacadas",
+            "@featured_auctions": {
+              "description": "Default title for the featured auctions section"
+            },
+          
+            "hot_auctions": "Subastas Calientes",
+            "@hot_auctions": {
+              "description": "Title when auction status filter = Hot Auctions (id 37)"
+            },
+          
+            "ending_soon": "Terminan Pronto",
+            "@ending_soon": {
+              "description": "Title when auction status filter = Ending Soon (id 26)"
+            },
+          
+            "upcoming": "Próximamente",
+            "@upcoming": {
+              "description": "Title/label when auction status filter = Upcoming (id 27)"
+            },
+          
+            "auctions": "Subastas",
+            "@auctions": {
+              "description": "Generic auctions title fallback"
+            },
+          
+            "showing_all_products_in_category": "Mostrando todos los productos de esta categoría.",
+            "@showing_all_products_in_category": {
+              "description": "Description shown when a specific category is selected"
+            },
+          
+            "showing_auctions_by_status": "Mostrando subastas por estado, de cualquier categoría.",
+            "@showing_auctions_by_status": {
+              "description": "Description shown when an auction status filter is selected"
+            },
+          
+            "@view_all": {
+              "description": "Button to view all products in the selected category"
+            },
+          
+            "view_more": "Ver Más",
+            "@view_more": {
+              "description": "Button to load more products in the grid"
+            },
+          
+            "no_products_found": "No se encontraron productos.",
+            "@no_products_found": {
+              "description": "Empty state message when no products are available"
+            },
+
+
 
             "status_live_ucf": "En vivo",
             "status_winning_ucf": "Ganando",

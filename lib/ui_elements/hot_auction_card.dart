@@ -383,7 +383,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Photo (with timer + heart overlays) ──
           AspectRatio(

@@ -720,175 +720,878 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // CATEGORIES
-  // ═══════════════════════════════════════════════════════════
-  Widget buildBidPointsCategoriesSection() {
-    if (homeData.featuredCategoryList.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  // // ═══════════════════════════════════════════════════════════
+  // // CATEGORIES
+  // // ═══════════════════════════════════════════════════════════
+  // Widget buildBidPointsCategoriesSection() {
+  //   if (homeData.featuredCategoryList.isEmpty) {
+  //     return const SizedBox.shrink();
+  //   }
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final isMobile = constraints.maxWidth < 700;
+  //   return LayoutBuilder(builder: (context, constraints) {
+  //     final isMobile = constraints.maxWidth < 700;
 
-      return Container(
-        width: double.infinity,
-        margin: EdgeInsets.symmetric(vertical: isMobile ? 18.h : 22.h),
-        child: isMobile
-            ? _buildCategoriesMobile()
-            : _buildCategoriesDesktop(constraints.maxWidth),
-      );
-    });
+  //     return Container(
+  //       width: double.infinity,
+  //       margin: EdgeInsets.symmetric(vertical: isMobile ? 18.h : 22.h),
+  //       child: isMobile
+  //           ? _buildCategoriesMobile()
+  //           : _buildCategoriesDesktop(constraints.maxWidth),
+  //     );
+  //   });
+  // }
+
+  // Widget _buildCategoriesDesktop(double availableWidth) {
+  //   final gridWidth = math.min(1380.0, availableWidth - 44.w);
+  //   final categories = homeData.featuredCategoryList;
+  //   final rows = <Widget>[];
+
+  //   for (int i = 0; i < categories.length; i += 9) {
+  //     final end = math.min(i + 9, categories.length);
+  //     final chunk = categories.sublist(i, end);
+  //     rows.add(_buildCategoryRow(chunk, gridWidth));
+  //     if (end < categories.length) {
+  //       rows.add(SizedBox(height: 8.h));
+  //     }
+  //   }
+
+  //   return Center(
+  //     child: SizedBox(
+  //       width: gridWidth,
+  //       child: Column(children: rows),
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildCategoryRow(List chunk, double gridWidth) {
+  //   final colWidth = (gridWidth - 8 * 8) / 9;
+
+  //   return Row(
+  //     crossAxisAlignment: CrossAxisAlignment.stretch,
+  //     children: [
+  //       for (int i = 0; i < 9; i++) ...[
+  //         if (i > 0) const SizedBox(width: 8),
+  //         SizedBox(
+  //           width: colWidth,
+  //           child: i < chunk.length
+  //               ? _buildCategoryPill(chunk[i], isMobile: false)
+  //               : const SizedBox.shrink(),
+  //         ),
+  //       ],
+  //     ],
+  //   );
+  // }
+
+  // Widget _buildCategoriesMobile() {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: EdgeInsets.symmetric(horizontal: 15.w),
+  //     child: SingleChildScrollView(
+  //       scrollDirection: Axis.horizontal,
+  //       physics: const BouncingScrollPhysics(),
+  //       child: IntrinsicHeight(
+  //         child: Row(
+  //           crossAxisAlignment: CrossAxisAlignment.stretch,
+  //           children: homeData.featuredCategoryList.map((category) {
+  //             return Padding(
+  //               padding: EdgeInsets.only(right: 8.w),
+  //               child: SizedBox(
+  //                 width: 82.w,
+  //                 child: _buildCategoryPill(category, isMobile: true),
+  //               ),
+  //             );
+  //           }).toList(),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildCategoryPill(dynamic category, {required bool isMobile}) {
+  //   return InkWell(
+  //     onTap: () {
+  //       if (category.slug != null) {
+  //         Navigator.push(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (_) => CategoryProducts(slug: category.slug!),
+  //           ),
+  //         );
+  //       }
+  //     },
+  //     borderRadius: BorderRadius.circular(34.r),
+  //     child: Container(
+  //       padding: isMobile
+  //           ? EdgeInsets.symmetric(horizontal: 5.w, vertical: 8.h)
+  //           : EdgeInsets.symmetric(horizontal: 5.w, vertical: 10.h),
+  //       alignment: Alignment.center,
+  //       decoration: BoxDecoration(
+  //         color: Colors.white,
+  //         border: Border.all(color: const Color(0xFFdbe7f1), width: 1),
+  //         borderRadius: BorderRadius.circular(34.r),
+  //         boxShadow: isMobile
+  //             ? null
+  //             : const [
+  //                 BoxShadow(
+  //                   color: Color(0x10143c64),
+  //                   blurRadius: 13,
+  //                   offset: Offset(0, 4),
+  //                 ),
+  //               ],
+  //       ),
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Container(
+  //             width: isMobile ? 22.w : 24.w,
+  //             height: isMobile ? 22.w : 24.w,
+  //             decoration: BoxDecoration(
+  //               shape: BoxShape.circle,
+  //               color: const Color(0xFFf0f7fb),
+  //               border: Border.all(
+  //                 color: const Color(0xFFdceaf3),
+  //                 width: 1,
+  //               ),
+  //             ),
+  //             clipBehavior: Clip.antiAlias,
+  //             child: (category.banner != null && category.banner!.isNotEmpty)
+  //                 ? Image.network(
+  //                     category.banner!,
+  //                     fit: BoxFit.cover,
+  //                     errorBuilder: (_, __, ___) => Icon(
+  //                       Icons.category,
+  //                       size: isMobile ? 13.sp : 14.sp,
+  //                       color: const Color(0xFF34526c),
+  //                     ),
+  //                   )
+  //                 : Icon(
+  //                     Icons.category,
+  //                     size: isMobile ? 13.sp : 14.sp,
+  //                     color: const Color(0xFF34526c),
+  //                   ),
+  //           ),
+  //           SizedBox(height: 3.h),
+  //           Text(
+  //             category.name ?? '',
+  //             textAlign: TextAlign.center,
+  //             maxLines: 2,
+  //             overflow: TextOverflow.ellipsis,
+  //             style: TextStyle(
+  //               fontSize: isMobile ? 9.sp : 10.sp,
+  //               fontWeight: FontWeight.w500,
+  //               color: const Color(0xFF34526c),
+  //               height: 1.3,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+// ═══════════════════════════════════════════════════════════
+// HOMEPAGE CATEGORY + AUCTION STATUS FILTERS + SHARED GRID
+// ═══════════════════════════════════════════════════════════
+
+Widget buildBidPointsCategoriesSection() {
+  if (homeData.featuredCategoryList.isEmpty &&
+      homeData.auctionStatusCategoryList.isEmpty) {
+    return const SizedBox.shrink();
   }
 
-  Widget _buildCategoriesDesktop(double availableWidth) {
-    final gridWidth = math.min(1380.0, availableWidth - 44.w);
-    final categories = homeData.featuredCategoryList;
-    final rows = <Widget>[];
+  return LayoutBuilder(builder: (context, constraints) {
+    final isMobile = constraints.maxWidth < 700;
 
-    for (int i = 0; i < categories.length; i += 9) {
-      final end = math.min(i + 9, categories.length);
-      final chunk = categories.sublist(i, end);
-      rows.add(_buildCategoryRow(chunk, gridWidth));
-      if (end < categories.length) {
-        rows.add(SizedBox(height: 8.h));
-      }
-    }
-
-    return Center(
-      child: SizedBox(
-        width: gridWidth,
-        child: Column(children: rows),
-      ),
-    );
-  }
-
-  Widget _buildCategoryRow(List chunk, double gridWidth) {
-    final colWidth = (gridWidth - 8 * 8) / 9;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (int i = 0; i < 9; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          SizedBox(
-            width: colWidth,
-            child: i < chunk.length
-                ? _buildCategoryPill(chunk[i], isMobile: false)
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildCategoriesMobile() {
     return Container(
       width: double.infinity,
+      margin: EdgeInsets.symmetric(vertical: isMobile ? 22.h : 28.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // FEATURED CATEGORY TABS
+          isMobile
+              ? _buildCategoriesMobile()
+              : _buildCategoriesDesktop(constraints.maxWidth),
+
+          SizedBox(height: 12.h),
+
+          // AUCTION STATUS TABS
+          _buildAuctionStatusFilters(isMobile),
+
+          // SHARED HEADER, DESCRIPTION AND PRODUCTS
+          SizedBox(height: 22.h),
+          _buildCategorySectionHeader(),
+          SizedBox(height: 8.h),
+          _buildCategorySectionDescription(),
+          SizedBox(height: 18.h),
+
+          _buildCategorySectionProducts(
+            constraints.maxWidth,
+            isMobile,
+          ),
+        ],
+      ),
+    );
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEATURED CATEGORIES - DESKTOP
+// ═══════════════════════════════════════════════════════════
+
+Widget _buildCategoriesDesktop(double availableWidth) {
+  final gridWidth = math.min(1380.0, availableWidth - 56.w);
+
+  final allItems = [
+    null,
+    ...homeData.featuredCategoryList,
+  ];
+
+  final rows = <Widget>[];
+
+  for (int i = 0; i < allItems.length; i += 9) {
+    final end = math.min(i + 9, allItems.length);
+    final chunk = allItems.sublist(i, end);
+
+    rows.add(_buildCategoryRow(chunk, gridWidth));
+
+    if (end < allItems.length) {
+      rows.add(SizedBox(height: 9.h));
+    }
+  }
+
+  return Center(
+    child: SizedBox(
+      width: gridWidth,
+      child: Column(children: rows),
+    ),
+  );
+}
+
+Widget _buildCategoryRow(List chunk, double gridWidth) {
+  final colWidth = (gridWidth - 8 * 8.w) / 9;
+
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (int i = 0; i < 9; i++) ...[
+        if (i > 0) SizedBox(width: 8.w),
+        SizedBox(
+          width: colWidth,
+          child: i < chunk.length
+              ? _buildCategoryPill(
+                  chunk[i],
+                  isMobile: false,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    ],
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEATURED CATEGORIES - MOBILE
+// ═══════════════════════════════════════════════════════════
+
+Widget _buildCategoriesMobile() {
+  final allItems = [
+    null,
+    ...homeData.featuredCategoryList,
+  ];
+
+  return Container(
+    width: double.infinity,
+    padding: EdgeInsets.symmetric(horizontal: 15.w),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: allItems.map((category) {
+            return Padding(
+              padding: EdgeInsets.only(right: 9.w),
+              child: SizedBox(
+                width: 92.w,
+                child: _buildCategoryPill(
+                  category,
+                  isMobile: true,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// CATEGORY IMAGE HELPER
+// ═══════════════════════════════════════════════════════════
+
+String? _getCategoryImage(dynamic category) {
+  final dynamic coverImage = category.coverImage;
+
+  if (coverImage is String && coverImage.isNotEmpty) {
+    return coverImage;
+  }
+
+  final dynamic banner = category.banner;
+
+  if (banner is String && banner.isNotEmpty) {
+    return banner;
+  }
+
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CATEGORY PILL
+// ═══════════════════════════════════════════════════════════
+Widget _buildCategoryPill(
+  dynamic category, {
+  required bool isMobile,
+}) {
+  final loc = AppLocalizations.of(context)!;
+  final isAll = category == null;
+
+  final isSelected = isAll
+      ? homeData.selectedCategorySectionType == 'all'
+      : homeData.selectedCategorySectionType == 'category' &&
+          homeData.selectedCategorySectionId == category.id;
+
+  // 🔤 TRANSLATABLE: 'All' is localized; category names come from API data.
+  final name = isAll ? loc.all : (category.name ?? '');
+  final image = isAll ? null : _getCategoryImage(category);
+
+  return InkWell(
+    onTap: () {
+      homeData.selectCategorySectionFilter(
+        categoryId: isAll ? null : category.id,
+        type: isAll ? 'all' : 'category',
+      );
+    },
+    borderRadius: BorderRadius.circular(40.r),
+    child: Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 4.w,
+        vertical: isMobile ? 10.h : 12.h,
+      ),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF123c64)
+            : Colors.white,
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFF123c64)
+              : const Color(0xFFdbe7f1),
+        ),
+        borderRadius: BorderRadius.circular(40.r),
+        boxShadow: isMobile
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x10143c64),
+                  blurRadius: 13,
+                  offset: Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: isMobile ? 26.w : 30.w,
+            height: isMobile ? 26.w : 30.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected
+                  ? const Color(0xFF0f3357)
+                  : const Color(0xFFf0f7fb),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFF53e3d5)
+                    : const Color(0xFFdceaf3),
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: isAll
+                ? Icon(
+                    Icons.grid_view_rounded,
+                    size: 17.sp,
+                    color: isSelected
+                        ? const Color(0xFF53e3d5)
+                        : const Color(0xFF34526c),
+                  )
+                : image != null
+                    ? Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.category,
+                          size: 16.sp,
+                          color: const Color(0xFF34526c),
+                        ),
+                      )
+                    : Icon(
+                        Icons.category,
+                        size: 16.sp,
+                        color: const Color(0xFF34526c),
+                      ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isMobile ? 11.sp : 12.sp,
+              fontWeight:
+                  isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? Colors.white
+                  : const Color(0xFF34526c),
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUCTION STATUS FILTERS
+// ═══════════════════════════════════════════════════════════
+
+Widget _buildAuctionStatusFilters(bool isMobile) {
+  final categories = homeData.auctionStatusCategoryList;
+
+  if (categories.isEmpty) {
+    return const SizedBox.shrink();
+  }
+
+  final buttons = categories.map<Widget>((category) {
+    return _buildAuctionStatusPill(category, isMobile);
+  }).toList();
+
+  if (isMobile) {
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 15.w),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: homeData.featuredCategoryList.map((category) {
-              return Padding(
-                padding: EdgeInsets.only(right: 8.w),
-                child: SizedBox(
-                  width: 82.w,
-                  child: _buildCategoryPill(category, isMobile: true),
+        child: Row(
+          children: buttons
+              .map(
+                (button) => Padding(
+                  padding: EdgeInsets.only(right: 9.w),
+                  child: button,
                 ),
-              );
-            }).toList(),
-          ),
+              )
+              .toList(),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryPill(dynamic category, {required bool isMobile}) {
-    return InkWell(
-      onTap: () {
-        if (category.slug != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CategoryProducts(slug: category.slug!),
-            ),
-          );
-        }
-      },
-      borderRadius: BorderRadius.circular(34.r),
-      child: Container(
-        padding: isMobile
-            ? EdgeInsets.symmetric(horizontal: 5.w, vertical: 8.h)
-            : EdgeInsets.symmetric(horizontal: 5.w, vertical: 10.h),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFdbe7f1), width: 1),
-          borderRadius: BorderRadius.circular(34.r),
-          boxShadow: isMobile
-              ? null
-              : const [
-                  BoxShadow(
-                    color: Color(0x10143c64),
-                    blurRadius: 13,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+  return Center(
+    child: SizedBox(
+      width: math.min(
+        1380.0,
+        MediaQuery.of(context).size.width - 56.w,
+      ),
+      child: Wrap(
+        spacing: 10.w,
+        runSpacing: 10.h,
+        children: buttons,
+      ),
+    ),
+  );
+}
+
+Widget _buildAuctionStatusPill(
+  dynamic category,
+  bool isMobile,
+) {
+  final isSelected =
+      homeData.selectedCategorySectionType == 'status' &&
+      homeData.selectedCategorySectionId == category.id;
+
+  return InkWell(
+    onTap: () {
+      homeData.selectCategorySectionFilter(
+        categoryId: category.id,
+        type: 'status',
+      );
+    },
+    borderRadius: BorderRadius.circular(14.r),
+    child: Container(
+      constraints: BoxConstraints(
+        minWidth: isMobile ? 0 : 290.w,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16.w : 32.w,
+        vertical: isMobile ? 10.h : 18.h,
+      ),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFF123c64)
+            : Colors.white,
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFF123c64)
+              : const Color(0xFFdbe7f1),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10143c64),
+            blurRadius: 13,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: isMobile ? 28.w : 32.w,
+            height: isMobile ? 28.w : 32.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected
+                  ? const Color(0xFF0f3357)
+                  : const Color(0xFFf0f7fb),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFF53e3d5)
+                    : const Color(0xFFdceaf3),
+              ),
+            ),
+            child: Icon(
+              category.icon,
+              size: 17.sp,
+              color: isSelected
+                  ? const Color(0xFF53e3d5)
+                  : const Color(0xFF34526c),
+            ),
+          ),
+          SizedBox(width: 9.w),
+          Text(
+            // 🔤 TRANSLATABLE: status label names come from API data.
+            // If your backend returns untranslated labels, map them here:
+            //   _translateAuctionStatusName(context, category.name)
+            category.name,
+            style: TextStyle(
+              fontSize: isMobile ? 12.sp : 13.sp,
+              fontWeight: FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : const Color(0xFF34526c),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHARED CATEGORY HEADER + VIEW ALL
+// ═══════════════════════════════════════════════════════════
+
+String _getCategorySectionTitle() {
+  final loc = AppLocalizations.of(context)!;
+
+  if (homeData.selectedCategorySectionType == 'status') {
+    switch (homeData.selectedCategorySectionId) {
+      case 37:
+        return loc.hot_auctions;
+      case 26:
+        return loc.ending_soon;
+      case 27:
+        return loc.upcoming;
+      default:
+        return loc.auctions;
+    }
+  }
+
+  if (homeData.selectedCategorySectionType == 'category') {
+    for (final category in homeData.featuredCategoryList) {
+      if (category.id == homeData.selectedCategorySectionId) {
+        return category.name ?? loc.featured_auctions;
+      }
+    }
+  }
+
+  return loc.featured_auctions;
+}
+
+String _getCategorySectionDescription() {
+  final loc = AppLocalizations.of(context)!;
+
+  if (homeData.selectedCategorySectionType == 'category') {
+    return loc.showing_all_products_in_category;
+  }
+
+  return loc.showing_auctions_by_status;
+}
+
+String _getCategorySectionSlug() {
+  if (homeData.selectedCategorySectionType == 'status') {
+    switch (homeData.selectedCategorySectionId) {
+      case 37:
+        return 'hot-auctions';
+      case 26:
+        return 'ending-soon';
+      case 27:
+        return 'upcoming-auctions';
+    }
+  }
+
+  if (homeData.selectedCategorySectionType == 'category') {
+    for (final category in homeData.featuredCategoryList) {
+      if (category.id == homeData.selectedCategorySectionId) {
+        final slug = category.slug ?? '';
+        if (slug.isNotEmpty) return slug;
+      }
+    }
+  }
+
+  return 'hot-auctions';
+}
+
+Widget _buildCategorySectionHeader() {
+  final loc = AppLocalizations.of(context)!;
+
+  return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1380),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 28.w),
+        child: Row(
           children: [
-            Container(
-              width: isMobile ? 22.w : 24.w,
-              height: isMobile ? 22.w : 24.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFf0f7fb),
-                border: Border.all(
-                  color: const Color(0xFFdceaf3),
-                  width: 1,
+            Expanded(
+              child: Text(
+                _getCategorySectionTitle(),
+                style: TextStyle(
+                  fontSize: 22.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF123c64),
+                  height: 1.25,
                 ),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: (category.banner != null && category.banner!.isNotEmpty)
-                  ? Image.network(
-                      category.banner!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.category,
-                        size: isMobile ? 13.sp : 14.sp,
-                        color: const Color(0xFF34526c),
-                      ),
-                    )
-                  : Icon(
-                      Icons.category,
-                      size: isMobile ? 13.sp : 14.sp,
-                      color: const Color(0xFF34526c),
-                    ),
             ),
-            SizedBox(height: 3.h),
-            Text(
-              category.name ?? '',
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: isMobile ? 9.sp : 10.sp,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF34526c),
-                height: 1.3,
+            SizedBox(width: 12.w),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CategoryProducts(
+                      slug: _getCategorySectionSlug(),
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 18.w,
+                  vertical: 9.h,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(
+                    color: const Color(0xFFd4e3ef),
+                  ),
+                  borderRadius: BorderRadius.circular(22.r),
+                ),
+                child: Text(
+                  loc.view_all, // 🔤 TRANSLATABLE
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF144164),
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
+    ),
+  );
+}
+
+Widget _buildCategorySectionDescription() {
+  return Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1380),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 28.w),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            _getCategorySectionDescription(),
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: const Color(0xFF54738b),
+              height: 1.5,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHARED PRODUCT GRID - MAX 6 INITIAL PRODUCTS
+// ═══════════════════════════════════════════════════════════
+
+Widget _buildCategorySectionProducts(
+  double availableWidth,
+  bool isMobile,
+) {
+  final loc = AppLocalizations.of(context)!;
+
+  if (homeData.isCategorySectionInitial) {
+    return Container(
+      height: 130.h,
+      alignment: Alignment.center,
+      child: const CircularProgressIndicator(
+        strokeWidth: 2,
+      ),
     );
   }
+
+  final products = homeData.categorySectionProductList
+      .take(homeData.categorySectionVisibleCount)
+      .toList();
+
+  if (products.isEmpty) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(horizontal: 15.w),
+      padding: EdgeInsets.symmetric(vertical: 36.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFe0eaf2)),
+        borderRadius: BorderRadius.circular(17.r),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        loc.no_products_found, // 🔤 TRANSLATABLE
+        style: TextStyle(
+          fontSize: 14.sp,
+          color: const Color(0xFF71879d),
+        ),
+      ),
+    );
+  }
+
+  final gridWidth = math.min(1380.0, availableWidth - 56.w);
+  final cardWidth = (gridWidth - 18.w) / 2;
+
+  // ProductCard uses a square image, so its height must grow with its width.
+  final cardHeight = (cardWidth / 1.05) + 145.h;
+
+  return Center(
+    child: SizedBox(
+      width: gridWidth,
+      child: Column(
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: products.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 18.w,
+              mainAxisSpacing: 18.h,
+              mainAxisExtent: cardHeight,
+            ),
+            itemBuilder: (context, index) {
+              final product = products[index];
+
+              final isUpcoming =
+                  homeData.selectedCategorySectionType == 'status' &&
+                  homeData.selectedCategorySectionId == 27;
+
+              return ProductCard(
+                key: ValueKey(
+                  'category-${homeData.selectedCategorySectionType}-'
+                  '${homeData.selectedCategorySectionId}-'
+                  '${product.id}',
+                ),
+                id: product.id ?? 0,
+                slug: product.slug ?? '',
+                image: product.thumbnailImage,
+                name: product.name,
+                description: product.description,
+                pointPerBid: product.pointPerBid ?? 0,
+                // 🔤 TRANSLATABLE: 'Upcoming' label passed to ProductCard
+                auctionEndDate:
+                    isUpcoming ? loc.upcoming : product.auctionEndDate,
+                auctionStartDate: product.auctionStartDate,
+                currentBid: product.highestBid,
+                startingBid: product.startingBid,
+                purchasePrice: product.purchasePrice,
+                isAuctionActive: !isUpcoming,
+              );
+            },
+          ),
+
+          if (homeData.hasMoreCategorySectionProducts) ...[
+            SizedBox(height: 22.h),
+            if (homeData.showCategorySectionLoading)
+              const CircularProgressIndicator(strokeWidth: 2)
+            else
+              GestureDetector(
+                onTap: homeData.loadMoreCategorySectionProducts,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 30.w,
+                    vertical: 13.h,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF0dbca9),
+                        Color(0xFF2086d8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(999.r),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x401597ba),
+                        blurRadius: 18,
+                        offset: Offset(0, 7),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    loc.view_more, // 🔤 TRANSLATABLE
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
 
   // ═══════════════════════════════════════════════════════════
   // SHARED
@@ -986,10 +1689,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // HOT AUCTIONS
-  // ═══════════════════════════════════════════════════════════
-  // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
   // HOT AUCTIONS — with new title + subtitle matching HTML
   // ═══════════════════════════════════════════════════════════
   Widget _buildHotAuctionSection() {
