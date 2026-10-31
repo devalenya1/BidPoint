@@ -925,10 +925,7 @@ Widget buildBidPointsCategoriesSection() {
           _buildCategorySectionDescription(),
           SizedBox(height: 18.h),
 
-          _buildCategorySectionProducts(
-            constraints.maxWidth,
-            isMobile,
-          ),
+          _buildCategorySectionProducts(isMobile),
         ],
       ),
     );
@@ -1455,10 +1452,7 @@ Widget _buildCategorySectionDescription() {
 // SHARED PRODUCT GRID - MAX 6 INITIAL PRODUCTS
 // ═══════════════════════════════════════════════════════════
 
-Widget _buildCategorySectionProducts(
-  double availableWidth,
-  bool isMobile,
-) {
+Widget _buildCategorySectionProducts(bool isMobile) {
   final loc = AppLocalizations.of(context)!;
 
   if (homeData.isCategorySectionInitial) {
@@ -1496,98 +1490,98 @@ Widget _buildCategorySectionProducts(
     );
   }
 
-  final gridWidth = math.min(1380.0, availableWidth - 56.w);
-  final cardWidth = (gridWidth - 18.w) / 2;
+  final isUpcoming =
+      homeData.selectedCategorySectionType == 'status' &&
+      homeData.selectedCategorySectionId == 27;
 
-  // ProductCard uses a square image, so its height must grow with its width.
-  final cardHeight = (cardWidth / 1.05) + 145.h;
+  Widget buildProductCard(dynamic product) {
+    return ProductCard(
+      key: ValueKey(
+        'category-${homeData.selectedCategorySectionType}-'
+        '${homeData.selectedCategorySectionId}-'
+        '${product.id}',
+      ),
+      id: product.id ?? 0,
+      slug: product.slug ?? '',
+      image: product.thumbnailImage,
+      name: product.name,
+      description: product.description,
+      pointPerBid: product.pointPerBid ?? 0,
+      // 🔤 TRANSLATABLE: 'Upcoming' label passed to ProductCard
+      auctionEndDate: isUpcoming ? loc.upcoming : product.auctionEndDate,
+      auctionStartDate: product.auctionStartDate,
+      currentBid: product.highestBid,
+      startingBid: product.startingBid,
+      purchasePrice: product.purchasePrice,
+      isAuctionActive: !isUpcoming,
+    );
+  }
 
   return Center(
-    child: SizedBox(
-      width: gridWidth,
-      child: Column(
-        children: [
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: products.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 18.w,
-              mainAxisSpacing: 18.h,
-              mainAxisExtent: cardHeight,
-            ),
-            itemBuilder: (context, index) {
-              final product = products[index];
-
-              final isUpcoming =
-                  homeData.selectedCategorySectionType == 'status' &&
-                  homeData.selectedCategorySectionId == 27;
-
-              return ProductCard(
-                key: ValueKey(
-                  'category-${homeData.selectedCategorySectionType}-'
-                  '${homeData.selectedCategorySectionId}-'
-                  '${product.id}',
-                ),
-                id: product.id ?? 0,
-                slug: product.slug ?? '',
-                image: product.thumbnailImage,
-                name: product.name,
-                description: product.description,
-                pointPerBid: product.pointPerBid ?? 0,
-                // 🔤 TRANSLATABLE: 'Upcoming' label passed to ProductCard
-                auctionEndDate:
-                    isUpcoming ? loc.upcoming : product.auctionEndDate,
-                auctionStartDate: product.auctionStartDate,
-                currentBid: product.highestBid,
-                startingBid: product.startingBid,
-                purchasePrice: product.purchasePrice,
-                isAuctionActive: !isUpcoming,
-              );
-            },
-          ),
-
-          if (homeData.hasMoreCategorySectionProducts) ...[
-            SizedBox(height: 22.h),
-            if (homeData.showCategorySectionLoading)
-              const CircularProgressIndicator(strokeWidth: 2)
-            else
-              GestureDetector(
-                onTap: homeData.loadMoreCategorySectionProducts,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 30.w,
-                    vertical: 13.h,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF0dbca9),
-                        Color(0xFF2086d8),
-                      ],
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1380),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 9.w),
+        child: Column(
+          children: [
+            for (int index = 0; index < products.length; index += 2) ...[
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: buildProductCard(products[index])),
+                    SizedBox(width: isMobile ? 8.w : 18.w),
+                    Expanded(
+                      child: index + 1 < products.length
+                          ? buildProductCard(products[index + 1])
+                          : const SizedBox.shrink(),
                     ),
-                    borderRadius: BorderRadius.circular(999.r),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x401597ba),
-                        blurRadius: 18,
-                        offset: Offset(0, 7),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    loc.view_more, // 🔤 TRANSLATABLE
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  ],
                 ),
               ),
+              if (index + 2 < products.length) SizedBox(height: 18.h),
+            ],
+            if (homeData.hasMoreCategorySectionProducts) ...[
+              SizedBox(height: 22.h),
+              if (homeData.showCategorySectionLoading)
+                const CircularProgressIndicator(strokeWidth: 2)
+              else
+                GestureDetector(
+                  onTap: homeData.loadMoreCategorySectionProducts,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 30.w,
+                      vertical: 13.h,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF0dbca9),
+                          Color(0xFF2086d8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(999.r),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x401597ba),
+                          blurRadius: 18,
+                          offset: Offset(0, 7),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      loc.view_more, // 🔤 TRANSLATABLE
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ],
-        ],
+        ),
       ),
     ),
   );

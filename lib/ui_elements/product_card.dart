@@ -489,6 +489,7 @@ class _ProductCardState extends State<ProductCard> {
     final points = widget.pointPerBid ?? 1;
 
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -560,7 +561,10 @@ class _ProductCardState extends State<ProductCard> {
           // ═══ CTA — fixed size, right under the price row. ═══
           Padding(
             padding: EdgeInsets.only(top: 6.h),
-            child: _buildCta(loc),
+            child: SizedBox(
+              width: double.infinity,
+              child: _buildCta(loc),
+            ),
           ),
         ],
       ),
@@ -765,6 +769,7 @@ class _ProductCardState extends State<ProductCard> {
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
+            width: double.infinity,
             height: 36.h,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
