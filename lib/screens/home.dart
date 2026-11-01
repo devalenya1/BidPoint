@@ -1367,8 +1367,30 @@ String _getCategorySectionSlug() {
   return 'hot-auctions';
 }
 
-Widget _buildCategorySectionHeader() {
+Widget _buildViewAllButton({required VoidCallback onTap}) {
   final loc = AppLocalizations.of(context)!;
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFd4e3ef), width: 1),
+        borderRadius: BorderRadius.circular(18.r),
+      ),
+      child: Text(
+        loc.view_all,
+        style: TextStyle(
+          fontSize: 10.sp,
+          color: const Color(0xFF144164),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildCategorySectionHeader() {
 
   return Center(
     child: ConstrainedBox(
@@ -1389,7 +1411,7 @@ Widget _buildCategorySectionHeader() {
               ),
             ),
             SizedBox(width: 12.w),
-            GestureDetector(
+            _buildViewAllButton(
               onTap: () {
                 if (homeData.selectedCategorySectionType == 'all') {
                   Navigator.push(
@@ -1416,27 +1438,6 @@ Widget _buildCategorySectionHeader() {
                   ),
                 );
               },
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 18.w,
-                  vertical: 9.h,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: const Color(0xFFd4e3ef),
-                  ),
-                  borderRadius: BorderRadius.circular(22.r),
-                ),
-                child: Text(
-                  loc.view_all, // 🔤 TRANSLATABLE
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF144164),
-                  ),
-                ),
-              ),
             ),
           ],
         ),
@@ -1613,8 +1614,6 @@ Widget _buildCategorySectionProducts(bool isMobile) {
     required String title,
     required VoidCallback onViewAll,
   }) {
-    final loc = AppLocalizations.of(context)!;
-
     return LayoutBuilder(builder: (context, constraints) {
       final isMobile = constraints.maxWidth < 700;
 
@@ -1634,29 +1633,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
             ),
           ),
           SizedBox(width: 12.w),
-          GestureDetector(
-            onTap: onViewAll,
-            child: Container(
-              padding:
-                  EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  color: const Color(0xFFd4e3ef),
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(18.r),
-              ),
-              child: Text(
-                loc.view_all,
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  color: const Color(0xFF144164),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
+          _buildViewAllButton(onTap: onViewAll),
         ],
       );
     });
@@ -1825,29 +1802,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
               ),
             ),
             SizedBox(width: 10.w),
-            GestureDetector(
-              onTap: onViewAll,
-              child: Container(
-                padding:
-                    EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: const Color(0xFFd4e3ef),
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(18.r),
-                ),
-                child: Text(
-                  loc.view_all,
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    color: const Color(0xFF144164),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
+            _buildViewAllButton(onTap: onViewAll),
           ],
         );
       }
@@ -1900,28 +1855,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
             ),
           ),
           SizedBox(width: 12.w),
-          GestureDetector(
-            onTap: onViewAll,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  color: const Color(0xFFd4e3ef),
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(18.r),
-              ),
-              child: Text(
-                loc.view_all,
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  color: const Color(0xFF144164),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
+          _buildViewAllButton(onTap: onViewAll),
         ],
       );
     });

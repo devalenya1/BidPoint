@@ -448,8 +448,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               ),
             ],
           ),
-          SizedBox(height: 5.h),
-          _buildProgressBar(),
           SizedBox(height: 6.h),
           _buildSlideToBid(loc),
         ],
@@ -571,28 +569,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    return Container(
-      height: 3.h,
-      decoration: BoxDecoration(
-        color: const Color(0xFFe8f0f6),
-        borderRadius: BorderRadius.circular(5.r),
-      ),
-      child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
-        widthFactor: 0.2,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF18c6b1), Color(0xFF48aee4)],
-            ),
-            borderRadius: BorderRadius.circular(5.r),
-          ),
-        ),
       ),
     );
   }

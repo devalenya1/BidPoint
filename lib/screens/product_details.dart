@@ -3044,7 +3044,9 @@ class _ProductDetailsState extends State<ProductDetails> {
           : loc.status_ended_ucf;
       customText = sliderText;
     } else {
-      sliderText = loc.slide_to_bid_ucf;
+      sliderText = _pointPerBid == null
+          ? loc.slide_to_bid_ucf
+          : '${loc.slide_to_bid_ucf} → ${_formatPointCost(_pointPerBid)} ${loc.points_plural_ucf}';
       customText = loc.manual_bid_ucf;
     }
 
