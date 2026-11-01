@@ -18,8 +18,6 @@ import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
-import 'package:active_ecommerce_flutter/ui_elements/ending_soon_card.dart';
-import 'package:active_ecommerce_flutter/ui_elements/upcoming_card.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -1468,7 +1466,7 @@ Widget _buildCategorySectionDescription() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SHARED PRODUCT GRID - MAX 6 INITIAL PRODUCTS
+// SHARED PRODUCT GRID - MAX 2 PRODUCTS
 // ═══════════════════════════════════════════════════════════
 
 Widget _buildCategorySectionProducts(bool isMobile) {
@@ -1484,9 +1482,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
     );
   }
 
-  final products = homeData.categorySectionProductList
-      .take(homeData.categorySectionVisibleCount)
-      .toList();
+  final products = homeData.categorySectionProductList.take(2).toList();
 
   if (products.isEmpty) {
     return Container(
@@ -1526,8 +1522,8 @@ Widget _buildCategorySectionProducts(bool isMobile) {
       name: product.name,
       description: product.description,
       pointPerBid: product.pointPerBid ?? 0,
-      // 🔤 TRANSLATABLE: 'Upcoming' label passed to ProductCard
-      auctionEndDate: isUpcoming ? loc.upcoming : product.auctionEndDate,
+      // ProductCard uses this internal value to select its upcoming design.
+      auctionEndDate: isUpcoming ? 'Upcoming' : product.auctionEndDate,
       auctionStartDate: product.auctionStartDate,
       currentBid: product.highestBid,
       startingBid: product.startingBid,
@@ -1543,62 +1539,20 @@ Widget _buildCategorySectionProducts(bool isMobile) {
         padding: EdgeInsets.symmetric(horizontal: 9.w),
         child: Column(
           children: [
-            for (int index = 0; index < products.length; index += 2) ...[
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: buildProductCard(products[index])),
-                    SizedBox(width: isMobile ? 8.w : 18.w),
-                    Expanded(
-                      child: index + 1 < products.length
-                          ? buildProductCard(products[index + 1])
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: buildProductCard(products[0])),
+                SizedBox(width: isMobile ? 8.w : 18.w),
+                Expanded(
+                  child: products.length > 1
+                      ? buildProductCard(products[1])
+                      : const SizedBox.shrink(),
                 ),
-              ),
-              if (index + 2 < products.length) SizedBox(height: 18.h),
-            ],
-            if (homeData.hasMoreCategorySectionProducts) ...[
-              SizedBox(height: 22.h),
-              if (homeData.showCategorySectionLoading)
-                const CircularProgressIndicator(strokeWidth: 2)
-              else
-                GestureDetector(
-                  onTap: homeData.loadMoreCategorySectionProducts,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 30.w,
-                      vertical: 13.h,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF0dbca9),
-                          Color(0xFF2086d8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(999.r),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x401597ba),
-                          blurRadius: 18,
-                          offset: Offset(0, 7),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      loc.view_more, // 🔤 TRANSLATABLE
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+              ],
+            ),
+            // The blue category "View More" button is intentionally hidden.
+            // Users can switch categories with the tabs above this section.
           ],
         ),
       ),
@@ -1651,7 +1605,8 @@ Widget _buildCategorySectionProducts(bool isMobile) {
 
   // Replace the _buildTwoColumnGrid method in home.dart with this:
   /// Requirement: every section shows 2 columns side-by-side on mobile too.
-  /// Equal image sizes, equal card sizes enforced by IntrinsicHeight.
+  /// Cards size themselves from their own content so no CTA is clipped and
+  /// shorter cards do not receive artificial empty space.
   Widget _buildTwoColumnGrid({
     required List<dynamic> products,
     required bool isMobile,
@@ -1894,7 +1849,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                     _buildTwoColumnGrid(
                       products: homeData.endingSoonProductList,
                       isMobile: isMobile,
-                      cardBuilder: (context, product) => EndingSoonCard(
+                      cardBuilder: (context, product) => ProductCard(
                         id: product.id ?? 0,
                         slug: product.slug ?? '',
                         image: product.thumbnailImage,
@@ -1902,6 +1857,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                         description: product.description,
                         pointPerBid: product.pointPerBid ?? 0,
                         auctionEndDate: product.auctionEndDate,
+                        auctionStartDate: product.auctionStartDate,
                         currentBid: product.highestBid,
                         startingBid: product.startingBid,
                         purchasePrice: product.purchasePrice,
@@ -1965,14 +1921,15 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                                 int.tryParse(product.auctionStartDate) ?? 0;
                           }
                         }
-                        return UpcomingCard(
+                        return ProductCard(
                           id: product.id ?? 0,
                           slug: product.slug ?? '',
                           image: product.thumbnailImage,
                           name: product.name,
                           description: product.description,
                           pointPerBid: product.pointPerBid ?? 0,
-                          auctionEndDate: auctionStartTimestamp ??
+                          auctionEndDate: 'Upcoming',
+                          auctionStartDate: auctionStartTimestamp ??
                               product.auctionStartDate,
                           currentBid: product.startingBid,
                           startingBid: product.startingBid,

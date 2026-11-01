@@ -56,6 +56,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // =========================
   bool _isLoading = true;
   bool _isProcessing = false;
+  bool _isPolling = false;
   bool _isBuyNowLoading = false;
   bool _isInWishlist = false;
   bool _showMoreMenu = false;
@@ -82,6 +83,7 @@ class _ProductDetailsState extends State<ProductDetails>
   String _auctionStatus = "live"; // "live" | "upcoming" | "ended"
   int _endingSeconds = 10;
   DateTime? _auctionEndDateTime;
+  DateTime? _auctionStartDateTime;
 
   // =========================
   // BID
@@ -281,6 +283,9 @@ class _ProductDetailsState extends State<ProductDetails>
           productData.detailedProducts!.isNotEmpty) {
         _product = productData.detailedProducts![0];
         _productImages = _product!.getAllImageUrls();
+        if (_currentImageIndex >= _productImages.length) {
+          _currentImageIndex = 0;
+        }
 
         _startingBid = _parseAmount(_product!.startingBid);
         _currentHighestBid = max(
@@ -289,15 +294,21 @@ class _ProductDetailsState extends State<ProductDetails>
         );
         _totalBids = _product!.totalBids ?? 0;
         _highestBidder = _product!.lastBidderName ?? '';
+        // Render the working values returned with the product immediately.
+        // Polling can still replace them with newer server values later.
         _pointPerBid = (_product!.pointPerBid ?? 0).toDouble();
-        _pointPerBidCustom = (_product!.pointPerBidCustom ?? 0).toDouble();
+        _pointPerBidCustom =
+            (_product!.pointPerBidCustom ?? 0).toDouble();
         _reviewsCount = _product!.ratingCount ?? 0;
         _rating = (_product!.rating ?? 0).toDouble();
         _endingSeconds = _product!.swipeLeft ?? 10;
         _myStatus = _product!.myStatus;
         _userHasBid = _product!.userHasBid ?? false;
         _buyNow = _product!.buyNow ?? 0;
-        _buyNowLink = _product!.buyNowLink ?? '';
+        _buyNowLink = (_product!.buyNowLink?.isNotEmpty == true
+                ? _product!.buyNowLink
+                : _product!.payLink) ??
+            '';
         _minNextBidNow = _currentHighestBid + 0.01;
 
         _determineAuctionStatus();
@@ -322,13 +333,27 @@ class _ProductDetailsState extends State<ProductDetails>
   void _determineAuctionStatus() {
     if (_product == null) return;
 
-    if (_product?.upcomingStatus == "Upcoming") {
+    _auctionStartDateTime = _parseServerDate(_product!.auctionStartDate);
+    _auctionEndDateTime = _parseServerDate(_product!.auctionEndDate) ??
+        _product!.getAuctionEndDateTime();
+
+    final now = DateTime.now();
+    final isUpcoming =
+        _product?.upcomingStatus?.trim().toLowerCase() == "upcoming" ||
+        (_auctionStartDateTime != null &&
+            _auctionStartDateTime!.isAfter(now));
+
+    if (isUpcoming) {
       _auctionStatus = "upcoming";
       _startUpcomingTimer();
       return;
     }
 
-    if (_product?.isAuctionEnded == true) {
+    final isEnded = _product?.isAuctionEnded == true ||
+        (_auctionEndDateTime != null &&
+            !_auctionEndDateTime!.isAfter(now));
+
+    if (isEnded) {
       _auctionStatus = "ended";
       _timeLeft = Duration.zero;
       return;
@@ -339,12 +364,7 @@ class _ProductDetailsState extends State<ProductDetails>
     // Prefer our own parser on the raw end date, because the server
     // sends epoch seconds (e.g. 1790488740) and the data-model parser
     // may not handle that format.
-    DateTime? endTime;
-    try {
-      final dyn = _product as dynamic;
-      endTime = _parseServerDate(dyn.auctionEndDate);
-    } catch (_) {}
-    endTime ??= _product!.getAuctionEndDateTime();
+    final endTime = _auctionEndDateTime;
 
     if (endTime != null) {
       _auctionEndDateTime = endTime;
@@ -502,12 +522,14 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Future<void> _pollData() async {
-    if (_product == null) return;
+    if (_product == null || _isPolling) return;
+
+    _isPolling = true;
 
     try {
       final response =
           await _productRepository.pollProductData(_product!.id ?? 0);
-      if (response.success != true) return;
+      if (response.success != true || !mounted) return;
 
       final incomingBid = response.highestBid;
       final hasNewBid = incomingBid != null && incomingBid > _currentHighestBid;
@@ -542,22 +564,35 @@ class _ProductDetailsState extends State<ProductDetails>
           _pointPerBidCustom = response.pointPerBidCustom!;
         }
         if (response.buyNow != null) _buyNow = response.buyNow!;
-        if (response.buyNowLink != null) _buyNowLink = response.buyNowLink!;
+        if (response.buyNowLink?.isNotEmpty == true) {
+          _buyNowLink = response.buyNowLink!;
+        } else if (_buyNowLink.isEmpty && response.payLink?.isNotEmpty == true) {
+          _buyNowLink = response.payLink!;
+        }
 
         _minNextBidNow = _currentHighestBid + 0.01;
 
         // Status change handling
         if (response.upcomingStatus != null) {
-          final newStatus = response.upcomingStatus!.toLowerCase();
+          final newStatus = response.upcomingStatus!.trim().toLowerCase();
           if (_auctionStatus != newStatus) {
             _auctionStatus = newStatus;
             if (newStatus == "upcoming") {
+              final parsedStartDate =
+                  _parseServerDate(response.auctionStartDate);
+              if (parsedStartDate != null) {
+                _auctionStartDateTime = parsedStartDate;
+              }
               _startUpcomingTimer();
               _countdownTimer?.cancel();
-            } else if (newStatus == "live" &&
-                response.auctionEndDate != null) {
+            } else if (newStatus == "live") {
               _upcomingTimer?.cancel();
-              final endTime = _parseServerDate(response.auctionEndDate);
+              final remainingSeconds = response.remainingSeconds;
+              final endTime =
+                  remainingSeconds != null && remainingSeconds >= 0
+                      ? DateTime.now()
+                          .add(Duration(seconds: remainingSeconds))
+                      : _parseServerDate(response.auctionEndDate);
               if (endTime != null) {
                 _auctionEndDateTime = endTime;
                 final left = endTime.difference(DateTime.now());
@@ -569,22 +604,37 @@ class _ProductDetailsState extends State<ProductDetails>
                   _startCountdown(endTime);
                 }
               }
+            } else if (newStatus == "ended") {
+              _timeLeft = Duration.zero;
+              _auctionEndDateTime = null;
+              _isEndingSoon = false;
+              _bellSoundPlayed = false;
+              _countdownTimer?.cancel();
+              _upcomingTimer?.cancel();
+              _countdownCircleController.stop();
+              _bellPlayer.stop();
+              ToastComponent.tickSoundPlaying = false;
             }
           }
         }
 
-        // End date changed — restart countdown ONLY if the server
-        // actually moved the end time (>5s tolerance), otherwise we
-        // kill and re-create the timer every 2s and it looks frozen.
-        if (response.auctionEndDate != null && _auctionStatus == "live") {
-          final newEnd = _parseServerDate(response.auctionEndDate);
+        // Keep the local countdown synchronized without recreating it for
+        // insignificant network/rounding differences on every poll.
+        if (_auctionStatus == "live") {
+          final remainingSeconds = response.remainingSeconds;
+          final newEnd = remainingSeconds != null && remainingSeconds >= 0
+              ? DateTime.now().add(Duration(seconds: remainingSeconds))
+              : _parseServerDate(response.auctionEndDate);
           if (newEnd != null) {
+            // remaining_seconds is rounded and the request itself has some
+            // latency. A wider tolerance prevents the local 1-second timer
+            // from being cancelled and recreated by every 2-second poll.
             final changed = _auctionEndDateTime == null ||
                 newEnd
                         .difference(_auctionEndDateTime!)
-                        .inSeconds
+                        .inMilliseconds
                         .abs() >
-                    5;
+                    5000;
             if (changed) {
               _auctionEndDateTime = newEnd;
               final left = newEnd.difference(DateTime.now());
@@ -608,6 +658,8 @@ class _ProductDetailsState extends State<ProductDetails>
           _bellSoundPlayed = false;
           _countdownTimer?.cancel();
           _countdownCircleController.stop();
+          _bellPlayer.stop();
+          ToastComponent.tickSoundPlaying = false;
         }
 
         if (response.rating != null) _rating = response.rating!;
@@ -657,6 +709,8 @@ class _ProductDetailsState extends State<ProductDetails>
       }
     } catch (e) {
       print('Polling error: $e');
+    } finally {
+      _isPolling = false;
     }
   }
 
@@ -666,6 +720,10 @@ class _ProductDetailsState extends State<ProductDetails>
   void _startCountdown(DateTime endTime) {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       final remaining = endTime.difference(DateTime.now());
       if (remaining.isNegative || remaining.inSeconds <= 0) {
         timer.cancel();
@@ -675,6 +733,9 @@ class _ProductDetailsState extends State<ProductDetails>
           _isEndingSoon = false;
           _bellSoundPlayed = false;
         });
+        _countdownCircleController.stop();
+        _bellPlayer.stop();
+        ToastComponent.tickSoundPlaying = false;
         _pollData();
         return;
       }
@@ -689,7 +750,10 @@ class _ProductDetailsState extends State<ProductDetails>
           _playBell();
           _countdownCircleController.repeat();
         } else if (!shouldEnd) {
+          _bellSoundPlayed = false;
           _countdownCircleController.stop();
+          _bellPlayer.stop();
+          ToastComponent.tickSoundPlaying = false;
         }
       }
 
@@ -701,8 +765,12 @@ class _ProductDetailsState extends State<ProductDetails>
 
   void _startUpcomingTimer() {
     _upcomingTimer?.cancel();
-    final start = _product?.getAuctionStartDateTime();
+    final start = _auctionStartDateTime ??
+        _parseServerDate(_product?.auctionStartDate) ??
+        _product?.getAuctionStartDateTime();
     if (start == null) return;
+
+    _auctionStartDateTime = start;
 
     _tickUpcoming(start);
     _upcomingTimer = Timer.periodic(
@@ -712,6 +780,7 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   void _tickUpcoming(DateTime start) {
+    if (!mounted) return;
     final remaining = start.difference(DateTime.now());
     if (remaining.isNegative) {
       _upcomingTimer?.cancel();
@@ -719,7 +788,9 @@ class _ProductDetailsState extends State<ProductDetails>
         _timeUntilStart = Duration.zero;
         _auctionStatus = "live";
       });
-      final endTime = _product!.getAuctionEndDateTime();
+      final endTime = _auctionEndDateTime ??
+          _parseServerDate(_product?.auctionEndDate) ??
+          _product!.getAuctionEndDateTime();
       if (endTime != null) {
         _auctionEndDateTime = endTime;
         _startCountdown(endTime);
@@ -813,7 +884,6 @@ class _ProductDetailsState extends State<ProductDetails>
           AppLocalizations.of(context)!.auction_not_active);
       return;
     }
-
     final amount = _minNextBidNow;
     setState(() => _isProcessing = true);
 
@@ -861,7 +931,6 @@ class _ProductDetailsState extends State<ProductDetails>
           AppLocalizations.of(context)!.auction_not_active);
       return;
     }
-
     final amount = double.tryParse(_bidController.text);
     if (amount == null || amount < _minNextBidNow) {
       ToastComponent.showWarning(
@@ -1093,11 +1162,9 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   String _formatPrice(double amount) => FormatHelper.formatPrice(amount);
 
-  /// Always renders "Xd HH:MM:SS" — days, hours, minutes and seconds.
-  /// This is what the summary card shows, so it always ticks (seconds
-  /// change every 1s).
   String _formatTimeLeft(Duration d) {
     if (d.isNegative) d = Duration.zero;
+    final loc = AppLocalizations.of(context)!;
 
     final days = d.inDays;
     final h = d.inHours.remainder(24);
@@ -1108,19 +1175,33 @@ class _ProductDetailsState extends State<ProductDetails>
     final mm = m.toString().padLeft(2, '0');
     final ss = s.toString().padLeft(2, '0');
 
-    if (days > 0) return '${days}d $hh:$mm:$ss';
-    return '$hh:$mm:$ss';
+    if (days > 0) {
+      return '$days${loc.duration_days_compact} '
+          '$hh${loc.duration_hours_compact}';
+    }
+    if (d.inHours > 0) {
+      return '$hh${loc.duration_hours_compact} '
+          '$mm${loc.duration_minutes_compact}';
+    }
+    return '$mm${loc.duration_minutes_compact} '
+        '$ss${loc.duration_seconds_compact}';
   }
 
   String _formatDateTime(String? dateTime) {
-    if (dateTime == null) return '';
+    if (dateTime == null || dateTime.trim().isEmpty) return '';
     try {
       final d = DateTime.parse(dateTime);
       return '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}/${d.year} · '
           '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}:${d.second.toString().padLeft(2, '0')}';
     } catch (_) {
-      return '';
+      return dateTime;
     }
+  }
+
+  String _formatPointCost(double value) {
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toString();
   }
 
   String _videoIdFromUrl(String url) {
@@ -1292,7 +1373,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ? const Icon(Icons.image, color: Colors.white54, size: 60)
                 : Image.network(
                     _productImages[_currentImageIndex],
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
                         const Icon(Icons.image, color: Colors.white54, size: 60),
                   ),
@@ -1343,6 +1424,11 @@ class _ProductDetailsState extends State<ProductDetails>
             child: _buildStatusBadge(),
           ),
 
+          if (_isEndingSoon && _auctionStatus == 'live')
+            Positioned.fill(
+              child: IgnorePointer(child: _buildCircularCountdown()),
+            ),
+
           // ── More menu (highest z)
           if (_showMoreMenu)
             Positioned(
@@ -1356,6 +1442,61 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCircularCountdown() {
+    if (_endingSeconds <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final remaining = max(0, _timeLeft.inSeconds);
+    final progress = (remaining / _endingSeconds).clamp(0.0, 1.0);
+    final size = min(200.0, _screenWidth * .5);
+    return Center(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox.expand(
+              child: CircularProgressIndicator(
+                value: progress.toDouble(),
+                strokeWidth: 8,
+                backgroundColor: const Color(0x2E102C4C),
+                color: remaining <= 5
+                    ? const Color(0xFFFF4444)
+                    : const Color(0xFFFF9800),
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$remaining',
+                  style: TextStyle(
+                    color: const Color(0xFF102C4C),
+                    fontSize: min(40.sp, _screenWidth * .08),
+                    fontWeight: FontWeight.w800,
+                    shadows: const [
+                      Shadow(color: Colors.white, blurRadius: 4),
+                    ],
+                  ),
+                ),
+                Text(
+                  AppLocalizations.of(context)!.seconds_left_short,
+                  style: TextStyle(
+                    color: const Color(0xCC102C4C),
+                    fontSize: min(12.sp, _screenWidth * .02),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1715,35 +1856,35 @@ class _ProductDetailsState extends State<ProductDetails>
           child: Align(
             alignment: Alignment.centerLeft,
             child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
-          decoration: BoxDecoration(
-            color: const Color(0xD90A5546),
-            borderRadius: BorderRadius.circular(13.r),
-            border: Border.all(color: const Color(0x25FFFFFF)),
-          ),
-          child: RichText(
-            text: TextSpan(
-              style: TextStyle(
-                color: const Color(0xFFA4FFF2),
-                fontSize: 14.sp,
-                height: 1.45,
+              padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: const Color(0xD90A5546),
+                borderRadius: BorderRadius.circular(13.r),
+                border: Border.all(color: const Color(0x25FFFFFF)),
               ),
-              children: [
-                const TextSpan(text: '✦ '),
-                TextSpan(
-                  text: name,
-                  style: const TextStyle(
-                    color: Color(0xFF7BE8E9),
-                    fontWeight: FontWeight.w700,
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    color: const Color(0xFFA4FFF2),
+                    fontSize: 14.sp,
+                    height: 1.45,
                   ),
+                  children: [
+                    const TextSpan(text: '✦ '),
+                    TextSpan(
+                      text: name,
+                      style: const TextStyle(
+                        color: Color(0xFF7BE8E9),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(amount)}',
+                    ),
+                  ],
                 ),
-                TextSpan(
-                  text:
-                      ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(amount)}',
-                ),
-              ],
-            ),
-          ),
+              ),
             ),
           ),
         ),
@@ -2027,19 +2168,26 @@ class _ProductDetailsState extends State<ProductDetails>
       label = '⏱ ${AppLocalizations.of(context)!.ended_upper}';
       value = '—';
     } else {
-      label =
-          '⏱ ${_isEndingSoon ? AppLocalizations.of(context)!.ending_upper : AppLocalizations.of(context)!.time_left_upper}';
+      label = '⏱ ${AppLocalizations.of(context)!.time_left_upper}';
       value = _formatTimeLeft(_timeLeft);
       if (_isEndingSoon) valColor = const Color(0xFFDC3545);
     }
 
+    final timerText = Text(
+      value,
+      textAlign: TextAlign.left,
+      style: TextStyle(color: valColor ?? const Color(0xFF008E9D)),
+    );
     return _metricBox(
       label: label,
-      child: Text(
-        value,
-        textAlign: TextAlign.left,
-        style: TextStyle(color: valColor ?? const Color(0xFF008E9D)),
-      ),
+      child: _isEndingSoon
+          ? FadeTransition(
+              opacity: Tween<double>(begin: 1, end: .55).animate(
+                _blinkController,
+              ),
+              child: timerText,
+            )
+          : timerText,
       valueColor: valColor ?? const Color(0xFF008E9D),
     );
   }
@@ -2228,10 +2376,79 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   // BUY NOW
   // ============================================================
-  Widget _buildBuyNowCard() {
+  Widget _buildBuyNowCard({bool inModal = false}) {
+    final loc = AppLocalizations.of(context)!;
+    final compact = inModal || _screenWidth < 600;
+    final icon = Container(
+      width: compact ? 38.w : 42.w,
+      height: compact ? 38.w : 42.w,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F8FA),
+        borderRadius: BorderRadius.circular(13.r),
+      ),
+      alignment: Alignment.center,
+      child: Icon(Icons.open_in_new_rounded,
+          color: const Color(0xFF008FA5), size: 22.sp),
+    );
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          loc.buy_now_ucf,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF102C4C),
+          ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          loc.buy_now_subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 11.sp, color: const Color(0xFF637A92)),
+        ),
+      ],
+    );
+    final button = GestureDetector(
+      onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
+      child: Container(
+        width: compact ? double.infinity : null,
+        constraints: BoxConstraints(minHeight: 43.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE9F8FB),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: const Color(0xFFC9EDF1)),
+        ),
+        alignment: Alignment.center,
+        child: _isBuyNowLoading
+            ? SizedBox(
+                width: 14.w,
+                height: 14.w,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF00869C),
+                ),
+              )
+            : Text(
+                loc.buy_now_ucf,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF00869C),
+                ),
+              ),
+      ),
+    );
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 9.w, vertical: 9.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
+      margin: inModal
+          ? EdgeInsets.zero
+          : EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 22.h),
+      padding: EdgeInsets.all(compact ? 13.w : 15.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18.r),
@@ -2241,79 +2458,23 @@ class _ProductDetailsState extends State<ProductDetails>
               color: Color(0x0B102C4C), blurRadius: 16, offset: Offset(0, 5)),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 42.w,
-            height: 42.w,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F8FA),
-              borderRadius: BorderRadius.circular(13.r),
-            ),
-            alignment: Alignment.center,
-            child: Icon(Icons.open_in_new_rounded,
-                color: const Color(0xFF008FA5), size: 22.sp),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      child: compact
+          ? Column(
               children: [
-                Text(
-                  AppLocalizations.of(context)!.buy_now_ucf,
-                  style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF102C4C),
-                      height: 1.25),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  AppLocalizations.of(context)!.buy_now_subtitle,
-                  style: TextStyle(
-                      fontSize: 11.sp,
-                      color: const Color(0xFF637A92),
-                      height: 1.35),
-                  softWrap: true,
-                ),
+                Row(children: [icon, SizedBox(width: 12.w), Expanded(child: copy)]),
+                SizedBox(height: 12.h),
+                button,
+              ],
+            )
+          : Row(
+              children: [
+                icon,
+                SizedBox(width: 12.w),
+                Expanded(child: copy),
+                SizedBox(width: 12.w),
+                button,
               ],
             ),
-          ),
-          SizedBox(width: 12.w),
-          GestureDetector(
-            onTap: _isBuyNowLoading ? null : _onBuyNowPressed,
-            child: Container(
-              constraints: BoxConstraints(minHeight: 43.h),
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE9F8FB),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: const Color(0xFFC9EDF1)),
-              ),
-              alignment: Alignment.center,
-              child: _isBuyNowLoading
-                  ? SizedBox(
-                      width: 14.w,
-                      height: 14.w,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: const Color(0xFF00869C)),
-                    )
-                  : Text(
-                      AppLocalizations.of(context)!.buy_now_ucf,
-                      style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF00869C),
-                          height: 1),
-                    ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -2321,7 +2482,23 @@ class _ProductDetailsState extends State<ProductDetails>
   // BID DOCK
   // ============================================================
   Widget _buildBidDock() {
+    final loc = AppLocalizations.of(context)!;
     final isLive = _auctionStatus == "live";
+    final sliderEnabled = isLive;
+    final customEnabled = isLive;
+
+    final inactiveText = _auctionStatus == 'upcoming'
+        ? loc.starts_soon_ucf
+        : loc.ended_ucf;
+    final sliderText = !isLive
+        ? inactiveText
+        : '${loc.slide_to_bid_ucf} → '
+            '${_formatPointCost(_pointPerBid)} ${loc.points_plural_ucf}';
+    final customText = !isLive
+        ? inactiveText
+        : '${loc.manual_bid_ucf} → '
+            '${_formatPointCost(_pointPerBidCustom)} '
+            '${loc.points_plural_ucf}';
 
     return SafeArea(
       top: false,
@@ -2342,42 +2519,63 @@ class _ProductDetailsState extends State<ProductDetails>
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final maxOffset = (constraints.maxWidth - _thumbSize - 10)
-                      .clamp(0.0, double.infinity);
+                  final thumbWidth = _thumbSize.w;
+                  final maxOffset =
+                      (constraints.maxWidth - thumbWidth - 10.w)
+                          .clamp(0.0, double.infinity)
+                          .toDouble();
 
                   return GestureDetector(
-                    onHorizontalDragStart: isLive
-                        ? (d) {
+                    onHorizontalDragStart: sliderEnabled
+                        ? (details) {
                             setState(() {
-                              _thumbStartX = d.localPosition.dx;
+                              _thumbStartX = details.localPosition.dx;
                               _isDragging = true;
                             });
                           }
                         : null,
-                    onHorizontalDragUpdate: isLive
-                        ? (d) {
+                    onHorizontalDragUpdate: sliderEnabled
+                        ? (details) {
                             if (!_isDragging) return;
-                            final dx = d.localPosition.dx - _thumbStartX;
-                            setState(
-                                () => _slideOffset = dx.clamp(0.0, maxOffset));
+                            final distance =
+                                details.localPosition.dx - _thumbStartX;
+                            setState(() {
+                              _slideOffset = distance
+                                  .clamp(0.0, maxOffset)
+                                  .toDouble();
+                            });
                           }
                         : null,
-                    onHorizontalDragEnd: isLive
+                    onHorizontalDragCancel: sliderEnabled
+                        ? () {
+                            setState(() {
+                              _isDragging = false;
+                              _slideOffset = 0;
+                            });
+                          }
+                        : null,
+                    onHorizontalDragEnd: sliderEnabled
                         ? (_) {
                             if (!_isDragging) return;
                             _isDragging = false;
-                            final should = _slideOffset > maxOffset * 0.75;
-                            setState(
-                                () => _slideOffset = should ? maxOffset : 0);
+                            final shouldBid =
+                                _slideOffset > maxOffset * 0.75;
+                            setState(() => _slideOffset =
+                                shouldBid ? maxOffset : 0);
                             Future.delayed(
-                                Duration(milliseconds: should ? 200 : 300), () {
-                              if (mounted) setState(() => _slideOffset = 0);
-                            });
-                            if (should) _placeBidNow();
+                              Duration(
+                                  milliseconds: shouldBid ? 200 : 300),
+                              () {
+                                if (mounted) {
+                                  setState(() => _slideOffset = 0);
+                                }
+                              },
+                            );
+                            if (shouldBid) _placeBidNow();
                           }
                         : null,
                     child: Opacity(
-                      opacity: isLive ? 1.0 : 0.5,
+                      opacity: sliderEnabled ? 1.0 : 0.5,
                       child: Container(
                         height: 56.h,
                         decoration: BoxDecoration(
@@ -2389,32 +2587,27 @@ class _ProductDetailsState extends State<ProductDetails>
                         ),
                         child: Stack(
                           children: [
-                            Positioned(
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: _slideOffset + _thumbSize,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.27),
-                                  borderRadius: BorderRadius.circular(17.r),
+                            if (_slideOffset > 0)
+                              Positioned(
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: _slideOffset + thumbWidth,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.27),
+                                    borderRadius: BorderRadius.circular(17.r),
+                                  ),
                                 ),
                               ),
-                            ),
                             Positioned(
-                              left: 5.w + _thumbSize + 6.w,
+                              left: 5.w + thumbWidth + 6.w,
                               right: 8.w,
                               top: 0,
                               bottom: 0,
                               child: Center(
                                 child: Text(
-                                  !isLive
-                                      ? (_auctionStatus == "upcoming"
-                                          ? AppLocalizations.of(context)!
-                                              .starts_soon_ucf
-                                          : AppLocalizations.of(context)!
-                                              .ended_ucf)
-                                      : '${AppLocalizations.of(context)!.slide_to_bid_ucf} → ${_pointPerBid.toInt()} ${AppLocalizations.of(context)!.points_plural_ucf}',
+                                  sliderText,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.center,
@@ -2430,16 +2623,17 @@ class _ProductDetailsState extends State<ProductDetails>
                               left: 5.w + _slideOffset,
                               top: 5.h,
                               child: Container(
-                                width: 43.w,
+                                width: thumbWidth,
                                 height: 43.h,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(13.r),
                                   boxShadow: const [
                                     BoxShadow(
-                                        color: Color(0x4D123A57),
-                                        blurRadius: 14,
-                                        offset: Offset(0, 4)),
+                                      color: Color(0x4D123A57),
+                                      blurRadius: 14,
+                                      offset: Offset(0, 4),
+                                    ),
                                   ],
                                 ),
                                 child: _isProcessing
@@ -2450,9 +2644,11 @@ class _ProductDetailsState extends State<ProductDetails>
                                           color: MyTheme.accent_color,
                                         ),
                                       )
-                                    : Icon(Icons.arrow_forward_rounded,
+                                    : Icon(
+                                        Icons.arrow_forward_rounded,
                                         size: 23.sp,
-                                        color: const Color(0xFF1870D5)),
+                                        color: const Color(0xFF1870D5),
+                                      ),
                               ),
                             ),
                           ],
@@ -2464,39 +2660,45 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
             ),
             SizedBox(width: 8.w),
-            GestureDetector(
-              onTap: isLive ? _showBidInputDialog : null,
-              child: Opacity(
-                opacity: isLive ? 1.0 : 0.5,
-                child: Container(
-                  height: 56.h,
-                  padding: EdgeInsets.symmetric(horizontal: 10.w),
-                  decoration: BoxDecoration(
-                    color: const Color(0xEDFFFFFF),
-                    borderRadius: BorderRadius.circular(17.r),
-                    border: Border.all(color: const Color(0x80FFFFFF)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('▦',
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: _screenWidth * .47),
+              child: GestureDetector(
+                onTap: customEnabled ? _showBidInputDialog : null,
+                child: Opacity(
+                  opacity: customEnabled ? 1.0 : 0.5,
+                  child: Container(
+                    height: 56.h,
+                    padding: EdgeInsets.symmetric(horizontal: 10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xEDFFFFFF),
+                      borderRadius: BorderRadius.circular(17.r),
+                      border: Border.all(color: const Color(0x80FFFFFF)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '▦',
                           style: TextStyle(
-                              fontSize: 17.sp,
-                              color: const Color(0xFF1163A8))),
-                      SizedBox(width: 5.w),
-                      Text(
-                        !isLive
-                            ? (_auctionStatus == "upcoming"
-                                ? AppLocalizations.of(context)!.starts_soon_ucf
-                                : AppLocalizations.of(context)!.ended_ucf)
-                            : AppLocalizations.of(context)!.manual_bid_ucf,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF1163A8),
+                            fontSize: 17.sp,
+                            color: const Color(0xFF1163A8),
+                          ),
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 5.w),
+                        Flexible(
+                          child: Text(
+                            customText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF1163A8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -2607,94 +2809,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       ),
                       if (_buyNow == 1 && _auctionStatus != "ended") ...[
                         SizedBox(height: 12.h),
-                        Container(
-                          padding: EdgeInsets.all(15.w),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18.r),
-                            border:
-                                Border.all(color: const Color(0xFFDCECF3)),
-                            boxShadow: const [
-                              BoxShadow(
-                                  color: Color(0x0B102C4C),
-                                  blurRadius: 16,
-                                  offset: Offset(0, 5)),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 42.w,
-                                height: 42.w,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE8F8FA),
-                                  borderRadius: BorderRadius.circular(13.r),
-                                ),
-                                child: Icon(Icons.open_in_new_rounded,
-                                    color: const Color(0xFF008FA5),
-                                    size: 22.sp),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!
-                                          .buy_now_ucf,
-                                      style: TextStyle(
-                                          fontSize: 15.sp,
-                                          fontWeight: FontWeight.w800,
-                                          color: const Color(0xFF102C4C)),
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      AppLocalizations.of(context)!
-                                          .buy_now_subtitle,
-                                      style: TextStyle(
-                                          fontSize: 11.sp,
-                                          color: const Color(0xFF637A92)),
-                                      softWrap: true,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: 10.w),
-                              GestureDetector(
-                                onTap: _isBuyNowLoading
-                                    ? null
-                                    : _onBuyNowPressed,
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 14.w, vertical: 12.h),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE9F8FB),
-                                    borderRadius: BorderRadius.circular(12.r),
-                                    border: Border.all(
-                                        color: const Color(0xFFC9EDF1)),
-                                  ),
-                                  child: _isBuyNowLoading
-                                      ? SizedBox(
-                                          width: 14.w,
-                                          height: 14.w,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: MyTheme.accent_color))
-                                      : Text(
-                                          AppLocalizations.of(context)!
-                                              .buy_now_ucf,
-                                          style: TextStyle(
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.w800,
-                                              color:
-                                                  const Color(0xFF00869C)),
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildBuyNowCard(inModal: true),
                       ],
                     ],
                   ),
@@ -2767,9 +2882,9 @@ class _ProductDetailsState extends State<ProductDetails>
   // BID INPUT DIALOG
   // ============================================================
   void _showBidInputDialog() {
+    final loc = AppLocalizations.of(context)!;
     if (_auctionStatus != "live") {
-      ToastComponent.showWarning(
-          AppLocalizations.of(context)!.auction_not_active);
+      ToastComponent.showWarning(loc.auction_not_active);
       return;
     }
     _bidController.text = _minNextBidNow.toStringAsFixed(2);
@@ -2777,102 +2892,166 @@ class _ProductDetailsState extends State<ProductDetails>
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
-        child: Padding(
-          padding: EdgeInsets.all(20.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context)!.your_bid_ucf,
-                      style: TextStyle(
-                          fontSize: 22.sp, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 22.sp),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                '${AppLocalizations.of(context)!.enter_amount_higher_ucf} ${_formatPrice(_currentHighestBid)}.',
-                style:
-                    TextStyle(fontSize: 14.sp, color: const Color(0xFF637A92)),
-              ),
-              SizedBox(height: 12.h),
-              TextField(
-                controller: _bidController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                style:
-                    TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800),
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14.r)),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-                ),
-              ),
-              SizedBox(height: 12.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        backgroundColor: const Color(0xFFEDF4FB),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(13.r)),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.close_ucf,
-                        style: TextStyle(
-                            fontSize: 14.sp,
+        insetPadding: EdgeInsets.all(16.w),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25.r),
+        ),
+        child: Container(
+          width: min(_screenWidth - 32.w, 480.0),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height - 32.h,
+          ),
+          padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 18.h),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 4.h, right: 8.w),
+                        child: Text(
+                          loc.your_bid_ucf,
+                          style: TextStyle(
+                            fontSize: 22.sp,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF102C4C)),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isProcessing
-                          ? null
-                          : () {
-                              Navigator.pop(ctx);
-                              _submitCustomBid();
-                            },
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        backgroundColor: MyTheme.accent_color,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(13.r)),
+                    Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF7FB),
+                        borderRadius: BorderRadius.circular(13.r),
+                        border: Border.all(color: const Color(0xFFD9E8F1)),
                       ),
-                      child: _isProcessing
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : Text(
-                              AppLocalizations.of(context)!.confirm_bid_ucf,
-                              style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(Icons.close, size: 20.sp),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  '${loc.enter_amount_higher_current_bid} '
+                  '${loc.each_bid_costs} '
+                  '${_formatPointCost(_pointPerBidCustom)} '
+                  '${loc.points_plural_ucf}.',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: const Color(0xFF637A92),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                TextField(
+                  controller: _bidController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  decoration: InputDecoration(
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Color(0xFFDCEAF6),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0ABFC4),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 14.h,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Container(
+                  padding: EdgeInsets.only(top: 12.h),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFFE4EDF6)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            backgroundColor: const Color(0xFFEDF4FB),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(13.r),
                             ),
-                    ),
+                          ),
+                          child: Text(
+                            loc.close_ucf,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF102C4C),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF0ABFC4),
+                                Color(0xFF1870D5),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(13.r),
+                          ),
+                          child: TextButton(
+                            onPressed: _isProcessing
+                                ? null
+                                : () {
+                                    Navigator.pop(ctx);
+                                    _submitCustomBid();
+                                  },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 14.h),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(13.r),
+                              ),
+                            ),
+                            child: Text(
+                              loc.confirm_bid_ucf,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
