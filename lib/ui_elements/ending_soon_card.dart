@@ -242,7 +242,9 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   void _onSlideUpdate(DragUpdateDetails d, double maxOffset) {
     if (!_isDragging) return;
     final dx = d.localPosition.dx - _thumbStartX;
-    setState(() => _slideOffset = dx.clamp(0.0, maxOffset));
+    setState(
+      () => _slideOffset = dx.clamp(0.0, maxOffset).toDouble(),
+    );
   }
 
   void _onSlideEnd(double maxOffset) {
@@ -372,6 +374,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -598,17 +601,17 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     // Requirement #6: ALL buttons same fixed height (36.h)
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(
-          0.0,
-          double.infinity,
-        );
+        final maxOffset = (constraints.maxWidth - _thumbSize - 6)
+            .clamp(0.0, double.infinity)
+            .toDouble();
 
         return GestureDetector(
           onHorizontalDragStart: _onSlideStart,
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
-            height: 36.h,
+            width: double.infinity,
+            height: 36,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -617,13 +620,6 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
               ),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: const Color(0x55FFFFFF)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x351597ba),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
             ),
             child: _isProcessing
                 ? Center(
@@ -640,8 +636,8 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                     children: [
                       Positioned(
                         left: 4.w + _slideOffset,
-                        top: 4.h,
-                        bottom: 4.h,
+                        top: 4,
+                        bottom: 4,
                         child: Container(
                           width: _thumbSize,
                           height: _thumbSize,

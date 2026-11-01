@@ -233,6 +233,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -427,7 +428,7 @@ class _UpcomingCardState extends State<UpcomingCard> {
       onTap: _isProcessing ? null : _notifyMe,
       child: Container(
         width: double.infinity,
-        height: 36.h,
+        height: 36,
         padding: EdgeInsets.symmetric(horizontal: 6.w),
         decoration: BoxDecoration(
           gradient: const LinearGradient(

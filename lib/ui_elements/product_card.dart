@@ -465,7 +465,9 @@ class _ProductCardState extends State<ProductCard> {
   void _onSlideUpdate(DragUpdateDetails d, double maxOffset) {
     if (!_isDragging) return;
     final dx = d.localPosition.dx - _thumbStartX;
-    setState(() => _slideOffset = dx.clamp(0.0, maxOffset));
+    setState(
+      () => _slideOffset = dx.clamp(0.0, maxOffset).toDouble(),
+    );
   }
 
   void _onSlideEnd(double maxOffset) {
@@ -503,9 +505,10 @@ class _ProductCardState extends State<ProductCard> {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: [
           AspectRatio(
             aspectRatio: 1.05,
@@ -544,19 +547,11 @@ class _ProductCardState extends State<ProductCard> {
           ),
           SizedBox(height: 4.h),
 
-          // ═══ FIX #4: Expanded now wraps the PRICE ROW (not the CTA). ═══
-          //   Any extra height from IntrinsicHeight/stretch is absorbed
-          //   HERE, so the CTA button always sits tightly under the price.
-          Expanded(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: isEnded
-                  ? _buildEndedPriceRow(displayBid)
-                  : isUpcoming
-                      ? _buildUpcomingPriceRow(loc, points)
-                      : _buildActivePriceRow(displayBid, points),
-            ),
-          ),
+          isEnded
+              ? _buildEndedPriceRow(displayBid)
+              : isUpcoming
+                  ? _buildUpcomingPriceRow(loc, points)
+                  : _buildActivePriceRow(displayBid, points),
 
           // ═══ CTA — fixed size, right under the price row. ═══
           Padding(
@@ -677,7 +672,7 @@ class _ProductCardState extends State<ProductCard> {
       onTap: _navigateToProduct,
       child: Container(
         width: double.infinity,
-        height: 36.h,
+        height: 36,
         padding: EdgeInsets.symmetric(horizontal: 8.w),
         decoration: BoxDecoration(
           color: const Color(0xFFe8f8f4),
@@ -703,7 +698,7 @@ class _ProductCardState extends State<ProductCard> {
       onTap: _isProcessing ? null : _notifyMe,
       child: Container(
         width: double.infinity,
-        height: 36.h,
+        height: 36,
         padding: EdgeInsets.symmetric(horizontal: 6.w),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -759,10 +754,9 @@ class _ProductCardState extends State<ProductCard> {
   Widget _buildSlideToBid(AppLocalizations loc) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(
-          0.0,
-          double.infinity,
-        );
+        final maxOffset = (constraints.maxWidth - _thumbSize - 6)
+            .clamp(0.0, double.infinity)
+            .toDouble();
 
         return GestureDetector(
           onHorizontalDragStart: _onSlideStart,
@@ -770,7 +764,7 @@ class _ProductCardState extends State<ProductCard> {
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
             width: double.infinity,
-            height: 36.h,
+            height: 36,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -779,13 +773,6 @@ class _ProductCardState extends State<ProductCard> {
               ),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: const Color(0x55FFFFFF)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x351597ba),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
             ),
             child: _isProcessing
                 ? Center(
@@ -802,8 +789,8 @@ class _ProductCardState extends State<ProductCard> {
                     children: [
                       Positioned(
                         left: 4.w + _slideOffset,
-                        top: 4.h,
-                        bottom: 4.h,
+                        top: 4,
+                        bottom: 4,
                         child: Container(
                           width: _thumbSize,
                           height: _thumbSize,

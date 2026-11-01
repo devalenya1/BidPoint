@@ -248,7 +248,9 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   void _onSlideUpdate(DragUpdateDetails d, double maxOffset) {
     if (!_isDragging) return;
     final dx = d.localPosition.dx - _thumbStartX;
-    setState(() => _slideOffset = dx.clamp(0.0, maxOffset));
+    setState(
+      () => _slideOffset = dx.clamp(0.0, maxOffset).toDouble(),
+    );
   }
 
   void _onSlideEnd(double maxOffset) {
@@ -381,6 +383,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -427,46 +430,38 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
           ),
           SizedBox(height: 4.h),
 
-          // ═══ FIX: Expanded is on the PRICE row, NOT the CTA. ═══
-          //   Any extra height from IntrinsicHeight/stretch is absorbed
-          //   HERE (above the button), so the CTA always ends the card.
-          Expanded(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _formatPrice(displayBid),
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF00a98d),
-                        letterSpacing: -0.3,
-                        height: 1,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  _formatPrice(displayBid),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF00a98d),
+                    letterSpacing: -0.3,
+                    height: 1,
                   ),
-                  SizedBox(width: 3.w),
-                  Flexible(
-                    child: Text(
-                      '◉ $points ${loc.point_per_bid_ucf}',
-                      style: TextStyle(
-                        fontSize: 8.sp,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF177f81),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                    ),
-                  ),
-                ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
+              SizedBox(width: 3.w),
+              Flexible(
+                child: Text(
+                  '◉ $points ${loc.point_per_bid_ucf}',
+                  style: TextStyle(
+                    fontSize: 8.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF177f81),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
           ),
 
           // ═══ CTA — fixed size, right under the price row. ═══
@@ -487,19 +482,43 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
         children: [
           GestureDetector(
             onTap: _navigateToProductDetails,
-            child: Container(
-              color: const Color(0xFFf5fafd),
-              child: widget.image != null && widget.image!.isNotEmpty
-                  ? Image.network(
-                      widget.image!,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.image,
-                        size: 24.sp,
-                        color: Colors.grey,
-                      ),
-                    )
-                  : Icon(Icons.image, size: 24.sp, color: Colors.grey),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/image-background.png',
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      radius: .74,
+                      colors: [
+                        Color(0x36FFFFFF),
+                        Color(0x160ABFC4),
+                        Color(0x00071C35),
+                      ],
+                      stops: [0, .5, 1],
+                    ),
+                  ),
+                ),
+                widget.image != null && widget.image!.isNotEmpty
+                    ? Padding(
+                        padding: EdgeInsets.all(3.w),
+                        child: Image.network(
+                          widget.image!,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.image,
+                            size: 24.sp,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      )
+                    : Icon(Icons.image, size: 24.sp, color: Colors.white70),
+              ],
             ),
           ),
           if (showTimer)
@@ -576,17 +595,17 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
   Widget _buildSlideToBid(AppLocalizations loc) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxOffset = (constraints.maxWidth - _thumbSize - 6).clamp(
-          0.0,
-          double.infinity,
-        );
+        final maxOffset = (constraints.maxWidth - _thumbSize - 6)
+            .clamp(0.0, double.infinity)
+            .toDouble();
 
         return GestureDetector(
           onHorizontalDragStart: _onSlideStart,
           onHorizontalDragUpdate: (d) => _onSlideUpdate(d, maxOffset),
           onHorizontalDragEnd: (_) => _onSlideEnd(maxOffset),
           child: Container(
-            height: 36.h,
+            width: double.infinity,
+            height: 36,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment(-0.9, 0),
@@ -595,13 +614,6 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
               ),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: const Color(0x55FFFFFF)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x351597ba),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
             ),
             child: _isProcessing
                 ? Center(
@@ -618,8 +630,8 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                     children: [
                       Positioned(
                         left: 4.w + _slideOffset,
-                        top: 4.h,
-                        bottom: 4.h,
+                        top: 4,
+                        bottom: 4,
                         child: Container(
                           width: _thumbSize,
                           height: _thumbSize,

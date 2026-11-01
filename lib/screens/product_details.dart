@@ -291,63 +291,70 @@ class _ProductDetailsState extends State<ProductDetails> {
   // ============================================================
 
   Future<void> _fetchAllData() async {
-    if (mounted) setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final productData = await _productRepository.getProductDetails(
         slug: widget.slug,
       );
 
-      if (productData.detailedProducts != null &&
-          productData.detailedProducts!.isNotEmpty) {
-        _product = productData.detailedProducts![0];
-        _productImages = _product!.getAllImageUrls();
-        if (_currentImageIndex >= _productImages.length) {
-          _currentImageIndex = 0;
-        }
-
-        _startingBid = _parseAmount(_product!.startingBid);
-        final productHighestBid = _parseAmount(_product!.highestBid);
-        _currentHighestBid = max(_startingBid, productHighestBid);
-        _totalBids = _product!.totalBids ?? 0;
-        _highestBidder = _product!.lastBidderName ?? '';
-        // Point costs are user-specific. As on the Blade page, polling is the
-        // only authority; product details must never enable bidding with a
-        // stale/default cost.
-        _pointPerBid = null;
-        _pointPerBidCustom = null;
-        _reviewsCount = _product!.ratingCount ?? 0;
-        _rating = (_product!.rating ?? 0).toDouble();
-        final endingSeconds = _product!.swipeLeft;
-        _endingSeconds = endingSeconds != null && endingSeconds > 0
-            ? endingSeconds
-            : null;
-        _myStatus = _product!.myStatus;
-        _userHasBid = _myStatus != null || (_product!.userHasBid ?? false);
-        _buyNow = _product!.buyNow ?? 0;
-        _buyNowLink = _product!.buyNowLink ?? '';
-        _minNextBidNow = _currentHighestBid + 0.01;
-        _lastNotifiedBid = _currentHighestBid;
-
-        _determineAuctionStatus();
-
-        // Fetch the authoritative bid costs immediately instead of waiting
-        // for the first periodic tick.
-        await _pollData();
+      if (productData.detailedProducts == null ||
+          productData.detailedProducts!.isEmpty) {
+        throw StateError('Product details response was empty');
       }
 
-      await Future.wait([
-        _fetchComments(),
-        _fetchReviews(),
-        _fetchBidHistory(),
-        _fetchWishlistStatus(),
-        _fetchPointBalance(),
-      ]);
+      _product = productData.detailedProducts![0];
+      _productImages = _product!.getAllImageUrls();
+      if (_currentImageIndex >= _productImages.length) {
+        _currentImageIndex = 0;
+      }
 
+      _startingBid = _parseAmount(_product!.startingBid);
+      final productHighestBid = _parseAmount(_product!.highestBid);
+      _currentHighestBid = max(_startingBid, productHighestBid);
+      _totalBids = _product!.totalBids ?? 0;
+      _highestBidder = _product!.lastBidderName ?? '';
+      // Point costs are user-specific. As on the Blade page, polling is the
+      // only authority; product details must never enable bidding with a
+      // stale/default cost.
+      _pointPerBid = null;
+      _pointPerBidCustom = null;
+      _reviewsCount = _product!.ratingCount ?? 0;
+      _rating = (_product!.rating ?? 0).toDouble();
+      final endingSeconds = _product!.swipeLeft;
+      _endingSeconds = endingSeconds != null && endingSeconds > 0
+          ? endingSeconds
+          : null;
+      _myStatus = _product!.myStatus;
+      _userHasBid = _myStatus != null || (_product!.userHasBid ?? false);
+      _buyNow = _product!.buyNow ?? 0;
+      _buyNowLink = _product!.buyNowLink ?? '';
+      _minNextBidNow = _currentHighestBid + 0.01;
+      _lastNotifiedBid = _currentHighestBid;
+
+      _determineAuctionStatus();
+
+      // Render the core product immediately. Polling, comments, reviews,
+      // history, wishlist and balance must never block the whole page.
       if (mounted) setState(() => _isLoading = false);
+
+      unawaited(_pollData());
+      unawaited(_fetchComments());
+      unawaited(_fetchReviews());
+      unawaited(_fetchBidHistory());
+      unawaited(_fetchWishlistStatus());
+      unawaited(_fetchPointBalance());
     } catch (e) {
       print('Error fetching data: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -403,7 +410,7 @@ class _ProductDetailsState extends State<ProductDetails> {
       final response = await _productRepository.getProductComments(
         _product?.id ?? 0,
       );
-      if (response.success == true && response.comments != null) {
+      if (mounted && response.success == true && response.comments != null) {
         setState(() {
           _comments = response.comments!.reversed.toList();
           _isAtBottom = true;
@@ -421,7 +428,7 @@ class _ProductDetailsState extends State<ProductDetails> {
       final response = await _productRepository.getProductReviews(
         _product?.id ?? 0,
       );
-      if (response.success == true && response.reviews != null) {
+      if (mounted && response.success == true && response.reviews != null) {
         setState(() {
           _reviews = response.reviews!;
           _reviewsCount = _reviews.length;
@@ -437,7 +444,7 @@ class _ProductDetailsState extends State<ProductDetails> {
       final response = await _productRepository.getProductBidHistory(
         _product?.id ?? 0,
       );
-      if (response.success == true && response.bids != null) {
+      if (mounted && response.success == true && response.bids != null) {
         setState(() => _bidHistory = response.bids!);
       }
     } catch (e) {
@@ -451,7 +458,7 @@ class _ProductDetailsState extends State<ProductDetails> {
       final result = await _productRepository.getWishlistStatus(
         _product!.id ?? 0,
       );
-      if (result['success'] == true) {
+      if (mounted && result['success'] == true) {
         setState(() => _isInWishlist = result['isInWishlist'] ?? false);
       }
     } catch (e) {
@@ -463,7 +470,8 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (!is_logged_in.$) return;
     try {
       final response = await _profileRepository.getUserInfoResponse();
-      if (response.success == true &&
+      if (mounted &&
+          response.success == true &&
           response.data != null &&
           response.data!.isNotEmpty) {
         setState(() => _userInfo = response.data![0]);
@@ -1502,14 +1510,70 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading || _product == null) {
+    if (_isLoading && _product == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFf5f9fd),
-        body: _buildShimmer(),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildTopBar(),
+              Expanded(child: _buildShimmer()),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_product == null) {
+      final loc = AppLocalizations.of(context)!;
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F9FD),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildTopBar(),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.w),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.cloud_off_outlined,
+                          size: 48.sp,
+                          color: const Color(0xFF637A92),
+                        ),
+                        SizedBox(height: 12.h),
+                        Text(
+                          loc.failed_to_load_product_details,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: const Color(0xFF102C4C),
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 14.h),
+                        ElevatedButton.icon(
+                          onPressed: _fetchAllData,
+                          icon: const Icon(Icons.refresh),
+                          label: Text(loc.retry_ucf),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
+      extendBody: false,
       backgroundColor: const Color(0xFFf5f9fd),
       body: SafeArea(
         bottom: false,
@@ -2979,18 +3043,9 @@ class _ProductDetailsState extends State<ProductDetails> {
           ? loc.starts_soon_ucf
           : loc.status_ended_ucf;
       customText = sliderText;
-    } else if (_isBidSubmitting) {
-      sliderText = loc.sending_bid;
-      customText = _pointPerBidCustom == null
-          ? loc.loading_manual_bid_cost
-          : '${loc.manual_bid_ucf} → ${_formatPointCost(_pointPerBidCustom)} ${loc.points_plural_ucf}';
     } else {
-      sliderText = _pointPerBid == null
-          ? loc.loading_bid_cost
-          : '${loc.slide_to_bid_ucf} → ${_formatPointCost(_pointPerBid)} ${loc.points_plural_ucf}';
-      customText = _pointPerBidCustom == null
-          ? loc.loading_manual_bid_cost
-          : '${loc.manual_bid_ucf} → ${_formatPointCost(_pointPerBidCustom)} ${loc.points_plural_ucf}';
+      sliderText = loc.slide_to_bid_ucf;
+      customText = loc.manual_bid_ucf;
     }
 
     return SafeArea(
@@ -3025,7 +3080,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                       return Opacity(
                         opacity: sliderEnabled ? 1 : .5,
                         child: Container(
-                          height: 56.h,
+                          height: 56,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF0BBDBD), Color(0xFF1870D5)],
@@ -3071,7 +3126,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                               ),
                               Positioned(
                                 left: 5.w + _slideOffset,
-                                top: 5.h,
+                                top: 5,
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onHorizontalDragStart: sliderEnabled
@@ -3126,7 +3181,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                                       : null,
                                   child: Container(
                                     width: thumbWidth,
-                                    height: 46.h,
+                                    height: 46,
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(13.r),
@@ -3173,7 +3228,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                     child: Opacity(
                       opacity: customEnabled ? 1 : .5,
                       child: Container(
-                        height: 56.h,
+                        height: 56,
                         padding: EdgeInsets.symmetric(horizontal: 9.w),
                         decoration: BoxDecoration(
                           color: const Color(0xEDFFFFFF),

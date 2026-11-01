@@ -1578,7 +1578,8 @@
     "enter_amount_higher_current_bid": "Ingresa un monto mayor que la puja actual.",
     "each_bid_costs": "Cada puja cuesta",
     "auction_activity_upper": "ACTIVIDAD DE LA SUBASTA",
-    "unable_to_open_video_link": "No se puede abrir este enlace de video"
+    "unable_to_open_video_link": "No se puede abrir este enlace de video",
+    "retry_ucf": "Reintentar"
   
   
   }

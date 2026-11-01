@@ -1573,7 +1573,8 @@
   "enter_amount_higher_current_bid": "Enter an amount higher than the current bid.",
   "each_bid_costs": "Each bid costs",
   "auction_activity_upper": "AUCTION ACTIVITY",
-  "unable_to_open_video_link": "Unable to open this video link"
+  "unable_to_open_video_link": "Unable to open this video link",
+  "retry_ucf": "Retry"
 
 
 }

@@ -60,9 +60,24 @@ class _AllProductsState extends State<AllProducts> {
   }
 
   fetchData() async {
-    // ✅ Get ALL auctions
-    var productResponse = await ProductRepository().getAuctionProducts(
-        page: _page);
+    final repository = ProductRepository();
+    dynamic productResponse;
+    switch (widget.slug) {
+      case 'hot-auctions':
+        productResponse = await repository.getHotAuctions(page: _page);
+        break;
+      case 'ending-soon':
+        productResponse = await repository.getEndingSoonProducts(page: _page);
+        break;
+      case 'upcoming-auctions':
+        productResponse = await repository.getUpcomingProducts(page: _page);
+        break;
+      case 'ended-auctions':
+        productResponse = await repository.getEndedProducts(page: _page);
+        break;
+      default:
+        productResponse = await repository.getAuctionProducts(page: _page);
+    }
     _productList.addAll(productResponse.products!);
     _isInitial = false;
     _totalData = productResponse.meta!.total;
@@ -150,6 +165,14 @@ class _AllProductsState extends State<AllProducts> {
   }
 
   Container buildAppBarTitleOption(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final title = switch (widget.slug) {
+      'hot-auctions' => loc.hot_auctions,
+      'ending-soon' => loc.ending_soon,
+      'upcoming-auctions' => loc.upcoming,
+      'ended-auctions' => loc.ended_auctions_ucf,
+      _ => loc.all_auctions_ucf,
+    };
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 18),
       child: Row(
@@ -178,7 +201,7 @@ class _AllProductsState extends State<AllProducts> {
             padding: EdgeInsets.only(left: 10),
             width: DeviceInfo(context).width! / 2,
             child: Text(
-              AppLocalizations.of(context)!.all_auctions_ucf,
+              title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
@@ -284,9 +307,6 @@ class _AllProductsState extends State<AllProducts> {
                 
                 // Calculate spacing
                 double spacing = 14;
-                double cardWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
-                double cardHeight = cardWidth + 140; // Image + content height
-                
                 return MasonryGridView.count(
                   crossAxisCount: crossAxisCount,
                   mainAxisSpacing: spacing,
@@ -303,22 +323,23 @@ class _AllProductsState extends State<AllProducts> {
                       isActive = product.auctionEndDate > DateTime.now().millisecondsSinceEpoch ~/ 1000;
                     }
                     
-                    return SizedBox(
-                      height: cardHeight,
-                      child: ProductCard(
-                        id: product.id ?? 0,
-                        slug: product.slug ?? '',
-                        image: product.thumbnail_image,
-                        name: product.name,
-                        description: product.name ?? '', // Use name as description for now
-                        pointPerBid: product.pointPerBid,
-                        auctionEndDate: product.auctionEndDate,
-                        currentBid: product.highestBid,
-                        startingBid: product.startingBid,
-                        main_price: product.main_price,
-                        stroked_price: product.stroked_price,
-                        isAuctionActive: isActive,
-                      ),
+                    return ProductCard(
+                      id: product.id ?? 0,
+                      slug: product.slug ?? '',
+                      image: product.thumbnail_image,
+                      name: product.name,
+                      description: product.name ?? '',
+                      pointPerBid: product.pointPerBid,
+                      auctionEndDate: widget.slug == 'upcoming-auctions'
+                          ? 'Upcoming'
+                          : widget.slug == 'ended-auctions'
+                              ? 'Ended'
+                              : product.auctionEndDate,
+                      currentBid: product.highestBid,
+                      startingBid: product.startingBid,
+                      main_price: product.main_price,
+                      stroked_price: product.stroked_price,
+                      isAuctionActive: isActive,
                     );
                   },
                 );

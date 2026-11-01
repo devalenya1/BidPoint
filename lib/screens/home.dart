@@ -11,6 +11,7 @@ import 'package:active_ecommerce_flutter/presenter/home_presenter.dart';
 import 'package:active_ecommerce_flutter/repositories/category_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/category_products.dart';
+import 'package:active_ecommerce_flutter/screens/category_list.dart';
 import 'package:active_ecommerce_flutter/screens/all_products.dart';
 import 'package:active_ecommerce_flutter/screens/filter.dart';
 import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
@@ -1390,12 +1391,28 @@ Widget _buildCategorySectionHeader() {
             SizedBox(width: 12.w),
             GestureDetector(
               onTap: () {
+                if (homeData.selectedCategorySectionType == 'all') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CategoryList(
+                        slug: '',
+                        is_base_category: true,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CategoryProducts(
-                      slug: _getCategorySectionSlug(),
-                    ),
+                    builder: (_) =>
+                        homeData.selectedCategorySectionType == 'status'
+                            ? AllProducts(slug: _getCategorySectionSlug())
+                            : CategoryProducts(
+                                slug: _getCategorySectionSlug(),
+                              ),
                   ),
                 );
               },
@@ -1707,7 +1724,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                   _buildHotHead(onViewAll: () {
                     Navigator.push(context,
                         MaterialPageRoute(builder: (context) {
-                      return CategoryProducts(slug: 'hot-auctions');
+                      return AllProducts(slug: 'hot-auctions');
                     }));
                   }),
                   SizedBox(height: 18.h),
@@ -1935,7 +1952,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                     onViewAll: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) {
-                        return CategoryProducts(slug: 'ending-soon');
+                        return AllProducts(slug: 'ending-soon');
                       }));
                     },
                   ),
@@ -1996,7 +2013,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                     onViewAll: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) {
-                        return CategoryProducts(slug: 'upcoming-auctions');
+                        return AllProducts(slug: 'upcoming-auctions');
                       }));
                     },
                   ),
@@ -2066,7 +2083,7 @@ Widget _buildCategorySectionProducts(bool isMobile) {
                     onViewAll: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) {
-                        return CategoryProducts(slug: 'ended-auctions');
+                        return AllProducts(slug: 'ended-auctions');
                       }));
                     },
                   ),
