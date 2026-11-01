@@ -300,8 +300,8 @@
           "how_step2_desc": "If someone bids near the end, the clock resets (up to 60 seconds).",
           "how_step3_title": "Last bid wins",
           "how_step3_desc": "If no one outbids you before time runs out, you win.",
-          "how_note1": "In some auctions, bids cost more points as time runs out. You'll always see the cost before bidding.",
-          "how_note2": "Check Information → Product description for shipping details, delivery times, and refund policies.",
+          "how_note1": "You'll always see the bid cost before bidding.",
+          "how_note2": "Check Information → Product description for shipping details.",
           "search_products_brands_ucf": "Search products, brands...",
           "my_menu_ucf": "My menu",
           "rewards_ucf": "Rewards",
@@ -370,7 +370,7 @@
 
 
           "exit_ucf": "Exit",
-          "view_photos_ucf": "View",
+          "view_photos_ucf": "View photos",
           "please_login_to_continue_ucf": "Please login to continue",
 
 
@@ -1548,7 +1548,32 @@
   "order_summery": "Order Summery",
   "offline_payment_info": "Offline Payment Info",
   "payment_proof": "Payment Proof",
-  "back_ucf": "Back"
+  "back_ucf": "Back",
+  "you_ucf": "You",
+  "someone_ucf": "Someone",
+  "login_required_message": "You must log in to perform this action.",
+  "loading_bid_cost": "Loading bid cost…",
+  "loading_manual_bid_cost": "Loading manual cost…",
+  "sending_bid": "Sending bid…",
+  "buy_now_not_available": "Buy Now is not available",
+  "slide_all_the_way_to_bid": "Slide all the way to bid",
+  "seconds_left_short": "sec left",
+  "duration_days_compact": "d",
+  "duration_hours_compact": "h",
+  "duration_minutes_compact": "m",
+  "duration_seconds_compact": "s",
+  "information_ucf": "Information",
+  "add_to_favorites": "Add to favorites",
+  "remove_from_favorites": "Remove from favorites",
+  "auction_information": "Auction information",
+  "auction_information_description": "Auction details, product description, and direct purchase.",
+  "bidders_ucf": "Bidders",
+  "next_bid": "Next bid",
+  "product_materials_note": "Materials, dimensions, condition, and exact package contents must be confirmed by the seller.",
+  "enter_amount_higher_current_bid": "Enter an amount higher than the current bid.",
+  "each_bid_costs": "Each bid costs",
+  "auction_activity_upper": "AUCTION ACTIVITY",
+  "unable_to_open_video_link": "Unable to open this video link"
 
 
 }

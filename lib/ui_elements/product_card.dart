@@ -879,19 +879,43 @@ class _ProductCardState extends State<ProductCard> {
         children: [
           GestureDetector(
             onTap: _navigateToProduct,
-            child: Container(
-              color: const Color(0xFFf5fafd),
-              child: widget.image != null && widget.image!.isNotEmpty
-                  ? Image.network(
-                      widget.image!,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.image,
-                        size: 24.sp,
-                        color: Colors.grey,
-                      ),
-                    )
-                  : Icon(Icons.image, size: 24.sp, color: Colors.grey),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  'assets/image-background.png',
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      radius: .74,
+                      colors: [
+                        Color(0x36FFFFFF),
+                        Color(0x160ABFC4),
+                        Color(0x00071C35),
+                      ],
+                      stops: [0, .5, 1],
+                    ),
+                  ),
+                ),
+                widget.image != null && widget.image!.isNotEmpty
+                    ? Padding(
+                        padding: EdgeInsets.all(3.w),
+                        child: Image.network(
+                          widget.image!,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.image,
+                            size: 24.sp,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      )
+                    : Icon(Icons.image, size: 24.sp, color: Colors.white70),
+              ],
             ),
           ),
           Positioned(
@@ -951,7 +975,7 @@ class _ProductCardState extends State<ProductCard> {
           borderRadius: BorderRadius.circular(5.r),
         ),
         child: Text(
-          'COMPLETED',
+          loc.completed_ucf.toUpperCase(),
           style: TextStyle(
             fontSize: 7.sp,
             fontWeight: FontWeight.w900,
@@ -970,7 +994,7 @@ class _ProductCardState extends State<ProductCard> {
           borderRadius: BorderRadius.circular(5.r),
         ),
         child: Text(
-          'COMING SOON',
+          loc.coming_soon_ucf,
           style: TextStyle(
             fontSize: 7.sp,
             fontWeight: FontWeight.w900,

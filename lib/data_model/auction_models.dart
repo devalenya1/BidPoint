@@ -1,5 +1,40 @@
 import 'dart:convert';
 
+double? _doubleFromJson(dynamic value) {
+  if (value == null || value == '') return null;
+  if (value is num) return value.toDouble();
+
+  final normalized = value
+      .toString()
+      .replaceAll(',', '')
+      .replaceAll(RegExp(r'[^0-9.\-]'), '');
+  return double.tryParse(normalized);
+}
+
+int? _intFromJson(dynamic value) {
+  if (value == null || value == '') return null;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString());
+}
+
+bool? _boolFromJson(dynamic value) {
+  if (value == null) return null;
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+
+  switch (value.toString().trim().toLowerCase()) {
+    case '1':
+    case 'true':
+    case 'yes':
+      return true;
+    case '0':
+    case 'false':
+    case 'no':
+      return false;
+  }
+  return null;
+}
+
 // ============================================
 // 1. BID RESPONSE
 // ============================================
@@ -20,6 +55,10 @@ class BidResponse {
   bool? timeExtended;
   int? extendedBy;
   String? newEndDate;
+  double? balance;
+  double? pointsUsed;
+  double? pointPerBid;
+  double? pointPerBidCustom;
 
   BidResponse({
     this.success,
@@ -33,22 +72,40 @@ class BidResponse {
     this.timeExtended,
     this.extendedBy,
     this.newEndDate,
+    this.balance,
+    this.pointsUsed,
+    this.pointPerBid,
+    this.pointPerBidCustom,
   });
 
   factory BidResponse.fromJson(Map<String, dynamic> json) {
     final successValue = json['success'] ?? json['result'];
     return BidResponse(
-      success: successValue is bool ? successValue : null,
-      result: json['result'],
+      success: _boolFromJson(successValue),
+      result: _boolFromJson(json['result']),
       message: json['message'],
       bid: json['bid'],
-      pointsDeducted: json['points_deducted'] ?? json['pointsDeducted'],
-      remainingBalance: (json['remaining_balance'] ?? json['remainingBalance'])?.toDouble(),
-      nextMinBid: (json['next_min_bid'] ?? json['nextMinBid'])?.toDouble(),
-      currentHighest: (json['current_highest'] ?? json['currentHighest'])?.toDouble(),
-      timeExtended: json['time_extended'] ?? json['timeExtended'],
-      extendedBy: json['extended_by'] ?? json['extendedBy'],
-      newEndDate: json['new_end_date'] ?? json['newEndDate'],
+      pointsDeducted:
+          _intFromJson(json['points_deducted'] ?? json['pointsDeducted']),
+      remainingBalance: _doubleFromJson(
+          json['remaining_balance'] ?? json['remainingBalance']),
+      nextMinBid:
+          _doubleFromJson(json['next_min_bid'] ?? json['nextMinBid']),
+      currentHighest:
+          _doubleFromJson(json['current_highest'] ?? json['currentHighest']),
+      timeExtended:
+          _boolFromJson(json['time_extended'] ?? json['timeExtended']),
+      extendedBy: _intFromJson(json['extended_by'] ?? json['extendedBy']),
+      newEndDate: (json['new_end_date'] ?? json['newEndDate'])?.toString(),
+      balance: _doubleFromJson(json['balance'] ?? json['user_balance']),
+      pointsUsed: _doubleFromJson(json['points_used'] ??
+          json['pointsUsed'] ??
+          json['points_deducted'] ??
+          json['pointsDeducted']),
+      pointPerBid:
+          _doubleFromJson(json['point_per_bid'] ?? json['pointPerBid']),
+      pointPerBidCustom: _doubleFromJson(
+          json['point_per_bid_custom'] ?? json['pointPerBidCustom']),
     );
   }
 
@@ -64,6 +121,10 @@ class BidResponse {
     'time_extended': timeExtended,
     'extended_by': extendedBy,
     'new_end_date': newEndDate,
+    'balance': balance,
+    'points_used': pointsUsed,
+    'point_per_bid': pointPerBid,
+    'point_per_bid_custom': pointPerBidCustom,
   };
 
   // Snake case getters for backward compatibility
@@ -367,6 +428,7 @@ String pollDataResponseToJson(PollDataResponse data) =>
 class PollDataResponse {
   bool? success;
   String? auctionEndDate;
+  String? auctionStartDate;
   double? startingBid;
   double? pointPerBid;
   double? pointPerBidCustom;
@@ -400,6 +462,7 @@ class PollDataResponse {
   PollDataResponse({
     this.success,
     this.auctionEndDate,
+    this.auctionStartDate,
     this.startingBid,
     this.pointPerBid,
     this.pointPerBidCustom,
@@ -431,44 +494,64 @@ class PollDataResponse {
   factory PollDataResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'] ?? json;
 
-    // ═══ FIX: read balance from either root or data ═══
-    int? readBalance(dynamic raw) {
-      if (raw == null) return null;
-      if (raw is int) return raw;
-      if (raw is double) return raw.toInt();
-      if (raw is num) return raw.toInt();
-      return int.tryParse(raw.toString());
-    }
-
     return PollDataResponse(
-      success: json['success'],
-      auctionEndDate: data['auction_end_date'],
-      startingBid: (data['starting_bid'] ?? data['startingBid'])?.toDouble(),
-      pointPerBid: (data['point_per_bid'] ?? data['pointPerBid'])?.toDouble(),
-      pointPerBidCustom:
-          (data['point_per_bid_custom'] ?? data['pointPerBidCustom'])?.toDouble(),
-      auctionEnded: data['auction_ended'],
-      isEndingSoon: data['is_ending_soon'],
-      remainingSeconds: data['remaining_seconds'],
-      rating: data['rating']?.toDouble(),
-      reviewsCount: data['reviews_count'],
-      isInWishlist: data['is_in_wishlist'] ?? false,
-      highestBid: (data['highest_bid'] ?? data['highestBid'])?.toDouble(),
+      success: _boolFromJson(json['success']) ?? true,
+      auctionEndDate: (data['auction_end_date'] ??
+              data['auctionEndDate'] ??
+              json['auction_end_date'])
+          ?.toString(),
+      auctionStartDate: (data['auction_start_date'] ??
+              data['auctionStartDate'] ??
+              json['auction_start_date'])
+          ?.toString(),
+      startingBid:
+          _doubleFromJson(data['starting_bid'] ?? data['startingBid']),
+      pointPerBid:
+          _doubleFromJson(data['point_per_bid'] ?? data['pointPerBid']),
+      pointPerBidCustom: _doubleFromJson(
+          data['point_per_bid_custom'] ?? data['pointPerBidCustom']),
+      auctionEnded:
+          _boolFromJson(data['auction_ended'] ?? data['auctionEnded']),
+      isEndingSoon:
+          _boolFromJson(data['is_ending_soon'] ?? data['isEndingSoon']),
+      remainingSeconds:
+          _intFromJson(data['remaining_seconds'] ?? data['remainingSeconds']),
+      rating: _doubleFromJson(data['rating']),
+      reviewsCount:
+          _intFromJson(data['reviews_count'] ?? data['reviewsCount']),
+      isInWishlist: _boolFromJson(
+              data['is_in_wishlist'] ?? data['isInWishlist']) ??
+          false,
+      highestBid:
+          _doubleFromJson(data['highest_bid'] ?? data['highestBid']),
       highestBidFormatted: data['highest_bid_formatted'],
-      totalBids: data['total_bids'],
-      lastBidderName: data['last_bidder_name'],
-      lastBidAmount:
-          (data['last_bid_amount'] ?? data['lastBidAmount'])?.toDouble(),
-      isAuctionUpcoming: data['is_auction_upcoming'] ?? false,
-      upcomingStatus: data['upcoming_status'],
-      userHasBid: json['user_has_bid'] ?? false,
-      myStatus: data['my_status'],
-      buyNow: data['buy_now'],
-      payLink: data['pay_link'],
-      buyNowLink: json["buy_now_link"],
+      totalBids: _intFromJson(data['total_bids'] ?? data['totalBids']),
+      lastBidderName:
+          (data['last_bidder_name'] ?? data['lastBidderName'])?.toString(),
+      lastBidAmount: _doubleFromJson(
+          data['last_bid_amount'] ?? data['lastBidAmount']),
+      isAuctionUpcoming: _boolFromJson(data['is_auction_upcoming'] ??
+              data['isAuctionUpcoming']) ??
+          false,
+      upcomingStatus:
+          (data['upcoming_status'] ?? data['upcomingStatus'])?.toString(),
+      userHasBid: _boolFromJson(data['user_has_bid'] ??
+              data['userHasBid'] ??
+              json['user_has_bid'] ??
+              json['userHasBid']) ??
+          false,
+      myStatus:
+          _boolFromJson(data['my_status'] ?? data['myStatus']),
+      buyNow: _intFromJson(data['buy_now'] ?? data['buyNow']),
+      payLink: (data['pay_link'] ?? data['payLink'])?.toString(),
+      buyNowLink: (data['buy_now_link'] ??
+              data['buyNowLink'] ??
+              json['buy_now_link'] ??
+              json['buyNowLink'])
+          ?.toString(),
 
       // ═══ FIX: balance can be on data OR on the root json ═══
-      balance: readBalance(
+      balance: _intFromJson(
         data['balance'] ??
             data['user_balance'] ??
             data['points_balance'] ??
@@ -496,6 +579,7 @@ class PollDataResponse {
   Map<String, dynamic> toJson() => {
         'success': success,
         'auction_end_date': auctionEndDate,
+        'auction_start_date': auctionStartDate,
         'starting_bid': startingBid,
         'point_per_bid': pointPerBid,
         'point_per_bid_custom': pointPerBidCustom,
@@ -526,6 +610,7 @@ class PollDataResponse {
 
   // ============ SNAKE_CASE GETTERS ============
   String? get auction_end_date => auctionEndDate;
+  String? get auction_start_date => auctionStartDate;
   double? get starting_bid => startingBid;
   double? get point_per_bid => pointPerBid;
   double? get point_per_bid_custom => pointPerBidCustom;
@@ -681,9 +766,10 @@ class Winner {
 
   factory Winner.fromJson(Map<String, dynamic> json) {
     return Winner(
-      userId: json['user_id'] ?? json['userId'],
-      userName: json['user_name'] ?? json['userName'],
-      amount: (json['amount'])?.toDouble(),
+      userId: _intFromJson(json['user_id'] ?? json['userId'] ?? json['id']),
+      userName:
+          (json['user_name'] ?? json['userName'] ?? json['name'])?.toString(),
+      amount: _doubleFromJson(json['amount']),
       avatar: json['avatar'],
     );
   }
@@ -716,9 +802,10 @@ class BidHistoryItem {
 
   factory BidHistoryItem.fromJson(Map<String, dynamic> json) {
     return BidHistoryItem(
-      userId: json['user_id'] ?? json['userId'],
-      userName: json['user_name'] ?? json['userName'],
-      amount: (json['amount'])?.toDouble(),
+      userId: _intFromJson(json['user_id'] ?? json['userId']),
+      userName: (json['user_name'] ?? json['userName'] ?? json['name'])
+          ?.toString(),
+      amount: _doubleFromJson(json['amount']),
       createdAt: json['created_at'] ?? json['createdAt'],
     );
   }

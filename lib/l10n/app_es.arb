@@ -1265,7 +1265,7 @@
           "rewards_ucf": "Recompensas",
           "please_login_to_continue_ucf": "Por favor inicia sesión para continuar",
           "exit_ucf": "Salir",
-          "view_photos_ucf": "Ver",
+          "view_photos_ucf": "Ver fotos",
           "hot_live_trending_auctions": "Subastas en Vivo y Tendencias",
           "@hot_live_trending_auctions": {
             "description": "Hot auctions section headline"
@@ -1381,8 +1381,8 @@
             "how_step2_desc": "Si alguien puja cerca del final, el reloj se reinicia (hasta 60 segundos).",
             "how_step3_title": "La última puja gana",
             "how_step3_desc": "Si nadie te supera antes de que acabe el tiempo, ganas.",
-            "how_note1": "En algunas subastas, las pujas cuestan más puntos a medida que se acaba el tiempo. Siempre verás el costo antes de pujar.",
-            "how_note2": "Consulta Información → Descripción del producto para detalles de envío, tiempos de entrega y políticas de reembolso.",
+            "how_note1": "Siempre verás el costo de la puja antes de pujar.",
+            "how_note2": "Consulta Información → Descripción del producto para los detalles de envío.",
 
 
 
@@ -1553,7 +1553,32 @@
     "order_summery": "Resumen del pedido",
     "offline_payment_info": "Información de pago offline",
     "payment_proof": "Prueba de pago",
-    "back_ucf": "Volver"
+    "back_ucf": "Volver",
+    "you_ucf": "Tú",
+    "someone_ucf": "Alguien",
+    "login_required_message": "Debes iniciar sesión para realizar esta acción.",
+    "loading_bid_cost": "Cargando costo de la puja…",
+    "loading_manual_bid_cost": "Cargando costo manual…",
+    "sending_bid": "Enviando puja…",
+    "buy_now_not_available": "Comprar ahora no está disponible",
+    "slide_all_the_way_to_bid": "Desliza hasta el final para pujar",
+    "seconds_left_short": "seg restantes",
+    "duration_days_compact": "d",
+    "duration_hours_compact": "h",
+    "duration_minutes_compact": "min",
+    "duration_seconds_compact": "s",
+    "information_ucf": "Información",
+    "add_to_favorites": "Agregar a favoritos",
+    "remove_from_favorites": "Eliminar de favoritos",
+    "auction_information": "Información de la subasta",
+    "auction_information_description": "Detalles de la subasta, descripción del producto y compra directa.",
+    "bidders_ucf": "Postores",
+    "next_bid": "Próxima puja",
+    "product_materials_note": "Los materiales, dimensiones, condición y contenido exacto del paquete deben ser confirmados por el vendedor.",
+    "enter_amount_higher_current_bid": "Ingresa un monto mayor que la puja actual.",
+    "each_bid_costs": "Cada puja cuesta",
+    "auction_activity_upper": "ACTIVIDAD DE LA SUBASTA",
+    "unable_to_open_video_link": "No se puede abrir este enlace de video"
   
   
   }

@@ -324,7 +324,7 @@ class DetailedProduct {
         ? "No Description is available"
         : json['description'],
     downloads: json["downloads"],
-    videoLink: json["video_link"],
+    videoLink: json["video_link"] ?? json["video_link1"],
     link: json["link"],
     brand: json["brand"] != null ? Brand.fromJson(json["brand"]) : null,
     wholesale: json["wholesale"] != null
@@ -585,13 +585,31 @@ class DetailedProduct {
   }
   
   List<String> getVideoLinks() {
-    if (videoLink is String && (videoLink as String).isNotEmpty) {
-      return [videoLink as String];
+    final links = <String>[];
+
+    if (videoLink is String && (videoLink as String).trim().isNotEmpty) {
+      final value = (videoLink as String).trim();
+      if (value != '[]' && value.toLowerCase() != 'null') {
+        links.add(value);
+      }
     }
     if (videoLink is List) {
-      return List<String>.from(videoLink);
+      for (final value in videoLink as List) {
+        final dynamic rawLink = value is Map
+            ? (value['path'] ?? value['url'] ?? value['link'])
+            : value;
+        final link = rawLink?.toString().trim() ?? '';
+        if (link.isNotEmpty) links.add(link);
+      }
     }
-    return [];
+    if (videos != null) {
+      for (final video in videos!) {
+        final link = video.path?.trim() ?? '';
+        if (link.isNotEmpty) links.add(link);
+      }
+    }
+
+    return links.toSet().toList();
   }
   
   bool get hasVideos => getVideoLinks().isNotEmpty || (videos?.isNotEmpty ?? false);
@@ -675,9 +693,6 @@ class DetailedProduct {
   
   List<String> getAllImageUrls() {
     final List<String> urls = [];
-    if (thumbnailImage != null && thumbnailImage!.isNotEmpty) {
-      urls.add(thumbnailImage!);
-    }
     if (photos != null) {
       for (var photo in photos!) {
         if (photo.path != null && photo.path!.isNotEmpty) {
@@ -685,7 +700,10 @@ class DetailedProduct {
         }
       }
     }
-    return urls;
+    if (urls.isEmpty && thumbnailImage != null && thumbnailImage!.isNotEmpty) {
+      urls.add(thumbnailImage!);
+    }
+    return urls.toSet().toList();
   }
   
   double getStartingBidAsDouble() {

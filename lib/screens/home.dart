@@ -259,9 +259,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         hasUnreadMessages: _shouldShowMessageBadge,
         hasUnreadNotifications: _shouldShowNotificationBadge,
         userBalance: (_userInfo?.balance ?? 0).toInt(),
-        onSearchTap: () => Navigator.push(
+        onSearchSubmitted: (query) => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => Filter()),
+          MaterialPageRoute(
+            builder: (_) => Filter(initialSearchQuery: query.trim()),
+          ),
         ),
         onMessagesTap: () {
           if (is_logged_in.$) {
@@ -2821,7 +2823,7 @@ class _BpUtilityHeader extends StatefulWidget {
   final bool hasUnreadMessages;
   final bool hasUnreadNotifications;
   final int userBalance;
-  final VoidCallback onSearchTap;
+  final ValueChanged<String> onSearchSubmitted;
   final VoidCallback onMessagesTap;
   final VoidCallback onNotificationsTap;
   final VoidCallback onRewardsTap;
@@ -2834,7 +2836,7 @@ class _BpUtilityHeader extends StatefulWidget {
     required this.hasUnreadMessages,
     required this.hasUnreadNotifications,
     required this.userBalance,
-    required this.onSearchTap,
+    required this.onSearchSubmitted,
     required this.onMessagesTap,
     required this.onNotificationsTap,
     required this.onRewardsTap,
@@ -2850,6 +2852,7 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
   bool _menuOpen = false;
   OverlayEntry? _menuOverlay;
   final GlobalKey _menuBtnKey = GlobalKey();
+  final TextEditingController _searchController = TextEditingController();
 
   void _toggleMenu() {
     if (_menuOpen) {
@@ -2903,6 +2906,7 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
   @override
   void dispose() {
     _menuOverlay?.remove();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -2971,37 +2975,53 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
 
   Widget _buildSearch(bool isMobile) {
     final loc = AppLocalizations.of(context)!;
-    return GestureDetector(
-      onTap: widget.onSearchTap,
-      child: Container(
-        height: isMobile ? 36.h : 40.h,
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.w : 13.w),
-        decoration: BoxDecoration(
-          color: const Color(0xFFf0f7fb),
-          border: Border.all(color: const Color(0xFFd8e8f2)),
-          borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
+    return Container(
+      height: isMobile ? 36.h : 40.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFFf0f7fb),
+        border: Border.all(color: const Color(0xFFd8e8f2)),
+        borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
+      ),
+      child: TextField(
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        style: TextStyle(
+          fontSize: isMobile ? 11.sp : 13.sp,
+          color: const Color(0xFF173c59),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.search_rounded,
-              size: isMobile ? 17.sp : 19.sp,
+        decoration: InputDecoration(
+          hintText: loc.search_products_brands_ucf,
+          hintStyle: TextStyle(
+            fontSize: isMobile ? 11.sp : 13.sp,
+            color: const Color(0xFF6b8a9e),
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: isMobile ? 17.sp : 19.sp,
+            color: const Color(0xFF2d7894),
+          ),
+          prefixIconConstraints: BoxConstraints(
+            minWidth: isMobile ? 36.w : 42.w,
+          ),
+          suffixIcon: IconButton(
+            tooltip: loc.search_products_brands_ucf,
+            onPressed: () => widget.onSearchSubmitted(_searchController.text),
+            icon: Icon(
+              Icons.arrow_forward_rounded,
+              size: isMobile ? 16.sp : 18.sp,
               color: const Color(0xFF2d7894),
             ),
-            SizedBox(width: 9.w),
-            Expanded(
-              child: Text(
-                loc.search_products_brands_ucf,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isMobile ? 11.sp : 13.sp,
-                  color: const Color(0xFF6b8a9e),
-                ),
-              ),
-            ),
-          ],
+          ),
+          suffixIconConstraints: BoxConstraints(
+            minWidth: isMobile ? 36.w : 42.w,
+          ),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: isMobile ? 9.h : 10.h,
+          ),
         ),
+        onSubmitted: widget.onSearchSubmitted,
       ),
     );
   }

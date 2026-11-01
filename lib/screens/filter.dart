@@ -37,11 +37,13 @@ class Filter extends StatefulWidget {
     this.selected_filter = "product",
     this.categoryName,
     this.categoryId,
+    this.initialSearchQuery = '',
   }) : super(key: key);
 
   final String selected_filter;
   final String? categoryName;
   final int? categoryId;
+  final String initialSearchQuery;
 
   @override
   _FilterState createState() => _FilterState();
@@ -112,11 +114,20 @@ class _FilterState extends State<Filter> {
   @override
   void initState() {
     super.initState();
+    _searchKey = widget.initialSearchQuery.trim();
+    _searchController.text = _searchKey ?? '';
     _fetchFilteredCategories();
     _fetchProductData();
     _setupScrollListeners();
     _updateSortLabel();
     _fetchCounts();
+  }
+
+  @override
+  void dispose() {
+    _productScrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _updateSortLabel() {
@@ -657,37 +668,52 @@ class _FilterState extends State<Filter> {
     final isMobile = MediaQuery.of(context).size.width < 700;
     final loc = AppLocalizations.of(context)!;
 
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        height: isMobile ? 36.h : 40.h,
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.w : 13.w),
-        decoration: BoxDecoration(
-          color: const Color(0xFFf0f7fb),
-          border: Border.all(color: const Color(0xFFd8e8f2)),
-          borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
+    return Container(
+      height: isMobile ? 36.h : 40.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFFf0f7fb),
+        border: Border.all(color: const Color(0xFFd8e8f2)),
+        borderRadius: BorderRadius.circular(isMobile ? 11.r : 14.r),
+      ),
+      child: TextField(
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        style: TextStyle(
+          fontSize: isMobile ? 11.sp : 13.sp,
+          color: const Color(0xFF173C59),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.search_rounded,
-              size: isMobile ? 17.sp : 19.sp,
-              color: const Color(0xFF2d7894),
-            ),
-            SizedBox(width: 9.w),
-            Expanded(
-              child: Text(
-                loc.search_products_brands_ucf,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isMobile ? 11.sp : 13.sp,
-                  color: const Color(0xFF6b8a9e),
+        decoration: InputDecoration(
+          hintText: loc.search_products_brands_ucf,
+          hintStyle: TextStyle(
+            fontSize: isMobile ? 11.sp : 13.sp,
+            color: const Color(0xFF6b8a9e),
+          ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: isMobile ? 17.sp : 19.sp,
+            color: const Color(0xFF2d7894),
+          ),
+          prefixIconConstraints: BoxConstraints(
+            minWidth: isMobile ? 36.w : 42.w,
+          ),
+          suffixIcon: _searchController.text.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    _searchKey = '';
+                    _onSearchSubmit();
+                  },
+                  icon: Icon(Icons.close, size: isMobile ? 16.sp : 18.sp),
                 ),
-              ),
-            ),
-          ],
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(vertical: isMobile ? 9.h : 10.h),
         ),
+        onChanged: (value) {
+          setState(() => _searchKey = value.trim());
+        },
+        onSubmitted: (_) => _onSearchSubmit(),
       ),
     );
   }
