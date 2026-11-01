@@ -476,7 +476,18 @@ class _ProductDetailsState extends State<ProductDetails>
       }
 
       if (newBalance != null && newBalance >= 0) {
-        if (mounted) {
+        // Some refresh responses briefly report zero before the real balance
+        // is available. Keep the last known positive value instead of making
+        // the wallet flash to zero and back again.
+        if (newBalance == 0 && _pointBalance > 0) {
+          if (mounted && _isPointBalanceLoading) {
+            setState(() => _isPointBalanceLoading = false);
+          }
+          return;
+        }
+
+        final balanceChanged = newBalance != _pointBalance;
+        if (mounted && (balanceChanged || _isPointBalanceLoading)) {
           setState(() {
             _pointBalance = newBalance!;
             _isPointBalanceLoading = false;
@@ -486,7 +497,7 @@ class _ProductDetailsState extends State<ProductDetails>
             response.data != null &&
             response.data!.isNotEmpty &&
             response.data![0].balance != null;
-        if (fromServer) {
+        if (fromServer && balanceChanged) {
           points_balance.$ = newBalance.toString();
           points_balance.save();
         }
@@ -502,6 +513,7 @@ class _ProductDetailsState extends State<ProductDetails>
   void _applyBalanceFromPoll(PollDataResponse response) {
     final b = response.balance;
     if (b == null || b < 0) return;
+    if (b == 0 && _pointBalance > 0) return;
     if (b == _pointBalance) return;
     _pointBalance = b;
     _isPointBalanceLoading = false;
@@ -1164,7 +1176,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
   String _formatTimeLeft(Duration d) {
     if (d.isNegative) d = Duration.zero;
-    final loc = AppLocalizations.of(context)!;
 
     final days = d.inDays;
     final h = d.inHours.remainder(24);
@@ -1176,15 +1187,12 @@ class _ProductDetailsState extends State<ProductDetails>
     final ss = s.toString().padLeft(2, '0');
 
     if (days > 0) {
-      return '$days${loc.duration_days_compact} '
-          '$hh${loc.duration_hours_compact}';
+      return '${days}d ${hh}h';
     }
     if (d.inHours > 0) {
-      return '$hh${loc.duration_hours_compact} '
-          '$mm${loc.duration_minutes_compact}';
+      return '${hh}h ${mm}m';
     }
-    return '$mm${loc.duration_minutes_compact} '
-        '$ss${loc.duration_seconds_compact}';
+    return '${mm}m ${ss}s';
   }
 
   String _formatDateTime(String? dateTime) {
@@ -1373,7 +1381,10 @@ class _ProductDetailsState extends State<ProductDetails>
                 ? const Icon(Icons.image, color: Colors.white54, size: 60)
                 : Image.network(
                     _productImages[_currentImageIndex],
+                    width: double.infinity,
+                    height: double.infinity,
                     fit: BoxFit.cover,
+                    alignment: Alignment.center,
                     errorBuilder: (_, __, ___) =>
                         const Icon(Icons.image, color: Colors.white54, size: 60),
                   ),
@@ -2378,7 +2389,7 @@ class _ProductDetailsState extends State<ProductDetails>
   // ============================================================
   Widget _buildBuyNowCard({bool inModal = false}) {
     final loc = AppLocalizations.of(context)!;
-    final compact = inModal || _screenWidth < 600;
+    final compact = _screenWidth < 600;
     final icon = Container(
       width: compact ? 38.w : 42.w,
       height: compact ? 38.w : 42.w,
@@ -2444,11 +2455,11 @@ class _ProductDetailsState extends State<ProductDetails>
               ),
       ),
     );
-    return Container(
-      margin: inModal
-          ? EdgeInsets.zero
-          : EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 22.h),
-      padding: EdgeInsets.all(compact ? 13.w : 15.w),
+    final card = Container(
+      width: double.infinity,
+      padding: compact
+          ? EdgeInsets.all(13.w)
+          : EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18.r),
@@ -2475,6 +2486,24 @@ class _ProductDetailsState extends State<ProductDetails>
                 button,
               ],
             ),
+    );
+
+    if (inModal) return card;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 16.w : 18.w,
+        compact ? 16.h : 18.h,
+        compact ? 16.w : 18.w,
+        compact ? 22.h : 24.h,
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: card,
+        ),
+      ),
     );
   }
 
@@ -2891,8 +2920,11 @@ class _ProductDetailsState extends State<ProductDetails>
 
     showDialog(
       context: context,
+      barrierColor: const Color(0x9C06152C),
       builder: (ctx) => Dialog(
         insetPadding: EdgeInsets.all(16.w),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(25.r),
         ),
@@ -2902,6 +2934,18 @@ class _ProductDetailsState extends State<ProductDetails>
             maxHeight: MediaQuery.of(context).size.height - 32.h,
           ),
           padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 18.h),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25.r),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x5506172D),
+                blurRadius: 90,
+                offset: Offset(0, 30),
+              ),
+            ],
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2918,6 +2962,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           style: TextStyle(
                             fontSize: 22.sp,
                             fontWeight: FontWeight.w800,
+                            color: const Color(0xFF102C4C),
                           ),
                         ),
                       ),
@@ -2958,6 +3003,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w800,
+                    color: const Color(0xFF102C4C),
                   ),
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(

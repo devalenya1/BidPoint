@@ -1542,11 +1542,21 @@ Widget _buildCategorySectionProducts(bool isMobile) {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: buildProductCard(products[0])),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [buildProductCard(products[0])],
+                  ),
+                ),
                 SizedBox(width: isMobile ? 8.w : 18.w),
                 Expanded(
                   child: products.length > 1
-                      ? buildProductCard(products[1])
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [buildProductCard(products[1])],
+                        )
                       : const SizedBox.shrink(),
                 ),
               ],
