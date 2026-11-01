@@ -1662,19 +1662,17 @@ Widget _buildCategorySectionProducts(bool isMobile) {
     if (limited.isEmpty) return const SizedBox.shrink();
 
     // ALWAYS 2 columns side by side — on mobile AND desktop.
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: cardBuilder(context, limited[0])),
-          SizedBox(width: isMobile ? 8.w : 18.w),
-          Expanded(
-            child: limited.length > 1
-                ? cardBuilder(context, limited[1])
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: cardBuilder(context, limited[0])),
+        SizedBox(width: isMobile ? 8.w : 18.w),
+        Expanded(
+          child: limited.length > 1
+              ? cardBuilder(context, limited[1])
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 

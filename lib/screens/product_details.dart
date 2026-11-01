@@ -65,6 +65,10 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   bool _userInteractedWithComments = false;
   bool _isAtBottom = true;
+  String? _bidNotificationName;
+  double? _bidNotificationAmount;
+  bool _bidNotificationLeaving = false;
+  Timer? _bidNotificationTimer;
 
   // =========================
   // TIMER / AUCTION STATE
@@ -180,6 +184,7 @@ class _ProductDetailsState extends State<ProductDetails>
     _upcomingTimer?.cancel();
     _bellTimer?.cancel();
     _balanceRefreshTimer?.cancel();
+    _bidNotificationTimer?.cancel();
     _commentController.dispose();
     _bidController.dispose();
     _reviewController.dispose();
@@ -504,6 +509,12 @@ class _ProductDetailsState extends State<ProductDetails>
           await _productRepository.pollProductData(_product!.id ?? 0);
       if (response.success != true) return;
 
+      final incomingBid = response.highestBid;
+      final hasNewBid = incomingBid != null && incomingBid > _currentHighestBid;
+      final incomingBidder = response.lastBidderName?.isNotEmpty == true
+          ? response.lastBidderName!
+          : AppLocalizations.of(context)!.someone_ucf;
+
       setState(() {
         _applyBalanceFromPoll(response);
 
@@ -518,13 +529,7 @@ class _ProductDetailsState extends State<ProductDetails>
         if (response.startingBid != null) _startingBid = response.startingBid!;
 
         if (response.highestBid != null) {
-          final old = _currentHighestBid;
           _currentHighestBid = response.highestBid!;
-          if (_currentHighestBid > old && response.lastBidderName != null) {
-            ToastComponent.showInfo(
-              '${response.lastBidderName} ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(_currentHighestBid)}',
-            );
-          }
         }
 
         if (response.totalBids != null) _totalBids = response.totalBids!;
@@ -633,6 +638,10 @@ class _ProductDetailsState extends State<ProductDetails>
         }
       });
 
+      if (hasNewBid && incomingBid != null) {
+        _showBidNotification(incomingBidder, incomingBid);
+      }
+
       if (response.balance == null || response.balance! <= 0) {
         await _fetchPointBalance(silent: true);
       }
@@ -731,6 +740,38 @@ class _ProductDetailsState extends State<ProductDetails>
       );
       ToastComponent.tickSoundPlaying = true;
     } catch (_) {}
+  }
+
+  Future<void> _showBidNotification(String name, double amount) async {
+    _bidNotificationTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _bidNotificationName = name;
+      _bidNotificationAmount = amount;
+      _bidNotificationLeaving = false;
+      _isAtBottom = true;
+      _userInteractedWithComments = false;
+    });
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(
+        AssetSource('sounds/bid_notification.wav'),
+        mode: PlayerMode.lowLatency,
+      );
+    } catch (_) {}
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    _bidNotificationTimer = Timer(const Duration(milliseconds: 4250), () {
+      if (!mounted) return;
+      setState(() => _bidNotificationLeaving = true);
+      _bidNotificationTimer = Timer(const Duration(milliseconds: 250), () {
+        if (!mounted) return;
+        setState(() {
+          _bidNotificationName = null;
+          _bidNotificationAmount = null;
+          _bidNotificationLeaving = false;
+        });
+      });
+    });
   }
 
   // ============================================================
@@ -1346,7 +1387,7 @@ class _ProductDetailsState extends State<ProductDetails>
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(color: border),
@@ -1356,19 +1397,19 @@ class _ProductDetailsState extends State<ProductDetails>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 7.w,
-            height: 7.w,
+            width: 9.w,
+            height: 9.w,
             decoration: const BoxDecoration(
               color: Color(0xFF9EFFD6),
               shape: BoxShape.circle,
             ),
           ),
-          SizedBox(width: 6.w),
+          SizedBox(width: 8.w),
           Text(
             label,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 11.sp,
+              fontSize: 13.sp,
               fontWeight: FontWeight.w800,
               height: 1.2,
             ),
@@ -1385,19 +1426,19 @@ class _ProductDetailsState extends State<ProductDetails>
           icon: Icons.more_vert,
           onTap: () => setState(() => _showMoreMenu = !_showMoreMenu),
         ),
-        SizedBox(height: 9.h),
+        SizedBox(height: 10.h),
         _actionCircle(
           icon: Icons.share_outlined,
           onTap: () {
             Share.share(_product?.link ?? AppConfig.RAW_BASE_URL);
           },
         ),
-        SizedBox(height: 9.h),
+        SizedBox(height: 10.h),
         _actionCircle(
           icon: Icons.play_arrow_rounded,
           onTap: _openVideoModal,
         ),
-        SizedBox(height: 9.h),
+        SizedBox(height: 10.h),
         _actionCircle(
           icon: Icons.history,
           onTap: _openBidHistoryModal,
@@ -1410,14 +1451,14 @@ class _ProductDetailsState extends State<ProductDetails>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 43.w,
-        height: 43.w,
+        width: 48.w,
+        height: 48.w,
         decoration: BoxDecoration(
           color: const Color(0xB5071D35),
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0x75FFFFFF)),
         ),
-        child: Icon(icon, color: Colors.white, size: 18.sp),
+        child: Icon(icon, color: Colors.white, size: 22.sp),
       ),
     );
   }
@@ -1537,13 +1578,17 @@ class _ProductDetailsState extends State<ProductDetails>
       mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(
-          child: _comments.isEmpty
+          child: _comments.isEmpty && _bidNotificationName == null
               ? const SizedBox.shrink()
               : ListView.builder(
                   controller: _commentsScrollController,
                   padding: EdgeInsets.zero,
-                  itemCount: _comments.length,
+                  itemCount:
+                      _comments.length + (_bidNotificationName == null ? 0 : 1),
                   itemBuilder: (context, i) {
+                    if (i == _comments.length) {
+                      return _buildBidNotification();
+                    }
                     final c = _comments[i];
                     return Padding(
                       padding: EdgeInsets.only(bottom: 6.h),
@@ -1652,6 +1697,57 @@ class _ProductDetailsState extends State<ProductDetails>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBidNotification() {
+    final name = _bidNotificationName;
+    final amount = _bidNotificationAmount;
+    if (name == null || amount == null) return const SizedBox.shrink();
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 250),
+      opacity: _bidNotificationLeaving ? 0 : 1,
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 250),
+        offset: _bidNotificationLeaving ? const Offset(0, .12) : Offset.zero,
+        child: Padding(
+          padding: EdgeInsets.only(left: 35.w, bottom: 8.h),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: const Color(0xD90A5546),
+            borderRadius: BorderRadius.circular(13.r),
+            border: Border.all(color: const Color(0x25FFFFFF)),
+          ),
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                color: const Color(0xFFA4FFF2),
+                fontSize: 14.sp,
+                height: 1.45,
+              ),
+              children: [
+                const TextSpan(text: '✦ '),
+                TextSpan(
+                  text: name,
+                  style: const TextStyle(
+                    color: Color(0xFF7BE8E9),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text:
+                      ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(amount)}',
+                ),
+              ],
+            ),
+          ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
