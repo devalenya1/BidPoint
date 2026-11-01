@@ -2525,9 +2525,7 @@ class _ProductDetailsState extends State<ProductDetails>
             '${_formatPointCost(_pointPerBid)} ${loc.points_plural_ucf}';
     final customText = !isLive
         ? inactiveText
-        : '${loc.manual_bid_ucf} → '
-            '${_formatPointCost(_pointPerBidCustom)} '
-            '${loc.points_plural_ucf}';
+        : '${loc.manual_bid_ucf}';
 
     return SafeArea(
       top: false,
