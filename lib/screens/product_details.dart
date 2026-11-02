@@ -2521,7 +2521,7 @@ class _ProductDetailsState extends State<ProductDetails>
         : loc.ended_ucf;
     final sliderText = !isLive
         ? inactiveText
-        : '${loc.slide_to_bid_ucf} → '
+        : '${loc.slide_to_bid_ucf} - '
             '${_formatPointCost(_pointPerBid)} ${loc.points_plural_ucf}';
     final customText = !isLive
         ? inactiveText
