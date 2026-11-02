@@ -1731,13 +1731,15 @@ class _ProductDetailsState extends State<ProductDetails>
                       );
                     }
                     final c = _comments[i];
+                    final hasAvatar = c.userAvatar?.trim().isNotEmpty == true;
+                    final userName = c.userName?.trim() ?? '';
                     return Padding(
                       padding: EdgeInsets.only(bottom: 6.h),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          if (c.userAvatar != null && c.userAvatar!.isNotEmpty)
+                          if (hasAvatar)
                             ClipOval(
                               child: Image.network(
                                 c.userAvatar!,
@@ -1747,8 +1749,22 @@ class _ProductDetailsState extends State<ProductDetails>
                                 errorBuilder: (_, __, ___) => const SizedBox(),
                               ),
                             ),
-                          if (c.userAvatar != null && c.userAvatar!.isNotEmpty)
-                            SizedBox(width: 6.w),
+                          if (!hasAvatar)
+                            CircleAvatar(
+                              radius: 14.w,
+                              backgroundColor: const Color(0xFF7BE8E9),
+                              child: Text(
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : 'U',
+                                style: TextStyle(
+                                  color: const Color(0xFF102C4C),
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          SizedBox(width: 6.w),
                           Flexible(
                             child: Container(
                               padding: EdgeInsets.symmetric(
