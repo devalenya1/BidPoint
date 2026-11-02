@@ -474,13 +474,15 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      radius: .74,
+                      center: Alignment(-.18, .22),
+                      radius: .82,
                       colors: [
-                        Color(0x36FFFFFF),
-                        Color(0x160ABFC4),
+                        Color(0x7A55DDFF),
+                        Color(0x4D22AFFF),
+                        Color(0x1F0B71E0),
                         Color(0x00071C35),
                       ],
-                      stops: [0, .5, 1],
+                      stops: [0, .26, .62, 1],
                     ),
                   ),
                 ),

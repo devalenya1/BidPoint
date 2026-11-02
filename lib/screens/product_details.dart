@@ -29,6 +29,13 @@ import 'package:share_plus/share_plus.dart';
 import '../data_model/auction_models.dart';
 import '../data_model/user_info_response.dart';
 
+class _BidNotification {
+  final String name;
+  final double amount;
+
+  const _BidNotification({required this.name, required this.amount});
+}
+
 class ProductDetails extends StatefulWidget {
   final String slug;
   ProductDetails({Key? key, required this.slug}) : super(key: key);
@@ -66,10 +73,7 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   bool _userInteractedWithComments = false;
   bool _isAtBottom = true;
-  String? _bidNotificationName;
-  double? _bidNotificationAmount;
-  bool _bidNotificationLeaving = false;
-  Timer? _bidNotificationTimer;
+  final List<_BidNotification> _bidNotifications = [];
 
   // =========================
   // TIMER / AUCTION STATE
@@ -186,7 +190,6 @@ class _ProductDetailsState extends State<ProductDetails>
     _upcomingTimer?.cancel();
     _bellTimer?.cancel();
     _balanceRefreshTimer?.cancel();
-    _bidNotificationTimer?.cancel();
     _commentController.dispose();
     _bidController.dispose();
     _reviewController.dispose();
@@ -826,12 +829,9 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   Future<void> _showBidNotification(String name, double amount) async {
-    _bidNotificationTimer?.cancel();
     if (!mounted) return;
     setState(() {
-      _bidNotificationName = name;
-      _bidNotificationAmount = amount;
-      _bidNotificationLeaving = false;
+      _bidNotifications.add(_BidNotification(name: name, amount: amount));
       _isAtBottom = true;
       _userInteractedWithComments = false;
     });
@@ -843,18 +843,6 @@ class _ProductDetailsState extends State<ProductDetails>
       );
     } catch (_) {}
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-    _bidNotificationTimer = Timer(const Duration(milliseconds: 4250), () {
-      if (!mounted) return;
-      setState(() => _bidNotificationLeaving = true);
-      _bidNotificationTimer = Timer(const Duration(milliseconds: 250), () {
-        if (!mounted) return;
-        setState(() {
-          _bidNotificationName = null;
-          _bidNotificationAmount = null;
-          _bidNotificationLeaving = false;
-        });
-      });
-    });
   }
 
   // ============================================================
@@ -1366,11 +1354,11 @@ class _ProductDetailsState extends State<ProductDetails>
       margin: EdgeInsets.zero,
       height: stageHeight,
       decoration: const BoxDecoration(
-        color: Color(0xFF142337),
-        image: DecorationImage(
-          image: AssetImage('assets/image-background.png'),
-          fit: BoxFit.cover,
-        ),
+        color: Colors.white,
+        // image: DecorationImage(
+        //   image: AssetImage('assets/image-background.png'),
+        //   fit: BoxFit.cover,
+        // ),
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
@@ -1399,11 +1387,11 @@ class _ProductDetailsState extends State<ProductDetails>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x25051C29),
+                      Color(0x85051629),
                       Colors.transparent,
                       Colors.transparent,
-                      Color(0x65051425),
-                      Color(0xB5051121),
+                      Color(0x94051425),
+                      Color(0xF7051121),
                     ],
                     stops: [0.0, 0.22, 0.4, 0.65, 1.0],
                   ),
@@ -1730,16 +1718,17 @@ class _ProductDetailsState extends State<ProductDetails>
       mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(
-          child: _comments.isEmpty && _bidNotificationName == null
+          child: _comments.isEmpty && _bidNotifications.isEmpty
               ? const SizedBox.shrink()
               : ListView.builder(
                   controller: _commentsScrollController,
                   padding: EdgeInsets.zero,
-                  itemCount:
-                      _comments.length + (_bidNotificationName == null ? 0 : 1),
+                  itemCount: _comments.length + _bidNotifications.length,
                   itemBuilder: (context, i) {
-                    if (i == _comments.length) {
-                      return _buildBidNotification();
+                    if (i >= _comments.length) {
+                      return _buildBidNotification(
+                        _bidNotifications[i - _comments.length],
+                      );
                     }
                     final c = _comments[i];
                     return Padding(
@@ -1852,50 +1841,39 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  Widget _buildBidNotification() {
-    final name = _bidNotificationName;
-    final amount = _bidNotificationAmount;
-    if (name == null || amount == null) return const SizedBox.shrink();
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 250),
-      opacity: _bidNotificationLeaving ? 0 : 1,
-      child: AnimatedSlide(
-        duration: const Duration(milliseconds: 250),
-        offset: _bidNotificationLeaving ? const Offset(0, .12) : Offset.zero,
-        child: Padding(
-          padding: EdgeInsets.only(left: 35.w, bottom: 8.h),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: const Color(0xD90A5546),
-                borderRadius: BorderRadius.circular(13.r),
-                border: Border.all(color: const Color(0x25FFFFFF)),
+  Widget _buildBidNotification(_BidNotification notification) {
+    return Padding(
+      padding: EdgeInsets.only(left: 35.w, bottom: 8.h),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: const Color(0xD90A5546),
+            borderRadius: BorderRadius.circular(13.r),
+            border: Border.all(color: const Color(0x25FFFFFF)),
+          ),
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                color: const Color(0xFFA4FFF2),
+                fontSize: 14.sp,
+                height: 1.45,
               ),
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    color: const Color(0xFFA4FFF2),
-                    fontSize: 14.sp,
-                    height: 1.45,
+              children: [
+                const TextSpan(text: '✦ '),
+                TextSpan(
+                  text: notification.name,
+                  style: const TextStyle(
+                    color: Color(0xFF7BE8E9),
+                    fontWeight: FontWeight.w700,
                   ),
-                  children: [
-                    const TextSpan(text: '✦ '),
-                    TextSpan(
-                      text: name,
-                      style: const TextStyle(
-                        color: Color(0xFF7BE8E9),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    TextSpan(
-                      text:
-                          ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(amount)}',
-                    ),
-                  ],
                 ),
-              ),
+                TextSpan(
+                  text:
+                      ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(notification.amount)}',
+                ),
+              ],
             ),
           ),
         ),
