@@ -1363,7 +1363,7 @@ class _ProductDetailsState extends State<ProductDetails>
       clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
-          // ── Main image — cover
+          // ── Main image — contained on the white photo background
           Positioned.fill(
             child: _productImages.isEmpty
                 ? const Icon(Icons.image, color: Colors.white54, size: 60)
@@ -1371,7 +1371,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     _productImages[_currentImageIndex],
                     width: double.infinity,
                     height: double.infinity,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     alignment: Alignment.center,
                     errorBuilder: (_, __, ___) =>
                         const Icon(Icons.image, color: Colors.white54, size: 60),
