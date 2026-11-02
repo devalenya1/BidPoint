@@ -333,15 +333,15 @@ class _UpcomingCardState extends State<UpcomingCard> {
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: Alignment(-.18, .22),
-                      radius: .82,
+                      center: Alignment.center,
+                      radius: .80,
                       colors: [
-                        Color(0x7A55DDFF),
-                        Color(0x4D22AFFF),
-                        Color(0x1F0B71E0),
-                        Color(0x00071C35),
+                        Color(0xB8FFFFFF),
+                        Color(0x7AF6FCFF),
+                        Color(0x2ED8F5FF),
+                        Color(0x00FFFFFF),
                       ],
-                      stops: [0, .26, .62, 1],
+                      stops: [.10, .16, .32, 1],
                     ),
                   ),
                 ),
