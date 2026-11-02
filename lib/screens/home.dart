@@ -2910,19 +2910,19 @@ class _BpUtilityHeaderState extends State<_BpUtilityHeader> {
             fontSize: isMobile ? 11.sp : 13.sp,
             color: const Color(0xFF6b8a9e),
           ),
-          // prefixIcon: Icon(
-          //   Icons.search_rounded,
-          //   size: isMobile ? 17.sp : 19.sp,
-          //   color: const Color(0xFF2d7894),
-          // ),
-          // prefixIconConstraints: BoxConstraints(
-          //   minWidth: isMobile ? 36.w : 42.w,
-          // ),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: isMobile ? 17.sp : 19.sp,
+            color: const Color(0xFF2d7894),
+          ),
+          prefixIconConstraints: BoxConstraints(
+            minWidth: isMobile ? 36.w : 42.w,
+          ),
           suffixIcon: IconButton(
             tooltip: loc.search_products_brands_ucf,
             onPressed: () => widget.onSearchSubmitted(_searchController.text),
             icon: Icon(
-              Icons.search_rounded,
+              Icons.arrow_forward_rounded,
               size: isMobile ? 16.sp : 18.sp,
               color: const Color(0xFF2d7894),
             ),
