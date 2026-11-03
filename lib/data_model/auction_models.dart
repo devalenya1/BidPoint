@@ -654,6 +654,7 @@ class Comment {
   String? userAvatar;
   String? comment;
   String? likes;
+  int? offers;
   String? createdAt;
 
   Comment({
@@ -663,6 +664,7 @@ class Comment {
     this.userAvatar,
     this.comment,
     this.likes,
+    this.offers,
     this.createdAt,
   });
 
@@ -674,6 +676,7 @@ class Comment {
       userAvatar: json['user_avatar'] ?? json['userAvatar'],
       comment: json['comment'],
       likes: json['likes']?.toString(),
+      offers: _intFromJson(json['offers'] ?? json['offer']) ?? 0,
       createdAt: json['created_at'] ?? json['createdAt'],
     );
   }
@@ -685,6 +688,7 @@ class Comment {
     'user_avatar': userAvatar,
     'comment': comment,
     'likes': likes,
+    'offers': offers,
     'created_at': createdAt,
   };
 
@@ -695,6 +699,7 @@ class Comment {
   String? get created_at => createdAt;
   
   int get likesCount => int.tryParse(likes ?? '0') ?? 0;
+  bool get isOffer => offers == 1;
 }
 
 

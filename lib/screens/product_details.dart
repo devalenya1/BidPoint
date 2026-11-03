@@ -29,13 +29,6 @@ import 'package:share_plus/share_plus.dart';
 import '../data_model/auction_models.dart';
 import '../data_model/user_info_response.dart';
 
-class _BidNotification {
-  final String name;
-  final double amount;
-
-  const _BidNotification({required this.name, required this.amount});
-}
-
 class ProductDetails extends StatefulWidget {
   final String slug;
   ProductDetails({Key? key, required this.slug}) : super(key: key);
@@ -73,7 +66,6 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isEndingSoon = false;
   bool _userInteractedWithComments = false;
   bool _isAtBottom = true;
-  final List<_BidNotification> _bidNotifications = [];
 
   // =========================
   // TIMER / AUCTION STATE
@@ -548,9 +540,6 @@ class _ProductDetailsState extends State<ProductDetails>
 
       final incomingBid = response.highestBid;
       final hasNewBid = incomingBid != null && incomingBid > _currentHighestBid;
-      final incomingBidder = response.lastBidderName?.isNotEmpty == true
-          ? response.lastBidderName!
-          : AppLocalizations.of(context)!.someone_ucf;
 
       setState(() {
         _applyBalanceFromPoll(response);
@@ -706,7 +695,7 @@ class _ProductDetailsState extends State<ProductDetails>
       });
 
       if (hasNewBid && incomingBid != null) {
-        _showBidNotification(incomingBidder, incomingBid);
+        _playBidNotificationSound();
       }
 
       if (response.balance == null || response.balance! <= 0) {
@@ -828,13 +817,7 @@ class _ProductDetailsState extends State<ProductDetails>
     } catch (_) {}
   }
 
-  Future<void> _showBidNotification(String name, double amount) async {
-    if (!mounted) return;
-    setState(() {
-      _bidNotifications.add(_BidNotification(name: name, amount: amount));
-      _isAtBottom = true;
-      _userInteractedWithComments = false;
-    });
+  Future<void> _playBidNotificationSound() async {
     try {
       await _audioPlayer.stop();
       await _audioPlayer.play(
@@ -842,7 +825,6 @@ class _ProductDetailsState extends State<ProductDetails>
         mode: PlayerMode.lowLatency,
       );
     } catch (_) {}
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
   // ============================================================
@@ -1718,19 +1700,15 @@ class _ProductDetailsState extends State<ProductDetails>
       mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(
-          child: _comments.isEmpty && _bidNotifications.isEmpty
+          child: _comments.isEmpty
               ? const SizedBox.shrink()
               : ListView.builder(
                   controller: _commentsScrollController,
                   padding: EdgeInsets.zero,
-                  itemCount: _comments.length + _bidNotifications.length,
+                  itemCount: _comments.length,
                   itemBuilder: (context, i) {
-                    if (i >= _comments.length) {
-                      return _buildBidNotification(
-                        _bidNotifications[i - _comments.length],
-                      );
-                    }
                     final c = _comments[i];
+                    if (c.isOffer) return _buildOfferComment(c);
                     final hasAvatar = c.userAvatar?.trim().isNotEmpty == true;
                     final userName = c.userName?.trim() ?? '';
                     return Padding(
@@ -1857,7 +1835,13 @@ class _ProductDetailsState extends State<ProductDetails>
     );
   }
 
-  Widget _buildBidNotification(_BidNotification notification) {
+  Widget _buildOfferComment(Comment comment) {
+    final userName = comment.userName?.trim();
+    final amount = double.tryParse(
+          (comment.comment ?? '').replaceAll(',', ''),
+        ) ??
+        0;
+
     return Padding(
       padding: EdgeInsets.only(left: 35.w, bottom: 8.h),
       child: Align(
@@ -1879,7 +1863,7 @@ class _ProductDetailsState extends State<ProductDetails>
               children: [
                 const TextSpan(text: '✦ '),
                 TextSpan(
-                  text: notification.name,
+                  text: userName?.isNotEmpty == true ? userName : 'User',
                   style: const TextStyle(
                     color: Color(0xFF7BE8E9),
                     fontWeight: FontWeight.w700,
@@ -1887,7 +1871,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 ),
                 TextSpan(
                   text:
-                      ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(notification.amount)}',
+                      ' ${AppLocalizations.of(context)!.placed_a_bid_of} ${_formatPrice(amount)}',
                 ),
               ],
             ),

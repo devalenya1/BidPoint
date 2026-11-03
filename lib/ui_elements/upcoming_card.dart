@@ -334,14 +334,14 @@ class _UpcomingCardState extends State<UpcomingCard> {
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
                       center: Alignment.center,
-                      radius: .80,
+                      radius: .70,
                       colors: [
                         Color(0xB8FFFFFF),
                         Color(0x7AF6FCFF),
                         Color(0x2ED8F5FF),
                         Color(0x00FFFFFF),
                       ],
-                      stops: [.10, .16, .32, 1],
+                      stops: [.20, .20, .42, 1],
                     ),
                   ),
                 ),
