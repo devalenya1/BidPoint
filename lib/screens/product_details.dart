@@ -1253,7 +1253,7 @@ class _ProductDetailsState extends State<ProductDetails>
             errorBuilder: (_, __, ___) => Text(
               'Logo',
               style: TextStyle(
-                  fontSize: 16.sp,
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1),
             ),
@@ -1277,7 +1277,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   : Text(
                       '✦ $_pointBalance ${AppLocalizations.of(context)!.points_ucf}',
                       style: TextStyle(
-                        fontSize: 11.sp,
+                        fontSize: 8.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF007d7f),
                       ),
@@ -1307,7 +1307,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         ? AppLocalizations.of(context)!.exit_ucf ?? 'Exit'
                         : AppLocalizations.of(context)!.login_ucf,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 8.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF1870d5),
                     ),
@@ -1459,7 +1459,8 @@ class _ProductDetailsState extends State<ProductDetails>
                   '$remaining',
                   style: TextStyle(
                     color: const Color(0xFF102C4C),
-                    fontSize: min(40.sp, _screenWidth * .08),
+                    fontSize:
+                        max(0.0, min(40.sp, _screenWidth * .08) - 3.sp),
                     fontWeight: FontWeight.w800,
                     shadows: const [
                       Shadow(color: Colors.white, blurRadius: 4),
@@ -1470,7 +1471,8 @@ class _ProductDetailsState extends State<ProductDetails>
                   AppLocalizations.of(context)!.seconds_left_short,
                   style: TextStyle(
                     color: const Color(0xCC102C4C),
-                    fontSize: min(12.sp, _screenWidth * .02),
+                    fontSize:
+                        max(0.0, min(12.sp, _screenWidth * .02) - 3.sp),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1531,7 +1533,7 @@ class _ProductDetailsState extends State<ProductDetails>
             label,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 13.sp,
+              fontSize: 10.sp,
               fontWeight: FontWeight.w800,
               height: 1.2,
             ),
@@ -1615,7 +1617,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   Text(
                     AppLocalizations.of(context)!.options_ucf,
                     style: TextStyle(
-                        fontSize: 13.sp,
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF102C4C)),
                   ),
@@ -1681,7 +1683,7 @@ class _ProductDetailsState extends State<ProductDetails>
             Text(
               label,
               style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF102C4C)),
             ),
@@ -1737,7 +1739,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                     : 'U',
                                 style: TextStyle(
                                   color: const Color(0xFF102C4C),
-                                  fontSize: 12.sp,
+                                  fontSize: 9.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -1756,7 +1758,7 @@ class _ProductDetailsState extends State<ProductDetails>
                               child: RichText(
                                 text: TextSpan(
                                   style: TextStyle(
-                                    fontSize: 12.sp,
+                                    fontSize: 9.sp,
                                     color: Colors.white,
                                     height: 1.4,
                                   ),
@@ -1795,14 +1797,14 @@ class _ProductDetailsState extends State<ProductDetails>
                   ),
                   child: TextField(
                     controller: _commentController,
-                    style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                    style: TextStyle(color: Colors.white, fontSize: 10.sp),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       isCollapsed: true,
                       contentPadding: EdgeInsets.symmetric(vertical: 12.h),
                       hintText: AppLocalizations.of(context)!.type_in_chat_ucf,
                       hintStyle: TextStyle(
-                          color: const Color(0xFFD1DBE6), fontSize: 13.sp),
+                          color: const Color(0xFFD1DBE6), fontSize: 10.sp),
                     ),
                     onSubmitted: (_) => _sendComment(),
                   ),
@@ -1857,7 +1859,7 @@ class _ProductDetailsState extends State<ProductDetails>
             text: TextSpan(
               style: TextStyle(
                 color: const Color(0xFFA4FFF2),
-                fontSize: 14.sp,
+                fontSize: 11.sp,
                 height: 1.45,
               ),
               children: [
@@ -1904,7 +1906,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             AppLocalizations.of(context)!.product_photos_ucf,
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: 8.sp,
               fontWeight: FontWeight.w900,
               color: const Color(0xFF102C4C),
             ),
@@ -1929,7 +1931,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     AppLocalizations.of(context)!.view_photos_ucf ??
                         'View photos',
                     style: TextStyle(
-                        fontSize: 11.sp,
+                        fontSize: 8.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF087E99)),
                   ),
@@ -1981,7 +1983,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             '${_currentImageIndex + 1} / ${_productImages.length}',
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: 7.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF637A92),
             ),
@@ -2012,7 +2014,7 @@ class _ProductDetailsState extends State<ProductDetails>
                       Text(
                         '${index + 1} / ${_productImages.length}',
                         style: TextStyle(
-                            fontSize: 14.sp,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF102C4C)),
                       ),
@@ -2037,8 +2039,36 @@ class _ProductDetailsState extends State<ProductDetails>
                   child: PageView.builder(
                     controller: PageController(initialPage: index),
                     itemCount: _productImages.length,
-                    itemBuilder: (_, i) => PhotoView(
-                      imageProvider: NetworkImage(_productImages[i]),
+                    itemBuilder: (_, i) => Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/image-background.png',
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.high,
+                        ),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: Alignment.center,
+                              radius: .70,
+                              colors: [
+                                Color(0xB8FFFFFF),
+                                Color(0x7AF6FCFF),
+                                Color(0x2ED8F5FF),
+                                Color(0x00FFFFFF),
+                              ],
+                              stops: [.20, .20, .42, 1],
+                            ),
+                          ),
+                        ),
+                        PhotoView(
+                          imageProvider: NetworkImage(_productImages[i]),
+                          backgroundDecoration: const BoxDecoration(
+                            color: Colors.transparent,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -2072,7 +2102,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             _product?.name ?? '',
             style: TextStyle(
-              fontSize: 20.sp,
+              fontSize: 17.sp,
               fontWeight: FontWeight.w900,
               color: const Color(0xFF102C4C),
               letterSpacing: -0.5,
@@ -2119,7 +2149,7 @@ class _ProductDetailsState extends State<ProductDetails>
             label,
             textAlign: TextAlign.left,
             style: TextStyle(
-              fontSize: 9.sp,
+              fontSize: 6.sp,
               fontWeight: FontWeight.w600,
               color: labelColor ?? const Color(0xFF637A92),
               height: 1.3,
@@ -2130,7 +2160,7 @@ class _ProductDetailsState extends State<ProductDetails>
           SizedBox(height: 2.h),
           DefaultTextStyle(
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: 11.sp,
               fontWeight: FontWeight.w900,
               color: valueColor ?? const Color(0xFF102C4C),
               fontFeatures: const [ui.FontFeature.tabularFigures()],
@@ -2248,7 +2278,7 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             AppLocalizations.of(context)!.how_title,
             style: TextStyle(
-              fontSize: 21.sp,
+              fontSize: 18.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF102C4C),
               letterSpacing: -0.45,
@@ -2257,7 +2287,7 @@ class _ProductDetailsState extends State<ProductDetails>
           SizedBox(height: 4.h),
           Text(
             AppLocalizations.of(context)!.how_subtitle,
-            style: TextStyle(fontSize: 10.5.sp, color: const Color(0xFF637A92)),
+            style: TextStyle(fontSize: 7.5.sp, color: const Color(0xFF637A92)),
           ),
           SizedBox(height: 19.h),
           if (isMobile)
@@ -2288,13 +2318,13 @@ class _ProductDetailsState extends State<ProductDetails>
           Text(
             AppLocalizations.of(context)!.how_note1,
             style: TextStyle(
-                fontSize: 12.sp, color: const Color(0xFF637A92), height: 1.5),
+                fontSize: 9.sp, color: const Color(0xFF637A92), height: 1.5),
           ),
           SizedBox(height: 8.h),
           Text(
             AppLocalizations.of(context)!.how_note2,
             style: TextStyle(
-                fontSize: 12.sp, color: const Color(0xFF637A92), height: 1.5),
+                fontSize: 9.sp, color: const Color(0xFF637A92), height: 1.5),
           ),
         ],
       ),
@@ -2327,12 +2357,12 @@ class _ProductDetailsState extends State<ProductDetails>
               s['num']!,
               style: TextStyle(
                   color: Colors.white,
-                  fontSize: 12.5.sp,
+                  fontSize: 9.5.sp,
                   fontWeight: FontWeight.w800),
             ),
           ),
           SizedBox(width: 9.w),
-          Text(s['icon']!, style: TextStyle(fontSize: 23.sp, height: 1.15)),
+          Text(s['icon']!, style: TextStyle(fontSize: 20.sp, height: 1.15)),
           SizedBox(width: 9.w),
           Expanded(
             child: Column(
@@ -2341,7 +2371,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 Text(
                   s['title']!,
                   style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 9.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF102C4C),
                       height: 1.35),
@@ -2350,7 +2380,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 Text(
                   s['desc']!,
                   style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 8.sp,
                       color: const Color(0xFF637A92),
                       height: 1.48),
                 ),
@@ -2388,7 +2418,7 @@ class _ProductDetailsState extends State<ProductDetails>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 15.sp,
+            fontSize: 12.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF102C4C),
           ),
@@ -2398,7 +2428,7 @@ class _ProductDetailsState extends State<ProductDetails>
           loc.buy_now_subtitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 11.sp, color: const Color(0xFF637A92)),
+          style: TextStyle(fontSize: 8.sp, color: const Color(0xFF637A92)),
         ),
       ],
     );
@@ -2426,7 +2456,7 @@ class _ProductDetailsState extends State<ProductDetails>
             : Text(
                 loc.buy_now_ucf,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 9.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF00869C),
                 ),
@@ -2618,7 +2648,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 12.sp,
+                                    fontSize: 9.sp,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
@@ -2685,7 +2715,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         Text(
                           '▦',
                           style: TextStyle(
-                            fontSize: 17.sp,
+                            fontSize: 14.sp,
                             color: const Color(0xFF1163A8),
                           ),
                         ),
@@ -2696,7 +2726,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF1163A8),
                             ),
@@ -2735,7 +2765,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: Text(
                       'Auction information',
                       style: TextStyle(
-                          fontSize: 20.sp, fontWeight: FontWeight.w800),
+                          fontSize: 17.sp, fontWeight: FontWeight.w800),
                     ),
                   ),
                   IconButton(
@@ -2747,7 +2777,7 @@ class _ProductDetailsState extends State<ProductDetails>
               Text(
                 'Auction details, product description, and direct purchase.',
                 style:
-                    TextStyle(fontSize: 13.sp, color: const Color(0xFF637A92)),
+                    TextStyle(fontSize: 10.sp, color: const Color(0xFF637A92)),
               ),
               SizedBox(height: 12.h),
               Flexible(
@@ -2789,7 +2819,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             Text(
                               'Product description',
                               style: TextStyle(
-                                  fontSize: 14.sp, fontWeight: FontWeight.w800),
+                                  fontSize: 11.sp, fontWeight: FontWeight.w800),
                             ),
                             SizedBox(height: 8.h),
                             Html(
@@ -2798,7 +2828,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 "body": Style(
                                   margin: Margins.zero,
                                   padding: HtmlPaddings.zero,
-                                  fontSize: FontSize(13.sp),
+                                  fontSize: FontSize(10.sp),
                                 ),
                               },
                             ),
@@ -2806,7 +2836,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             Text(
                               'Materials, dimensions, condition, and exact package contents must be confirmed by the seller.',
                               style: TextStyle(
-                                  fontSize: 11.sp,
+                                  fontSize: 8.sp,
                                   color: const Color(0xFF637A92)),
                             ),
                           ],
@@ -2839,7 +2869,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: Text(
                       AppLocalizations.of(context)!.close_ucf,
                       style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 11.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF102C4C)),
                     ),
@@ -2864,14 +2894,14 @@ class _ProductDetailsState extends State<ProductDetails>
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 12.sp, color: const Color(0xFF637A92)),
+            style: TextStyle(fontSize: 9.sp, color: const Color(0xFF637A92)),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 6.h),
           Text(
             value,
             style: TextStyle(
-                fontSize: 18.sp,
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF102C4C)),
             textAlign: TextAlign.center,
@@ -2936,7 +2966,7 @@ class _ProductDetailsState extends State<ProductDetails>
                         child: Text(
                           loc.your_bid_ucf,
                           style: TextStyle(
-                            fontSize: 22.sp,
+                            fontSize: 19.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF102C4C),
                           ),
@@ -2966,7 +2996,7 @@ class _ProductDetailsState extends State<ProductDetails>
                   '${_formatPointCost(_pointPerBidCustom)} '
                   '${loc.points_plural_ucf}.',
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 11.sp,
                     color: const Color(0xFF637A92),
                   ),
                 ),
@@ -2977,7 +3007,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     decimal: true,
                   ),
                   style: TextStyle(
-                    fontSize: 20.sp,
+                    fontSize: 17.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF102C4C),
                   ),
@@ -3025,7 +3055,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           child: Text(
                             loc.close_ucf,
                             style: TextStyle(
-                              fontSize: 14.sp,
+                              fontSize: 11.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF102C4C),
                             ),
@@ -3061,7 +3091,7 @@ class _ProductDetailsState extends State<ProductDetails>
                             child: Text(
                               loc.confirm_bid_ucf,
                               style: TextStyle(
-                                fontSize: 14.sp,
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
@@ -3123,7 +3153,7 @@ class _ProductDetailsState extends State<ProductDetails>
                     child: Text(
                       AppLocalizations.of(context)!.bid_history_ucf,
                       style: TextStyle(
-                          fontSize: 20.sp, fontWeight: FontWeight.w800),
+                          fontSize: 17.sp, fontWeight: FontWeight.w800),
                     ),
                   ),
                   IconButton(
@@ -3135,7 +3165,7 @@ class _ProductDetailsState extends State<ProductDetails>
               Text(
                 '$_totalBids ${_totalBids == 1 ? AppLocalizations.of(context)!.bid_singular_ucf : AppLocalizations.of(context)!.bids_plural_ucf} · ${AppLocalizations.of(context)!.newest_first_ucf}',
                 style:
-                    TextStyle(fontSize: 12.sp, color: const Color(0xFF637A92)),
+                    TextStyle(fontSize: 9.sp, color: const Color(0xFF637A92)),
               ),
               SizedBox(height: 12.h),
               Flexible(
@@ -3146,7 +3176,7 @@ class _ProductDetailsState extends State<ProductDetails>
                           child: Text(
                             AppLocalizations.of(context)!.no_bids_yet_ucf,
                             style: TextStyle(
-                                fontSize: 14.sp,
+                                fontSize: 11.sp,
                                 color: const Color(0xFF637A92)),
                           ),
                         ),
@@ -3165,7 +3195,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 Text(
                                   '#${(_bidHistory.length - i).toString().padLeft(2, '0')}',
                                   style: TextStyle(
-                                      fontSize: 11.sp,
+                                      fontSize: 8.sp,
                                       color: const Color(0xFF94A5B7)),
                                 ),
                                 SizedBox(width: 10.w),
@@ -3179,13 +3209,13 @@ class _ProductDetailsState extends State<ProductDetails>
                                             AppLocalizations.of(context)!
                                                 .user_ucf,
                                         style: TextStyle(
-                                            fontSize: 14.sp,
+                                            fontSize: 11.sp,
                                             fontWeight: FontWeight.w700),
                                       ),
                                       Text(
                                         _formatDateTime(b.createdAt),
                                         style: TextStyle(
-                                            fontSize: 11.sp,
+                                            fontSize: 8.sp,
                                             color: const Color(0xFF637A92)),
                                       ),
                                     ],
@@ -3194,7 +3224,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                 Text(
                                   _formatPrice(b.amount ?? 0),
                                   style: TextStyle(
-                                      fontSize: 14.sp,
+                                      fontSize: 11.sp,
                                       fontWeight: FontWeight.w800,
                                       color: const Color(0xFF007E94)),
                                 ),
@@ -3240,12 +3270,12 @@ class _ProductDetailsState extends State<ProductDetails>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🏆', style: TextStyle(fontSize: 48.sp)),
+              Text('🏆', style: TextStyle(fontSize: 45.sp)),
               SizedBox(height: 8.h),
               Text(
                 AppLocalizations.of(context)!.auction_ended_exclamation,
                 style: TextStyle(
-                    fontSize: 22.sp,
+                    fontSize: 19.sp,
                     fontWeight: FontWeight.w800,
                     color: Colors.white),
               ),
@@ -3262,7 +3292,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 _winnerData!.userName ??
                     AppLocalizations.of(context)!.winner_ucf,
                 style: TextStyle(
-                    fontSize: 18.sp,
+                    fontSize: 15.sp,
                     fontWeight: FontWeight.w800,
                     color: Colors.white),
               ),
@@ -3270,14 +3300,14 @@ class _ProductDetailsState extends State<ProductDetails>
               Text(
                 _formatPrice(_winnerData!.amount ?? 0),
                 style: TextStyle(
-                    fontSize: 22.sp,
+                    fontSize: 19.sp,
                     fontWeight: FontWeight.w800,
                     color: Colors.amber),
               ),
               SizedBox(height: 12.h),
               Text(
                 AppLocalizations.of(context)!.congratulations_to_winner,
-                style: TextStyle(fontSize: 13.sp, color: Colors.white70),
+                style: TextStyle(fontSize: 10.sp, color: Colors.white70),
               ),
               SizedBox(height: 16.h),
               ElevatedButton(
@@ -3296,7 +3326,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 child: Text(
                   AppLocalizations.of(context)!.close_ucf,
                   style: TextStyle(
-                      fontSize: 14.sp,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w800,
                       color: MyTheme.accent_color),
                 ),
