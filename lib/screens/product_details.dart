@@ -2680,7 +2680,7 @@ class _ProductDetailsState extends State<ProductDetails>
                                         ),
                                       )
                                     : Icon(
-                                        Icons.arrow_forward_rounded,
+                                        Icons.chevron_right,
                                         size: 23.sp,
                                         color: const Color(0xFF1870D5),
                                       ),
