@@ -35,19 +35,23 @@ class SliderResponse {
 class AIZSlider {
   AIZSlider({
     this.photo,
-    this.url
+    this.url,
+    this.videoUrl,
   });
 
   String? photo;
   String? url;
+  String? videoUrl;
 
   factory AIZSlider.fromJson(Map<String, dynamic> json) => AIZSlider(
     photo: json["photo"],
     url: json["url"],
+    videoUrl: json["video_url"],
   );
 
   Map<String, dynamic> toJson() => {
     "photo": photo,
-    "url":url
+    "url": url,
+    "video_url": videoUrl,
   };
 }

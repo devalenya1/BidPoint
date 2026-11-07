@@ -649,7 +649,7 @@ class _HotAuctionCardState extends State<HotAuctionCard> {
                             ],
                           ),
                           child: Icon(
-                            Icons.arrow_forward_rounded,
+                            Icons.chevron_right,
                             size: 16.sp,
                             color: const Color(0xFF078c9f),
                           ),
