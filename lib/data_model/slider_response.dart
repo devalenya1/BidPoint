@@ -36,7 +36,7 @@ class AIZSlider {
   AIZSlider({
     this.photo,
     this.url,
-    this.videoUrl,
+    this.video_url,
   });
 
   String? photo;
