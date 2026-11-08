@@ -43,11 +43,14 @@ class AIZSlider {
   String? url;
   String? video_url;
 
-  factory AIZSlider.fromJson(Map<String, dynamic> json) => AIZSlider(
-    photo: json["photo"],
-    url: json["url"],
-    video_url: json["video_url"],
-  );
+  factory AIZSlider.fromJson(Map<String, dynamic> json) {
+    final videoUrl = json["video_url"] ?? json["video_link"];
+    return AIZSlider(
+      photo: json["photo"],
+      url: json["url"],
+      video_url: videoUrl?.toString(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "photo": photo,

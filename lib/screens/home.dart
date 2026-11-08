@@ -25,6 +25,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data_model/user_info_response.dart';
 
@@ -437,7 +438,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
           SizedBox(height: 18.h),
           GestureDetector(
-            onTap: _showBidPointsVideoPopup,
+            onTap: _openBidPointsVideo,
             child: Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isMobile ? 14.w : 22.w,
@@ -635,88 +636,91 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  void _showBidPointsVideoPopup() {
-    showDialog(
-      context: context,
-      barrierColor: const Color(0xB8071c35),
-      builder: (ctx) {
-        return Center(
-          child: Padding(
-            padding: EdgeInsets.all(18.w),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 480),
-              padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 22.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20.r),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x88000000), blurRadius: 60),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.bp_video_title,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF143957),
-                        ),
-                      ),
-                      SizedBox(height: 10.h),
-                      Text(
-                        AppLocalizations.of(context)!.bp_video_subtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: const Color(0xFF59738b),
-                          height: 1.6,
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      Container(
-                        height: 150.h,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF0c365d), Color(0xFF0c8e9c)],
-                          ),
-                          borderRadius: BorderRadius.circular(13.r),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          AppLocalizations.of(context)!.bp_video_placeholder,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    right: -12.w,
-                    top: -8.h,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 22),
-                      color: const Color(0xFF31516b),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+  String? _findBidPointsVideoUrl() {
+    for (final slider in homeData.carouselImageList) {
+      final videoUrl = slider.video_url?.trim();
+      if (videoUrl != null && videoUrl.isNotEmpty) return videoUrl;
+    }
+    return null;
+  }
+
+  Uri? _youtubeWatchUri(String rawUrl) {
+    var value = rawUrl.trim().replaceAll('&amp;', '&');
+    if (value.isEmpty) return null;
+
+    final iframeSource = RegExp(
+      r'''src\s*=\s*["']([^"']+)["']''',
+      caseSensitive: false,
+    ).firstMatch(value);
+    if (iframeSource != null) value = iframeSource.group(1)!;
+
+    final idPattern = RegExp(r'^[a-zA-Z0-9_-]{11}$');
+    String? videoId;
+
+    if (idPattern.hasMatch(value)) {
+      videoId = value;
+    } else {
+      if (value.startsWith('//')) {
+        value = 'https:$value';
+      } else if (!value.contains('://')) {
+        value = 'https://$value';
+      }
+
+      final uri = Uri.tryParse(value);
+      if (uri != null) {
+        final host = uri.host.toLowerCase();
+        final isYouTubeHost = host == 'youtube.com' ||
+            host.endsWith('.youtube.com') ||
+            host == 'youtube-nocookie.com' ||
+            host.endsWith('.youtube-nocookie.com');
+
+        if (host == 'youtu.be' || host.endsWith('.youtu.be')) {
+          if (uri.pathSegments.isNotEmpty) videoId = uri.pathSegments.first;
+        } else if (isYouTubeHost) {
+          videoId = uri.queryParameters['v'];
+          if (videoId == null && uri.pathSegments.length >= 2) {
+            const videoPaths = {'embed', 'shorts', 'live', 'v'};
+            if (videoPaths.contains(uri.pathSegments.first.toLowerCase())) {
+              videoId = uri.pathSegments[1];
+            }
+          }
+        }
+      }
+    }
+
+    if (videoId == null || !idPattern.hasMatch(videoId)) return null;
+    return Uri.https('www.youtube.com', '/watch', {'v': videoId});
+  }
+
+  Future<void> _openBidPointsVideo() async {
+    final rawUrl = _findBidPointsVideoUrl();
+    final youtubeUri = rawUrl == null ? null : _youtubeWatchUri(rawUrl);
+
+    if (youtubeUri == null) {
+      ToastComponent.showInfo(
+        AppLocalizations.of(context)!.no_video_available_ucf,
+      );
+      return;
+    }
+
+    try {
+      final opened = await launchUrl(
+        youtubeUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (opened || !mounted) return;
+    } catch (_) {
+      if (!mounted) return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CommonWebviewScreen(
+          page_name: AppLocalizations.of(context)!.bp_video_title,
+          url: youtubeUri.toString(),
+        ),
+      ),
     );
   }
 
