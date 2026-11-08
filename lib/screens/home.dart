@@ -25,7 +25,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data_model/user_info_response.dart';
 
@@ -692,7 +691,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     return Uri.https('www.youtube.com', '/watch', {'v': videoId});
   }
 
-  Future<void> _openBidPointsVideo() async {
+  void _openBidPointsVideo() {
     final rawUrl = _findBidPointsVideoUrl();
     final youtubeUri = rawUrl == null ? null : _youtubeWatchUri(rawUrl);
 
@@ -701,16 +700,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         AppLocalizations.of(context)!.no_video_available_ucf,
       );
       return;
-    }
-
-    try {
-      final opened = await launchUrl(
-        youtubeUri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (opened || !mounted) return;
-    } catch (_) {
-      if (!mounted) return;
     }
 
     Navigator.push(
