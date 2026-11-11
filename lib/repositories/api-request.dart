@@ -10,25 +10,29 @@ import 'package:http/http.dart' as http;
 
 class ApiRequest{
 
-  static Future<http.Response> get({required String url, Map<String,String>? headers,Middleware? middleware,GroupMiddleware? groupMiddleWare})async{
+  /// Requests that write data (a bid, a comment) get a timeout so the
+  /// button can never keep spinning forever when the server does not answer.
+  static const Duration writeTimeout = Duration(seconds: 60);
+
+  static Future<http.Response> get({required String url, Map<String,String>? headers,Middleware? middleware,GroupMiddleware? groupMiddleWare, Duration? timeout})async{
     Uri uri = Uri.parse(url);
     Map<String,String>? headerMap=commonHeader;
     headerMap.addAll(currencyHeader);
     if(headers!=null){
       headerMap.addAll(headers);
     }
-  var response =    await http.get(uri,headers: headerMap);
+  var response =    await http.get(uri,headers: headerMap).timeout(timeout ?? const Duration(seconds: 30));
     return AIZApiResponse.check(response,middleware: middleware,groupMiddleWare: groupMiddleWare);
   }
 
-  static Future<http.Response> post({required String url, Map<String,String>? headers,required String body,Middleware? middleware,GroupMiddleware? groupMiddleWare})async{
+  static Future<http.Response> post({required String url, Map<String,String>? headers,required String body,Middleware? middleware,GroupMiddleware? groupMiddleWare, Duration? timeout})async{
     Uri uri = Uri.parse(url);
     Map<String,String>? headerMap=commonHeader;
     headerMap.addAll(currencyHeader);
     if(headers!=null){
       headerMap.addAll(headers);
     }
-  var response =    await http.post(uri,headers: headerMap,body: body);
+  var response =    await http.post(uri,headers: headerMap,body: body).timeout(timeout ?? writeTimeout);
     return AIZApiResponse.check(response,middleware: middleware,groupMiddleWare: groupMiddleWare);
   }
 

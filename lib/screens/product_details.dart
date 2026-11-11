@@ -390,23 +390,47 @@ class _ProductDetailsState extends State<ProductDetails>
 
   Future<void> _fetchComments() async {
     try {
+      // The realtime snapshot is used instead of the plain comments endpoint
+      // because it carries the "offers" flag of every bid. Without that flag
+      // the bid bubbles would be rendered as ordinary chat messages.
+      final response = await _productRepository.getRealtimeSnapshot(
+        _product?.id ?? 0,
+      );
+      final comments = response.comments;
+      if (response.success == true && comments != null) {
+        _applyComments(comments);
+        return;
+      }
+    } catch (e) {
+      print('Error fetching comments (snapshot): $e');
+    }
+
+    // Fallback, so the chat is never empty when the snapshot is not
+    // reachable.
+    try {
       final response =
           await _productRepository.getProductComments(_product?.id ?? 0);
       if (response.success == true && response.comments != null) {
-        setState(() {
-          _comments = response.comments!.reversed.toList();
-          for (final c in _comments) {
-            final id = c.id;
-            if (id != null) _seenCommentIds.add(id);
-          }
-          _isAtBottom = true;
-          _userInteractedWithComments = false;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        _applyComments(response.comments!);
       }
     } catch (e) {
       print('Error fetching comments: $e');
     }
+  }
+
+  void _applyComments(List<Comment> comments) {
+    if (!mounted) return;
+
+    setState(() {
+      _comments = comments.reversed.toList();
+      for (final c in _comments) {
+        final id = c.id;
+        if (id != null) _seenCommentIds.add(id);
+      }
+      _isAtBottom = true;
+      _userInteractedWithComments = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
   Future<void> _fetchReviews() async {
