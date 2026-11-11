@@ -1138,6 +1138,10 @@ class _ProductDetailsState extends State<ProductDetails>
       setState(() => _isProcessing = false);
 
       if (response.success == true) {
+        // The server calculates the quick bid as the current highest bid
+        // + 0.01, so the amount it confirms is the one that was placed.
+        final placedAmount = response.current_highest ?? amount;
+
         if (response.timeExtended == true && response.newEndDate != null) {
           ToastComponent.showSuccess(response.message ??
               AppLocalizations.of(context)!.auction_time_extended);
@@ -1149,7 +1153,7 @@ class _ProductDetailsState extends State<ProductDetails>
         } else {
           ToastComponent.showSuccess(
               response.message ??
-                  '${AppLocalizations.of(context)!.bid_placed} ${_formatPrice(amount)}');
+                  '${AppLocalizations.of(context)!.bid_placed} ${_formatPrice(placedAmount)}');
         }
 
         // The live state now arrives through Pusher, the response only

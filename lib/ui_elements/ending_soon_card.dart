@@ -343,8 +343,12 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       );
 
       if (response.success == true) {
+        // The server calculates the quick bid as the current highest bid
+        // + 0.01, so the amount it confirms is the one that was placed.
+        final placedAmount = response.current_highest ?? minBid;
+
         ToastComponent.showSuccess(
-          '${loc?.quick_bid_placed_success_ucf ?? "Quick bid placed! Amount:"} ${_formatPrice(minBid)}',
+          '${loc?.quick_bid_placed_success_ucf ?? "Quick bid placed! Amount:"} ${_formatPrice(placedAmount)}',
         );
         if (!mounted) return;
 
@@ -355,7 +359,7 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           _handleRealtimeBid(realtime);
         } else {
           setState(() {
-            _liveBid = response.current_highest ?? minBid;
+            _liveBid = placedAmount;
           });
         }
       } else {
