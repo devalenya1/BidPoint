@@ -32,6 +32,7 @@ import 'package:active_ecommerce_flutter/screens/profile.dart';
 import 'package:active_ecommerce_flutter/screens/registration.dart';
 import 'package:active_ecommerce_flutter/screens/seller_details.dart';
 import 'package:active_ecommerce_flutter/screens/todays_deal_products.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:active_ecommerce_flutter/services/push_notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -180,6 +181,12 @@ class _MyAppState extends State<MyApp> {
 
     routes.routeInformationProvider.addListener(() {});
     super.initState();
+
+    // Connect to Pusher as early as possible. Live bids, the point balance,
+    // the customer notifications and the chat messages are all pushed
+    // through the same realtime connection.
+    PusherService.instance.connect();
+
     Future.delayed(Duration.zero).then(
       (value) async {
         Firebase.initializeApp().then((value) {

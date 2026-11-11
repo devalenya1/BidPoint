@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:active_ecommerce_flutter/app_config.dart';
@@ -18,6 +19,7 @@ import 'package:active_ecommerce_flutter/screens/messenger_list.dart';
 import 'package:active_ecommerce_flutter/screens/notifications_page.dart';
 import 'package:active_ecommerce_flutter/screens/affiliate_page.dart';
 import 'package:active_ecommerce_flutter/screens/common_webview_screen.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:active_ecommerce_flutter/ui_elements/product_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -58,6 +60,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   bool _isLoadingWinners = true;
   final CategoryRepository _categoryRepository = CategoryRepository();
 
+  // ── Pusher (realtime) ───────────────────────────────────────────
+  StreamSubscription<Map<String, dynamic>>? _balanceSubscription;
+  StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
+  StreamSubscription<Map<String, dynamic>>? _messageSubscription;
+
   int get _unreadNotificationCount {
     if (is_logged_in.$ != true) return 0;
     return _userInfo?.unreadNotificationsCount ?? 0;
@@ -85,7 +92,61 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     super.initState();
     _fetchCounts();
     _fetchRecentWinners();
+    _listenToPusher();
     Future.delayed(Duration.zero).then((value) => change());
+  }
+
+  // ============================================================
+  // PUSHER (REALTIME)
+  // ============================================================
+
+  /// The home screen shows the live auction cards, they are updated through
+  /// Pusher. The private channel of the user keeps the point balance, the
+  /// notification counter and the message counter up to date.
+  void _listenToPusher() {
+    _balanceSubscription =
+        PusherService.instance.onBalance.listen(_handleRealtimeBalance);
+    _notificationSubscription = PusherService.instance.onNotification
+        .listen(_handleRealtimeNotification);
+    _messageSubscription =
+        PusherService.instance.onMessage.listen(_handleRealtimeMessage);
+
+    PusherService.instance.subscribeUserChannel();
+  }
+
+  void _handleRealtimeBalance(Map<String, dynamic> data) {
+    final balance = data['balance'];
+    if (balance == null) return;
+
+    points_balance.$ = balance.toString();
+    points_balance.save();
+
+    if (!mounted) return;
+    setState(() {
+      if (_userInfo != null) {
+        _userInfo!.balance = balance is num
+            ? balance.toDouble()
+            : double.tryParse(balance.toString());
+      }
+    });
+  }
+
+  void _handleRealtimeNotification(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    // The counter itself is owned by the main shell, the home screen only
+    // mirrors it into the badge.
+    setState(() {
+      _userInfo?.unreadNotificationsCount = unread_notifications_count.$ ?? 0;
+    });
+  }
+
+  void _handleRealtimeMessage(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    setState(() {
+      _userInfo?.unreadMessagesCount = unread_messages_count.$ ?? 0;
+    });
   }
 
   Future<void> _fetchRecentWinners() async {
@@ -120,6 +181,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         setState(() => _userInfo = response.data![0]);
         unread_notifications_count.$ = _userInfo!.unreadNotificationsCount ?? 0;
         unread_notifications_count.save();
+        unread_messages_count.$ = _userInfo!.unreadMessagesCount ?? 0;
+        unread_messages_count.save();
+
+        // The private channel can only be joined once the user is known.
+        PusherService.instance.subscribeUserChannel();
       }
     } catch (e) {
       print("Error loading notification counts: $e");
@@ -142,6 +208,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   @override
   void dispose() {
     homeData.pirated_logo_controller.dispose();
+    _balanceSubscription?.cancel();
+    _notificationSubscription?.cancel();
+    _messageSubscription?.cancel();
     super.dispose();
   }
 

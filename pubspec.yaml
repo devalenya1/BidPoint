@@ -90,6 +90,11 @@ dependencies:
   fluttertoast: ^8.2.4
   audioplayers: ^5.2.0
   flutter_screenutil: ^5.9.0
+  # Pinned to 2.2.1: it is the newest release that still builds with the
+  # Android tool chain of this project (AGP 7.1.2 / Gradle 7.4 / Kotlin
+  # 1.8.21) and with the Dart SDK constraint below. From 2.3.0 on the plugin
+  # requires AGP 8.7 / Gradle 8.9 and Dart >= 3.5.
+  pusher_channels_flutter: 2.2.1
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:active_ecommerce_flutter/custom/aiz_route.dart';
+import 'package:active_ecommerce_flutter/custom/toast_component.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
 import 'package:active_ecommerce_flutter/main.dart';
 import 'package:active_ecommerce_flutter/my_theme.dart';
@@ -15,6 +16,7 @@ import 'package:active_ecommerce_flutter/screens/home.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/points_page.dart';
 import 'package:active_ecommerce_flutter/screens/profile.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:active_ecommerce_flutter/data_model/user_info_response.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
@@ -49,7 +51,11 @@ class _MainState extends State<Main> {
   // ── User data for the fixed bottom bar's points + avatar ──
   UserInformation? _userInfo;
   bool _isLoadingUserInfo = true;
-  Timer? _refreshTimer;
+
+  // ── Pusher (realtime) point balance ──
+  StreamSubscription<Map<String, dynamic>>? _balanceSubscription;
+  StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
+  StreamSubscription<Map<String, dynamic>>? _messageSubscription;
 
   fetchAll() {
     getCartCount();
@@ -76,6 +82,9 @@ class _MainState extends State<Main> {
           points_balance.save();
           avatar_original.$ = _userInfo!.avatar ?? "";
           avatar_original.save();
+
+          // The private channel can only be joined once the user is known.
+          PusherService.instance.subscribeUserChannel();
         }
       } else {
         if (mounted) setState(() => _isLoadingUserInfo = false);
@@ -83,6 +92,71 @@ class _MainState extends State<Main> {
     } catch (_) {
       if (mounted) setState(() => _isLoadingUserInfo = false);
     }
+  }
+
+  // ============================================================
+  // PUSHER (REALTIME)
+  // ============================================================
+
+  /// The point balance of the bottom bar is pushed through Pusher, it does
+  /// not poll the API anymore.
+  ///
+  /// The same private channel also carries the customer notifications and the
+  /// chat messages, they are raised as in app alerts right away.
+  void _listenToPusher() {
+    _balanceSubscription =
+        PusherService.instance.onBalance.listen(_handleRealtimeBalance);
+    _notificationSubscription = PusherService.instance.onNotification
+        .listen(_handleRealtimeNotification);
+    _messageSubscription =
+        PusherService.instance.onMessage.listen(_handleRealtimeMessage);
+    PusherService.instance.subscribeUserChannel();
+  }
+
+  void _handleRealtimeBalance(Map<String, dynamic> data) {
+    final balance = data['balance'];
+    if (balance == null) return;
+
+    final value = balance is num
+        ? balance.toDouble()
+        : double.tryParse(balance.toString());
+    if (value == null) return;
+
+    points_balance.$ = value.toString();
+    points_balance.save();
+
+    if (!mounted) return;
+    setState(() {
+      _userInfo?.balance = value;
+      _isLoadingUserInfo = false;
+    });
+  }
+
+  /// A new customer notification arrived (new bid, outbid, point deduction…).
+  void _handleRealtimeNotification(Map<String, dynamic> data) {
+    final current = unread_notifications_count.$ ?? 0;
+    unread_notifications_count.$ = current + 1;
+    unread_notifications_count.save();
+
+    final title = data['title']?.toString() ?? '';
+    final message = data['message']?.toString() ?? '';
+    final text = message.isNotEmpty ? message : title;
+    if (text.isEmpty) return;
+
+    ToastComponent.showInfo(text);
+  }
+
+  /// A new chat message arrived.
+  void _handleRealtimeMessage(Map<String, dynamic> data) {
+    final current = unread_messages_count.$ ?? 0;
+    unread_messages_count.$ = current + 1;
+    unread_messages_count.save();
+
+    final sender = data['sender_name']?.toString() ?? '';
+    final message = data['message']?.toString() ?? '';
+    if (message.isEmpty) return;
+
+    ToastComponent.showInfo(sender.isEmpty ? message : '$sender: $message');
   }
 
   // ── Helper getters ──
@@ -161,12 +235,7 @@ class _MainState extends State<Main> {
 
     fetchAll();
     _fetchUserInfo();
-
-    // Auto-refresh balance every 30s while on Main
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _fetchUserInfo(),
-    );
+    _listenToPusher();
 
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
@@ -178,7 +247,9 @@ class _MainState extends State<Main> {
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    _balanceSubscription?.cancel();
+    _notificationSubscription?.cancel();
+    _messageSubscription?.cancel();
     super.dispose();
   }
 

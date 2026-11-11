@@ -37,6 +37,7 @@ import 'package:active_ecommerce_flutter/screens/uploads/upload_file.dart';
 import 'package:active_ecommerce_flutter/screens/wallet.dart';
 import 'package:active_ecommerce_flutter/screens/wishlist.dart';
 import 'package:active_ecommerce_flutter/screens/notification_settings_page.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -72,6 +73,9 @@ class _ProfileState extends State<Profile> {
   bool _isLoading = true;
   bool _isRefreshing = false;
   UserInformation? _userInfo;
+
+  // ============ PUSHER (REALTIME) ============
+  StreamSubscription<Map<String, dynamic>>? _balanceSubscription;
   // ============ REFERRAL DIALOG STATE ============
   bool _showReferralDialog = false;
   bool _isSubmittingReferral = false;
@@ -83,6 +87,7 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
+    _listenToPusher();
     if (is_logged_in.$ == true) {
       _fetchUserData();
     } else {
@@ -96,7 +101,35 @@ class _ProfileState extends State<Profile> {
   @override
   void dispose() {
     _mainScrollController.dispose();
+    _balanceSubscription?.cancel();
     super.dispose();
+  }
+
+  // ============ PUSHER (REALTIME) ============
+  /// The point balance shown on the profile card is pushed through Pusher,
+  /// it does not poll the API anymore.
+  void _listenToPusher() {
+    _balanceSubscription =
+        PusherService.instance.onBalance.listen(_handleRealtimeBalance);
+    PusherService.instance.subscribeUserChannel();
+  }
+
+  void _handleRealtimeBalance(Map<String, dynamic> data) {
+    final balance = data['balance'];
+    if (balance == null) return;
+
+    final value = balance is num
+        ? balance.toDouble()
+        : double.tryParse(balance.toString());
+    if (value == null) return;
+
+    points_balance.$ = value.toString();
+    points_balance.save();
+
+    if (!mounted) return;
+    setState(() {
+      _userInfo?.balance = value;
+    });
   }
 
   Future<void> _fetchUserData() async {
@@ -125,7 +158,10 @@ class _ProfileState extends State<Profile> {
           points_balance.save();
           affiliate_balance.$ = _userInfo!.affiliateBalance?.toString() ?? "0";
           affiliate_balance.save();
-          
+
+          // The private channel can only be joined once the user is known.
+          PusherService.instance.subscribeUserChannel();
+
           // ✅ Check and show referral dialog after data is loaded
           _checkAndShowReferralDialog();
         }

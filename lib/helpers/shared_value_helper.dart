@@ -166,6 +166,11 @@ final SharedValue<int?> unread_notifications_count = SharedValue(
   key: "unread_notifications_count",
 );
 
+final SharedValue<int?> unread_messages_count = SharedValue(
+  value: 0,
+  key: "unread_messages_count",
+);
+
 // ============ WISHLIST ============
 final SharedValue<int?> wishlist_count = SharedValue(
   value: 0,

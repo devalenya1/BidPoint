@@ -7,6 +7,7 @@ import 'package:active_ecommerce_flutter/my_theme.dart';
 import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
 import 'package:active_ecommerce_flutter/screens/product_details.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -51,6 +52,13 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
   bool _isWishlisted = false;
   bool _isWishlistLoading = false;
 
+  // ── Pusher (realtime) ──────────────────────────────────────────
+  StreamSubscription<Map<String, dynamic>>? _bidSubscription;
+
+  /// Live bid amount coming from Pusher. It wins over the value the parent
+  /// widget handed over when the card was built.
+  double? _liveBid;
+
   double _slideOffset = 0;
   double _thumbStartX = 0;
   bool _isDragging = false;
@@ -63,12 +71,65 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
     super.initState();
     _startTimer();
     _fetchWishlistStatus();
+    _listenToPusher();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _bidSubscription?.cancel();
+    PusherService.instance.unsubscribeProduct(widget.id);
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant EndingSoonCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // The parent may hand over a newer bid than the one Pusher delivered.
+    final incoming = _parsePrice(widget.currentBid);
+    if (incoming > 0 && (_liveBid == null || incoming > _liveBid!)) {
+      _liveBid = incoming;
+    }
+  }
+
+  // ============================================================
+  // PUSHER (REALTIME)
+  // ============================================================
+
+  void _listenToPusher() {
+    _bidSubscription = PusherService.instance.onBid.listen(_handleRealtimeBid);
+    PusherService.instance.subscribeProduct(widget.id);
+  }
+
+  /// A bid was placed on this product, the card updates itself in place.
+  void _handleRealtimeBid(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    final productId = _toInt(data['product_id']);
+    if (productId != null && productId != widget.id) return;
+
+    final bidAmount = _toDouble(data['bid_amount']);
+    final highestBid = _toDouble(data['highest_bid']) ?? bidAmount;
+
+    setState(() {
+      if (highestBid != null && highestBid > 0) {
+        _liveBid = highestBid;
+      }
+    });
+  }
+
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString().trim());
+  }
+
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().trim());
   }
 
   Future<void> _fetchWishlistStatus() async {
@@ -221,6 +282,11 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
       FormatHelper.formatPrice(_parsePrice(price));
 
   double _getDisplayBid() {
+    // The live value coming from Pusher wins over the value the parent widget
+    // handed over when the card was built.
+    final live = _liveBid;
+    if (live != null && live > 0) return live;
+
     if (widget.currentBid != null) {
       final parsed = _parsePrice(widget.currentBid);
       if (parsed > 0) return parsed;
@@ -281,10 +347,17 @@ class _EndingSoonCardState extends State<EndingSoonCard> {
           '${loc?.quick_bid_placed_success_ucf ?? "Quick bid placed! Amount:"} ${_formatPrice(minBid)}',
         );
         if (!mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => ProductDetails(slug: widget.slug)),
-        );
+
+        // The user stays where he is, the card is updated in place. The
+        // Pusher event confirms the new state a moment later.
+        final realtime = response.realtime;
+        if (realtime != null) {
+          _handleRealtimeBid(realtime);
+        } else {
+          setState(() {
+            _liveBid = response.current_highest ?? minBid;
+          });
+        }
       } else {
         ToastComponent.showError(
           response.message ??

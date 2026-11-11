@@ -11,9 +11,11 @@ import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'dart:async';
 import 'package:flutter_chat_bubble/clippers/chat_bubble_clipper_5.dart';
 import 'package:active_ecommerce_flutter/app_config.dart';
+import 'package:active_ecommerce_flutter/data_model/message_response.dart';
 import 'package:active_ecommerce_flutter/repositories/chat_repository.dart';
 import 'package:active_ecommerce_flutter/helpers/shimmer_helper.dart';
 import 'package:active_ecommerce_flutter/helpers/shared_value_helper.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -53,12 +55,58 @@ class _ChatState extends State<Chat> {
   Timer? timer;
   String _message="";
 
+  // ── Pusher (realtime) ───────────────────────────────────────────
+  StreamSubscription<Map<String, dynamic>>? _messageSubscription;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
 
     fetchData();
+    _listenToPusher();
+  }
+
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    super.dispose();
+  }
+
+  // ============================================================
+  // PUSHER (REALTIME)
+  // ============================================================
+
+  /// New chat messages are pushed through Pusher, the screen does not poll
+  /// the API every few seconds anymore.
+  void _listenToPusher() {
+    _messageSubscription =
+        PusherService.instance.onMessage.listen(_handleRealtimeMessage);
+    PusherService.instance.subscribeUserChannel();
+  }
+
+  void _handleRealtimeMessage(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    final conversationId = data['conversation_id'];
+    if (conversationId == null ||
+        conversationId.toString() != widget.conversation_id.toString()) {
+      return;
+    }
+
+    final message = Message.fromJson(data);
+    if (message.id != null && _list.any((m) => m.id == message.id)) return;
+
+    setState(() {
+      _list = <dynamic>[message, _list].expand((x) => x).toList();
+      _last_id = message.id ?? _last_id;
+    });
+
+    _xcrollController.animateTo(
+      _xcrollController.position.maxScrollExtent + 100,
+      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 500),
+    );
   }
 
 
@@ -71,8 +119,6 @@ class _ChatState extends State<Chat> {
     _showLoadingContainer = false;
     _last_id = _list[0].id;
     setState(() {});
-
-    fetch_new_message();
   }
 
   reset() {
@@ -124,19 +170,6 @@ class _ChatState extends State<Chat> {
         duration: const Duration(milliseconds: 500),
       );
     }
-  }
-
-  fetch_new_message() async {
-    print('fetch new message hit');
-    print('-------------');
-    await Future.delayed(const Duration(seconds: 5), () {
-      print('fetch new message start');
-      print('##################');
-      get_new_message();
-    }).then((value) {
-      print('again');
-      fetch_new_message();
-    });
   }
 
   get_new_message() async {

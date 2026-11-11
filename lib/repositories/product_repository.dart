@@ -383,6 +383,23 @@ class ProductRepository {
     return pollDataResponseFromJson(response.body);
   }
 
+  /// One authoritative state snapshot of a live auction.
+  ///
+  /// It is called once after the Pusher subscription succeeded (and again
+  /// after a reconnect) so events missed while the websocket was down can be
+  /// recovered. It is never polled.
+  Future<PollDataResponse> getRealtimeSnapshot(int productId) async {
+    String url = ("${AppConfig.BASE_URL}/auction/realtime-snapshot/$productId");
+    final response = await ApiRequest.get(
+      url: url,
+      headers: {
+        "App-Language": app_language.$!,
+        "Authorization": is_logged_in.$ ? "Bearer ${access_token.$}" : "",
+      },
+    );
+    return pollDataResponseFromJson(response.body);
+  }
+
   Future<BidResponse> placeBid(String productId, String amount, {String type = "custom"}) async {
     String url = ("${AppConfig.BASE_URL}/auction_product_bids/store");
     var postBody = jsonEncode({

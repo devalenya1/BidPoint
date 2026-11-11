@@ -50,15 +50,24 @@
 //   double _startX = 0;
 //   double _startY = 0;
 
+//   // ── Pusher (realtime) ──────────────────────────────────────
+//   StreamSubscription<Map<String, dynamic>>? _bidSubscription;
+//   double? _liveBid;
+//   int? _liveTotalBids;
+//   String? _liveBidderName;
+
 //   @override
 //   void initState() {
 //     super.initState();
 //     _startTimer();
+//     _listenToPusher();
 //   }
 
 //   @override
 //   void dispose() {
 //     _timer?.cancel();
+//     _bidSubscription?.cancel();
+//     PusherService.instance.unsubscribeProduct(widget.id);
 //     super.dispose();
 //   }
 
@@ -166,6 +175,11 @@
 //   }
 
 //   double _getDisplayBid() {
+//     // The live value coming from Pusher wins over the value the parent
+//     // widget handed over when the card was built.
+//     final live = _liveBid;
+//     if (live != null && live > 0) return live;
+
 //     if (widget.currentBid != null) {
 //       final parsed = _parsePrice(widget.currentBid);
 //       if (parsed > 0) return parsed;
@@ -241,7 +255,16 @@
 //         ToastComponent.showDialog(
 //           'Quick bid placed! Amount: ${_formatPrice(minBid)}',
 //         );
-//         GoRouter.of(context).go('/product/${widget.slug}');
+//         // The user stays on the current screen, the card is updated in
+//         // place. The Pusher event confirms the new state a moment later.
+//         final realtime = response.realtime;
+//         if (realtime != null) {
+//           _handleRealtimeBid(realtime);
+//         } else {
+//           setState(() {
+//             _liveBid = response.current_highest ?? minBid;
+//           });
+//         }
 //       } else {
 //         ToastComponent.showDialog(
 //           response.message ?? 'Failed to place bid',
@@ -253,6 +276,35 @@
 //       _isProcessing = false;
 //       setState(() {});
 //     }
+//   }
+
+//   // ============ PUSHER (REALTIME) ============
+//   void _listenToPusher() {
+//     _bidSubscription = PusherService.instance.onBid.listen(_handleRealtimeBid);
+//     PusherService.instance.subscribeProduct(widget.id);
+//   }
+
+//   /// A bid was placed on this product, the card updates itself in place.
+//   void _handleRealtimeBid(Map<String, dynamic> data) {
+//     if (!mounted) return;
+
+//     final productId = _toInt(data['product_id']);
+//     if (productId != null && productId != widget.id) return;
+
+//     final bidAmount = _toDouble(data['bid_amount']);
+//     final highestBid = _toDouble(data['highest_bid']) ?? bidAmount;
+//     final totalBids = _toInt(data['total_bids']);
+//     final bidderName = data['bidder_name']?.toString();
+
+//     setState(() {
+//       if (highestBid != null && highestBid > 0) {
+//         _liveBid = highestBid;
+//       }
+//       if (totalBids != null) _liveTotalBids = totalBids;
+//       if (bidderName != null && bidderName.isNotEmpty) {
+//         _liveBidderName = bidderName;
+//       }
+//     });
 //   }
 
 //   void _showLoginDialog() {

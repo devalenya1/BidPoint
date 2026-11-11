@@ -58,8 +58,8 @@ class Message {
   String? time;
 
   factory Message.fromJson(Map<String, dynamic> json) => Message(
-    id: json["id"],
-    userId: json["user_id"],
+    id: json["id"] ?? json["message_id"],
+    userId: json["user_id"] ?? json["sender_id"],
     sendType: json["send_type"],
     message: json["message"],
     year: json["year"],

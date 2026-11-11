@@ -16,6 +16,7 @@ import 'package:active_ecommerce_flutter/repositories/product_repository.dart';
 import 'package:active_ecommerce_flutter/repositories/profile_repository.dart';
 import 'package:active_ecommerce_flutter/screens/chat.dart';
 import 'package:active_ecommerce_flutter/screens/login.dart';
+import 'package:active_ecommerce_flutter/services/pusher_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -68,10 +69,19 @@ class _ProductDetailsState extends State<ProductDetails>
   bool _isAtBottom = true;
 
   // =========================
+  // PUSHER (REALTIME)
+  // =========================
+  StreamSubscription<Map<String, dynamic>>? _bidSubscription;
+  StreamSubscription<Map<String, dynamic>>? _commentSubscription;
+  StreamSubscription<Map<String, dynamic>>? _balanceSubscription;
+  StreamSubscription<String>? _subscribedSubscription;
+  final Set<int> _seenBidIds = {};
+  final Set<int> _seenCommentIds = {};
+
+  // =========================
   // TIMER / AUCTION STATE
   // =========================
   Timer? _countdownTimer;
-  Timer? _pollingTimer;
   Timer? _upcomingTimer;
   Timer? _bellTimer;
   Duration _timeLeft = Duration.zero;
@@ -99,7 +109,6 @@ class _ProductDetailsState extends State<ProductDetails>
   // points balance
   int _pointBalance = 0;
   bool _isPointBalanceLoading = true;
-  Timer? _balanceRefreshTimer;
 
   // Buy Now
   int _buyNow = 0;
@@ -163,14 +172,9 @@ class _ProductDetailsState extends State<ProductDetails>
     _isPointBalanceLoading = false;
 
     _fetchAllData();
-    _startPolling();
     _fetchUserInfo();
     _fetchPointBalance();
-
-    _balanceRefreshTimer = Timer.periodic(
-      const Duration(seconds: 15),
-      (_) => _fetchPointBalance(silent: true),
-    );
+    _listenToPusher();
   }
 
   @override
@@ -178,10 +182,18 @@ class _ProductDetailsState extends State<ProductDetails>
     _blinkController.dispose();
     _countdownCircleController.dispose();
     _countdownTimer?.cancel();
-    _pollingTimer?.cancel();
     _upcomingTimer?.cancel();
     _bellTimer?.cancel();
-    _balanceRefreshTimer?.cancel();
+    _bidSubscription?.cancel();
+    _commentSubscription?.cancel();
+    _balanceSubscription?.cancel();
+    _subscribedSubscription?.cancel();
+
+    final productId = _product?.id ?? 0;
+    if (productId > 0) {
+      PusherService.instance.unsubscribeProduct(productId);
+    }
+
     _commentController.dispose();
     _bidController.dispose();
     _reviewController.dispose();
@@ -309,7 +321,9 @@ class _ProductDetailsState extends State<ProductDetails>
         _determineAuctionStatus();
 
         if (mounted) setState(() => _isLoading = false);
-        _pollData();
+
+        // Join the live auction channel of this product.
+        _subscribeToProductChannel();
       }
 
       await _fetchComments();
@@ -381,6 +395,10 @@ class _ProductDetailsState extends State<ProductDetails>
       if (response.success == true && response.comments != null) {
         setState(() {
           _comments = response.comments!.reversed.toList();
+          for (final c in _comments) {
+            final id = c.id;
+            if (id != null) _seenCommentIds.add(id);
+          }
           _isAtBottom = true;
           _userInteractedWithComments = false;
         });
@@ -439,6 +457,8 @@ class _ProductDetailsState extends State<ProductDetails>
           response.data != null &&
           response.data!.isNotEmpty) {
         setState(() => _userInfo = response.data![0]);
+        // The private channel can only be joined once the user id is known.
+        PusherService.instance.subscribeUserChannel();
       }
     } catch (e) {
       print('Error fetching user info: $e');
@@ -517,205 +537,418 @@ class _ProductDetailsState extends State<ProductDetails>
   }
 
   // ============================================================
-  // POLLING
+  // PUSHER (REALTIME)
   // ============================================================
 
-  void _startPolling() {
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => _pollData(),
-    );
+  /// Starts listening to the Pusher streams.
+  ///
+  /// The live auction data no longer comes from a 2 second polling loop, it is
+  /// pushed through the `product.{id}` channel exactly like on the web.
+  void _listenToPusher() {
+    _bidSubscription = PusherService.instance.onBid.listen(_handleRealtimeBid);
+    _commentSubscription =
+        PusherService.instance.onComment.listen(_handleRealtimeComment);
+    _balanceSubscription =
+        PusherService.instance.onBalance.listen(_handleRealtimeBalance);
+    _subscribedSubscription = PusherService.instance.onSubscriptionSucceeded
+        .listen(_handleSubscriptionSucceeded);
+
+    PusherService.instance.subscribeUserChannel();
   }
 
-  Future<void> _pollData() async {
-    if (_product == null || _isPolling) return;
+  Future<void> _subscribeToProductChannel() async {
+    final productId = _product?.id ?? 0;
+    if (productId <= 0) return;
+
+    final isNewSubscription =
+        await PusherService.instance.subscribeProduct(productId);
+
+    // When the channel was already joined (for example by a card on the home
+    // screen) no "subscription succeeded" event arrives, so the authoritative
+    // state is requested right away.
+    if (!isNewSubscription) {
+      _fetchRealtimeSnapshot();
+    }
+  }
+
+  void _handleSubscriptionSucceeded(String channelName) {
+    final productId = _product?.id ?? 0;
+    if (productId <= 0) return;
+
+    if (channelName == 'product.$productId') {
+      // Recover everything that was missed while the websocket was down.
+      _fetchRealtimeSnapshot();
+    }
+  }
+
+  /// One authoritative snapshot of the auction, requested once after the
+  /// subscription succeeded and again after every reconnect.
+  Future<void> _fetchRealtimeSnapshot() async {
+    final productId = _product?.id ?? 0;
+    if (productId <= 0 || _isPolling) return;
 
     _isPolling = true;
 
     try {
       final response =
-          await _productRepository.pollProductData(_product!.id ?? 0);
+          await _productRepository.getRealtimeSnapshot(productId);
       if (response.success != true || !mounted) return;
-
-      final incomingBid = response.highestBid;
-      final hasNewBid = incomingBid != null && incomingBid > _currentHighestBid;
-
-      setState(() {
-        _applyBalanceFromPoll(response);
-
-        if (response.myStatus != null) {
-          _myStatus = response.myStatus;
-          _userHasBid = true;
-        } else {
-          _myStatus = null;
-          _userHasBid = response.userHasBid ?? false;
-        }
-
-        if (response.startingBid != null) _startingBid = response.startingBid!;
-
-        if (response.highestBid != null) {
-          _currentHighestBid = response.highestBid!;
-        }
-
-        if (response.totalBids != null) _totalBids = response.totalBids!;
-        if (response.lastBidderName != null &&
-            response.lastBidderName!.isNotEmpty) {
-          _highestBidder = response.lastBidderName!;
-        }
-        if (response.pointPerBid != null) _pointPerBid = response.pointPerBid!;
-        if (response.pointPerBidCustom != null) {
-          _pointPerBidCustom = response.pointPerBidCustom!;
-        }
-        if (response.buyNow != null) _buyNow = response.buyNow!;
-        if (response.buyNowLink?.isNotEmpty == true) {
-          _buyNowLink = response.buyNowLink!;
-        } else if (_buyNowLink.isEmpty && response.payLink?.isNotEmpty == true) {
-          _buyNowLink = response.payLink!;
-        }
-
-        _minNextBidNow = _currentHighestBid + 0.01;
-
-        // Status change handling
-        if (response.upcomingStatus != null) {
-          final newStatus = response.upcomingStatus!.trim().toLowerCase();
-          if (_auctionStatus != newStatus) {
-            _auctionStatus = newStatus;
-            if (newStatus == "upcoming") {
-              final parsedStartDate =
-                  _parseServerDate(response.auctionStartDate);
-              if (parsedStartDate != null) {
-                _auctionStartDateTime = parsedStartDate;
-              }
-              _startUpcomingTimer();
-              _countdownTimer?.cancel();
-            } else if (newStatus == "live") {
-              _upcomingTimer?.cancel();
-              final remainingSeconds = response.remainingSeconds;
-              final endTime =
-                  remainingSeconds != null && remainingSeconds >= 0
-                      ? DateTime.now()
-                          .add(Duration(seconds: remainingSeconds))
-                      : _parseServerDate(response.auctionEndDate);
-              if (endTime != null) {
-                _auctionEndDateTime = endTime;
-                final left = endTime.difference(DateTime.now());
-                if (left.isNegative) {
-                  _auctionStatus = "ended";
-                  _timeLeft = Duration.zero;
-                } else {
-                  _timeLeft = left;
-                  _startCountdown(endTime);
-                }
-              }
-            } else if (newStatus == "ended") {
-              _timeLeft = Duration.zero;
-              _auctionEndDateTime = null;
-              _isEndingSoon = false;
-              _bellSoundPlayed = false;
-              _countdownTimer?.cancel();
-              _upcomingTimer?.cancel();
-              _countdownCircleController.stop();
-              _bellPlayer.stop();
-              ToastComponent.tickSoundPlaying = false;
-            }
-          }
-        }
-
-        // Keep the local countdown synchronized without recreating it for
-        // insignificant network/rounding differences on every poll.
-        if (_auctionStatus == "live") {
-          final remainingSeconds = response.remainingSeconds;
-          final newEnd = remainingSeconds != null && remainingSeconds >= 0
-              ? DateTime.now().add(Duration(seconds: remainingSeconds))
-              : _parseServerDate(response.auctionEndDate);
-          if (newEnd != null) {
-            // remaining_seconds is rounded and the request itself has some
-            // latency. A wider tolerance prevents the local 1-second timer
-            // from being cancelled and recreated by every 2-second poll.
-            final changed = _auctionEndDateTime == null ||
-                newEnd
-                        .difference(_auctionEndDateTime!)
-                        .inMilliseconds
-                        .abs() >
-                    5000;
-            if (changed) {
-              _auctionEndDateTime = newEnd;
-              final left = newEnd.difference(DateTime.now());
-              if (left.isNegative) {
-                _auctionStatus = "ended";
-                _timeLeft = Duration.zero;
-                _countdownTimer?.cancel();
-              } else {
-                _timeLeft = left;
-                _startCountdown(newEnd);
-              }
-            }
-          }
-        }
-
-        if (response.auctionEnded == true) {
-          _auctionStatus = "ended";
-          _timeLeft = Duration.zero;
-          _auctionEndDateTime = null;
-          _isEndingSoon = false;
-          _bellSoundPlayed = false;
-          _countdownTimer?.cancel();
-          _countdownCircleController.stop();
-          _bellPlayer.stop();
-          ToastComponent.tickSoundPlaying = false;
-        }
-
-        if (response.rating != null) _rating = response.rating!;
-        if (response.reviewsCount != null) _reviewsCount = response.reviewsCount!;
-
-        if (response.comments != null && response.comments!.isNotEmpty) {
-          _comments = response.comments!.reversed.toList();
-          if (_isAtBottom && !_userInteractedWithComments) {
-            WidgetsBinding.instance
-                .addPostFrameCallback((_) => _scrollToBottom());
-          }
-        }
-
-        if (response.reviews != null && response.reviews!.isNotEmpty) {
-          _reviews = response.reviews!;
-          _reviewsCount = _reviews.length;
-        }
-
-        if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
-          _bidHistory = response.bidHistory!.map((item) {
-            return BidHistory(
-              userId: item.userId,
-              userName: item.userName,
-              amount: item.amount,
-              createdAt: item.createdAt,
-            );
-          }).toList();
-        }
-      });
-
-      if (hasNewBid && incomingBid != null) {
-        _playBidNotificationSound();
-      }
-
-      if (response.balance == null || response.balance! <= 0) {
-        await _fetchPointBalance(silent: true);
-      }
-
-      if (response.auctionEnded == true &&
-          response.winner != null &&
-          !_winnerModalShown) {
-        _winnerData = response.winner;
-        _winnerModalShown = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showWinnerModalDialog();
-        });
-      }
+      _applyRealtimeSnapshot(response);
     } catch (e) {
-      print('Polling error: $e');
+      print('Realtime snapshot error: $e');
     } finally {
       _isPolling = false;
     }
+  }
+
+  void _applyRealtimeSnapshot(PollDataResponse response) {
+    setState(() {
+      _applyBalanceFromPoll(response);
+
+      if (response.myStatus != null) {
+        _myStatus = response.myStatus;
+        _userHasBid = true;
+      } else {
+        _myStatus = null;
+        _userHasBid = response.userHasBid ?? false;
+      }
+
+      if (response.startingBid != null) _startingBid = response.startingBid!;
+
+      if (response.highestBid != null) {
+        _currentHighestBid = response.highestBid!;
+      }
+
+      if (response.totalBids != null) _totalBids = response.totalBids!;
+      if (response.lastBidderName != null &&
+          response.lastBidderName!.isNotEmpty) {
+        _highestBidder = response.lastBidderName!;
+      }
+      if (response.pointPerBid != null) _pointPerBid = response.pointPerBid!;
+      if (response.pointPerBidCustom != null) {
+        _pointPerBidCustom = response.pointPerBidCustom!;
+      }
+      if (response.buyNow != null) _buyNow = response.buyNow!;
+      if (response.buyNowLink?.isNotEmpty == true) {
+        _buyNowLink = response.buyNowLink!;
+      } else if (_buyNowLink.isEmpty && response.payLink?.isNotEmpty == true) {
+        _buyNowLink = response.payLink!;
+      }
+
+      _minNextBidNow = _currentHighestBid + 0.01;
+
+      // Status change handling
+      if (response.upcomingStatus != null) {
+        final newStatus = response.upcomingStatus!.trim().toLowerCase();
+        if (_auctionStatus != newStatus) {
+          _auctionStatus = newStatus;
+          if (newStatus == "upcoming") {
+            final parsedStartDate =
+                _parseServerDate(response.auctionStartDate);
+            if (parsedStartDate != null) {
+              _auctionStartDateTime = parsedStartDate;
+            }
+            _startUpcomingTimer();
+            _countdownTimer?.cancel();
+          } else if (newStatus == "live") {
+            _upcomingTimer?.cancel();
+            final remainingSeconds = response.remainingSeconds;
+            final endTime =
+                remainingSeconds != null && remainingSeconds >= 0
+                    ? DateTime.now()
+                        .add(Duration(seconds: remainingSeconds))
+                    : _parseServerDate(response.auctionEndDate);
+            if (endTime != null) {
+              _auctionEndDateTime = endTime;
+              final left = endTime.difference(DateTime.now());
+              if (left.isNegative) {
+                _auctionStatus = "ended";
+                _timeLeft = Duration.zero;
+              } else {
+                _timeLeft = left;
+                _startCountdown(endTime);
+              }
+            }
+          } else if (newStatus == "ended") {
+            _timeLeft = Duration.zero;
+            _auctionEndDateTime = null;
+            _isEndingSoon = false;
+            _bellSoundPlayed = false;
+            _countdownTimer?.cancel();
+            _upcomingTimer?.cancel();
+            _countdownCircleController.stop();
+            _bellPlayer.stop();
+            ToastComponent.tickSoundPlaying = false;
+          }
+        }
+      }
+
+      // Keep the local countdown synchronized without recreating it for
+      // insignificant network/rounding differences on every poll.
+      if (_auctionStatus == "live") {
+        final remainingSeconds = response.remainingSeconds;
+        final newEnd = remainingSeconds != null && remainingSeconds >= 0
+            ? DateTime.now().add(Duration(seconds: remainingSeconds))
+            : _parseServerDate(response.auctionEndDate);
+        if (newEnd != null) {
+          // remaining_seconds is rounded and the request itself has some
+          // latency. A wider tolerance prevents the local 1-second timer
+          // from being cancelled and recreated by every 2-second poll.
+          final changed = _auctionEndDateTime == null ||
+              newEnd
+                      .difference(_auctionEndDateTime!)
+                      .inMilliseconds
+                      .abs() >
+                  5000;
+          if (changed) {
+            _auctionEndDateTime = newEnd;
+            final left = newEnd.difference(DateTime.now());
+            if (left.isNegative) {
+              _auctionStatus = "ended";
+              _timeLeft = Duration.zero;
+              _countdownTimer?.cancel();
+            } else {
+              _timeLeft = left;
+              _startCountdown(newEnd);
+            }
+          }
+        }
+      }
+
+      if (response.auctionEnded == true) {
+        _auctionStatus = "ended";
+        _timeLeft = Duration.zero;
+        _auctionEndDateTime = null;
+        _isEndingSoon = false;
+        _bellSoundPlayed = false;
+        _countdownTimer?.cancel();
+        _countdownCircleController.stop();
+        _bellPlayer.stop();
+        ToastComponent.tickSoundPlaying = false;
+      }
+
+      if (response.rating != null) _rating = response.rating!;
+      if (response.reviewsCount != null) _reviewsCount = response.reviewsCount!;
+
+      if (response.comments != null && response.comments!.isNotEmpty) {
+        _comments = response.comments!.reversed.toList();
+        if (_isAtBottom && !_userInteractedWithComments) {
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _scrollToBottom());
+        }
+      }
+
+      if (response.reviews != null && response.reviews!.isNotEmpty) {
+        _reviews = response.reviews!;
+        _reviewsCount = _reviews.length;
+      }
+
+      if (response.bidHistory != null && response.bidHistory!.isNotEmpty) {
+        _bidHistory = response.bidHistory!.map((item) {
+          return BidHistory(
+            userId: item.userId,
+            userName: item.userName,
+            amount: item.amount,
+            createdAt: item.createdAt,
+          );
+        }).toList();
+      }
+    });
+
+    if (response.balance == null || response.balance! <= 0) {
+      _fetchPointBalance(silent: true);
+    }
+
+    if (response.auctionEnded == true &&
+        response.winner != null &&
+        !_winnerModalShown) {
+      _winnerData = response.winner;
+      _winnerModalShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showWinnerModalDialog();
+      });
+    }
+  }
+
+  // ============================================================
+  // REALTIME EVENT HANDLERS
+  // ============================================================
+
+  /// A new bid was placed on this product.
+  void _handleRealtimeBid(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    final productId = _toInt(data['product_id']);
+    if (productId != null && productId != (_product?.id ?? -1)) return;
+
+    // The same bid can be delivered twice, once with the response of the
+    // placement request and once through the Pusher channel.
+    final bidId = _toInt(data['bid_id']);
+    if (bidId != null && !_seenBidIds.add(bidId)) return;
+
+    final bidAmount = _toDouble(data['bid_amount']);
+    final highestBid = _toDouble(data['highest_bid']) ?? bidAmount;
+    final totalBids = _toInt(data['total_bids']);
+    final bidderId = _toInt(data['bidder_id']);
+    final bidderName = data['bidder_name']?.toString();
+    final bidderAvatar = data['bidder_avatar']?.toString();
+    final commentId = _toInt(data['comment_id']);
+    final timeExtended = data['time_extended'] == true;
+    final endTimestamp = _toInt(data['auction_end_date']);
+    final bidTime = data['bid_time']?.toString();
+
+    final isMyBid = bidderId != null && bidderId == (user_id.$ ?? 0);
+    final previousHighest = _currentHighestBid;
+
+    setState(() {
+      if (highestBid != null && highestBid > _currentHighestBid) {
+        _currentHighestBid = highestBid;
+      }
+      if (totalBids != null) _totalBids = totalBids;
+      if (bidderName != null && bidderName.isNotEmpty) {
+        _highestBidder = bidderName;
+      }
+
+      if (bidderId != null) {
+        if (isMyBid) {
+          _userHasBid = true;
+          _myStatus = true;
+        } else if (_userHasBid) {
+          _myStatus = false;
+        }
+      }
+
+      _minNextBidNow = _currentHighestBid + 0.01;
+
+      // The bid is also rendered inside the chat as an offer.
+      if (commentId != null && bidAmount != null) {
+        if (_seenCommentIds.add(commentId)) {
+          _comments = [
+            ..._comments,
+            Comment(
+              id: commentId,
+              userId: bidderId,
+              userName: bidderName,
+              userAvatar: bidderAvatar,
+              comment: bidAmount.toString(),
+              offers: 1,
+              createdAt: bidTime,
+            ),
+          ];
+        }
+      }
+
+      // Keep the bid history in sync.
+      if (bidAmount != null) {
+        _bidHistory = [
+          BidHistory(
+            id: _toInt(data['bid_id']),
+            userId: bidderId,
+            userName: bidderName,
+            amount: bidAmount,
+            createdAt: bidTime,
+          ),
+          ..._bidHistory,
+        ];
+      }
+
+      // The auction was extended because the bid came in during the last
+      // seconds.
+      if (timeExtended && endTimestamp != null && endTimestamp > 0) {
+        final newEnd = DateTime.fromMillisecondsSinceEpoch(endTimestamp * 1000);
+        _auctionEndDateTime = newEnd;
+        final left = newEnd.difference(DateTime.now());
+        if (left.isNegative) {
+          _auctionStatus = "ended";
+          _timeLeft = Duration.zero;
+        } else {
+          _timeLeft = left;
+          _startCountdown(newEnd);
+        }
+      }
+    });
+
+    if (highestBid != null && highestBid > previousHighest) {
+      _playBidNotificationSound();
+    }
+
+    if (_isAtBottom && !_userInteractedWithComments) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
+  }
+
+  /// A new chat message was written on this product.
+  void _handleRealtimeComment(Map<String, dynamic> data) {
+    if (!mounted) return;
+
+    final productId = _toInt(data['product_id']);
+    if (productId != null && productId != (_product?.id ?? -1)) return;
+
+    _appendComment(Comment.fromJson(data));
+  }
+
+  /// Adds a comment to the chat, ignoring duplicates.
+  void _appendComment(Comment comment) {
+    if (!mounted) return;
+
+    final id = comment.id;
+    if (id != null && !_seenCommentIds.add(id)) return;
+
+    setState(() {
+      _comments = [..._comments, comment];
+    });
+
+    if (_isAtBottom && !_userInteractedWithComments) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
+  }
+
+  /// The point balance of the signed in user changed.
+  void _handleRealtimeBalance(Map<String, dynamic> data) {
+    _applyRealtimeBalance(
+      _toDouble(data['balance']),
+      pointPerBid: _toDouble(data['point_per_bid']),
+      pointPerBidCustom: _toDouble(data['point_per_bid_custom']),
+    );
+  }
+
+  /// Writes a new point balance into the state and into the shared value so
+  /// every screen of the app shows the same number.
+  void _applyRealtimeBalance(
+    double? balance, {
+    double? pointPerBid,
+    double? pointPerBidCustom,
+  }) {
+    if (!mounted) return;
+    if (balance == null || balance < 0) return;
+
+    // Some refresh responses briefly report zero before the real balance is
+    // available. Keep the last known positive value instead of making the
+    // wallet flash to zero and back again.
+    if (balance == 0 && _pointBalance > 0) return;
+
+    setState(() {
+      _pointBalance = balance.toInt();
+      _isPointBalanceLoading = false;
+      if (pointPerBid != null) _pointPerBid = pointPerBid;
+      if (pointPerBidCustom != null) _pointPerBidCustom = pointPerBidCustom;
+    });
+
+    points_balance.$ = balance.toInt().toString();
+    points_balance.save();
+  }
+
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString().trim());
+  }
+
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().trim());
   }
 
   // ============================================================
@@ -740,7 +973,8 @@ class _ProductDetailsState extends State<ProductDetails>
         _countdownCircleController.stop();
         _bellPlayer.stop();
         ToastComponent.tickSoundPlaying = false;
-        _pollData();
+        // The auction is over, ask the server who won.
+        _fetchRealtimeSnapshot();
         return;
       }
 
@@ -893,8 +1127,17 @@ class _ProductDetailsState extends State<ProductDetails>
               response.message ??
                   '${AppLocalizations.of(context)!.bid_placed} ${_formatPrice(amount)}');
         }
-        await _pollData();
-        await _fetchPointBalance(silent: true);
+
+        // The live state now arrives through Pusher, the response only
+        // confirms what already happened.
+        if (response.realtime != null) {
+          _handleRealtimeBid(response.realtime!);
+        }
+        _applyRealtimeBalance(
+          response.remaining_balance,
+          pointPerBid: response.point_per_bid,
+          pointPerBidCustom: response.point_per_bid_custom,
+        );
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.something_went_wrong);
@@ -935,8 +1178,15 @@ class _ProductDetailsState extends State<ProductDetails>
         _bidController.clear();
         ToastComponent.showSuccess(
             response.message ?? AppLocalizations.of(context)!.bid_placed);
-        await _pollData();
-        await _fetchPointBalance(silent: true);
+
+        if (response.realtime != null) {
+          _handleRealtimeBid(response.realtime!);
+        }
+        _applyRealtimeBalance(
+          response.remaining_balance,
+          pointPerBid: response.point_per_bid,
+          pointPerBidCustom: response.point_per_bid_custom,
+        );
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.error_placing_bid);
@@ -967,7 +1217,11 @@ class _ProductDetailsState extends State<ProductDetails>
 
       if (response.success == true) {
         _commentController.clear();
-        await _fetchComments();
+        // The new comment is pushed through Pusher, the response is only used
+        // to show it right away.
+        if (response.comment != null) {
+          _appendComment(response.comment!);
+        }
         ToastComponent.showSuccess(
             AppLocalizations.of(context)!.comment_added);
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
@@ -1010,7 +1264,7 @@ class _ProductDetailsState extends State<ProductDetails>
         _reviewController.clear();
         Navigator.pop(context);
         await _fetchReviews();
-        await _pollData();
+        _fetchRealtimeSnapshot();
       } else {
         ToastComponent.showError(response.message ??
             AppLocalizations.of(context)!.error_submitting_review);
@@ -3319,7 +3573,7 @@ class _ProductDetailsState extends State<ProductDetails>
                 onPressed: () {
                   Navigator.pop(ctx);
                   setState(() => _winnerModalShown = true);
-                  _pollData();
+                  _fetchRealtimeSnapshot();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,

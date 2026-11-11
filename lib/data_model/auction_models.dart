@@ -60,6 +60,10 @@ class BidResponse {
   double? pointPerBid;
   double? pointPerBidCustom;
 
+  /// Realtime payload of the bid, pushed through Pusher on the
+  /// `product.{id}` channel.
+  Map<String, dynamic>? realtime;
+
   BidResponse({
     this.success,
     this.result,
@@ -76,36 +80,49 @@ class BidResponse {
     this.pointsUsed,
     this.pointPerBid,
     this.pointPerBidCustom,
+    this.realtime,
   });
 
   factory BidResponse.fromJson(Map<String, dynamic> json) {
     final successValue = json['success'] ?? json['result'];
+
+    // The API returns the bid details inside "data", the older web shaped
+    // payload puts them on the root. Both are supported.
+    final data = json['data'] is Map
+        ? Map<String, dynamic>.from(json['data'] as Map)
+        : const <String, dynamic>{};
+
+    dynamic pick(String key) => json[key] ?? data[key];
+
     return BidResponse(
       success: _boolFromJson(successValue),
       result: _boolFromJson(json['result']),
       message: json['message'],
-      bid: json['bid'],
+      bid: pick('bid'),
       pointsDeducted:
-          _intFromJson(json['points_deducted'] ?? json['pointsDeducted']),
+          _intFromJson(pick('points_deducted') ?? pick('pointsDeducted')),
       remainingBalance: _doubleFromJson(
-          json['remaining_balance'] ?? json['remainingBalance']),
+          pick('remaining_balance') ?? pick('remainingBalance')),
       nextMinBid:
-          _doubleFromJson(json['next_min_bid'] ?? json['nextMinBid']),
+          _doubleFromJson(pick('next_min_bid') ?? pick('nextMinBid')),
       currentHighest:
-          _doubleFromJson(json['current_highest'] ?? json['currentHighest']),
+          _doubleFromJson(pick('current_highest') ?? pick('currentHighest')),
       timeExtended:
-          _boolFromJson(json['time_extended'] ?? json['timeExtended']),
-      extendedBy: _intFromJson(json['extended_by'] ?? json['extendedBy']),
-      newEndDate: (json['new_end_date'] ?? json['newEndDate'])?.toString(),
-      balance: _doubleFromJson(json['balance'] ?? json['user_balance']),
-      pointsUsed: _doubleFromJson(json['points_used'] ??
-          json['pointsUsed'] ??
-          json['points_deducted'] ??
-          json['pointsDeducted']),
+          _boolFromJson(pick('time_extended') ?? pick('timeExtended')),
+      extendedBy: _intFromJson(pick('extended_by') ?? pick('extendedBy')),
+      newEndDate: (pick('new_end_date') ?? pick('newEndDate'))?.toString(),
+      balance: _doubleFromJson(pick('balance') ?? pick('user_balance')),
+      pointsUsed: _doubleFromJson(pick('points_used') ??
+          pick('pointsUsed') ??
+          pick('points_deducted') ??
+          pick('pointsDeducted')),
       pointPerBid:
-          _doubleFromJson(json['point_per_bid'] ?? json['pointPerBid']),
+          _doubleFromJson(pick('point_per_bid') ?? pick('pointPerBid')),
       pointPerBidCustom: _doubleFromJson(
-          json['point_per_bid_custom'] ?? json['pointPerBidCustom']),
+          pick('point_per_bid_custom') ?? pick('pointPerBidCustom')),
+      realtime: pick('realtime') is Map
+          ? Map<String, dynamic>.from(pick('realtime') as Map)
+          : null,
     );
   }
 
@@ -125,6 +142,7 @@ class BidResponse {
     'points_used': pointsUsed,
     'point_per_bid': pointPerBid,
     'point_per_bid_custom': pointPerBidCustom,
+    'realtime': realtime,
   };
 
   // Snake case getters for backward compatibility
@@ -135,6 +153,8 @@ class BidResponse {
   bool? get time_extended => timeExtended;
   int? get extended_by => extendedBy;
   String? get new_end_date => newEndDate;
+  double? get point_per_bid => pointPerBid;
+  double? get point_per_bid_custom => pointPerBidCustom;
 }
 
 
@@ -670,7 +690,7 @@ class Comment {
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
-      id: json['id'],
+      id: json['id'] ?? json['comment_id'],
       userId: json['user_id'] ?? json['userId'],
       userName: json['user_name'] ?? json['userName'],
       userAvatar: json['user_avatar'] ?? json['userAvatar'],
