@@ -33,8 +33,8 @@ class AppConfig {
   // PUSHER_APP_KEY / PUSHER_APP_CLUSTER are public values, they are
   // safe to ship inside the app. The secret key stays on the server.
   // ==============================================================
-  static const String PUSHER_APP_KEY = "878d1c10a2790a86947d";
-  static const String PUSHER_APP_CLUSTER = "mt1";
+  static const String PUSHER_APP_KEY = "0a1c36467599289cc0ec";
+  static const String PUSHER_APP_CLUSTER = "us2";
   static const bool PUSHER_USE_TLS = true;
 
   @override
